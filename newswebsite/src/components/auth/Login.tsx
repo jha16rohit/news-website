@@ -2,10 +2,13 @@ import "./Login.css";
 import { FaUser, FaEye, FaEyeSlash, FaGlobeAsia } from "react-icons/fa";
 import { useState } from "react";
 import { motion } from "framer-motion";
+import { useNavigate } from "react-router-dom";
+
+
 
 const Login: React.FC = () => {
   const [showPassword, setShowPassword] = useState<boolean>(false);
-
+  const navigate = useNavigate();
   const togglePassword = (): void => {
     setShowPassword((prev) => !prev);
   };
@@ -40,7 +43,13 @@ const Login: React.FC = () => {
             </span>
           </div>
 
-          <button className="login-btn">Login</button>
+          <button
+            className="login-btn"
+            onClick={() => navigate("/admin/dashboard")}
+          >
+            Login
+          </button>
+
         </div>
 
         {/* RIGHT : BRAND PANEL */}
