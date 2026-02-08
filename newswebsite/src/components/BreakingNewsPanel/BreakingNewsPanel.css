@@ -1,0 +1,157 @@
+.breaking-panel {
+  background: #ffffff;
+  border-radius: 16px;
+  border: 1px solid #e5e7eb;
+  overflow: hidden;
+}
+
+.breaking-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 15px;
+  background: #fff5f5;
+  border-bottom: 1px solid #fbd5d5;
+}
+
+.breaking-title {
+  display: flex;
+  gap: 12px;
+}
+
+.breaking-icon {
+  width: 40px;
+  height: 40px;
+  background: #ef4444;
+  color: #fff;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.breaking-header h3 {
+  font-size: 30px;
+  font-weight: 700;
+}
+
+.breaking-header span {
+  font-size: 19px;
+  color: #6b7280;
+}
+
+.manage-btn {
+  font-size: 13px;
+  padding: 8px;
+  border-radius: 10px;
+  border: 1px solid #b7b7b8;
+  background: #fff;
+  cursor: pointer;
+}
+
+.breaking-list {
+  padding: 8px 0;
+}
+
+.breaking-item {
+  padding: 18px 20px;
+  display: flex;
+  justify-content: space-between;
+  border-left: 4px solid transparent;
+}
+
+.breaking-item.highlight {
+  border-left-color: #ef4444;
+  background: #fffafa;
+}
+
+.breaking-item + .breaking-item {
+  border-top: 1px solid #e5e7eb;
+}
+
+.tag {
+  padding: 4px 10px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 600;
+  background: #111827;
+  color: #fff;
+}
+
+.tag.live { background: #6b7280; }
+.tag.updating { background: #111827; }
+.tag.developing { background: #111827; }
+
+.category {
+  margin-left: 10px;
+  color: #6b7280;
+  font-size: 14px;
+}
+
+.breaking-item h4 {
+  margin: 10px 0;
+  font-size: 20px;
+  font-weight: 600;
+}
+
+.meta {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: #6b7280;
+  font-size: 14px;
+}
+
+.more-icon {
+  color: #6b7280;
+  cursor: pointer;
+}
+.breaking-icon {
+  width: 42px;
+  height: 42px;
+  background: #ef4444;
+  color: #ffffff;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+}
+
+.breaking-icon::after {
+  content: "";
+  position: absolute;
+  inset: -6px;
+  border-radius: 50%;
+  background: rgba(239, 68, 68, 0.4);
+  animation: breakingPulse 1.6s infinite ease-out;
+}
+.breaking-zap {
+  animation: zapShake 1.6s infinite ease-in-out;
+}
+@keyframes breakingPulse {
+  0% {
+    transform: scale(0.6);
+    opacity: 0.7;
+  }
+  100% {
+    transform: scale(1.8);
+    opacity: 0;
+  }
+}
+
+@keyframes zapShake {
+  0%,
+  100% {
+    transform: rotate(0deg);
+  }
+  25% {
+    transform: rotate(-6deg);
+  }
+  50% {
+    transform: rotate(6deg);
+  }
+  75% {
+    transform: rotate(-3deg);
+  }
+}

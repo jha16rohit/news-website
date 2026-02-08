@@ -1,5 +1,6 @@
 import "./AdminSidebar.css";
 import type { ReactNode } from "react";
+import { useNavigate, useLocation } from "react-router-dom";
 import Logo from "../../assets/Logo.png";
 
 import {
@@ -20,9 +21,14 @@ import {
 } from "react-icons/fa";
 
 const AdminSidebar: React.FC = () => {
+  const navigate = useNavigate();
+  const location = useLocation();
+
+  const isActive = (path: string) => location.pathname === path;
+
   return (
     <aside className="sidebar">
-      {/* LOGO */}
+      {/* HEADER */}
       <div className="sidebar-header">
         <div className="logo-box">
           <img src={Logo} alt="Local Newz Logo" className="sidebar-logo" />
@@ -37,9 +43,38 @@ const AdminSidebar: React.FC = () => {
       <nav className="sidebar-menu">
         <p className="menu-title">MENU</p>
 
-        <SidebarItem icon={<FaTachometerAlt />} label="Dashboard" active />
-        <SidebarItem icon={<FaNewspaper />} label="All News" badge="156" />
-        <SidebarItem icon={<FaBolt />} label="Breaking News" badge="3" danger />
+        <SidebarItem
+          icon={<FaTachometerAlt />}
+          label="Dashboard"
+          active={isActive("/admin/dashboard")}
+          onClick={() => navigate("/admin/dashboard")}
+        />
+
+        <SidebarItem
+          icon={<FaNewspaper />}
+          label="All News"
+          badge="156"
+          active={isActive("/admin/news")}
+          onClick={() => navigate("/admin/news")}
+        />
+
+        <SidebarItem
+          icon={<FaBolt />}
+          label="Breaking News"
+          badge="3"
+          danger
+          active={isActive("/admin/breaking")}
+          onClick={() => navigate("/admin/breaking")}
+        />
+
+        <SidebarItem
+          icon={<FaComments />}
+          label="Comments"
+          badge="24"
+          active={isActive("/admin/comments")}
+          onClick={() => navigate("/admin/comments")}
+        />
+
         <SidebarItem icon={<FaFire />} label="Trending" />
         <SidebarItem icon={<FaStar />} label="Featured" />
         <SidebarItem icon={<FaClock />} label="Scheduled" badge="12" />
@@ -50,7 +85,6 @@ const AdminSidebar: React.FC = () => {
         <p className="menu-title">MANAGEMENT</p>
 
         <SidebarItem icon={<FaUsers />} label="Authors" />
-        <SidebarItem icon={<FaComments />} label="Comments" badge="24" />
         <SidebarItem icon={<FaChartBar />} label="Analytics" />
         <SidebarItem icon={<FaSearch />} label="SEO" />
         <SidebarItem icon={<FaCog />} label="Settings" />
@@ -60,7 +94,8 @@ const AdminSidebar: React.FC = () => {
       <div className="sidebar-user">
         <div className="avatar">LN</div>
         <div>
-          <strong>Local Newz</strong><br />
+          <strong>Local Newz</strong>
+          <br />
           <span>Chief Editor</span>
         </div>
       </div>
@@ -74,6 +109,7 @@ interface SidebarItemProps {
   badge?: string;
   active?: boolean;
   danger?: boolean;
+  onClick?: () => void;
 }
 
 const SidebarItem: React.FC<SidebarItemProps> = ({
@@ -82,9 +118,11 @@ const SidebarItem: React.FC<SidebarItemProps> = ({
   badge,
   active,
   danger,
+  onClick,
 }) => {
   return (
     <div
+      onClick={onClick}
       className={`sidebar-item ${active ? "active" : ""} ${
         danger ? "danger" : ""
       }`}
@@ -93,7 +131,6 @@ const SidebarItem: React.FC<SidebarItemProps> = ({
         {icon}
         <span>{label}</span>
       </div>
-
       {badge && <span className="badge">{badge}</span>}
     </div>
   );
