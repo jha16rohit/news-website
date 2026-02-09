@@ -3,6 +3,7 @@ import Login from "./components/auth/Login";
 import AdminLayout from "./components/AdminLayout/AdminLayout";
 import AdminDashboard from "./components/AdminDashboard/AdminDashboard";
 import CommentsPage from "./components/CommentsPage/CommentsPage";
+import AllNews from "./components/AllNews/AllNews";
 
 export default function App() {
   return (
@@ -58,6 +59,14 @@ export default function App() {
           element={
             <AdminLayout>
               <CommentsPage />
+            </AdminLayout>
+          }
+        />
+        <Route
+          path="/admin/news"
+          element={
+            <AdminLayout>
+              <AllNews />
             </AdminLayout>
           }
         />

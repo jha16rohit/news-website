@@ -74,6 +74,13 @@ const AdminSidebar: React.FC = () => {
           active={isActive("/admin/comments")}
           onClick={() => navigate("/admin/comments")}
         />
+        <SidebarItem
+          icon={<FaNewspaper />}
+          label="All News"
+          badge="156"
+          active={isActive("/admin/news")}
+          onClick={() => navigate("/admin/news")}
+        />
 
         <SidebarItem icon={<FaFire />} label="Trending" />
         <SidebarItem icon={<FaStar />} label="Featured" />
