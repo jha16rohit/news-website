@@ -74,20 +74,38 @@ const AdminSidebar: React.FC = () => {
           active={isActive("/admin/comments")}
           onClick={() => navigate("/admin/comments")}
         />
-        <SidebarItem
-          icon={<FaNewspaper />}
-          label="All News"
-          badge="156"
-          active={isActive("/admin/news")}
-          onClick={() => navigate("/admin/news")}
-        />
-
-        <SidebarItem icon={<FaFire />} label="Trending" />
-        <SidebarItem icon={<FaStar />} label="Featured" />
-        <SidebarItem icon={<FaClock />} label="Scheduled" badge="12" />
-        <SidebarItem icon={<FaFolder />} label="Categories" />
-        <SidebarItem icon={<FaTags />} label="Tags" />
-        <SidebarItem icon={<FaPhotoVideo />} label="Media Library" />
+        
+        <SidebarItem 
+          icon={<FaFire />} 
+          label="Trending" 
+          active={isActive("/admin/trending")}
+          onClick={() => navigate("/admin/trending")} />
+        <SidebarItem 
+          icon={<FaStar />} 
+          label="Featured"
+          active={isActive("/admin/feature")}
+          onClick={() => navigate("/admin/feature")} />
+       <SidebarItem 
+        icon={<FaClock />} 
+        label="Scheduled" 
+        badge="12"
+        active={isActive("/admin/schedule")}
+        onClick={() => navigate("/admin/schedule")} />
+        <SidebarItem 
+          icon={<FaFolder />} 
+          label="Categories"
+          active={isActive("/admin/Categories")}
+        onClick={() => navigate("/admin/Categories")} />
+        <SidebarItem 
+          icon={<FaTags />} 
+          label="Tags"
+          active={isActive("/admin/tags")}
+        onClick={() => navigate("/admin/tags")} />
+        <SidebarItem 
+          icon={<FaPhotoVideo />} 
+          label="Media Library"
+          active={isActive("/admin/medialibrary")}
+          onClick={() => navigate("/admin/medialibrary")} />
 
         <p className="menu-title">MANAGEMENT</p>
 

@@ -4,7 +4,13 @@ import AdminLayout from "./components/AdminLayout/AdminLayout";
 import AdminDashboard from "./components/AdminDashboard/AdminDashboard";
 import CommentsPage from "./components/CommentsPage/CommentsPage";
 import AllNews from "./components/AllNews/AllNews";
-
+import ScheduledPosts from "./components/ScheduledPosts/ScheduledPosts";
+import BreakingNews from "./components/BreakingNews/BreakingNews";
+import TrendingNews from "./components/Trendingnews/Trendingnews";
+import FeaturedContent from "./components/Featuredcontent /Featuredcontent";
+import Categories from "./components/Categories/Categories";
+import Tags from "./components/Tags/Tags";
+import MediaLibrary from "./components/MediaLibrary/MediaLibrary";
 export default function App() {
   return (
     <BrowserRouter>
@@ -16,9 +22,7 @@ export default function App() {
         <Route path="/admin/login" element={<Login />} />
 
         {/* Admin landing (Dashboard) */}
-        <Route
-          path="/admin"
-          element={
+        <Route path="/admin"  element={
             <AdminLayout>
               <AdminDashboard />
             </AdminLayout>
@@ -71,6 +75,67 @@ export default function App() {
           }
         />
 
+
+        <Route
+          path="/admin/schedule"
+          element={
+            <AdminLayout>
+              <ScheduledPosts />
+            </AdminLayout>
+          }
+        />
+
+        <Route
+          path="/admin/breaking"
+          element={
+            <AdminLayout>
+              <BreakingNews />
+            </AdminLayout>
+          }
+        />
+
+        <Route
+          path="/admin/trending"
+          element={
+            <AdminLayout>
+              <TrendingNews />
+            </AdminLayout>
+          }
+        />
+
+        <Route
+          path="/admin/feature"
+          element={
+            <AdminLayout>
+              <FeaturedContent />
+            </AdminLayout>
+          }
+        />
+        <Route
+          path="/admin/Categories"
+          element={
+            <AdminLayout>
+              <Categories />
+            </AdminLayout>
+          }
+        />
+        <Route
+          path="/admin/tags"
+          element={
+            <AdminLayout>
+              <Tags />
+            </AdminLayout>
+          }
+        />
+
+        <Route
+          path="/admin/medialibrary"
+          element={
+            <AdminLayout>
+              <MediaLibrary />
+            </AdminLayout>
+          }
+        />
 
         {/* Fallback */}
         <Route path="*" element={<h1>Page Not Found</h1>} />
