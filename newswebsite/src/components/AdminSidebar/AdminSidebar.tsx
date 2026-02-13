@@ -30,7 +30,8 @@ const AdminSidebar: React.FC = () => {
     <aside className="sidebar">
       {/* HEADER */}
       <div className="sidebar-header">
-        <div className="logo-box">
+        <div className="logo-box" onClick={() => navigate("/admin")}
+            style={{ cursor: "pointer" }}>
           <img src={Logo} alt="Local Newz Logo" className="sidebar-logo" />
         </div>
         <div>

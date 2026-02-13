@@ -149,17 +149,10 @@
 }
 
 /* ================= LEFT COLOR BARS ================= */
-.breaking-left {
-  border-left: 4px solid #ef4444;
-}
 
-.exclusive-left {
-  border-left: 4px solid #f59e0b;
-}
 
-.live-left {
-  border-left: 4px solid #22c55e;
-}
+
+
 
 /* ================= ARTICLE CELL ================= */
 .article-cell {

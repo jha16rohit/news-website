@@ -60,10 +60,6 @@
   border-left: 4px solid transparent;
 }
 
-.breaking-item.highlight {
-  border-left-color: #ef4444;
-  background: #fffafa;
-}
 
 .breaking-item + .breaking-item {
   border-top: 1px solid #e5e7eb;
