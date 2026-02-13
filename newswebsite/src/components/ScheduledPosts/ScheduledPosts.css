@@ -1,6 +1,5 @@
 /* Scheduled Posts Container - All classes prefixed with sp- */
 .sp-container {
-  padding: 24px;
   background-color: #f8f9fa;
   min-height: 100vh;
 }
@@ -14,14 +13,14 @@
 }
 
 .sp-title {
-  font-size: 32px;
+  font-size: 36px;
   font-weight: 700;
   margin: 0 0 8px 0;
   color: #1a1a1a;
 }
 
 .sp-subtitle {
-  font-size: 16px;
+  font-size: 19px;
   color: #6b7280;
   margin: 0;
 }
@@ -30,7 +29,7 @@
   display: flex;
   align-items: center;
   gap: 8px;
-  background-color: #1a1a1a;
+  background-color: #0f172a;
   color: white;
   border: none;
   padding: 12px 24px;

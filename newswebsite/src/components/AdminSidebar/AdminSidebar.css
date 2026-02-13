@@ -187,24 +187,6 @@
   background-color: transparent;
 }
 
-.sidebar-menu::-webkit-scrollbar-button:single-button:vertical:decrement {
-  background-image: url("data:image/svg+xml;utf8,\
-<svg xmlns='http://www.w3.org/2000/svg' width='10' height='10' fill='%23cfd6e4' viewBox='0 0 24 24'>\
-<path d='M7 14l5-5 5 5z'/></svg>");
-  background-repeat: no-repeat;
-  background-position: center;
-}
-
-.sidebar-menu::-webkit-scrollbar-button:single-button:vertical:increment {
-  background-image: url("data:image/svg+xml;utf8,\
-<svg xmlns='http://www.w3.org/2000/svg' width='10' height='10' fill='%23cfd6e4' viewBox='0 0 24 24'>\
-<path d='M7 10l5 5 5-5z'/></svg>");
-  background-repeat: no-repeat;
-  background-position: center;
-}
-
-/* Firefox */
-.sidebar-menu {
-  scrollbar-width: thin;
-  scrollbar-color: #cfd6e4 transparent;
+.abcd{
+  background:blue !important;
 }

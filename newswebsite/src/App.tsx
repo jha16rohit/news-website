@@ -11,6 +11,12 @@ import FeaturedContent from "./components/Featuredcontent /Featuredcontent";
 import Categories from "./components/Categories/Categories";
 import Tags from "./components/Tags/Tags";
 import MediaLibrary from "./components/MediaLibrary/MediaLibrary";
+import AccountSettings from "./components/Accountsettings/Accountsettings";
+import SEOSettings from "./components/SEOSettings/SEOSettings";
+import Analytics from "./components/Analytics/Analytics";
+
+
+
 export default function App() {
   return (
     <BrowserRouter>
@@ -133,6 +139,32 @@ export default function App() {
           element={
             <AdminLayout>
               <MediaLibrary />
+            </AdminLayout>
+          }
+        />
+
+
+        <Route
+          path="/admin/setting"
+          element={
+            <AdminLayout>
+              <AccountSettings />
+            </AdminLayout>
+          }
+        />
+        <Route
+          path="/admin/seo"
+          element={
+            <AdminLayout>
+              <SEOSettings />
+            </AdminLayout>
+          }
+        />
+        <Route
+          path="/admin/analytics"
+          element={
+            <AdminLayout>
+              <Analytics />
             </AdminLayout>
           }
         />

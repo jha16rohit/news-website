@@ -9,16 +9,16 @@ import {
   FaFire,
   FaStar,
   FaClock,
-  FaFolder,
   FaTags,
   FaPhotoVideo,
-  FaUsers,
   FaComments,
   FaChartBar,
   FaSearch,
   FaCog,
   FaTachometerAlt,
 } from "react-icons/fa";
+import { Folder } from "lucide-react";
+
 
 const AdminSidebar: React.FC = () => {
   const navigate = useNavigate();
@@ -92,7 +92,7 @@ const AdminSidebar: React.FC = () => {
         active={isActive("/admin/schedule")}
         onClick={() => navigate("/admin/schedule")} />
         <SidebarItem 
-          icon={<FaFolder />} 
+          icon={<Folder />} 
           label="Categories"
           active={isActive("/admin/Categories")}
         onClick={() => navigate("/admin/Categories")} />
@@ -107,17 +107,29 @@ const AdminSidebar: React.FC = () => {
           active={isActive("/admin/medialibrary")}
           onClick={() => navigate("/admin/medialibrary")} />
 
-        <p className="menu-title">MANAGEMENT</p>
 
-        <SidebarItem icon={<FaUsers />} label="Authors" />
-        <SidebarItem icon={<FaChartBar />} label="Analytics" />
-        <SidebarItem icon={<FaSearch />} label="SEO" />
-        <SidebarItem icon={<FaCog />} label="Settings" />
+
+        <SidebarItem 
+            icon={<FaChartBar />} 
+            label="Analytics"
+            active={isActive("/admin/analytics")}
+            onClick={() => navigate("/admin/analytics")} />
+        <SidebarItem 
+            icon={<FaSearch />} 
+            label="SEO"
+            active={isActive("/admin/seo")}
+            onClick={() => navigate("/admin/seo")} />
+            
+        <SidebarItem 
+            icon={<FaCog />} 
+            label="Settings"
+            active={isActive("/admin/setting")}
+            onClick={() => navigate("/admin/setting")} />
       </nav>
 
       {/* USER */}
       <div className="sidebar-user">
-        <div className="avatar">LN</div>
+        <div className="avatar abcd">LN</div>
         <div>
           <strong>Local Newz</strong>
           <br />

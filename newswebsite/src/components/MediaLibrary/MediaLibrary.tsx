@@ -77,7 +77,13 @@ export default function MediaLibrary() {
   return (
     <div className="media-root">
       <div className="media-container">
-
+        {/* Page Header */}
+        <div className="media-header">
+          <h1 className="media-title">Media Library</h1>
+          <p className="media-subtitle">
+            Manage your images, videos, and other media files
+          </p>
+        </div>
         {/* Stats */}
         <div className="media-stats">
           <div className="media-stat">
