@@ -28,7 +28,7 @@
 /* GRID */
 .stats-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
   gap: 20px;
 }
 
@@ -50,6 +50,8 @@
 
 /* ICON */
 .stat-icon {
+  position:relative;
+  left: -15px;
   width: 44px;
   height: 44px;
   background: #f3f4f6;
@@ -68,17 +70,17 @@
 /* VALUE */
 .stat-card h2 {
     position: relative;
-    font-size: 25px;
+    font-size: 20px;
     font-weight: 700;
     margin-bottom: 4px;
-    left: 40px;
-    top: -36px;
+    left: 20px;
+    top: -33px;
 }
 
 .stat-card p {
   position: relative;
     color: #6b7280;
-    font-size: 19px;
+    font-size: 15px;
     top: -23px;
 }
 .stat-card {

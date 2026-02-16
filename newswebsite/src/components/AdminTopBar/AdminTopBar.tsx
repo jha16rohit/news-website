@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import "./AdminTopBar.css";
 import {
   Bell,
@@ -12,11 +13,14 @@ import {
   User,
   Settings,
   LogOut,
+  Star, 
+  MessageSquare 
 } from "lucide-react";
 
 const AdminTopBar: React.FC = () => {
   const [newsOpen, setNewsOpen] = useState(false);
   const [profileOpen, setProfileOpen] = useState(false);
+  const navigate = useNavigate();
 
   const newsRef = useRef<HTMLDivElement>(null);
   const profileRef = useRef<HTMLDivElement>(null);
@@ -67,24 +71,74 @@ const AdminTopBar: React.FC = () => {
 
           {newsOpen && (
             <div className="add-news-dropdown">
-              <div className="dropdown-item">
+              <div
+                className="dropdown-item"
+                onClick={() => {
+                  navigate("/admin/news/create");
+                  setNewsOpen(false);
+                }}
+              >
                 <FileText size={18} />
                 Standard Article
               </div>
-              <div className="dropdown-item danger">
+
+              <div
+                className="dropdown-item danger"
+                onClick={() => {
+                  navigate("/admin/news/create?type=breaking");
+                  setNewsOpen(false);
+                }}
+              >
                 <Zap size={18} />
                 Breaking News
               </div>
-              <div className="dropdown-item">
+
+              <div
+                className="dropdown-item danger"
+                onClick={() => {
+                  navigate("/admin/news/create?type=exclusive");
+                  setNewsOpen(false);
+                }}
+              >
+                <Star size={18} />
+                Exclusive Story
+              </div>
+
+              <div
+                className="dropdown-item"
+                onClick={() => {
+                  navigate("/admin/news/create?type=opinion");
+                  setNewsOpen(false);
+                }}
+              >
+                <MessageSquare size={18} />
+                Opinion / Editorial
+              </div>
+
+              <div
+                className="dropdown-item"
+                onClick={() => {
+                  navigate("/admin/news/create?type=video");
+                  setNewsOpen(false);
+                }}
+              >
                 <Video size={18} />
                 Video Story
               </div>
-              <div className="dropdown-item">
+
+              <div
+                className="dropdown-item"
+                onClick={() => {
+                  navigate("/admin/news/create?type=gallery");
+                  setNewsOpen(false);
+                }}
+              >
                 <Image size={18} />
                 Photo Gallery
               </div>
             </div>
           )}
+
         </div>
 
         {/* Profile */}

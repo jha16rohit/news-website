@@ -1,12 +1,11 @@
-import React from "react";
+import { Outlet } from "react-router-dom";
 import AdminSidebar from "../AdminSidebar/AdminSidebar";
 import AdminTopBar from "../AdminTopBar/AdminTopBar";
-import AdminDashboard from "../AdminDashboard/AdminDashboard";
 
 const SIDEBAR_WIDTH = 284; // must match sidebar css
-const TOPBAR_HEIGHT = 80; // must match topbar css
+const TOPBAR_HEIGHT = 60; // must match topbar css
 
-const AdminLayout = ({ children }: { children?: React.ReactNode }) => {
+const AdminLayout = () => {
   return (
     <>
       {/* Fixed Sidebar */}
@@ -31,7 +30,7 @@ const AdminLayout = ({ children }: { children?: React.ReactNode }) => {
       <main
         style={{
           marginLeft: SIDEBAR_WIDTH,
-          paddingTop: TOPBAR_HEIGHT ,
+          paddingTop: TOPBAR_HEIGHT,
           paddingLeft: 24,
           paddingRight: 24,
           paddingBottom: 24,
@@ -40,9 +39,7 @@ const AdminLayout = ({ children }: { children?: React.ReactNode }) => {
           boxSizing: "border-box",
         }}
       >
-
-        {/* LANDING PAGE AFTER SIGN-IN */}
-        {children ? children : <AdminDashboard />}
+        <Outlet />
       </main>
     </>
   );

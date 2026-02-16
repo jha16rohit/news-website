@@ -7,170 +7,48 @@ import AllNews from "./components/AllNews/AllNews";
 import ScheduledPosts from "./components/ScheduledPosts/ScheduledPosts";
 import BreakingNews from "./components/BreakingNews/BreakingNews";
 import TrendingNews from "./components/Trendingnews/Trendingnews";
-import FeaturedContent from "./components/Featuredcontent /Featuredcontent";
+import FeaturedContent from "./components/Featuredcontent/Featuredcontent";
 import Categories from "./components/Categories/Categories";
 import Tags from "./components/Tags/Tags";
 import MediaLibrary from "./components/MediaLibrary/MediaLibrary";
 import AccountSettings from "./components/Accountsettings/Accountsettings";
-import SEOSettings from "./components/SEOSettings/SEOSettings";
 import Analytics from "./components/Analytics/Analytics";
-
-
+import CreateNewArticle from "./components/CreateNewArticle/CreateNewArticle";
 
 export default function App() {
   return (
     <BrowserRouter>
       <Routes>
+
         {/* Default redirect */}
         <Route path="/" element={<Navigate to="/admin/login" replace />} />
 
         {/* Login */}
         <Route path="/admin/login" element={<Login />} />
 
-        {/* Admin landing (Dashboard) */}
-        <Route path="/admin"  element={
-            <AdminLayout>
-              <AdminDashboard />
-            </AdminLayout>
-          }
-        />
+        {/* 🔥 ADMIN LAYOUT WRAPPER */}
+        <Route path="/admin" element={<AdminLayout />}>
 
-        {/* Explicit dashboard route (optional but good) */}
-        <Route
-          path="/admin/dashboard"
-          element={
-            <AdminLayout>
-              <AdminDashboard />
-            </AdminLayout>
-          }
-        />
+          <Route index element={<AdminDashboard />} />
+          <Route path="dashboard" element={<AdminDashboard />} />
+          <Route path="news" element={<AllNews />} />
+          <Route path="news/create" element={<CreateNewArticle />} />
+          <Route path="breaking" element={<BreakingNews />} />
+          <Route path="trending" element={<TrendingNews />} />
+          <Route path="feature" element={<FeaturedContent />} />
+          <Route path="schedule" element={<ScheduledPosts />} />
+          <Route path="comments" element={<CommentsPage />} />
+          <Route path="categories" element={<Categories />} />
+          <Route path="tags" element={<Tags />} />
+          <Route path="medialibrary" element={<MediaLibrary />} />
+          <Route path="analytics" element={<Analytics />} />
+          <Route path="setting" element={<AccountSettings />} />
 
-        {/* Create News */}
-        <Route
-          path="/admin/create-news"
-          element={
-            <AdminLayout>
-              <h1>Create News</h1>
-            </AdminLayout>
-          }
-        />
-
-        {/* Manage News */}
-        <Route
-          path="/admin/manage-news"
-          element={
-            <AdminLayout>
-              <h1>Manage News</h1>
-            </AdminLayout>
-          }
-        />
-        <Route
-          path="/admin/comments"
-          element={
-            <AdminLayout>
-              <CommentsPage />
-            </AdminLayout>
-          }
-        />
-        <Route
-          path="/admin/news"
-          element={
-            <AdminLayout>
-              <AllNews />
-            </AdminLayout>
-          }
-        />
-
-
-        <Route
-          path="/admin/schedule"
-          element={
-            <AdminLayout>
-              <ScheduledPosts />
-            </AdminLayout>
-          }
-        />
-
-        <Route
-          path="/admin/breaking"
-          element={
-            <AdminLayout>
-              <BreakingNews />
-            </AdminLayout>
-          }
-        />
-
-        <Route
-          path="/admin/trending"
-          element={
-            <AdminLayout>
-              <TrendingNews />
-            </AdminLayout>
-          }
-        />
-
-        <Route
-          path="/admin/feature"
-          element={
-            <AdminLayout>
-              <FeaturedContent />
-            </AdminLayout>
-          }
-        />
-        <Route
-          path="/admin/Categories"
-          element={
-            <AdminLayout>
-              <Categories />
-            </AdminLayout>
-          }
-        />
-        <Route
-          path="/admin/tags"
-          element={
-            <AdminLayout>
-              <Tags />
-            </AdminLayout>
-          }
-        />
-
-        <Route
-          path="/admin/medialibrary"
-          element={
-            <AdminLayout>
-              <MediaLibrary />
-            </AdminLayout>
-          }
-        />
-
-
-        <Route
-          path="/admin/setting"
-          element={
-            <AdminLayout>
-              <AccountSettings />
-            </AdminLayout>
-          }
-        />
-        <Route
-          path="/admin/seo"
-          element={
-            <AdminLayout>
-              <SEOSettings />
-            </AdminLayout>
-          }
-        />
-        <Route
-          path="/admin/analytics"
-          element={
-            <AdminLayout>
-              <Analytics />
-            </AdminLayout>
-          }
-        />
+        </Route>
 
         {/* Fallback */}
         <Route path="*" element={<h1>Page Not Found</h1>} />
+
       </Routes>
     </BrowserRouter>
   );

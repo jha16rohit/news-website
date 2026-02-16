@@ -1,6 +1,7 @@
 import "./AdminSidebar.css";
 import type { ReactNode } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
+import { useState, useRef, useEffect } from "react";
 import Logo from "../../assets/Logo.png";
 
 import {
@@ -13,25 +14,46 @@ import {
   FaPhotoVideo,
   FaComments,
   FaChartBar,
-  FaSearch,
   FaCog,
   FaTachometerAlt,
+  FaBell,
+  FaUserShield,
 } from "react-icons/fa";
 import { Folder } from "lucide-react";
-
 
 const AdminSidebar: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
 
+  const [notificationsOpen, setNotificationsOpen] = useState(false);
+  const notificationRef = useRef<HTMLDivElement>(null);
+
   const isActive = (path: string) => location.pathname === path;
+
+  /* Close dropdown on outside click */
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (
+        notificationRef.current &&
+        !notificationRef.current.contains(e.target as Node)
+      ) {
+        setNotificationsOpen(false);
+      }
+    };
+
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
 
   return (
     <aside className="sidebar">
       {/* HEADER */}
       <div className="sidebar-header">
-        <div className="logo-box" onClick={() => navigate("/admin")}
-            style={{ cursor: "pointer" }}>
+        <div
+          className="logo-box"
+          onClick={() => navigate("/admin")}
+          style={{ cursor: "pointer" }}
+        >
           <img src={Logo} alt="Local Newz Logo" className="sidebar-logo" />
         </div>
         <div>
@@ -75,57 +97,107 @@ const AdminSidebar: React.FC = () => {
           active={isActive("/admin/comments")}
           onClick={() => navigate("/admin/comments")}
         />
-        
-        <SidebarItem 
-          icon={<FaFire />} 
-          label="Trending" 
+
+        <SidebarItem
+          icon={<FaFire />}
+          label="Trending"
           active={isActive("/admin/trending")}
-          onClick={() => navigate("/admin/trending")} />
-        <SidebarItem 
-          icon={<FaStar />} 
+          onClick={() => navigate("/admin/trending")}
+        />
+
+        <SidebarItem
+          icon={<FaStar />}
           label="Featured"
           active={isActive("/admin/feature")}
-          onClick={() => navigate("/admin/feature")} />
-       <SidebarItem 
-        icon={<FaClock />} 
-        label="Scheduled" 
-        badge="12"
-        active={isActive("/admin/schedule")}
-        onClick={() => navigate("/admin/schedule")} />
-        <SidebarItem 
-          icon={<Folder />} 
+          onClick={() => navigate("/admin/feature")}
+        />
+
+        <SidebarItem
+          icon={<FaClock />}
+          label="Scheduled"
+          badge="12"
+          active={isActive("/admin/schedule")}
+          onClick={() => navigate("/admin/schedule")}
+        />
+
+        <SidebarItem
+          icon={<Folder />}
           label="Categories"
-          active={isActive("/admin/Categories")}
-        onClick={() => navigate("/admin/Categories")} />
-        <SidebarItem 
-          icon={<FaTags />} 
+          active={isActive("/admin/categories")}
+          onClick={() => navigate("/admin/categories")}
+        />
+
+        <SidebarItem
+          icon={<FaTags />}
           label="Tags"
           active={isActive("/admin/tags")}
-        onClick={() => navigate("/admin/tags")} />
-        <SidebarItem 
-          icon={<FaPhotoVideo />} 
+          onClick={() => navigate("/admin/tags")}
+        />
+
+        <SidebarItem
+          icon={<FaPhotoVideo />}
           label="Media Library"
           active={isActive("/admin/medialibrary")}
-          onClick={() => navigate("/admin/medialibrary")} />
+          onClick={() => navigate("/admin/medialibrary")}
+        />
 
+        <SidebarItem
+          icon={<FaUserShield />}
+          label="Admin"
+          active={isActive("/admin/admin")}
+          onClick={() => navigate("/admin/admin")}
+        />
 
+        <SidebarItem
+          icon={<FaChartBar />}
+          label="Analytics"
+          active={isActive("/admin/analytics")}
+          onClick={() => navigate("/admin/analytics")}
+        />
 
-        <SidebarItem 
-            icon={<FaChartBar />} 
-            label="Analytics"
-            active={isActive("/admin/analytics")}
-            onClick={() => navigate("/admin/analytics")} />
-        <SidebarItem 
-            icon={<FaSearch />} 
-            label="SEO"
-            active={isActive("/admin/seo")}
-            onClick={() => navigate("/admin/seo")} />
-            
-        <SidebarItem 
-            icon={<FaCog />} 
-            label="Settings"
-            active={isActive("/admin/setting")}
-            onClick={() => navigate("/admin/setting")} />
+        {/* 🔔 Notifications with Dropdown */}
+        <div className="sidebar-notification-wrapper" ref={notificationRef}>
+          <SidebarItem
+            icon={<FaBell />}
+            label="Notifications"
+            onClick={() => setNotificationsOpen((prev) => !prev)}
+          />
+
+          {notificationsOpen && (
+            <div className="notification-dropdown">
+              <div className="notification-header">
+                <strong>Notifications</strong>
+                <span className="mark-read">Mark all read</span>
+              </div>
+
+              <div className="notification-item">
+                <p>Breaking news pending approval</p>
+                <span>2m ago</span>
+              </div>
+
+              <div className="notification-item active">
+                <p>15 new comments on 'Election Results'</p>
+                <span>5m ago</span>
+              </div>
+
+              <div className="notification-item">
+                <p>Article scheduled for 3:00 PM</p>
+                <span>10m ago</span>
+              </div>
+
+              <div className="notification-footer">
+                View all notifications
+              </div>
+            </div>
+          )}
+        </div>
+
+        <SidebarItem
+          icon={<FaCog />}
+          label="Settings"
+          active={isActive("/admin/setting")}
+          onClick={() => navigate("/admin/setting")}
+        />
       </nav>
 
       {/* USER */}

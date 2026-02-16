@@ -1,6 +1,6 @@
 /* ================= TOPBAR ================= */
 .admin-topbar {
-  height: 70px;
+  height: 60px;
   width: 100%;
   background: #ffffff;
   border-bottom: 1px solid #e5e7eb;
@@ -28,11 +28,11 @@
 
 .topbar-search input {
   width: 500px;
-  height: 46px;
+  height: 35px;
   border-radius: 14px;
   border: 1px solid #666;
   padding: 0 18px 0 44px;
-  font-size: 18px;
+  font-size: 15px;
   outline: none;
   background: #f9fafb;
 }
