@@ -10,7 +10,6 @@ import {
   Zap,
   Video,
   Image,
-  User,
   Settings,
   LogOut,
   Star, 
@@ -53,10 +52,14 @@ const AdminTopBar: React.FC = () => {
           3 Live
         </div>
 
-        <div className="notification">
+        <div
+          className="notification"
+          onClick={() => navigate("/admin/notification")}
+        >
           <Bell size={20} />
           <span className="notification-count">3</span>
         </div>
+
 
         {/* Add News */}
         <div className="add-news-wrapper" ref={newsRef}>
@@ -157,15 +160,17 @@ const AdminTopBar: React.FC = () => {
                 <strong>Editor Admin</strong>
               </div>
 
-              <div className="profile-item">
-                <User size={18} />
-                Profile
-              </div>
-
-              <div className="profile-item">
+              <div
+                className="profile-item"
+                onClick={() => {
+                  navigate("/admin/setting"); // adjust if needed
+                  setProfileOpen(false);
+                }}
+              >
                 <Settings size={18} />
                 Settings
               </div>
+
 
               <div className="profile-divider" />
 

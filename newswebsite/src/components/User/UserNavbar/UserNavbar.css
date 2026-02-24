@@ -1,0 +1,132 @@
+/* ===== NAVBAR ===== */
+.navbar {
+  background-color: #0d1b2a;
+  padding: 12px 0;
+  color: white;
+}
+
+.navbar-container {
+  width: 95%;
+  max-width: 1300px;
+  margin: auto;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+/* ===== LOGO ===== */
+.logo {
+  font-size: 22px;
+  font-weight: bold;
+  display: flex;
+  align-items: center;
+}
+
+.logo-red {
+  background-color: #e10600;
+  padding: 6px 12px;
+  border-radius: 6px;
+  margin-right: 5px;
+}
+
+.logo-white {
+  color: white;
+}
+
+/* ===== NAV LINKS ===== */
+.nav-links {
+  display: flex;
+  gap: 28px;
+}
+
+.nav-links a {
+  color: #d1d5db;
+  text-decoration: none;
+  font-size: 15px;
+  transition: 0.3s ease;
+}
+
+.nav-links a:hover {
+  color: #ffffff;
+}
+
+/* ===== RIGHT SIDE ===== */
+.nav-actions {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+}
+
+.nav-actions svg {
+  cursor: pointer;
+  color: #d1d5db;
+  transition: 0.3s;
+}
+
+.nav-actions svg:hover {
+  color: white;
+}
+
+.subscribe-btn {
+  background-color: #e10600;
+  border: none;
+  padding: 8px 16px;
+  border-radius: 20px;
+  color: white;
+  font-weight: 600;
+  cursor: pointer;
+  transition: 0.3s;
+}
+
+.subscribe-btn:hover {
+  background-color: #b80000;
+}
+
+/* ===== BREAKING BAR ===== */
+.breaking-bar {
+  display: flex;
+  align-items: center;
+  background-color: #e10600;
+  color: white;
+  padding: 10px 0;
+  overflow: hidden;
+}
+
+.breaking-label {
+  background: rgba(255, 255, 255, 0.15);
+  padding: 6px 14px;
+  margin-left: 40px;
+  border-radius: 20px;
+  font-weight: 600;
+  font-size: 14px;
+}
+
+.ticker {
+  overflow: hidden;
+  white-space: nowrap;
+  width: 100%;
+}
+
+.ticker p {
+  display: inline-block;
+  padding-left: 100%;
+  animation: ticker 18s linear infinite;
+  font-size: 14px;
+}
+
+/* Ticker Animation */
+@keyframes ticker {
+  0% {
+    transform: translateX(0%);
+  }
+  100% {
+    transform: translateX(-100%);
+  }
+}
+
+/* ===== RESPONSIVE ===== */
+@media (max-width: 1024px) {
+  .nav-links {
+    display: none;
+  }
+}

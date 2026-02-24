@@ -1,8 +1,7 @@
 import "./AdminSidebar.css";
 import type { ReactNode } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
-import { useState, useRef, useEffect } from "react";
-import Logo from "../../assets/Logo.png";
+import Logo from "../../../assets/Logo.png";
 
 import {
   FaNewspaper,
@@ -16,34 +15,20 @@ import {
   FaChartBar,
   FaCog,
   FaTachometerAlt,
-  FaBell,
-  FaUserShield,
 } from "react-icons/fa";
-import { Folder } from "lucide-react";
+
+import {
+  MdWifiTethering,
+  MdNotifications,
+  MdFolder,
+} from "react-icons/md";
 
 const AdminSidebar: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
 
-  const [notificationsOpen, setNotificationsOpen] = useState(false);
-  const notificationRef = useRef<HTMLDivElement>(null);
-
-  const isActive = (path: string) => location.pathname === path;
-
-  /* Close dropdown on outside click */
-  useEffect(() => {
-    const handleClickOutside = (e: MouseEvent) => {
-      if (
-        notificationRef.current &&
-        !notificationRef.current.contains(e.target as Node)
-      ) {
-        setNotificationsOpen(false);
-      }
-    };
-
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, []);
+  const isActive = (path: string) =>
+    location.pathname === path;
 
   return (
     <aside className="sidebar">
@@ -51,10 +36,14 @@ const AdminSidebar: React.FC = () => {
       <div className="sidebar-header">
         <div
           className="logo-box"
-          onClick={() => navigate("/admin")}
+          onClick={() => navigate("/admin/dashboard")}
           style={{ cursor: "pointer" }}
         >
-          <img src={Logo} alt="Local Newz Logo" className="sidebar-logo" />
+          <img
+            src={Logo}
+            alt="Local Newz Logo"
+            className="sidebar-logo"
+          />
         </div>
         <div>
           <h3>Local Newz</h3>
@@ -91,6 +80,15 @@ const AdminSidebar: React.FC = () => {
         />
 
         <SidebarItem
+          icon={<MdWifiTethering />}
+          label="Live News"
+          badge="3"
+          danger
+          active={isActive("/admin/live")}
+          onClick={() => navigate("/admin/live")}
+        />
+
+        <SidebarItem
           icon={<FaComments />}
           label="Comments"
           badge="24"
@@ -121,7 +119,7 @@ const AdminSidebar: React.FC = () => {
         />
 
         <SidebarItem
-          icon={<Folder />}
+          icon={<MdFolder />}
           label="Categories"
           active={isActive("/admin/categories")}
           onClick={() => navigate("/admin/categories")}
@@ -142,55 +140,19 @@ const AdminSidebar: React.FC = () => {
         />
 
         <SidebarItem
-          icon={<FaUserShield />}
-          label="Admin"
-          active={isActive("/admin/admin")}
-          onClick={() => navigate("/admin/admin")}
-        />
-
-        <SidebarItem
           icon={<FaChartBar />}
           label="Analytics"
           active={isActive("/admin/analytics")}
           onClick={() => navigate("/admin/analytics")}
         />
 
-        {/* 🔔 Notifications with Dropdown */}
-        <div className="sidebar-notification-wrapper" ref={notificationRef}>
-          <SidebarItem
-            icon={<FaBell />}
-            label="Notifications"
-            onClick={() => setNotificationsOpen((prev) => !prev)}
-          />
-
-          {notificationsOpen && (
-            <div className="notification-dropdown">
-              <div className="notification-header">
-                <strong>Notifications</strong>
-                <span className="mark-read">Mark all read</span>
-              </div>
-
-              <div className="notification-item">
-                <p>Breaking news pending approval</p>
-                <span>2m ago</span>
-              </div>
-
-              <div className="notification-item active">
-                <p>15 new comments on 'Election Results'</p>
-                <span>5m ago</span>
-              </div>
-
-              <div className="notification-item">
-                <p>Article scheduled for 3:00 PM</p>
-                <span>10m ago</span>
-              </div>
-
-              <div className="notification-footer">
-                View all notifications
-              </div>
-            </div>
-          )}
-        </div>
+        <SidebarItem
+          icon={<MdNotifications />}
+          label="Notifications"
+          badge="12"
+          active={isActive("/admin/notification")}
+          onClick={() => navigate("/admin/notification")}
+        />
 
         <SidebarItem
           icon={<FaCog />}

@@ -1,6 +1,4 @@
 import "./RecentArticles.css";
-import { MoreHorizontal, Eye, Edit, ExternalLink, Trash2 } from "lucide-react";
-import { useState, useRef, useEffect } from "react";
 
 const articles = [
   {
@@ -46,20 +44,6 @@ const articles = [
 ];
 
 const RecentArticles = () => {
-  const [openIndex, setOpenIndex] = useState<number | null>(null);
-  const menuRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    const handleClickOutside = (e: MouseEvent) => {
-      if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
-        setOpenIndex(null);
-      }
-    };
-    document.addEventListener("mousedown", handleClickOutside);
-    return () =>
-      document.removeEventListener("mousedown", handleClickOutside);
-  }, []);
-
   return (
     <div className="recent-card">
       {/* HEADER */}
@@ -68,8 +52,6 @@ const RecentArticles = () => {
           <h3>Recent Articles</h3>
           <p>Latest content from your newsroom</p>
         </div>
-
-        <button className="view-all-btn">View All</button>
       </div>
 
       {/* TABLE */}
@@ -81,7 +63,6 @@ const RecentArticles = () => {
             <th>Status</th>
             <th>Published</th>
             <th>Views</th>
-            <th></th>
           </tr>
         </thead>
 
@@ -104,33 +85,6 @@ const RecentArticles = () => {
               <td className="muted">{item.time}</td>
 
               <td className="views">{item.views}</td>
-
-              <td className="menu-cell">
-                <MoreHorizontal
-                  className="row-menu"
-                  onClick={() =>
-                    setOpenIndex(openIndex === index ? null : index)
-                  }
-                />
-
-                {openIndex === index && (
-                  <div className="row-dropdown" ref={menuRef}>
-                    <div className="dropdown-item">
-                      <Eye size={16} /> View
-                    </div>
-                    <div className="dropdown-item">
-                      <Edit size={16} /> Edit
-                    </div>
-                    <div className="dropdown-item">
-                      <ExternalLink size={16} /> Open Live
-                    </div>
-                    <div className="dropdown-divider" />
-                    <div className="dropdown-item danger">
-                      <Trash2 size={16} /> Delete
-                    </div>
-                  </div>
-                )}
-              </td>
             </tr>
           ))}
         </tbody>

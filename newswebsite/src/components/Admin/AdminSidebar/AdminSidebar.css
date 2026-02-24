@@ -2,7 +2,7 @@
    SIDEBAR CONTAINER
 ================================ */
 .sidebar {
-  width: 284px;
+  width: 260px;
   height: 100vh;
   background: #151a23;
   color: #cfd6e4;
@@ -106,7 +106,7 @@
 }
 
 .item-left span {
-  font-size: 20px;
+  font-size: 17px;
 }
 
 .item-left svg {

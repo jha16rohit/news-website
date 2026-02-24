@@ -2,7 +2,7 @@ import { Outlet } from "react-router-dom";
 import AdminSidebar from "../AdminSidebar/AdminSidebar";
 import AdminTopBar from "../AdminTopBar/AdminTopBar";
 
-const SIDEBAR_WIDTH = 284; // must match sidebar css
+const SIDEBAR_WIDTH = 260; // must match sidebar css
 const TOPBAR_HEIGHT = 60; // must match topbar css
 
 const AdminLayout = () => {
