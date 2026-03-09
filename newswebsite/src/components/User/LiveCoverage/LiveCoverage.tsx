@@ -1,23 +1,20 @@
 import React, { useRef, useState, useEffect } from "react";
 import { Radio, ArrowRight } from "lucide-react";
-import { Link } from "react-router-dom"; // 👈 1. Imported Link
+import { Link } from "react-router-dom"; 
 import "./LiveCoverage.css";
 
 const LiveCoverage: React.FC = () => {
   const scrollRef = useRef<HTMLDivElement>(null);
   const trackRef = useRef<HTMLDivElement>(null);
   
-  // States for scroll arrows and track position
   const [canScrollLeft, setCanScrollLeft] = useState(false);
   const [canScrollRight, setCanScrollRight] = useState(true);
-  const [scrollProgress, setScrollProgress] = useState(0); // 0 to 1
+  const [scrollProgress, setScrollProgress] = useState(0); 
 
-  // States for Dragging the Scroll Thumb
   const [isDragging, setIsDragging] = useState(false);
   const dragStartX = useRef(0);
   const dragScrollLeft = useRef(0);
 
-  // Expanded Data Array
   const liveData = [
     {
       id: 1,
@@ -101,7 +98,6 @@ const LiveCoverage: React.FC = () => {
     }
   ];
 
-  // Updates buttons and scroll thumb position when scrolling happens
   const handleScroll = () => {
     if (scrollRef.current) {
       const { scrollLeft, scrollWidth, clientWidth } = scrollRef.current;
@@ -114,17 +110,15 @@ const LiveCoverage: React.FC = () => {
   };
 
   useEffect(() => {
-    handleScroll(); // Initialize on mount
+    handleScroll(); 
   }, []);
 
-  // --- DRAG LOGIC ---
   const handleThumbMouseDown = (e: React.MouseEvent<HTMLDivElement>) => {
     setIsDragging(true);
     dragStartX.current = e.clientX;
     if (scrollRef.current) {
       dragScrollLeft.current = scrollRef.current.scrollLeft;
     }
-    // Prevent text highlighting while dragging
     document.body.style.userSelect = "none"; 
   };
 
@@ -134,13 +128,12 @@ const LiveCoverage: React.FC = () => {
 
       const deltaX = e.clientX - dragStartX.current;
       const trackWidth = trackRef.current.clientWidth;
-      const thumbWidth = trackWidth * 0.15; // 15% width as defined in CSS
+      const thumbWidth = trackWidth * 0.15; 
       
       const trackScrollableWidth = trackWidth - thumbWidth;
       const containerScrollableWidth = scrollRef.current.scrollWidth - scrollRef.current.clientWidth;
       
       if (trackScrollableWidth > 0) {
-        // Calculate how much actual scroll distance equals 1 pixel of thumb drag
         const ratio = containerScrollableWidth / trackScrollableWidth;
         scrollRef.current.scrollLeft = dragScrollLeft.current + (deltaX * ratio);
       }
@@ -148,7 +141,7 @@ const LiveCoverage: React.FC = () => {
 
     const handleMouseUp = () => {
       setIsDragging(false);
-      document.body.style.userSelect = ""; // Restore text highlighting
+      document.body.style.userSelect = ""; 
     };
 
     if (isDragging) {
@@ -162,10 +155,9 @@ const LiveCoverage: React.FC = () => {
     };
   }, [isDragging]);
 
-  // Click arrows to scroll exactly one card width
   const scroll = (direction: "left" | "right") => {
     if (scrollRef.current) {
-      const scrollAmount = 474; // Card width (450) + Gap (24)
+      const scrollAmount = 474; 
       scrollRef.current.scrollBy({
         left: direction === "left" ? -scrollAmount : scrollAmount,
         behavior: "smooth",
@@ -182,24 +174,22 @@ const LiveCoverage: React.FC = () => {
             <Radio size={24} className="live-icon" />
             <h2>Live Coverage</h2>
           </div>
-          {/* 👈 2. Updated to a Link instead of an a tag */}
           <Link to="/live-events" className="view-all-link text-decoration-none">
             View All <ArrowRight size={16} />
           </Link>
         </div>
 
-        {/* Scrolling Cards */}
         <div className="live-cards-wrapper" ref={scrollRef} onScroll={handleScroll}>
           {liveData.map((item) => (
             
-            /* 👈 3. Wrapped the card in a Link pointing to /live/:id */
             <Link 
               to={`/live/${item.id}`} 
               className="live-card text-decoration-none" 
               key={item.id}
             >
               <div className="live-card-image" style={{ backgroundImage: `url(${item.imgUrl})` }}>
-                <div className="live-badge">
+                {/* 👇 Renamed class from live-badge to coverage-badge */}
+                <div className="coverage-badge">
                   <span className="live-dot"></span> LIVE
                 </div>
                 <div className="live-card-overlay">
@@ -216,7 +206,6 @@ const LiveCoverage: React.FC = () => {
           ))}
         </div>
 
-        {/* Interactive Custom Scrollbar */}
         <div className="live-scroll-controls">
           <button 
             className={`scroll-arrow ${!canScrollLeft ? 'disabled' : ''}`} 
