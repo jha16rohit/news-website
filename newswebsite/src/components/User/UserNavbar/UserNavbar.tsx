@@ -1,19 +1,29 @@
 import React, { useState, useEffect } from "react";
 import "./UserNavbar.css";
-import { Search, Bell, User, Menu, X } from "lucide-react";
+import { Bell, User, Menu, X } from "lucide-react";
 import logo from "../../../assets/Logo.png";
 
 const UserNavbar: React.FC = () => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const [currentDate, setCurrentDate] = useState(""); 
-  const [isSearchOpen, setIsSearchOpen] = useState(false);
+  const [weekday, setWeekday] = useState("");
+const [date, setDate] = useState(""); 
 
-  useEffect(() => {
-    const options: Intl.DateTimeFormatOptions = { 
-      weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' 
-    };
-    setCurrentDate(new Date().toLocaleDateString('en-US', options));
-  }, []);
+
+useEffect(() => {
+  const now = new Date();
+
+  setWeekday(
+    now.toLocaleDateString("en-US", { weekday: "long" })
+  );
+
+  setDate(
+    now.toLocaleDateString("en-US", {
+      year: "numeric",
+      month: "long",
+      day: "numeric",
+    })
+  );
+}, []);
 
   const toggleMobileMenu = () => {
     setMobileMenuOpen(!mobileMenuOpen);
@@ -33,8 +43,9 @@ const UserNavbar: React.FC = () => {
       {/* Breaking News Bar */}
       <div className="breaking-bar">
         <div className="breaking-container">
-          <span className="breaking-label">⚡ BREAKING</span>
-          <span className="breaking-date">{currentDate}</span>
+   
+          <span className="breaking-label">BREAKING NEWS</span>
+          
           
           <div className="ticker">
             <div className="ticker-track">
@@ -54,7 +65,12 @@ const UserNavbar: React.FC = () => {
           </div>
 
           <div className="breaking-search">
-            <div className={`search-input-wrapper ${isSearchOpen ? 'open' : ''}`}>
+
+            <span className="breaking-date">
+  {weekday}, <br />
+  {date}
+</span>
+            {/* <div className={`search-input-wrapper ${isSearchOpen ? 'open' : ''}`}>
               <input type="text" placeholder="Search news..." autoFocus={isSearchOpen} />
             </div>
             <button 
@@ -63,7 +79,7 @@ const UserNavbar: React.FC = () => {
               title="Search"
             >
               {isSearchOpen ? <X size={18} /> : <Search size={18} />}
-            </button>
+            </button> */}
           </div>
         </div>
       </div>
