@@ -1,33 +1,109 @@
-import React from "react";
+import React, { useState, useEffect } from "react";
 import "./UserNavbar.css";
-import { Search, Bell, User } from "lucide-react";
+import { Search, Bell, User, Menu, X } from "lucide-react";
+import logo from "../../../assets/Logo.png";
 
 const UserNavbar: React.FC = () => {
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [currentDate, setCurrentDate] = useState(""); 
+  const [isSearchOpen, setIsSearchOpen] = useState(false);
+
+  useEffect(() => {
+    const options: Intl.DateTimeFormatOptions = { 
+      weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' 
+    };
+    setCurrentDate(new Date().toLocaleDateString('en-US', options));
+  }, []);
+
+  const toggleMobileMenu = () => {
+    setMobileMenuOpen(!mobileMenuOpen);
+  };
+
+  const headlines = [
+    "India Passes Historic Budget Bill With Overwhelming Majority",
+    "India Wins Test Series Against Australia 3-1",
+    "Sensex Surges 800 Points As Foreign Investors Pour In Record Capital",
+    "PM Modi Meets World Leaders"
+  ];
+
   return (
-    <>
+    // The wrapper no longer changes classes on scroll
+    <div className="navbar-wrapper">
+      
+      {/* Breaking News Bar */}
+      <div className="breaking-bar">
+        <div className="breaking-container">
+          <span className="breaking-label">⚡ BREAKING</span>
+          <span className="breaking-date">{currentDate}</span>
+          
+          <div className="ticker">
+            <div className="ticker-track">
+              {headlines.map((headline, index) => (
+                <React.Fragment key={`first-${index}`}>
+                  <span className="ticker-text">{headline}</span>
+                  <span className="ticker-separator">|</span>
+                </React.Fragment>
+              ))}
+              {headlines.map((headline, index) => (
+                <React.Fragment key={`second-${index}`}>
+                  <span className="ticker-text">{headline}</span>
+                  <span className="ticker-separator">|</span>
+                </React.Fragment>
+              ))}
+            </div>
+          </div>
+
+          <div className="breaking-search">
+            <div className={`search-input-wrapper ${isSearchOpen ? 'open' : ''}`}>
+              <input type="text" placeholder="Search news..." autoFocus={isSearchOpen} />
+            </div>
+            <button 
+              className="search-toggle-btn" 
+              onClick={() => setIsSearchOpen(!isSearchOpen)}
+              title="Search"
+            >
+              {isSearchOpen ? <X size={18} /> : <Search size={18} />}
+            </button>
+          </div>
+        </div>
+      </div>
+
       {/* Top Navigation */}
       <header className="navbar">
         <div className="navbar-container">
           
-          {/* Logo */}
-          <div className="logo">
-            <span className="logo-red">LOCAL</span>
-            <span className="logo-white"> NEWZ</span>
+          <div className="navbar-left">
+            <button className="hamburger-btn" onClick={toggleMobileMenu}>
+              {mobileMenuOpen ? <X size={24} /> : <Menu size={24} />}
+            </button>
+
+            {/* Pop-out Logo */}
+            <div className="logo">
+              <a href="/">
+                <img src={logo} alt="Local Newz Logo" className="navbar-logo-img" />
+              </a>
+            </div>
+
+            <nav className="nav-links">
+              <a href="/">Home</a>
+              <a href="#">Politics</a>
+              <a href="#">Business</a>
+              <a href="#">Sports</a>
+              <a href="#">Technology</a>
+            </nav>
+
+            <div className={`hamburger-dropdown ${mobileMenuOpen ? 'open' : ''}`}>
+              <a href="/" className="mobile-link">Home</a>
+              <a href="#" className="mobile-link">Politics</a>
+              <a href="#" className="mobile-link">Business</a>
+              <a href="#" className="mobile-link">Sports</a>
+              <a href="#" className="mobile-link">Technology</a>
+              <a href="#">Entertainment</a>
+              <a href="#">Health</a>
+            </div>
           </div>
 
-          {/* Nav Links */}
-          <nav className="nav-links">
-            <a href="#">Politics</a>
-            <a href="#">Business</a>
-            <a href="#">Sports</a>
-            <a href="#">Technology</a>
-            <a href="#">Entertainment</a>
-            <a href="#">Health</a>
-          </nav>
-
-          {/* Right Side Icons */}
           <div className="nav-actions">
-            <Search size={20} />
             <Bell size={20} />
             <button className="subscribe-btn">Subscribe</button>
             <User size={20} />
@@ -36,18 +112,7 @@ const UserNavbar: React.FC = () => {
         </div>
       </header>
 
-      {/* Breaking News Bar */}
-      <div className="breaking-bar">
-        <span className="breaking-label">⚡ BREAKING</span>
-        <div className="ticker">
-          <p>
-            India Passes Historic Budget Bill With Overwhelming Majority | 
-            India Wins Test Series Against Australia 3-1 | 
-            Sensex Surges 800 Points
-          </p>
-        </div>
-      </div>
-    </>
+    </div>
   );
 };
 

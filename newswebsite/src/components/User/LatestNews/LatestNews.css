@@ -1,0 +1,180 @@
+/* ===== SECTION WRAPPER ===== */
+.latest-news-section {
+  padding: 50px 0;
+  background-color: #ffffff; /* Keeping it clean and white */
+  width: 100%;
+}
+
+.latest-news-container {
+  width: 95%;
+  max-width: 1400px;
+  margin: auto;
+}
+
+/* ===== HEADER ===== */
+.section-header {
+  margin-bottom: 30px;
+  position: relative;
+  display: inline-block; /* Makes the underline exactly as wide as the text */
+}
+
+.section-header h2 {
+  font-size: 28px;
+  font-weight: 800;
+  color: #0b1423;
+  margin: 0 0 8px 0;
+  letter-spacing: -0.5px;
+}
+
+.header-underline {
+  height: 3px;
+  width: 100%;
+  background-color: #e60000;
+}
+
+/* ===== GRID LAYOUT ===== */
+.news-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr); /* 3 columns across */
+  gap: 30px;
+}
+
+/* ===== INDIVIDUAL NEWS CARD ===== */
+.news-card {
+  display: flex;
+  flex-direction: column;
+  background: white;
+  border-radius: 12px;
+  overflow: hidden;
+  border: 1px solid #e2e8f0;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+  cursor: pointer;
+  text-decoration: none; /* In case Link adds underlining */
+}
+
+.news-card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+}
+
+/* ===== IMAGE ===== */
+.news-img-wrapper {
+   width: 100%;
+   height: 200px; /* Fixed height for uniformity */
+   overflow: hidden;
+}
+
+.news-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform 0.5s ease;
+}
+
+.news-card:hover .news-img {
+  transform: scale(1.05); /* Slight zoom on hover */
+}
+
+/* ===== TEXT CONTENT ===== */
+.news-content {
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  flex-grow: 1; /* Pushes meta to the bottom */
+}
+
+.news-category {
+  color: #e60000;
+  font-size: 11px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: 10px;
+}
+
+.news-title {
+  font-size: 18px;
+  font-weight: 800;
+  color: #0f172a;
+  margin: 0 0 10px 0;
+  line-height: 1.4;
+}
+
+.news-excerpt {
+  font-size: 14px;
+  color: #64748b;
+  line-height: 1.6;
+  margin: 0 0 20px 0;
+  display: -webkit-box;
+  -webkit-line-clamp: 2; /* Truncates after 2 lines */
+  -webkit-box-orient: vertical;  
+  overflow: hidden;
+}
+
+/* ===== META INFO (Time & Views) ===== */
+.news-meta {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: auto; /* Always sits at the bottom */
+  padding-top: 15px;
+  border-top: 1px solid #f1f5f9;
+  font-size: 13px;
+  color: #94a3b8;
+  font-weight: 500;
+}
+
+.news-meta span {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+/* ===== SHOW MORE BUTTON ===== */
+.show-more-wrapper {
+  display: flex;
+  justify-content: center;
+  margin-top: 40px;
+}
+
+.show-more-btn {
+  background-color: transparent;
+  color: #e60000;
+  border: 2px solid #e60000;
+  padding: 10px 30px;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  letter-spacing: 0.5px;
+}
+
+.show-more-btn:hover {
+  background-color: #e60000;
+  color: white;
+}
+
+/* Fix for React Router links */
+.text-decoration-none {
+    text-decoration: none !important;
+    color: inherit !important;
+}
+
+/* ===== RESPONSIVE ===== */
+@media (max-width: 1024px) {
+  .news-grid {
+    grid-template-columns: repeat(2, 1fr); /* 2 columns on tablet */
+  }
+}
+
+@media (max-width: 600px) {
+  .news-grid {
+    grid-template-columns: 1fr; /* 1 column on mobile */
+  }
+  
+  .news-img-wrapper {
+    height: 220px;
+  }
+}

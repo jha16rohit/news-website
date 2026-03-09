@@ -1,0 +1,274 @@
+/* ===== SECTION WRAPPER ===== */
+.live-coverage-section {
+  padding: 55px 0;
+  background-color: #fafafa; 
+  width: 100%;
+}
+
+.live-coverage-container {
+  width: 95%;
+  max-width: 1400px;
+  margin: auto;
+}
+
+/* ===== HEADER ===== */
+.live-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 30px;
+}
+
+.live-title-wrapper {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.live-icon {
+  color: #e60000;
+  animation: pulse-red 2s infinite;
+}
+
+@keyframes pulse-red {
+  0% { transform: scale(1); opacity: 1; }
+  50% { transform: scale(1.1); opacity: 0.7; }
+  100% { transform: scale(1); opacity: 1; }
+}
+
+.live-title-wrapper h2 {
+  font-size: 28px;
+  font-weight: 800;
+  color: #0b1423;
+  margin: 0;
+  letter-spacing: -0.5px;
+}
+
+.view-all-link {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: #e60000;
+  font-weight: 700;
+  font-size: 15px;
+  text-decoration: none;
+  transition: opacity 0.3s;
+}
+
+.view-all-link:hover {
+  opacity: 0.7;
+}
+
+/* ===== SCROLLING CARDS CONTAINER ===== */
+.live-cards-wrapper {
+  display: flex;
+  gap: 24px; 
+  overflow-x: auto;
+  scroll-behavior: auto; /* Required for perfect drag sync */
+  scroll-snap-type: none; /* Removed snap so dragging is fluid */
+  padding-bottom: 15px; 
+  
+  /* Hides default browser scrollbar */
+  -ms-overflow-style: none;  
+  scrollbar-width: none;  
+}
+
+.live-cards-wrapper::-webkit-scrollbar {
+  display: none; 
+}
+
+/* ===== INDIVIDUAL LIVE CARD ===== */
+.live-card {
+  min-width: 450px; 
+  border-radius: 10px;
+  overflow: hidden;
+  background-color: #ffffff;
+  box-shadow: 0 4px 10px -2px rgba(0, 0, 0, 0.08);
+  flex-shrink: 0;
+  border: 1px solid #f1f5f9;
+  transition: transform 0.3s ease;
+  cursor: pointer;
+  /* Prevents user from accidentally dragging the image while trying to swipe */
+  user-select: none; 
+}
+
+.live-card:hover {
+  transform: translateY(-4px);
+}
+
+.live-card-image {
+  height: 280px; 
+  background-size: cover;
+  background-position: center;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+}
+
+.live-card-image::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  height: 65%;
+  background: linear-gradient(to top, rgba(0,0,0,0.9) 0%, rgba(0,0,0,0) 100%);
+  z-index: 1;
+}
+
+.live-badge {
+  position: absolute;
+  top: 16px;
+  left: 16px;
+  background-color: #22c55e; 
+  color: white;
+  padding: 5px 12px;
+  border-radius: 4px;
+  font-size: 12px;
+  font-weight: 800;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  z-index: 2;
+  letter-spacing: 0.5px;
+}
+
+.live-dot {
+  width: 7px;
+  height: 7px;
+  background-color: white;
+  border-radius: 50%;
+  animation: blink 1.5s infinite;
+}
+
+@keyframes blink {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0; }
+}
+
+.live-card-overlay {
+  position: relative;
+  z-index: 2;
+  padding: 24px;
+}
+
+.live-card-category {
+  color: #cbd5e1;
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+  margin-bottom: 8px;
+  display: block;
+  letter-spacing: 1px;
+}
+
+.live-card-title {
+  color: white;
+  font-size: 20px; 
+  font-weight: 800;
+  margin: 0;
+  line-height: 1.35;
+}
+
+.live-card-footer {
+  padding: 16px 24px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.updates-count {
+  color: #64748b;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.update-time {
+  color: #94a3b8;
+  font-size: 13px;
+}
+
+/* ===== SMART INTERACTIVE SCROLL CONTROLS ===== */
+.live-scroll-controls {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 30px;
+  padding: 0 10px;
+}
+
+/* Arrows matching the image */
+.scroll-arrow {
+  background: none;
+  border: none;
+  color: #94a3b8; /* Light grey triangles */
+  cursor: pointer;
+  padding: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 18px; /* Size of the triangle */
+  transition: color 0.2s ease;
+}
+
+.scroll-arrow:hover:not(.disabled) {
+  color: #475569; /* Darker grey on hover */
+}
+
+.scroll-arrow.disabled {
+  opacity: 0.3;
+  cursor: not-allowed;
+}
+
+/* Track matching the image */
+.scroll-track {
+  flex-grow: 1;
+  height: 6px;
+  background-color: #f1f5f9; /* Very faint grey line */
+  border-radius: 4px;
+  margin: 0 15px;
+  position: relative;
+}
+
+/* Draggable Thumb matching the image */
+.scroll-thumb {
+  position: absolute;
+  top: -2px; /* Pulls it slightly above the track to make it thicker */
+  height: 10px; /* Thicker than the track */
+  width: 15%; /* Fixed width pill */
+  background-color: #94a3b8; /* Solid grey */
+  border-radius: 10px;
+  cursor: grab;
+  /* Remove transition here so dragging is perfectly instant */
+}
+
+.scroll-thumb:hover {
+  background-color: #64748b; /* Darkens when hovered */
+}
+
+/* When actively clicking and dragging */
+.scroll-thumb.dragging {
+  cursor: grabbing;
+  background-color: #475569; 
+}
+
+/* ===== RESPONSIVE ===== */
+@media (max-width: 1024px) {
+  .live-card { min-width: 400px; }
+  .live-card-image { height: 250px; }
+}
+
+@media (max-width: 768px) {
+  .live-card { min-width: 320px; }
+  .live-card-image { height: 220px; }
+  .live-header h2 { font-size: 24px; }
+  .live-card-title { font-size: 18px; }
+}
+
+@media (max-width: 480px) {
+  .live-card { min-width: 280px; }
+  .live-card-image { height: 200px; }
+  .live-card-title { font-size: 16px; }
+  .scroll-track, .scroll-arrow { display: none; }
+}

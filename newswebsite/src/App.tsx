@@ -1,7 +1,14 @@
 import { BrowserRouter, Routes, Route, } from "react-router-dom";
 
 /* ================= USER SIDE ================= */
+import UserLayout from "./components/User/UserLayout/UserLayout";
 import UserDashboard from "./components/User/UserDashboard/UserDashboard";
+import ArticleDetail from "./components/User/ArticalDetails/ArticalDetails";
+import LiveDetail from "./components/User/LiveDetails/LiveDetails";
+import LiveEventsPage from "./components/User/LiveEventsPage/LiveEventsPage";
+// Placeholder imports for your next pages:
+const CategoryPage = () => <div style={{padding: '100px', textAlign: 'center'}}>Category Page Placeholder</div>;
+
 
 /* ================= ADMIN SIDE ================= */
 import Login from "./components/Admin/auth/Login";
@@ -27,10 +34,17 @@ export default function App() {
     <BrowserRouter>
       <Routes>
 
-        {/* ================= USER ROUTE (DEFAULT) ================= */}
-        <Route path="/" element={<UserDashboard />} />
+        {/* ================= USER ROUTES ================= */}
+        {/* Everything inside here gets the UserNavbar and UserFooter automatically! */}
+        <Route element={<UserLayout />}>
+          <Route path="/" element={<UserDashboard />} />
+          <Route path="/category/:categoryName" element={<CategoryPage />} />
+          <Route path="/article/:articleId" element={<ArticleDetail />} />
+          <Route path="/live/:eventId" element={<LiveDetail />} />
+          <Route path="/live-events" element={<LiveEventsPage />} />
+        </Route>
 
-        {/* ================= ADMIN LOGIN (HIDDEN URL) ================= */}
+        {/* ================= ADMIN LOGIN ================= */}
         <Route path="/admin/login-xyzsft" element={<Login />} />
 
         {/* ================= ADMIN PANEL ================= */}
