@@ -1,0 +1,185 @@
+/* ===== SECTION WRAPPER ===== */
+.footer-section {
+  background-color: #0b1423; /* Dark navy matching the navbar */
+  color: #94a3b8; /* Slate gray text */
+  padding: 70px 0 20px 0;
+  width: 100%;
+}
+
+.footer-container {
+  width: 95%;
+  max-width: 1200px;
+  margin: auto;
+}
+
+/* ===== GRID LAYOUT ===== */
+.footer-grid {
+  display: grid;
+  grid-template-columns: 1.5fr 1fr 1fr 1fr; /* First column is slightly wider */
+  gap: 40px;
+  margin-bottom: 50px;
+}
+
+/* ===== COLUMN 1: BRAND ===== */
+/* ===== COLUMN 1: BRAND ===== */
+.brand-col {
+  padding-right: 20px;
+}
+
+/* Updated Image Logo */
+.footer-logo {
+  display: flex;
+  align-items: center;
+  margin-bottom: 20px;
+}
+
+.footer-logo a {
+  display: flex; /* Removes the tiny gap under links */
+}
+
+/* 👇 Controls the size of your logo in the footer */
+.footer-logo-img {
+  height: 60px; /* Adjust this number to make it bigger or smaller */
+  width: auto;
+  object-fit: contain;
+}
+
+.footer-desc {
+  font-size: 14px;
+  line-height: 1.7;
+  margin-bottom: 25px;
+}
+
+/* ... keep the rest of your social-icons CSS ... */
+
+.logo-box {
+  background-color: #e60000;
+  color: #ffffff;
+  padding: 4px 10px;
+  border-radius: 6px;
+  font-weight: 900;
+  font-size: 20px;
+  letter-spacing: 0.5px;
+}
+
+.logo-text {
+  color: #ffffff;
+  font-weight: 900;
+  font-size: 20px;
+  letter-spacing: 0.5px;
+}
+
+.footer-desc {
+  font-size: 14px;
+  line-height: 1.7;
+  margin-bottom: 25px;
+}
+
+/* Social Icons */
+.social-icons {
+  display: flex;
+  gap: 12px;
+}
+
+.social-link {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  background-color: rgba(255, 255, 255, 0.05);
+  color: #cbd5e1;
+  border-radius: 50%;
+  transition: all 0.3s ease;
+}
+
+.social-link:hover {
+  background-color: #e60000;
+  color: #ffffff;
+}
+
+/* ===== COLUMNS 2, 3, 4: LINKS ===== */
+.footer-col h3 {
+  color: #ffffff;
+  font-size: 16px;
+  font-weight: 700;
+  margin: 0 0 20px 0;
+}
+
+.footer-col ul {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.footer-col li {
+  margin-bottom: 12px;
+}
+
+.footer-col a {
+  color: #94a3b8;
+  text-decoration: none;
+  font-size: 14px;
+  transition: color 0.3s ease;
+}
+
+.footer-col a:hover {
+  color: #ffffff;
+}
+
+/* Contact Email */
+.footer-contact {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 25px;
+}
+
+.contact-icon {
+  color: #e60000;
+}
+
+.footer-contact a {
+  color: #94a3b8;
+}
+
+.footer-contact a:hover {
+  color: #ffffff;
+}
+
+/* ===== BOTTOM COPYRIGHT BAR ===== */
+.footer-bottom {
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+  padding-top: 25px;
+  text-align: center;
+}
+
+.footer-bottom p {
+  margin: 0;
+  font-size: 13px;
+  color: #64748b;
+}
+
+.heart {
+  color: #9f1239; /* Darker red matching the mockup */
+  font-size: 14px;
+}
+
+/* ===== RESPONSIVE ===== */
+@media (max-width: 1024px) {
+  .footer-grid {
+    grid-template-columns: 1fr 1fr; /* Switch to 2x2 grid on tablets */
+    gap: 40px 20px;
+  }
+}
+
+@media (max-width: 600px) {
+  .footer-grid {
+    grid-template-columns: 1fr; /* Stack into a single column on mobile */
+    gap: 30px;
+  }
+  
+  .footer-desc {
+    max-width: 100%;
+  }
+}

@@ -1,176 +1,75 @@
-import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
-import Login from "./components/auth/Login";
-import AdminLayout from "./components/AdminLayout/AdminLayout";
-import AdminDashboard from "./components/AdminDashboard/AdminDashboard";
-import CommentsPage from "./components/CommentsPage/CommentsPage";
-import AllNews from "./components/AllNews/AllNews";
-import ScheduledPosts from "./components/ScheduledPosts/ScheduledPosts";
-import BreakingNews from "./components/BreakingNews/BreakingNews";
-import TrendingNews from "./components/Trendingnews/Trendingnews";
-import FeaturedContent from "./components/Featuredcontent /Featuredcontent";
-import Categories from "./components/Categories/Categories";
-import Tags from "./components/Tags/Tags";
-import MediaLibrary from "./components/MediaLibrary/MediaLibrary";
-import AccountSettings from "./components/Accountsettings/Accountsettings";
-import SEOSettings from "./components/SEOSettings/SEOSettings";
-import Analytics from "./components/Analytics/Analytics";
+import { BrowserRouter, Routes, Route, } from "react-router-dom";
+
+/* ================= USER SIDE ================= */
+import UserLayout from "./components/User/UserLayout/UserLayout";
+import UserDashboard from "./components/User/UserDashboard/UserDashboard";
+import ArticleDetail from "./components/User/ArticalDetails/ArticalDetails";
+import LiveDetail from "./components/User/LiveDetails/LiveDetails";
+import LiveEventsPage from "./components/User/LiveEventsPage/LiveEventsPage";
+// Placeholder imports for your next pages:
+const CategoryPage = () => <div style={{padding: '100px', textAlign: 'center'}}>Category Page Placeholder</div>;
 
 
+/* ================= ADMIN SIDE ================= */
+import Login from "./components/Admin/auth/Login";
+import AdminLayout from "./components/Admin/AdminLayout/AdminLayout";
+import AdminDashboard from "./components/Admin/AdminDashboard/AdminDashboard";
+import CommentsPage from "./components/Admin/CommentsPage/CommentsPage";
+import AllNews from "./components/Admin/AllNews/AllNews";
+import ScheduledPosts from "./components/Admin/ScheduledPosts/ScheduledPosts";
+import BreakingNews from "./components/Admin/BreakingNews/BreakingNews";
+import TrendingNews from "./components/Admin/Trendingnews/Trendingnews";
+import FeaturedContent from "./components/Admin/Featuredcontent/Featuredcontent";
+import Categories from "./components/Admin/Categories/Categories";
+import Tags from "./components/Admin/Tags/Tags";
+import MediaLibrary from "./components/Admin/MediaLibrary/MediaLibrary";
+import AccountSettings from "./components/Admin/Accountsettings/Accountsettings";
+import Analytics from "./components/Admin/Analytics/Analytics";
+import CreateNewArticle from "./components/Admin/CreateNewArticle/CreateNewArticle";
+import LiveStoriesPage from "./components/Admin/Livestories/Livestories";
+import Notifications from "./components/Admin/Notifications/Notifications";
 
 export default function App() {
   return (
     <BrowserRouter>
       <Routes>
-        {/* Default redirect */}
-        <Route path="/" element={<Navigate to="/admin/login" replace />} />
 
-        {/* Login */}
-        <Route path="/admin/login" element={<Login />} />
+        {/* ================= USER ROUTES ================= */}
+        {/* Everything inside here gets the UserNavbar and UserFooter automatically! */}
+        <Route element={<UserLayout />}>
+          <Route path="/" element={<UserDashboard />} />
+          <Route path="/category/:categoryName" element={<CategoryPage />} />
+          <Route path="/article/:articleId" element={<ArticleDetail />} />
+          <Route path="/live/:eventId" element={<LiveDetail />} />
+          <Route path="/live-events" element={<LiveEventsPage />} />
+        </Route>
 
-        {/* Admin landing (Dashboard) */}
-        <Route path="/admin"  element={
-            <AdminLayout>
-              <AdminDashboard />
-            </AdminLayout>
-          }
-        />
+        {/* ================= ADMIN LOGIN ================= */}
+        <Route path="/admin/login-xyzsft" element={<Login />} />
 
-        {/* Explicit dashboard route (optional but good) */}
-        <Route
-          path="/admin/dashboard"
-          element={
-            <AdminLayout>
-              <AdminDashboard />
-            </AdminLayout>
-          }
-        />
+        {/* ================= ADMIN PANEL ================= */}
+        <Route path="/admin" element={<AdminLayout />}>
+          <Route index element={<AdminDashboard />} />
+          <Route path="dashboard" element={<AdminDashboard />} />
+          <Route path="news" element={<AllNews />} />
+          <Route path="news/create" element={<CreateNewArticle />} />
+          <Route path="breaking" element={<BreakingNews />} />
+          <Route path="trending" element={<TrendingNews />} />
+          <Route path="feature" element={<FeaturedContent />} />
+          <Route path="schedule" element={<ScheduledPosts />} />
+          <Route path="comments" element={<CommentsPage />} />
+          <Route path="categories" element={<Categories />} />
+          <Route path="tags" element={<Tags />} />
+          <Route path="medialibrary" element={<MediaLibrary />} />
+          <Route path="analytics" element={<Analytics />} />
+          <Route path="setting" element={<AccountSettings />} />
+          <Route path="live" element={<LiveStoriesPage />} />
+          <Route path="notification" element={<Notifications />} />
+        </Route>
 
-        {/* Create News */}
-        <Route
-          path="/admin/create-news"
-          element={
-            <AdminLayout>
-              <h1>Create News</h1>
-            </AdminLayout>
-          }
-        />
-
-        {/* Manage News */}
-        <Route
-          path="/admin/manage-news"
-          element={
-            <AdminLayout>
-              <h1>Manage News</h1>
-            </AdminLayout>
-          }
-        />
-        <Route
-          path="/admin/comments"
-          element={
-            <AdminLayout>
-              <CommentsPage />
-            </AdminLayout>
-          }
-        />
-        <Route
-          path="/admin/news"
-          element={
-            <AdminLayout>
-              <AllNews />
-            </AdminLayout>
-          }
-        />
-
-
-        <Route
-          path="/admin/schedule"
-          element={
-            <AdminLayout>
-              <ScheduledPosts />
-            </AdminLayout>
-          }
-        />
-
-        <Route
-          path="/admin/breaking"
-          element={
-            <AdminLayout>
-              <BreakingNews />
-            </AdminLayout>
-          }
-        />
-
-        <Route
-          path="/admin/trending"
-          element={
-            <AdminLayout>
-              <TrendingNews />
-            </AdminLayout>
-          }
-        />
-
-        <Route
-          path="/admin/feature"
-          element={
-            <AdminLayout>
-              <FeaturedContent />
-            </AdminLayout>
-          }
-        />
-        <Route
-          path="/admin/Categories"
-          element={
-            <AdminLayout>
-              <Categories />
-            </AdminLayout>
-          }
-        />
-        <Route
-          path="/admin/tags"
-          element={
-            <AdminLayout>
-              <Tags />
-            </AdminLayout>
-          }
-        />
-
-        <Route
-          path="/admin/medialibrary"
-          element={
-            <AdminLayout>
-              <MediaLibrary />
-            </AdminLayout>
-          }
-        />
-
-
-        <Route
-          path="/admin/setting"
-          element={
-            <AdminLayout>
-              <AccountSettings />
-            </AdminLayout>
-          }
-        />
-        <Route
-          path="/admin/seo"
-          element={
-            <AdminLayout>
-              <SEOSettings />
-            </AdminLayout>
-          }
-        />
-        <Route
-          path="/admin/analytics"
-          element={
-            <AdminLayout>
-              <Analytics />
-            </AdminLayout>
-          }
-        />
-
-        {/* Fallback */}
+        {/* ================= 404 ================= */}
         <Route path="*" element={<h1>Page Not Found</h1>} />
+
       </Routes>
     </BrowserRouter>
   );
