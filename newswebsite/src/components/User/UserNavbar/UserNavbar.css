@@ -4,8 +4,6 @@
   display: flex;
   flex-direction: column;
   background-color: #ffffff; 
-  
-  /* 👇 This keeps the ENTIRE navbar perfectly fixed at the top */
   position: sticky;
   top: 0;
   z-index: 1000;
@@ -13,14 +11,16 @@
 
 /* ===== BREAKING BAR ===== */
 .breaking-bar {
-  /* background-color: #e60000; */
+  background-color: #ffffff;
   color: black;
-  padding: 8px 0;
+  height: 40px; /* Fixed height for precise logo alignment */
+  display: flex;
+  align-items: center;
   width: 100%;
   cursor: default; 
   position: relative;
   z-index: 90; 
-
+  border-bottom: 1px solid #f1f5f9; /* Subtle divider if needed */
 }
 
 .breaking-container {
@@ -32,25 +32,22 @@
   margin: auto;
   display: flex;
   align-items: center;
-  padding-left: 180px; 
+  padding-left: 170px; /* Leaves perfect space for the logo */
 }
 
 .breaking-label {
-  /* background: rgb(241, 7, 7); */
-  color: red;
-  font-weight: 700;
-  font-size: 12px;
+  color: #e60000; /* Red like the image */
+  font-weight: 800;
+  font-size: 16px;
   white-space: nowrap;
-  font-size: 20px;
 }
 
 .breaking-date {
-  font-size: 13px;
+  font-size: 12px;
   font-weight: 500;
-  color: black;
+  color: #0b1423;
   white-space: nowrap;
-  padding-right: 15px;
-  border-right: 1px solid rgba(255, 255, 255, 0.3);
+  line-height: 1.2;
 }
 
 /* ===== SEAMLESS SCROLLING TICKER ===== */
@@ -85,7 +82,7 @@
 
 .ticker-separator {
   margin: 0 15px;
-  color: rgba(255, 255, 255, 0.5); 
+  color: #cbd5e1; 
 }
 
 /* ===== BREAKING SEARCH BAR ===== */
@@ -95,44 +92,6 @@
   margin-left: 15px;
 }
 
-.search-input-wrapper {
-  width: 0;
-  opacity: 0;
-  overflow: hidden;
-  transition: width 0.3s ease, opacity 0.3s ease, padding 0.3s ease;
-}
-
-.search-input-wrapper.open {
-  width: 200px;
-  opacity: 1;
-  padding-right: 10px;
-}
-
-.search-input-wrapper input {
-  width: 100%;
-  padding: 4px 10px;
-  border-radius: 4px;
-  border: none;
-  outline: none;
-  font-size: 13px;
-  color: #0b1423;
-}
-
-.search-toggle-btn {
-  background: none;
-  border: none;
-  color: white;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  padding: 4px;
-  transition: opacity 0.2s ease;
-}
-
-.search-toggle-btn:hover {
-  opacity: 0.7;
-}
-
 /* ===== MAIN NAVBAR ===== */
 .navbar {
   background-color: #0b1423; 
@@ -140,8 +99,6 @@
   color: white;
   position: relative;
   z-index: 100;
-  position: relative;
-  top: -2px;
 }
 
 .navbar-container {
@@ -159,45 +116,96 @@
   display: flex;
   align-items: center;
   gap: 30px; 
+  height: 100%; /* Forces wrapper to span full height */
 }
 
 /* ===== POP-OUT LOGO ===== */
 .logo {
   display: flex;
-  align-items: center;
   position: relative;
   z-index: 150; 
+  width: 90px; /* Width of your red box */
+  height: 55px; /* 👇 LOCKS height to match navbar exactly */
 }
 
 .logo a {
   display: flex; 
+  width: 100%;
+  height: 100%;
 }
 
 .navbar-logo-img {
-  height: 100px; 
-  width: auto;
+  height: 95px; /* Exactly covers 40px top bar + 55px bottom bar */
+  width: 100%;
   object-fit: contain;
-  filter: drop-shadow(0px 4px 6px rgba(0,0,0,0.3)); 
-  position: relative;
-  top: -23px;
+  background-color: #e60000; 
+  padding: 10px; 
+  
+  position: absolute;
+  top: -40px; /* 👇 Now reaches the absolute ceiling perfectly! */
+  left: 0;
+  
+  box-shadow: 2px 0px 8px rgba(0,0,0,0.15); 
+  border-bottom-left-radius: 4px; /* Optional: smooth bottom corners */
+  border-bottom-right-radius: 4px;
 }
 
-/* ===== NAV LINKS ===== */
+/* ===== NAV LINKS (Clean Rectangle Design) ===== */
 .nav-links {
   display: flex;
-  gap: 28px;
+  align-items: center;
+  height: 100%;
+  gap: 8px; 
 }
 
 .nav-links a {
-  color: #e2e8f0;
+  color: #94a3b8;
   text-decoration: none;
-  font-size: 15px;
-  font-weight: 500;
-  transition: 0.3s ease;
+  font-size: 14px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  padding: 10px 20px;
+  transition: all 0.3s ease;
+  
+  /* These reset any previous vertical or slanted styles */
+  writing-mode: horizontal-tb; 
+  transform: none;
+  height: auto;
+  width: auto;
 }
 
 .nav-links a:hover {
   color: #ffffff;
+  background-color: rgba(255, 255, 255, 0.1); /* Subtle highlight on hover */
+  border-radius: 4px;
+}
+
+/* ===== THE SOLID RECTANGLE ACTIVE STATE ===== */
+.nav-links a.active {
+  color: #ffffff;
+  font-weight: 800;
+  background-color: #e60000; /* Solid signature red */
+  border-radius: 2px; /* Tiny 2px rounding so it's sharp but not harsh */
+  position: relative;
+  top: 9px; /* Slightly lifts the active link for a subtle 3D effect */
+  /* Adds a very subtle, clean drop shadow underneath the rectangle */
+  box-shadow: 2px 4px 8px rgba(0, 0, 0, 0.25); 
+}
+
+/* This disables the slanted shapes and ribbons from previous designs */
+.nav-links a::before,
+.nav-links a::after {
+  display: none !important; 
+}
+
+/* Mobile Menu Active State Fix (Kept simple for the slide-out drawer) */
+.hamburger-dropdown a.active {
+  color: #ffffff;
+  font-weight: 700;
+  border-left: 3px solid #e60000;
+  padding-left: 17px; 
+  background-color: rgba(243, 211, 211, 0.05); 
 }
 
 /* ===== RIGHT SIDE ACTIONS ===== */
@@ -207,13 +215,14 @@
   gap: 22px;
 }
 
-.nav-actions svg {
+/* Restores your original hover effects for the Bell and User icons */
+.nav-actions > svg {
   cursor: pointer;
   color: #e2e8f0;
   transition: 0.3s;
 }
 
-.nav-actions svg:hover {
+.nav-actions > svg:hover {
   color: white;
 }
 
@@ -233,6 +242,131 @@
   background-color: #cc0000;
 }
 
+/* Fix for the SVG hover states since the Bell is now inside a wrapper */
+.nav-actions svg {
+  cursor: pointer;
+  color: #ffffff;
+  transition: 0.3s;
+}
+
+.nav-actions svg:hover {
+  color: white;
+}
+
+/* ===== NOTIFICATION BELL ===== */
+.notification-wrapper {
+  position: relative; /* Acts as the anchor for the dot */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+
+.notification-dot {
+  position: absolute;
+  top: -2px; /* Pulls it slightly above the bell */
+  right: -2px; /* Pulls it slightly to the right of the bell */
+  width: 10px;
+  height: 10px;
+  background-color: #e60000; /* Signature red */
+  border-radius: 50%; /* Makes it a perfect circle */
+  border: 2px solid #0b1423; /* Matches the navbar background to create a cutout effect */
+  z-index: 2;
+}
+
+/* ===== EXPANDING SEARCH BAR ===== */
+.search-container {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px; /* 👇 This fixed width stops the Bell from being pushed! */
+  height: 20px;
+}
+
+.open-search-btn {
+  background: none;
+  border: none;
+  color: #c4daf7;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  padding: 0;
+  transition: 0.3s;
+}
+
+.open-search-btn:hover {
+  color: rgb(5, 5, 5);
+}
+
+.search-bar-expandable {
+  position: absolute;
+  right: 0; /* Expands smoothly to the left */
+  top: 50%;
+  transform: translateY(-50%);
+  width: 0;
+  opacity: 0;
+  overflow: hidden;
+  transition: width 0.3s ease, opacity 0.3s ease;
+  z-index: 10;
+  display: flex;
+  align-items: center;
+}
+
+.search-bar-expandable.open {
+  width: 240px; 
+  opacity: 1;
+}
+
+.search-bar-expandable input {
+  width: 100%;
+  padding: 8px 36px 8px 16px; /* 👇 The 36px right padding makes room for the X! */
+  border-radius: 20px; 
+  border: 1px solid #334155;
+  background-color: #ffffff; 
+  color: rgb(0, 0, 0);
+  outline: none;
+  font-size: 14px;
+  transition: border-color 0.3s ease;
+}
+
+
+.search-bar-expandable input::placeholder {
+  color: #94a3b8;
+}
+
+/* 👇 Places the X securely inside the input box */
+.close-search-btn {
+  position: absolute;
+  right: 12px; 
+  background: none;
+  border: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+}
+
+/* 👇 This physically forces the SVG icon itself to be black */
+.close-search-btn svg {
+  color: #000000 !important; 
+  transition: color 0.2s;
+}
+
+/* Turns the X a cool red when you hover over it */
+.close-search-btn:hover svg {
+  color: #e60000 !important; 
+}
+
+/* Adjust mobile search width so it doesn't overflow small screens */
+@media (max-width: 768px) {
+  .search-bar-expandable.open { width: 180px; }
+}
+@media (max-width: 480px) {
+  .search-bar-expandable.open { width: 140px; }
+}
+
 /* ===== HAMBURGER BUTTON ===== */
 .hamburger-btn {
   display: block; 
@@ -241,48 +375,89 @@
   color: white;
   cursor: pointer;
   padding: 4px;
+  
+  /* 👇 Added these so the "X" stays floating on top of the drawer! */
+  position: relative; 
+  z-index: 210;       
 }
 
-/* ===== HAMBURGER DROPDOWN ===== */
-.hamburger-dropdown {
-  position: absolute;
-  top: 100%; 
+/* ===== MENU OVERLAY (Click outside to close) ===== */
+.menu-overlay {
+  position: fixed;
+  top: 0;
   left: 0;
+  width: 100vw;
+  height: 100vh;
+  background-color: rgba(0, 0, 0, 0.5); /* Dims the rest of the page */
+  z-index: 190; /* Sits exactly behind the side drawer (200) */
+  opacity: 0; /* Invisible by default */
+  pointer-events: none; /* Allows you to click things underneath when closed */
+  transition: opacity 0.3s ease;
+}
+
+/* When the menu is open, the overlay appears and becomes clickable */
+.menu-overlay.open {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+/* ===== HAMBURGER DROPDOWN (Now a Full Side Drawer!) ===== */
+.hamburger-dropdown {
+  position: fixed; /* 👇 Changed to fixed so it anchors to the whole screen */
+  top: 0; /* 👇 Starts at the absolute top edge */
+  left: -300px; 
   background-color: #0b1423;
   display: flex;
   flex-direction: column;
-  width: 220px;
-  max-height: 0;
-  overflow: hidden;
-  transition: max-height 0.3s ease, padding 0.3s ease;
-  z-index: 99;
-  border-bottom-right-radius: 8px;
+  width: 260px; 
+  height: 100vh; 
+  overflow-y: auto; 
+  transition: left 0.3s ease; 
+  
+  /* 👇 High z-index covers the white breaking bar (90) and logo (150) */
+  z-index: 200; 
+  max-height: none; 
 }
 
+/* When the menu button is clicked */
 .hamburger-dropdown.open {
-  max-height: 500px;
-  padding: 10px 20px;
-  border-bottom: 2px solid #e60000;
-  border-right: 2px solid #e60000;
-  box-shadow: 4px 4px 10px rgba(0,0,0,0.5);
+  left: 0; 
+  /* 👇 Added 80px top padding so your links start below the "X" button */
+  padding: 80px 20px 20px 20px; 
+  box-shadow: 4px 0 15px rgba(0,0,0,0.4); 
 }
 
+/* Sidebar Links */
 .hamburger-dropdown a {
   color: #e2e8f0;
   text-decoration: none;
   font-size: 15px;
   font-weight: 500;
-  padding: 12px 0;
+  padding: 14px 0; 
   border-bottom: 1px solid #1e293b;
   transition: 0.3s ease;
 }
 
 .hamburger-dropdown a:hover {
   color: #ffffff;
+  padding-left: 6px; 
 }
 
-.hamburger-dropdown .mobile-link {
-  display: none;
+/* Sidebar Active Page 
+.hamburger-dropdown a.active {
+  color: #ffffff;
+  font-weight: 700;
+  border-left: 3px solid #e60000;
+  padding-left: 17px; 
+  background-color: rgba(230, 0, 0, 0.05); 
+}*/
+
+/* Subtle line divider */
+.dropdown-divider {
+  height: 1px;
+  background-color: #1e293b; 
+  margin: 12px 0; 
+  width: 100%;
 }
 
 /* ===== RESPONSIVE ===== */
@@ -301,18 +476,24 @@
 
 @media (max-width: 768px) {
   .navbar { height: 50px; } 
-  .navbar-logo-img { height: 75px; } 
+  
+  /* 👇 Update logo container and image for tablet */
+  .logo { height: 50px; width: 95px; } 
+  .navbar-logo-img { height: 90px; top: -40px; } 
   
   .nav-actions { gap: 12px; }
   .subscribe-btn { padding: 6px 14px; font-size: 13px; }
-  .breaking-label { font-size: 11px; padding: 4px 8px; }
+  .breaking-label { font-size: 13px; }
 
-  .breaking-container { gap: 10px; padding-left: 130px; }
+  .breaking-container { gap: 10px; padding-left: 120px; }
 }
 
 @media (max-width: 480px) {
   .navbar { height: 45px; } 
-  .navbar-logo-img { height: 65px; } 
+  
+  /* 👇 Update logo container and image for mobile */
+  .logo { height: 45px; width: 85px; } 
+  .navbar-logo-img { height: 85px; top: -40px; } 
   
   .nav-actions { gap: 8px; }
   .subscribe-btn { display: none; }
@@ -321,5 +502,4 @@
   .breaking-date { display: none; }
 
   .breaking-container { padding-left: 100px; }
-  .search-input-wrapper.open { width: 140px; }
 }

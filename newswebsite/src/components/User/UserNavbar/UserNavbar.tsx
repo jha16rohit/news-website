@@ -1,29 +1,35 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import "./UserNavbar.css";
-import { Bell, User, Menu, X } from "lucide-react";
+import { NavLink } from "react-router-dom";
+import { Bell, User, Menu, X, Search } from "lucide-react"; 
 import logo from "../../../assets/Logo.png";
 
 const UserNavbar: React.FC = () => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [isSearchOpen, setIsSearchOpen] = useState(false); 
+  
   const [weekday, setWeekday] = useState("");
-const [date, setDate] = useState(""); 
+  const [date, setDate] = useState(""); 
 
+  // 👇 Added a ref to control the search input focus
+  const searchInputRef = useRef<HTMLInputElement>(null);
 
-useEffect(() => {
-  const now = new Date();
-
-  setWeekday(
-    now.toLocaleDateString("en-US", { weekday: "long" })
-  );
-
-  setDate(
-    now.toLocaleDateString("en-US", {
+  useEffect(() => {
+    const now = new Date();
+    setWeekday(now.toLocaleDateString("en-US", { weekday: "long" }));
+    setDate(now.toLocaleDateString("en-US", {
       year: "numeric",
       month: "long",
       day: "numeric",
-    })
-  );
-}, []);
+    }));
+  }, []);
+
+  // 👇 Effect to automatically focus the input when the search bar opens
+  useEffect(() => {
+    if (isSearchOpen && searchInputRef.current) {
+      searchInputRef.current.focus();
+    }
+  }, [isSearchOpen]);
 
   const toggleMobileMenu = () => {
     setMobileMenuOpen(!mobileMenuOpen);
@@ -37,15 +43,12 @@ useEffect(() => {
   ];
 
   return (
-    // The wrapper no longer changes classes on scroll
     <div className="navbar-wrapper">
       
       {/* Breaking News Bar */}
       <div className="breaking-bar">
         <div className="breaking-container">
-   
           <span className="breaking-label">BREAKING NEWS</span>
-          
           
           <div className="ticker">
             <div className="ticker-track">
@@ -65,21 +68,10 @@ useEffect(() => {
           </div>
 
           <div className="breaking-search">
-
             <span className="breaking-date">
-  {weekday}, <br />
-  {date}
-</span>
-            {/* <div className={`search-input-wrapper ${isSearchOpen ? 'open' : ''}`}>
-              <input type="text" placeholder="Search news..." autoFocus={isSearchOpen} />
-            </div>
-            <button 
-              className="search-toggle-btn" 
-              onClick={() => setIsSearchOpen(!isSearchOpen)}
-              title="Search"
-            >
-              {isSearchOpen ? <X size={18} /> : <Search size={18} />}
-            </button> */}
+              {weekday}, <br />
+              {date}
+            </span>
           </div>
         </div>
       </div>
@@ -93,36 +85,90 @@ useEffect(() => {
               {mobileMenuOpen ? <X size={24} /> : <Menu size={24} />}
             </button>
 
-            {/* Pop-out Logo */}
-            <div className="logo">
-              <a href="/">
-                <img src={logo} alt="Local Newz Logo" className="navbar-logo-img" />
-              </a>
-            </div>
+            <div 
+              className={`menu-overlay ${mobileMenuOpen ? 'open' : ''}`} 
+              onClick={() => setMobileMenuOpen(false)}
+            ></div>
 
-            <nav className="nav-links">
-              <a href="/">Home</a>
-              <a href="#">Politics</a>
-              <a href="#">Business</a>
-              <a href="#">Sports</a>
-              <a href="#">Technology</a>
-            </nav>
+            {/* Locked Pop-out Logo */}
+          <div className="logo">
+            <NavLink to="/">
+              <img src={logo} alt="Local Newz Logo" className="navbar-logo-img" />
+            </NavLink>
+          </div>
 
+          {/* 👇 2. Replace <a> tags with <NavLink to="..."> */}
+          <nav className="nav-links">
+            <NavLink to="/">Home</NavLink>
+            <NavLink to="/category/politics">Politics</NavLink>
+            <NavLink to="/category/business">Business</NavLink>
+            <NavLink to="/category/sports">Sports</NavLink>
+            <NavLink to="/category/technology">Technology</NavLink>
+              {/* Extra categories that don't fit on the main bar */}
+          </nav>
+
+          {/* 👇 Do the same for your mobile menu! */}
+          {/* The Hamburger Menu Dropdown */}
             <div className={`hamburger-dropdown ${mobileMenuOpen ? 'open' : ''}`}>
-              <a href="/" className="mobile-link">Home</a>
-              <a href="#" className="mobile-link">Politics</a>
-              <a href="#" className="mobile-link">Business</a>
-              <a href="#" className="mobile-link">Sports</a>
-              <a href="#" className="mobile-link">Technology</a>
-              <a href="#">Entertainment</a>
-              <a href="#">Health</a>
+              {/* These show up on mobile to replace the main navbar */}
+              <NavLink to="/" className="mobile-link">Home</NavLink>
+              <NavLink to="/category/politics" className="mobile-link">Politics</NavLink>
+              <NavLink to="/category/business" className="mobile-link">Business</NavLink>
+              <NavLink to="/category/sports" className="mobile-link">Sports</NavLink>
+              <NavLink to="/category/technology" className="mobile-link">Technology</NavLink>
+              
+              {/* Extra categories that don't fit on the main bar */}
+              <NavLink to="/category/entertainment">Entertainment</NavLink>
+              <NavLink to="/category/health">Health</NavLink>
+              <NavLink to="/category/world">World</NavLink>
+
+              {/* 👇 Added a visual divider */}
+              <div className="dropdown-divider"></div>
+
+              {/* 👇 Added your new Company pages here! */}
+              <NavLink to="/about">About Us</NavLink>
+              <NavLink to="/contact">Contact Us</NavLink>
+              <NavLink to="/privacy-policy">Privacy Policy</NavLink>
             </div>
           </div>
 
+          {/* Right Side Actions */}
           <div className="nav-actions">
-            <Bell size={20} />
+            
+            <div className="search-container">
+              {/* This is the Search icon you click to open */}
+              <button 
+                className="open-search-btn" 
+                onClick={() => setIsSearchOpen(true)}
+                style={{ opacity: isSearchOpen ? 0 : 1, pointerEvents: isSearchOpen ? 'none' : 'auto' }}
+              >
+                <Search size={20} />
+              </button>
+
+              {/* This is the expanding input with the X securely inside it */}
+              <div className={`search-bar-expandable ${isSearchOpen ? 'open' : ''}`}>
+                <input 
+                  type="text" 
+                  placeholder="Search news..." 
+                  ref={searchInputRef} 
+                />
+                <button 
+                  className="close-search-btn" 
+                  onClick={() => setIsSearchOpen(false)}
+                >
+                  <X size={18} />
+                </button>
+              </div>
+            </div>
+
+            {/* Restored your Bell and User icons exactly as they were! */}
+            <div className="notification-wrapper">
+              <Bell size={20} />
+              <span className="notification-dot"></span>
+            </div>
             <button className="subscribe-btn">Subscribe</button>
             <User size={20} />
+            
           </div>
 
         </div>
