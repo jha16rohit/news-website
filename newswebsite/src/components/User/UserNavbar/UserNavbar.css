@@ -159,7 +159,7 @@
 }
 
 .nav-links a {
-  color: #94a3b8;
+  color: #ffffff;
   text-decoration: none;
   font-size: 14px;
   font-weight: 600;
@@ -375,90 +375,55 @@
   color: white;
   cursor: pointer;
   padding: 4px;
-  
-  /* 👇 Added these so the "X" stays floating on top of the drawer! */
-  position: relative; 
-  z-index: 210;       
+  transition: opacity 0.3s ease; /* Fades out smoothly */
 }
 
-/* ===== MENU OVERLAY (Click outside to close) ===== */
+/* ===== MENU OVERLAY ===== */
 .menu-overlay {
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100vw;
-  height: 100vh;
-  background-color: rgba(0, 0, 0, 0.5); /* Dims the rest of the page */
-  z-index: 190; /* Sits exactly behind the side drawer (200) */
-  opacity: 0; /* Invisible by default */
-  pointer-events: none; /* Allows you to click things underneath when closed */
-  transition: opacity 0.3s ease;
+  position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
+  background-color: rgba(0, 0, 0, 0.5); 
+  z-index: 190; opacity: 0; pointer-events: none; transition: opacity 0.3s ease;
 }
+.menu-overlay.open { opacity: 1; pointer-events: auto; }
 
-/* When the menu is open, the overlay appears and becomes clickable */
-.menu-overlay.open {
-  opacity: 1;
-  pointer-events: auto;
-}
-
-/* ===== HAMBURGER DROPDOWN (Now a Full Side Drawer!) ===== */
+/* ===== HAMBURGER DROPDOWN (Side Drawer) ===== */
 .hamburger-dropdown {
-  position: fixed; /* 👇 Changed to fixed so it anchors to the whole screen */
-  top: 0; /* 👇 Starts at the absolute top edge */
-  left: -300px; 
-  background-color: #0b1423;
-  display: flex;
-  flex-direction: column;
-  width: 260px; 
-  height: 100vh; 
-  overflow-y: auto; 
-  transition: left 0.3s ease; 
-  
-  /* 👇 High z-index covers the white breaking bar (90) and logo (150) */
-  z-index: 200; 
-  max-height: none; 
+  position: fixed; top: 0; left: -300px; 
+  background-color: #0b1423; display: flex; flex-direction: column;
+  width: 260px; height: 100vh; overflow-y: auto; transition: left 0.3s ease; 
+  z-index: 200; max-height: none;
 }
 
-/* When the menu button is clicked */
 .hamburger-dropdown.open {
   left: 0; 
-  /* 👇 Added 80px top padding so your links start below the "X" button */
-  padding: 80px 20px 20px 20px; 
+  padding: 70px 20px 20px 20px; /* Leaves 70px gap at the top so links don't hide behind the X */
   box-shadow: 4px 0 15px rgba(0,0,0,0.4); 
 }
 
 /* Sidebar Links */
 .hamburger-dropdown a {
-  color: #e2e8f0;
-  text-decoration: none;
-  font-size: 15px;
-  font-weight: 500;
-  padding: 14px 0; 
-  border-bottom: 1px solid #1e293b;
-  transition: 0.3s ease;
+  color: #e2e8f0; text-decoration: none; font-size: 15px; font-weight: 500;
+  padding: 14px 0; border-bottom: 1px solid #1e293b; transition: 0.3s ease;
 }
-
-.hamburger-dropdown a:hover {
-  color: #ffffff;
-  padding-left: 6px; 
-}
-
-/* Sidebar Active Page 
+.hamburger-dropdown a:hover { color: #ffffff; padding-left: 6px; }
 .hamburger-dropdown a.active {
-  color: #ffffff;
-  font-weight: 700;
-  border-left: 3px solid #e60000;
-  padding-left: 17px; 
-  background-color: rgba(230, 0, 0, 0.05); 
-}*/
-
-/* Subtle line divider */
-.dropdown-divider {
-  height: 1px;
-  background-color: #1e293b; 
-  margin: 12px 0; 
-  width: 100%;
+  color: #ffffff; font-weight: 700; border-left: 3px solid #e60000;
+  padding-left: 17px; background-color: rgba(230, 0, 0, 0.05); 
 }
+
+/* 👇 The "X" Button - Pinned to the top right of the drawer! */
+.close-drawer-btn {
+  position: absolute; 
+  top: 15px; 
+  right: 15px;
+  background: none; border: none; color: #94a3b8; cursor: pointer;
+  display: flex; align-items: center; justify-content: center; padding: 5px;
+  transition: color 0.3s ease; z-index: 201;
+}
+.close-drawer-btn:hover { color: #ffffff; }
+
+/* Divider */
+.dropdown-divider { height: 1px; background-color: #1e293b; margin: 12px 0; width: 100%; }
 
 /* ===== RESPONSIVE ===== */
 @media (max-width: 1024px) {
