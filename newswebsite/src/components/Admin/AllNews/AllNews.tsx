@@ -1,318 +1,124 @@
 import React, { useState, useRef, useEffect } from "react";
 import "./AllNews.css";
+import { useNews } from "../NewsStore/NewsStore";
 import {
-  Search,
-  Plus,
-  Flame,
-  Star,
-  Video,
-  Image as ImageIcon,
-  Radio,
-  X,
-  Eye,
-  Edit,
-  ExternalLink,
-  Trash2,
-  Zap,
-  MoreVertical,
+  Search, Flame, Star, Video, Image as ImageIcon, Radio, X,
+  Edit, ExternalLink, Trash2, Zap, MoreVertical, Pin, GripVertical,
 } from "lucide-react";
 
-/* ================= DATA ================= */
-const newsList = [
-  {
-    id: 1,
-    title: "Parliament Session: Key Budget Amendments Passed...",
-    subtitle: "Budget Amendments Passed",
-    category: "Breaking News",
-    authorFirst: "Priya",
-    authorLast: "Sharma",
-    status: "Published",
-    statusType: "published",
-    priority: "High",
-    priorityType: "high",
-    published: "15 min ago",
-    views: "145K",
-    tag: "Breaking",
-    tagType: "breaking",
-    leftBorder: "breaking-left",
-    isTopStory: true,
-    isPinned: true,
-  },
-  {
-    id: 2,
-    title: "Stock Markets Hit Record High: Sensex Crosses 85,000...",
-    subtitle: "Sensex Crosses 85K",
-    category: "Standard Article",
-    authorFirst: "Rahul",
-    authorLast: "Verma",
-    status: "Published",
-    statusType: "published",
-    priority: "High",
-    priorityType: "high",
-    published: "42 min ago",
-    views: "89K",
-    isTopStory: false,
-    isPinned: false,
-  },
-  {
-    id: 3,
-    title: "Exclusive: Inside the Tech Startup That's Revolutionizing...",
-    subtitle: "Healthcare Tech Revolution",
-    category: "Exclusive Story",
-    authorFirst: "Neha",
-    authorLast: "Gupta",
-    status: "Published",
-    statusType: "published",
-    priority: "Medium",
-    priorityType: "medium",
-    published: "1 hr ago",
-    views: "56K",
-    tag: "Exclusive",
-    tagType: "exclusive",
-    leftBorder: "exclusive-left",
-    isTopStory: false,
-    isPinned: false,
-  },
-  {
-    id: 4,
-    title: "Opinion: Why India's Digital Infrastructure Needs a Rethink",
-    subtitle: "Digital Infrastructure Opinion",
-    category: "Opinion / Editorial",
-    authorFirst: "Dr. Amit",
-    authorLast: "Kumar",
-    status: "Draft",
-    statusType: "draft",
-    priority: "Normal",
-    priorityType: "normal",
-    published: "-",
-    views: "-",
-    tag: "Opinion",
-    tagType: "opinion",
-    isTopStory: false,
-    isPinned: false,
-  },
-  {
-    id: 5,
-    title: "Weather Alert: IMD Issues Orange Warning for Multiple States",
-    subtitle: "Weather Orange Alert",
-    category: "Standard Article",
-    authorFirst: "Meera",
-    authorLast: "Singh",
-    status: "Scheduled",
-    statusType: "scheduled",
-    priority: "Medium",
-    priorityType: "medium",
-    published: "2:00 PM",
-    views: "-",
-    isTopStory: false,
-    isPinned: false,
-  },
-  {
-    id: 6,
-    title: "Sports: India vs Australia Test Match Day 3 – Live Updates",
-    subtitle: "Ind vs Aus Live",
-    category: "Live Updates",
-    authorFirst: "Vikram",
-    authorLast: "Patel",
-    status: "Published",
-    statusType: "published",
-    priority: "High",
-    priorityType: "high",
-    published: "Live",
-    views: "234K",
-    tag: "Live",
-    tagType: "live",
-    leftBorder: "live-left",
-    isTopStory: false,
-    isPinned: false,
-  },
-  {
-    id: 7,
-    title: "Entertainment: Bollywood's Biggest Film of the Year Breaks Records",
-    subtitle: "Bollywood Box Office Record",
-    category: "Standard Article",
-    authorFirst: "Karan",
-    authorLast: "Mehta",
-    status: "Published",
-    statusType: "published",
-    priority: "Normal",
-    priorityType: "normal",
-    published: "3 hrs ago",
-    views: "78K",
-    isTopStory: false,
-    isPinned: false,
-  },
-  {
-    id: 8,
-    title: "Video Story: Inside India's New High-Speed Rail Project",
-    subtitle: "Infrastructure Video Report",
-    category: "Video Story",
-    authorFirst: "Ankit",
-    authorLast: "Jain",
-    status: "Published",
-    statusType: "published",
-    priority: "Medium",
-    priorityType: "medium",
-    published: "5 hrs ago",
-    views: "61K",
-    isTopStory: false,
-    isPinned: false,
-  },
-  {
-    id: 9,
-    title: "Photo Gallery: Stunning Images from Chandrayaan Mission",
-    subtitle: "ISRO Space Gallery",
-    category: "Photo Gallery",
-    authorFirst: "Riya",
-    authorLast: "Malhotra",
-    status: "Published",
-    statusType: "published",
-    priority: "Normal",
-    priorityType: "normal",
-    published: "Yesterday",
-    views: "102K",
-    isTopStory: false,
-    isPinned: false,
-  },
-  {
-    id: 10,
-    title: "Breaking: Supreme Court Delivers Landmark Verdict Today",
-    subtitle: "Historic Court Decision",
-    category: "Breaking News",
-    authorFirst: "Suresh",
-    authorLast: "Iyer",
-    status: "Published",
-    statusType: "published",
-    priority: "High",
-    priorityType: "high",
-    published: "5 min ago",
-    views: "198K",
-    tag: "Breaking",
-    tagType: "breaking",
-    leftBorder: "breaking-left",
-    isTopStory: false,
-    isPinned: false,
-  },
-];
-
-/* ================= TABS ================= */
 const articleTypes = [
-  { key: "standard", label: "Standard Article" },
-  { key: "breaking", label: "Breaking News" },
-  { key: "exclusive", label: "Exclusive Story" },
-  { key: "opinion", label: "Opinion / Editorial" },
-  { key: "live", label: "Live Updates" },
-  { key: "video", label: "Video Story" },
-  { key: "photo", label: "Photo Gallery" },
+  { key: "all",       label: "All" },
+  { key: "standard",  label: "Standard Article" },
+  { key: "breaking",  label: "Breaking News",       icon: <Flame size={13} /> },
+  { key: "exclusive", label: "Exclusive Story",     icon: <Star size={13} /> },
+  { key: "opinion",   label: "Opinion / Editorial" },
+  { key: "live",      label: "Live Updates",        icon: <Radio size={13} /> },
+  { key: "video",     label: "Video Story",         icon: <Video size={13} /> },
+  { key: "photo",     label: "Photo Gallery",       icon: <ImageIcon size={13} /> },
 ];
 
-const ITEMS_PER_PAGE = 7;
-const TOTAL_ARTICLES = 156;
+const CATEGORY_MAP: Record<string, string> = {
+  standard:  "Standard Article",
+  breaking:  "Breaking News",
+  exclusive: "Exclusive Story",
+  opinion:   "Opinion / Editorial",
+  live:      "Live Updates",
+  video:     "Video Story",
+  photo:     "Photo Gallery",
+};
 
 const AllNews: React.FC = () => {
-  const [activeType, setActiveType] = useState("standard");
-  const [currentPage, setCurrentPage] = useState(1);
+  const { articles, setArticles, updateArticle, deleteArticle } = useNews();
+  const [activeType, setActiveType] = useState("all");
+  const [search, setSearch] = useState("");
   const [selectedItems, setSelectedItems] = useState<Set<number>>(new Set());
   const [openDropdown, setOpenDropdown] = useState<number | null>(null);
-  const [newsData, setNewsData] = useState(newsList);
+  const [deleteModal, setDeleteModal] = useState<number | null>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
-  const start = (currentPage - 1) * ITEMS_PER_PAGE + 1;
-  const end = Math.min(currentPage * ITEMS_PER_PAGE, TOTAL_ARTICLES);
+  // Drag state
+  const dragIndex = useRef<number | null>(null);
+  const dragOverIndex = useRef<number | null>(null);
+  const [draggingId, setDraggingId] = useState<number | null>(null);
+  const [dragOverId, setDragOverId] = useState<number | null>(null);
 
-  const currentPageItems = newsData.slice(
-    (currentPage - 1) * ITEMS_PER_PAGE,
-    currentPage * ITEMS_PER_PAGE
-  );
-
-  const currentPageIds = currentPageItems.map((item) => item.id);
-  const isAllSelected = currentPageIds.every((id) => selectedItems.has(id));
-  const isSomeSelected = currentPageIds.some((id) => selectedItems.has(id));
-
-  // Close dropdown when clicking outside
   useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+    const handler = (e: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node))
         setOpenDropdown(null);
-      }
     };
-
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
   }, []);
 
-  const handleSelectAll = () => {
-    if (isAllSelected) {
-      setSelectedItems((prev) => {
-        const newSet = new Set(prev);
-        currentPageIds.forEach((id) => newSet.delete(id));
-        return newSet;
-      });
-    } else {
-      setSelectedItems((prev) => {
-        const newSet = new Set(prev);
-        currentPageIds.forEach((id) => newSet.add(id));
-        return newSet;
-      });
+  // Filter
+  const filtered = articles.filter((a) => {
+    const matchType = activeType === "all" || a.category === CATEGORY_MAP[activeType];
+    const matchSearch = search === "" ||
+      a.title.toLowerCase().includes(search.toLowerCase()) ||
+      a.authorFirst.toLowerCase().includes(search.toLowerCase()) ||
+      a.authorLast.toLowerCase().includes(search.toLowerCase());
+    return matchType && matchSearch;
+  });
+
+  // Selection
+  const allIds = filtered.map((a) => a.id);
+  const isAllSelected = allIds.length > 0 && allIds.every((id) => selectedItems.has(id));
+  const isSomeSelected = allIds.some((id) => selectedItems.has(id));
+
+  const toggleAll = () => {
+    if (isAllSelected) setSelectedItems((p) => { const s = new Set(p); allIds.forEach((id) => s.delete(id)); return s; });
+    else setSelectedItems((p) => { const s = new Set(p); allIds.forEach((id) => s.add(id)); return s; });
+  };
+  const toggleItem = (id: number) => setSelectedItems((p) => { const s = new Set(p); s.has(id) ? s.delete(id) : s.add(id); return s; });
+
+  // Drag handlers
+  const onDragStart = (e: React.DragEvent, index: number, id: number) => {
+    dragIndex.current = index;
+    setDraggingId(id);
+    e.dataTransfer.effectAllowed = "move";
+  };
+
+  const onDragEnter = (index: number, id: number) => {
+    dragOverIndex.current = index;
+    setDragOverId(id);
+  };
+
+  const onDragEnd = () => {
+    if (dragIndex.current !== null && dragOverIndex.current !== null && dragIndex.current !== dragOverIndex.current) {
+      const reordered = [...articles];
+      // Find actual indices in full articles array
+      const fromId = filtered[dragIndex.current].id;
+      const toId   = filtered[dragOverIndex.current].id;
+      const fromIdx = reordered.findIndex((a) => a.id === fromId);
+      const toIdx   = reordered.findIndex((a) => a.id === toId);
+      const [moved] = reordered.splice(fromIdx, 1);
+      reordered.splice(toIdx, 0, moved);
+      setArticles(reordered);
     }
-  };
-
-  const handleToggleItem = (id: number) => {
-    setSelectedItems((prev) => {
-      const newSet = new Set(prev);
-      if (newSet.has(id)) {
-        newSet.delete(id);
-      } else {
-        newSet.add(id);
-      }
-      return newSet;
-    });
-  };
-
-  const handleClearSelection = () => {
-    setSelectedItems(new Set());
-  };
-
-  const handlePublishSelected = () => {
-    console.log("Publishing:", Array.from(selectedItems));
-  };
-
-  const handleMoveToDraft = () => {
-    console.log("Moving to draft:", Array.from(selectedItems));
-  };
-
-  const handleDeleteSelected = () => {
-    console.log("Deleting:", Array.from(selectedItems));
-  };
-
-  const toggleDropdown = (id: number, e: React.MouseEvent) => {
-    e.stopPropagation();
-    setOpenDropdown(openDropdown === id ? null : id);
+    dragIndex.current = null;
+    dragOverIndex.current = null;
+    setDraggingId(null);
+    setDragOverId(null);
   };
 
   const handleMenuAction = (action: string, id: number) => {
-    console.log(`Action: ${action}, Item ID: ${id}`);
-    
-    if (action === "mark-top") {
-      setNewsData((prevData) =>
-        prevData.map((item) =>
-          item.id === id ? { ...item, isTopStory: !item.isTopStory } : item
-        )
-      );
-    } else if (action === "pin") {
-      setNewsData((prevData) =>
-        prevData.map((item) =>
-          item.id === id ? { ...item, isPinned: !item.isPinned } : item
-        )
-      );
+    const item = articles.find((a) => a.id === id);
+    if (action === "mark-breaking") {
+      const isBreaking = item?.tagType === "breaking";
+      updateArticle(id, {
+        tag:        isBreaking ? undefined : "Breaking",
+        tagType:    isBreaking ? undefined : "breaking",
+        leftBorder: isBreaking ? undefined : "breaking-left",
+      });
     }
-    
+    if (action === "pin")    updateArticle(id, { isPinned: !item?.isPinned });
+    if (action === "delete") setDeleteModal(id);
     setOpenDropdown(null);
   };
 
-  // Get current item for dropdown
-  const getCurrentItem = (id: number) => {
-    return newsData.find(item => item.id === id);
+  const confirmDelete = () => {
+    if (deleteModal !== null) { deleteArticle(deleteModal); setDeleteModal(null); }
   };
 
   return (
@@ -323,9 +129,6 @@ const AllNews: React.FC = () => {
           <h1>All News</h1>
           <p>Manage all articles, stories, and content across your newsroom</p>
         </div>
-        <button className="add-news-btn">
-          <Plus size={18} /> Add News
-        </button>
       </div>
 
       {/* TABS */}
@@ -333,14 +136,10 @@ const AllNews: React.FC = () => {
         {articleTypes.map((item) => (
           <button
             key={item.key}
-            className={`type-tab ${activeType === item.key ? "active" : ""}`}
+            className={`type-tab type-tab--${item.key} ${activeType === item.key ? "active" : ""}`}
             onClick={() => setActiveType(item.key)}
           >
-            {item.key === "breaking" && <Flame size={14} />}
-            {item.key === "exclusive" && <Star size={14} />}
-            {item.key === "live" && <Radio size={14} />}
-            {item.key === "video" && <Video size={14} />}
-            {item.key === "photo" && <ImageIcon size={14} />}
+            {item.icon && item.icon}
             {item.label}
           </button>
         ))}
@@ -349,8 +148,13 @@ const AllNews: React.FC = () => {
       {/* SEARCH */}
       <div className="filters-card">
         <div className="search-box">
-          <Search size={18} />
-          <input placeholder="Search articles..." />
+          <Search size={16} />
+          <input
+            placeholder="Search articles..."
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+          />
+          {search && <button className="search-clear" onClick={() => setSearch("")}><X size={14} /></button>}
         </div>
       </div>
 
@@ -358,24 +162,15 @@ const AllNews: React.FC = () => {
       {selectedItems.size > 0 && (
         <div className="selection-banner">
           <div className="selection-info">
-            <span className="selection-count">
-              {selectedItems.size} selected
-            </span>
-            <button className="clear-selection-btn" onClick={handleClearSelection}>
-              <X size={16} /> Clear selection
+            <span className="selection-count">{selectedItems.size} selected</span>
+            <button className="clear-selection-btn" onClick={() => setSelectedItems(new Set())}>
+              <X size={14} /> Clear
             </button>
           </div>
-          
           <div className="selection-actions">
-            <button className="action-btn publish-btn" onClick={handlePublishSelected}>
-              Publish Selected
-            </button>
-            <button className="action-btn draft-btn" onClick={handleMoveToDraft}>
-              Move to Draft
-            </button>
-            <button className="action-btn delete-btn" onClick={handleDeleteSelected}>
-              Delete Selected
-            </button>
+            <button className="action-btn publish-btn">Publish Selected</button>
+            <button className="action-btn draft-btn">Move to Draft</button>
+            <button className="action-btn delete-btn">Delete Selected</button>
           </div>
         </div>
       )}
@@ -385,16 +180,11 @@ const AllNews: React.FC = () => {
         <table className="news-table">
           <thead>
             <tr>
+              <th style={{ width: 32 }}></th>
               <th>
-                <input
-                  type="checkbox"
-                  checked={isAllSelected}
-                  ref={(input) => {
-                    if (input) {
-                      input.indeterminate = isSomeSelected && !isAllSelected;
-                    }
-                  }}
-                  onChange={handleSelectAll}
+                <input type="checkbox" checked={isAllSelected}
+                  ref={(el) => { if (el) el.indeterminate = isSomeSelected && !isAllSelected; }}
+                  onChange={toggleAll}
                 />
               </th>
               <th>Article</th>
@@ -407,124 +197,80 @@ const AllNews: React.FC = () => {
               <th></th>
             </tr>
           </thead>
-
           <tbody>
-            {currentPageItems.map((news) => {
-              const currentItem = getCurrentItem(news.id);
+            {filtered.map((news, index) => {
+              const isDragging  = draggingId === news.id;
+              const isDragOver  = dragOverId === news.id && draggingId !== news.id;
               return (
-                <tr key={news.id} className={`news-row ${news.leftBorder || ""}`}>
+                <tr
+                  key={news.id}
+                  className={`news-row ${news.leftBorder || ""} ${isDragging ? "row-dragging" : ""} ${isDragOver ? "row-drag-over" : ""}`}
+                  draggable
+                  onDragStart={(e) => onDragStart(e, index, news.id)}
+                  onDragEnter={() => onDragEnter(index, news.id)}
+                  onDragOver={(e) => e.preventDefault()}
+                  onDragEnd={onDragEnd}
+                >
+                  {/* DRAG HANDLE */}
+                  <td className="drag-handle-cell">
+                    <GripVertical size={15} className="drag-handle" />
+                  </td>
+
                   <td>
-                    <input
-                      type="checkbox"
-                      checked={selectedItems.has(news.id)}
-                      onChange={() => handleToggleItem(news.id)}
-                    />
+                    <input type="checkbox" checked={selectedItems.has(news.id)} onChange={() => toggleItem(news.id)} />
                   </td>
 
                   <td>
                     <div className="article-cell">
                       <div className="article-tags">
-                        {news.tag && (
-                          <span className={`tag ${news.tagType}`}>{news.tag}</span>
-                        )}
-                        {news.isTopStory && (
-                          <span className="emoji-icon">⭐</span>
-                        )}
-                        {news.isPinned && (
-                          <span className="emoji-icon">📌</span>
-                        )}
+                        {news.tag && <span className={`tag ${news.tagType}`}>{news.tag}</span>}
+                        {news.isPinned && <Pin size={13} className="inline-icon pin-icon" />}
                       </div>
                       <div className="article-title">{news.title}</div>
                       <div className="article-subtitle">{news.subtitle}</div>
                     </div>
                   </td>
 
-                  <td>{news.category}</td>
+                  <td className="muted">{news.category}</td>
 
                   <td>
                     <div className="author-cell">
+                      <div className="avatar">
+                        {news.authorFirst[0]}{news.authorLast[0]}
+                      </div>
                       <div>
-                        <div>{news.authorFirst}</div>
-                        <div>{news.authorLast}</div>
+                        <div className="author-name">{news.authorFirst}</div>
+                        <div className="author-last">{news.authorLast}</div>
                       </div>
                     </div>
                   </td>
 
-                  <td>
-                    <span className={`status-pill ${news.statusType}`}>
-                      {news.status}
-                    </span>
-                  </td>
-
-                  <td>
-                    <span className={`priority-pill ${news.priorityType}`}>
-                      {news.priority}
-                    </span>
-                  </td>
-
+                  <td><span className={`status-pill ${news.statusType}`}>{news.status}</span></td>
+                  <td><span className={`priority-pill ${news.priorityType}`}>{news.priority}</span></td>
                   <td className="muted">{news.published}</td>
                   <td className="views">{news.views}</td>
+
                   <td className="actions">
                     <div className="action-dropdown-wrapper" ref={openDropdown === news.id ? dropdownRef : null}>
-                      <button
-                        className="action-menu-btn"
-                        onClick={(e) => toggleDropdown(news.id, e)}
-                      >
-                        <MoreVertical size={18} />
+                      <button className="action-menu-btn" onClick={(e) => { e.stopPropagation(); setOpenDropdown(openDropdown === news.id ? null : news.id); }}>
+                        <MoreVertical size={16} />
                       </button>
-
-                      {openDropdown === news.id && currentItem && (
+                      {openDropdown === news.id && (
                         <div className="action-dropdown">
-                          <button
-                            className="dropdown-item"
-                            onClick={() => handleMenuAction("preview", news.id)}
-                          >
-                            <Eye size={16} />
-                            <span>Preview</span>
+                          <button className="dropdown-item" onClick={() => handleMenuAction("edit", news.id)}><Edit size={15} /> Edit</button>
+                          <button className="dropdown-item" onClick={() => handleMenuAction("view-live", news.id)}><ExternalLink size={15} /> View Live</button>
+                          <div className="dropdown-divider" />
+                          <button className="dropdown-item" onClick={() => handleMenuAction("pin", news.id)}>
+                            <Pin size={15} className={news.isPinned ? "icon-blue" : ""} />
+                            {news.isPinned ? "Unpin from Homepage" : "Pin to Homepage"}
                           </button>
-                          <button
-                            className="dropdown-item"
-                            onClick={() => handleMenuAction("edit", news.id)}
-                          >
-                            <Edit size={16} />
-                            <span>Edit</span>
+                          <button className={`dropdown-item${news.tagType === "breaking" ? " breaking-active" : ""}`} onClick={() => handleMenuAction("mark-breaking", news.id)}>
+                            <Zap size={15} className={news.tagType === "breaking" ? "icon-red" : ""} />
+                            {news.tagType === "breaking" ? "Remove Breaking" : "Mark as Breaking"}
                           </button>
-                          <button
-                            className="dropdown-item"
-                            onClick={() => handleMenuAction("view-live", news.id)}
-                          >
-                            <ExternalLink size={16} />
-                            <span>View Live</span>
-                          </button>
-                          <div className="dropdown-divider"></div>
-                          <button
-                            className="dropdown-item"
-                            onClick={() => handleMenuAction("mark-top", news.id)}
-                          >
-                            <span className="dropdown-emoji">⭐</span>
-                            <span>{currentItem.isTopStory ? "Remove from Top Story" : "Mark as Top Story"}</span>
-                          </button>
-                          <button
-                            className="dropdown-item"
-                            onClick={() => handleMenuAction("pin", news.id)}
-                          >
-                            <span className="dropdown-emoji">📌</span>
-                            <span>{currentItem.isPinned ? "Unpin from Homepage" : "Pin to Homepage"}</span>
-                          </button>
-                          <button
-                            className="dropdown-item"
-                            onClick={() => handleMenuAction("mark-breaking", news.id)}
-                          >
-                            <Zap size={16} />
-                            <span>Mark as Breaking</span>
-                          </button>
-                          <div className="dropdown-divider"></div>
-                          <button
-                            className="dropdown-item danger"
-                            onClick={() => handleMenuAction("delete", news.id)}
-                          >
-                            <Trash2 size={16} />
-                            <span>Delete</span>
+                          <div className="dropdown-divider" />
+                          <button className="dropdown-item danger" onClick={() => handleMenuAction("delete", news.id)}>
+                            <Trash2 size={15} /> Delete
                           </button>
                         </div>
                       )}
@@ -533,34 +279,27 @@ const AllNews: React.FC = () => {
                 </tr>
               );
             })}
+            {filtered.length === 0 && (
+              <tr><td colSpan={10} className="empty-row">No articles found</td></tr>
+            )}
           </tbody>
         </table>
+      </div>
 
-        {/* PAGINATION */}
-        <div className="pagination-bar">
-          <span className="pagination-info">
-            Showing {start}–{end} of {TOTAL_ARTICLES} articles
-          </span>
-
-          <div className="pagination-actions">
-            <button
-              className="pagination-btn"
-              disabled={currentPage === 1}
-              onClick={() => setCurrentPage((p) => p - 1)}
-            >
-              Previous
-            </button>
-
-            <button
-              className="pagination-btn"
-              disabled={end >= TOTAL_ARTICLES}
-              onClick={() => setCurrentPage((p) => p + 1)}
-            >
-              Next
-            </button>
+      {/* DELETE MODAL */}
+      {deleteModal !== null && (
+        <div className="modal-overlay" onClick={() => setDeleteModal(null)}>
+          <div className="modal" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-icon"><Trash2 size={22} /></div>
+            <h4>Delete Article?</h4>
+            <p>This action cannot be undone. The article will be permanently removed.</p>
+            <div className="modal-actions">
+              <button className="modal-cancel" onClick={() => setDeleteModal(null)}>Cancel</button>
+              <button className="modal-confirm" onClick={confirmDelete}>Yes, Delete</button>
+            </div>
           </div>
         </div>
-      </div>
+      )}
     </div>
   );
 };

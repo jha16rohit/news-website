@@ -12,14 +12,25 @@
   position: fixed;
   top: 0;
   left: 0;
-
-  /* 🔥 FIXED */
-  overflow-y: hidden; 
+  z-index: 1100;
+  overflow-y: hidden;
   overflow-x: visible;
+  transition: transform 0.28s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 /* ===============================
-   HEADER (FIXED)
+   OVERLAY (mobile)
+================================ */
+.sidebar-overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.5);
+  z-index: 1050;
+}
+
+/* ===============================
+   HEADER
 ================================ */
 .sidebar-header {
   display: flex;
@@ -31,34 +42,57 @@
 }
 
 .logo-box {
-  width: 55px;
-  height: 55px;
+  width: 44px;
+  height: 44px;
   background: #e10600;
   border-radius: 10px;
   display: flex;
   align-items: center;
   justify-content: center;
+  flex-shrink: 0;
 }
 
 .sidebar-logo {
-  width: 55px;
-  height: 55px;
+  width: 44px;
+  height: 44px;
   object-fit: contain;
 }
 
-.sidebar-header h3 {
-  font-size: 20px;
-  margin: 0;
-  color: #ffffff;
+.sidebar-title {
+  flex: 1;
+  min-width: 0;
 }
 
-.sidebar-header span {
-  font-size: 14px;
+.sidebar-title h3 {
+  font-size: 18px;
+  margin: 0;
+  color: #ffffff;
+  white-space: nowrap;
+}
+
+.sidebar-title span {
+  font-size: 13px;
   color: #9aa3b2;
 }
 
+.sidebar-close-btn {
+  display: none;
+  background: transparent;
+  border: none;
+  color: #9aa3b2;
+  cursor: pointer;
+  padding: 4px;
+  border-radius: 6px;
+  flex-shrink: 0;
+}
+
+.sidebar-close-btn:hover {
+  color: #fff;
+  background: #1e2433;
+}
+
 /* ===============================
-   SCROLLABLE MENU ONLY
+   SCROLLABLE MENU
 ================================ */
 .sidebar-menu {
   flex: 1;
@@ -67,11 +101,8 @@
   padding-right: 6px;
 }
 
-/* ===============================
-   MENU TITLES
-================================ */
 .menu-title {
-  font-size: 14px;
+  font-size: 11px;
   letter-spacing: 1.5px;
   color: #7f8899;
   margin: 22px 0 12px;
@@ -84,20 +115,14 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 14px 16px;
+  padding: 12px 14px;
   border-radius: 10px;
   cursor: pointer;
   transition: background 0.2s ease;
 }
 
-.sidebar-item:hover {
-  background: #1e2433;
-}
-
-.sidebar-item.active {
-  background: #1e2433;
-  color: #ffffff;
-}
+.sidebar-item:hover { background: #1e2433; }
+.sidebar-item.active { background: #1e2433; color: #ffffff; }
 
 .item-left {
   display: flex;
@@ -105,147 +130,92 @@
   gap: 14px;
 }
 
-.item-left span {
-  font-size: 17px;
-}
-
-.item-left svg {
-  font-size: 20px;
-}
+.item-label { font-size: 15px; }
+.item-left svg { font-size: 18px; flex-shrink: 0; }
 
 /* ===============================
    BADGES
 ================================ */
 .badge {
   background: #2b3244;
-  padding: 4px 12px;
+  padding: 3px 10px;
   border-radius: 14px;
-  font-size: 14px;
+  font-size: 12px;
 }
 
-.sidebar-item.danger .badge {
-  background: #e10600;
-}
+.sidebar-item.danger .badge { background: #e10600; }
 
 /* ===============================
-   USER SECTION (FIXED BOTTOM)
+   USER SECTION
 ================================ */
 .sidebar-user {
   display: flex;
   align-items: center;
-  gap: 14px;
-  padding-top: 20px;
+  gap: 12px;
+  padding-top: 18px;
   border-top: 1px solid #252b3a;
   flex-shrink: 0;
 }
 
 .avatar {
-  width: 44px;
-  height: 44px;
+  width: 40px;
+  height: 40px;
   background: #e10600;
   border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
   font-weight: 600;
-  font-size: 16px;
+  font-size: 14px;
   color: #ffffff;
+  flex-shrink: 0;
 }
 
-.sidebar-user strong {
-  font-size: 16px;
-}
+.sidebar-user-info strong { font-size: 14px; color: #fff; display: block; }
+.sidebar-user-info span { font-size: 12px; color: #9aa3b2; }
 
-.sidebar-user span {
-  font-size: 14px;
-  color: #9aa3b2;
+/* ===============================
+   SCROLLBAR
+================================ */
+.sidebar-menu::-webkit-scrollbar { width: 6px; }
+.sidebar-menu::-webkit-scrollbar-track { background: transparent; }
+.sidebar-menu::-webkit-scrollbar-thumb { background-color: #2b3244; border-radius: 10px; }
+.sidebar-menu::-webkit-scrollbar-thumb:hover { background-color: #cfd6e4; }
+
+/* ===============================
+   RESPONSIVE — ≤ 1024px: sidebar hidden by default, slides in
+================================ */
+@media (max-width: 1024px) {
+  .sidebar {
+    transform: translateX(-100%);
+  }
+
+  .sidebar.sidebar-open {
+    transform: translateX(0);
+  }
+
+  .sidebar-overlay {
+    display: block;
+  }
+
+  .sidebar-close-btn {
+    display: flex;
+  }
 }
 
 /* ===============================
-   MENU SCROLLBAR (MODERN)
+   RESPONSIVE — ≥ 1025px: sidebar always visible, close btn hidden
 ================================ */
-.sidebar-menu::-webkit-scrollbar {
-  width: 8px;
-}
+@media (min-width: 1025px) {
+  .sidebar {
+    transform: translateX(0) !important;
+  }
 
-.sidebar-menu::-webkit-scrollbar-track {
-  background: transparent;
-}
+  .sidebar-overlay {
+    display: none !important;
+  }
 
-.sidebar-menu::-webkit-scrollbar-thumb {
-  background-color: #cfd6e4;
-  border-radius: 10px;
-}
-
-.sidebar-menu::-webkit-scrollbar-thumb:hover {
-  background-color: #ffffff;
-}
-
-.sidebar-menu::-webkit-scrollbar-button:single-button {
-  display: block;
-  height: 10px;
-  background-color: transparent;
-}
-
-.abcd {
-  background: blue !important;
-}
-
-/* ===============================
-   NOTIFICATION DROPDOWN
-================================ */
-
-.sidebar-notification-wrapper {
-  position: relative;
-}
-
-.notification-dropdown {
-  position: absolute;
-  left: 100%;
-  top: 0;
-  width: 300px;
-  background: #fff;
-  border-radius: 10px;
-  box-shadow: 0 10px 30px rgba(0,0,0,0.15);
-  padding: 10px 0;
-  z-index: 9999;
-}
-
-.notification-header {
-  display: flex;
-  justify-content: space-between;
-  padding: 10px 15px;
-  font-weight: 600;
-  border-bottom: 1px solid #eee;
-}
-
-.notification-item {
-  padding: 10px 15px;
-  cursor: pointer;
-}
-
-.notification-item:hover {
-  background: #f5f5f5;
-}
-
-.notification-item.active {
-  background: #eef2ff;
-}
-
-.notification-item p {
-  margin: 0;
-  font-size: 14px;
-}
-
-.notification-item span {
-  font-size: 12px;
-  color: #888;
-}
-
-.notification-footer {
-  padding: 10px 15px;
-  text-align: center;
-  font-weight: 500;
-  border-top: 1px solid #eee;
-  cursor: pointer;
+  .sidebar-close-btn {
+    display: none !important;
+  }
 }
