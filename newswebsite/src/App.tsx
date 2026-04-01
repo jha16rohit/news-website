@@ -26,6 +26,7 @@ import Analytics from "./components/Admin/Analytics/Analytics";
 import CreateNewArticle from "./components/Admin/CreateNewArticle/CreateNewArticle";
 import LiveStoriesPage from "./components/Admin/Livestories/Livestories";
 import Notifications from "./components/Admin/Notifications/Notifications";
+import TopicProfiles from "./components/Admin/TopicProfiles/TopicProfiles";
 
 export default function App() {
   return (
@@ -62,6 +63,7 @@ export default function App() {
           <Route path="setting" element={<AccountSettings />} />
           <Route path="live" element={<LiveStoriesPage />} />
           <Route path="notification" element={<Notifications />} />
+          <Route path="profile" element={<TopicProfiles />} />
         </Route>
 
         {/* 404 */}

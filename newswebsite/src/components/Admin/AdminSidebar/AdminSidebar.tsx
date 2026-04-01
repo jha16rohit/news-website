@@ -2,7 +2,7 @@ import "./AdminSidebar.css";
 import type { ReactNode } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import Logo from "../../../assets/Logo.png";
-import { X } from "lucide-react";
+import { X,BookUser } from "lucide-react";
 
 import {
   FaNewspaper, FaBolt, FaFire, FaStar, FaClock,
@@ -52,6 +52,7 @@ const AdminSidebar: React.FC<AdminSidebarProps> = ({ open, onClose }) => {
 
           <SidebarItem icon={<FaTachometerAlt />} label="Dashboard" active={isActive("/admin/dashboard")} onClick={() => go("/admin/dashboard")} />
           <SidebarItem icon={<FaNewspaper />} label="All News" badge="156" active={isActive("/admin/news")} onClick={() => go("/admin/news")} />
+          <SidebarItem icon={<BookUser />} label="Person Profile" active={isActive("/admin/profile")} onClick={() => go("/admin/profile")} />
           <SidebarItem icon={<FaBolt />} label="Breaking News" badge="3" danger active={isActive("/admin/breaking")} onClick={() => go("/admin/breaking")} />
           <SidebarItem icon={<MdWifiTethering />} label="Live News" badge="3" danger active={isActive("/admin/live")} onClick={() => go("/admin/live")} />
           <SidebarItem icon={<FaComments />} label="Comments" badge="24" active={isActive("/admin/comments")} onClick={() => go("/admin/comments")} />
