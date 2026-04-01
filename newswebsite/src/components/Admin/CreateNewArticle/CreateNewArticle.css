@@ -174,7 +174,7 @@
 }
 .cna-type-btn:hover { background: var(--tag-bg); color: var(--text-primary); border-color: var(--border-strong); }
 .cna-type-btn--active { background: var(--primary); color: #fff; border-color: var(--primary); font-weight: 600; }
-.cna-type-btn--active:hover { background: var(--primary-hover); border-color: var(--primary-hover); }
+.cna-type-btn--active:hover { background: var(--primary-hover); border-color: var(--primary-hover);color: #fff; }
 .cna-type-icon { font-size: 0.85rem; }
 
 /* ── Fields ────────────────────────────────────────────────── */

@@ -33,10 +33,14 @@ export default function Categories() {
     }
   });
 
-  useEffect(() => {
+useEffect(() => {
+    // 1. Saves to memory
     localStorage.setItem("localNewzCategories", JSON.stringify(categories));
+    
+    // 2. THIS IS THE MISSING LINE! It shouts to the Navbar to update immediately.
+    window.dispatchEvent(new Event("categoriesUpdated"));
   }, [categories]);
-
+  
   const filtered = (categories || []).filter(c => 
     (c?.name || "").toLowerCase().includes(search.toLowerCase())
   );

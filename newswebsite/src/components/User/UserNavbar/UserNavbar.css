@@ -13,14 +13,14 @@
 .breaking-bar {
   background-color: #ffffff;
   color: black;
-  height: 40px; /* Fixed height for precise logo alignment */
+  height: 40px; 
   display: flex;
   align-items: center;
   width: 100%;
   cursor: default; 
   position: relative;
   z-index: 90; 
-  border-bottom: 1px solid #f1f5f9; /* Subtle divider if needed */
+  border-bottom: 1px solid #f1f5f9; 
 }
 
 .breaking-container {
@@ -32,11 +32,11 @@
   margin: auto;
   display: flex;
   align-items: center;
-  padding-left: 170px; /* Leaves perfect space for the logo */
+  padding-left: 170px; 
 }
 
 .breaking-label {
-  color: #e60000; /* Red like the image */
+  color: #e60000; 
   font-weight: 800;
   font-size: 16px;
   white-space: nowrap;
@@ -116,7 +116,7 @@
   display: flex;
   align-items: center;
   gap: 30px; 
-  height: 100%; /* Forces wrapper to span full height */
+  height: 100%; 
 }
 
 /* ===== POP-OUT LOGO ===== */
@@ -124,8 +124,8 @@
   display: flex;
   position: relative;
   z-index: 150; 
-  width: 90px; /* Width of your red box */
-  height: 55px; /* 👇 LOCKS height to match navbar exactly */
+  width: 90px; 
+  height: 55px; 
 }
 
 .logo a {
@@ -135,18 +135,16 @@
 }
 
 .navbar-logo-img {
-  height: 95px; /* Exactly covers 40px top bar + 55px bottom bar */
+  height: 95px; 
   width: 100%;
   object-fit: contain;
   background-color: #e60000; 
   padding: 10px; 
-  
   position: absolute;
-  top: -40px; /* 👇 Now reaches the absolute ceiling perfectly! */
+  top: -40px; 
   left: 0;
-  
   box-shadow: 2px 0px 8px rgba(0,0,0,0.15); 
-  border-bottom-left-radius: 4px; /* Optional: smooth bottom corners */
+  border-bottom-left-radius: 4px; 
   border-bottom-right-radius: 4px;
 }
 
@@ -167,8 +165,6 @@
   letter-spacing: 1px;
   padding: 10px 20px;
   transition: all 0.3s ease;
-  
-  /* These reset any previous vertical or slanted styles */
   writing-mode: horizontal-tb; 
   transform: none;
   height: auto;
@@ -177,35 +173,24 @@
 
 .nav-links a:hover {
   color: #ffffff;
-  background-color: rgba(255, 255, 255, 0.1); /* Subtle highlight on hover */
+  background-color: rgba(255, 255, 255, 0.1); 
   border-radius: 4px;
 }
 
-/* ===== THE SOLID RECTANGLE ACTIVE STATE ===== */
+/* THE SOLID RECTANGLE ACTIVE STATE */
 .nav-links a.active {
   color: #ffffff;
   font-weight: 800;
-  background-color: #e60000; /* Solid signature red */
-  border-radius: 2px; /* Tiny 2px rounding so it's sharp but not harsh */
+  background-color: #e60000; 
+  border-radius: 2px; 
   position: relative;
-  top: 9px; /* Slightly lifts the active link for a subtle 3D effect */
-  /* Adds a very subtle, clean drop shadow underneath the rectangle */
+  top: 9px; 
   box-shadow: 2px 4px 8px rgba(0, 0, 0, 0.25); 
 }
 
-/* This disables the slanted shapes and ribbons from previous designs */
 .nav-links a::before,
 .nav-links a::after {
   display: none !important; 
-}
-
-/* Mobile Menu Active State Fix (Kept simple for the slide-out drawer) */
-.hamburger-dropdown a.active {
-  color: #ffffff;
-  font-weight: 700;
-  border-left: 3px solid #e60000;
-  padding-left: 17px; 
-  background-color: rgba(243, 211, 211, 0.05); 
 }
 
 /* ===== RIGHT SIDE ACTIONS ===== */
@@ -215,15 +200,14 @@
   gap: 22px;
 }
 
-/* Restores your original hover effects for the Bell and User icons */
-.nav-actions > svg {
+.nav-actions svg {
   cursor: pointer;
-  color: #e2e8f0;
+  color: #ffffff;
   transition: 0.3s;
 }
 
-.nav-actions > svg:hover {
-  color: white;
+.nav-actions svg:hover {
+  color: #e2e8f0;
 }
 
 .subscribe-btn {
@@ -242,20 +226,9 @@
   background-color: #cc0000;
 }
 
-/* Fix for the SVG hover states since the Bell is now inside a wrapper */
-.nav-actions svg {
-  cursor: pointer;
-  color: #ffffff;
-  transition: 0.3s;
-}
-
-.nav-actions svg:hover {
-  color: white;
-}
-
 /* ===== NOTIFICATION BELL ===== */
 .notification-wrapper {
-  position: relative; /* Acts as the anchor for the dot */
+  position: relative; 
   display: flex;
   align-items: center;
   justify-content: center;
@@ -264,13 +237,13 @@
 
 .notification-dot {
   position: absolute;
-  top: -2px; /* Pulls it slightly above the bell */
-  right: -2px; /* Pulls it slightly to the right of the bell */
+  top: -2px; 
+  right: -2px; 
   width: 10px;
   height: 10px;
-  background-color: #e60000; /* Signature red */
-  border-radius: 50%; /* Makes it a perfect circle */
-  border: 2px solid #0b1423; /* Matches the navbar background to create a cutout effect */
+  background-color: #e60000; 
+  border-radius: 50%; 
+  border: 2px solid #0b1423; 
   z-index: 2;
 }
 
@@ -280,7 +253,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 20px; /* 👇 This fixed width stops the Bell from being pushed! */
+  width: 20px; 
   height: 20px;
 }
 
@@ -301,7 +274,7 @@
 
 .search-bar-expandable {
   position: absolute;
-  right: 0; /* Expands smoothly to the left */
+  right: 0; 
   top: 50%;
   transform: translateY(-50%);
   width: 0;
@@ -320,7 +293,7 @@
 
 .search-bar-expandable input {
   width: 100%;
-  padding: 8px 36px 8px 16px; /* 👇 The 36px right padding makes room for the X! */
+  padding: 8px 36px 8px 16px; 
   border-radius: 20px; 
   border: 1px solid #334155;
   background-color: #ffffff; 
@@ -330,12 +303,10 @@
   transition: border-color 0.3s ease;
 }
 
-
 .search-bar-expandable input::placeholder {
   color: #94a3b8;
 }
 
-/* 👇 Places the X securely inside the input box */
 .close-search-btn {
   position: absolute;
   right: 12px; 
@@ -348,35 +319,43 @@
   padding: 0;
 }
 
-/* 👇 This physically forces the SVG icon itself to be black */
 .close-search-btn svg {
   color: #000000 !important; 
   transition: color 0.2s;
 }
 
-/* Turns the X a cool red when you hover over it */
 .close-search-btn:hover svg {
   color: #e60000 !important; 
 }
 
-/* Adjust mobile search width so it doesn't overflow small screens */
-@media (max-width: 768px) {
-  .search-bar-expandable.open { width: 180px; }
-}
-@media (max-width: 480px) {
-  .search-bar-expandable.open { width: 140px; }
+
+/* ===== BULLETPROOF HAMBURGER BUTTON ===== */
+.hamburger-btn {
+  display: flex !important; 
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  padding: 5px;
+  position: relative;
+  z-index: 999; /* Forces it to the very front */
+  
+  /* Forces physical dimensions so it cannot collapse */
+  min-width: 40px;
+  min-height: 40px;
+  
+  transition: opacity 0.2s ease, visibility 0.2s;
 }
 
-/* ===== HAMBURGER BUTTON ===== */
-.hamburger-btn {
-  display: block; 
-  background: none;
-  border: none;
-  color: white;
-  cursor: pointer;
-  padding: 4px;
-  transition: opacity 0.3s ease; /* Fades out smoothly */
+/* Forces the SVG icon itself to be strictly white */
+.hamburger-btn svg {
+  stroke: #ffffff !important;
+  color: #ffffff !important;
+  width: 28px;
+  height: 28px;
 }
+
 
 /* ===== MENU OVERLAY ===== */
 .menu-overlay {
@@ -396,7 +375,7 @@
 
 .hamburger-dropdown.open {
   left: 0; 
-  padding: 70px 20px 20px 20px; /* Leaves 70px gap at the top so links don't hide behind the X */
+  padding: 70px 20px 20px 20px; 
   box-shadow: 4px 0 15px rgba(0,0,0,0.4); 
 }
 
@@ -406,12 +385,14 @@
   padding: 14px 0; border-bottom: 1px solid #1e293b; transition: 0.3s ease;
 }
 .hamburger-dropdown a:hover { color: #ffffff; padding-left: 6px; }
+
+/* Sidebar Active Page */
 .hamburger-dropdown a.active {
   color: #ffffff; font-weight: 700; border-left: 3px solid #e60000;
   padding-left: 17px; background-color: rgba(230, 0, 0, 0.05); 
 }
 
-/* 👇 The "X" Button - Pinned to the top right of the drawer! */
+/* The "X" Button placed top right inside the drawer */
 .close-drawer-btn {
   position: absolute; 
   top: 15px; 
@@ -442,7 +423,6 @@
 @media (max-width: 768px) {
   .navbar { height: 50px; } 
   
-  /* 👇 Update logo container and image for tablet */
   .logo { height: 50px; width: 95px; } 
   .navbar-logo-img { height: 90px; top: -40px; } 
   
@@ -451,12 +431,12 @@
   .breaking-label { font-size: 13px; }
 
   .breaking-container { gap: 10px; padding-left: 120px; }
+  .search-bar-expandable.open { width: 180px; }
 }
 
 @media (max-width: 480px) {
   .navbar { height: 45px; } 
   
-  /* 👇 Update logo container and image for mobile */
   .logo { height: 45px; width: 85px; } 
   .navbar-logo-img { height: 85px; top: -40px; } 
   
@@ -467,4 +447,22 @@
   .breaking-date { display: none; }
 
   .breaking-container { padding-left: 100px; }
+  .search-bar-expandable.open { width: 140px; }
+}
+
+/* ===== RESPONSIVE ===== */
+@media (max-width: 1024px) {
+  .navbar-left { gap: 15px; }
+  .nav-links { display: none; }
+  
+  /* 👇 We removed the 100% width and locked it to a neat 280px! */
+  .hamburger-dropdown {
+    width: 280px; 
+    border-right: 1px solid #1e293b; /* Adds a nice edge */
+  }
+  
+  /* 👇 Keeps the dark shadow so the drawer pops off the background */
+  .hamburger-dropdown.open { 
+    box-shadow: 4px 0 20px rgba(0,0,0,0.6); 
+  }
 }

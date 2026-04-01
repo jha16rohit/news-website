@@ -1,4 +1,4 @@
-import { BrowserRouter, Routes, Route, } from "react-router-dom";
+import { BrowserRouter, Routes, Route } from "react-router-dom";
 
 /* ================= USER SIDE ================= */
 import UserLayout from "./components/User/UserLayout/UserLayout";
@@ -6,9 +6,6 @@ import UserDashboard from "./components/User/UserDashboard/UserDashboard";
 import ArticleDetail from "./components/User/ArticalDetails/ArticalDetails";
 import LiveDetail from "./components/User/LiveDetails/LiveDetails";
 import LiveEventsPage from "./components/User/LiveEventsPage/LiveEventsPage";
-// Placeholder imports for your next pages:
-const CategoryPage = () => <div style={{padding: '100px', textAlign: 'center'}}>Category Page Placeholder</div>;
-
 
 /* ================= ADMIN SIDE ================= */
 import Login from "./components/Admin/auth/Login";
@@ -34,20 +31,18 @@ export default function App() {
     <BrowserRouter>
       <Routes>
 
-        {/* ================= USER ROUTES ================= */}
-        {/* Everything inside here gets the UserNavbar and UserFooter automatically! */}
+        {/* USER ROUTES */}
         <Route element={<UserLayout />}>
           <Route path="/" element={<UserDashboard />} />
-          <Route path="/category/:categoryName" element={<CategoryPage />} />
           <Route path="/article/:articleId" element={<ArticleDetail />} />
           <Route path="/live/:eventId" element={<LiveDetail />} />
           <Route path="/live-events" element={<LiveEventsPage />} />
         </Route>
 
-        {/* ================= ADMIN LOGIN ================= */}
+        {/* ADMIN LOGIN */}
         <Route path="/admin/login-xyzsft" element={<Login />} />
 
-        {/* ================= ADMIN PANEL ================= */}
+        {/* ADMIN PANEL — NewsProvider lives inside AdminLayout */}
         <Route path="/admin" element={<AdminLayout />}>
           <Route index element={<AdminDashboard />} />
           <Route path="dashboard" element={<AdminDashboard />} />
@@ -67,7 +62,7 @@ export default function App() {
           <Route path="notification" element={<Notifications />} />
         </Route>
 
-        {/* ================= 404 ================= */}
+        {/* 404 */}
         <Route path="*" element={<h1>Page Not Found</h1>} />
 
       </Routes>
