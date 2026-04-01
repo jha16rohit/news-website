@@ -6,7 +6,6 @@ import UserDashboard from "./components/User/UserDashboard/UserDashboard";
 import ArticleDetail from "./components/User/ArticalDetails/ArticalDetails";
 import LiveDetail from "./components/User/LiveDetails/LiveDetails";
 import LiveEventsPage from "./components/User/LiveEventsPage/LiveEventsPage";
-const CategoryPage = () => <div style={{ padding: "100px", textAlign: "center" }}>Category Page Placeholder</div>;
 
 /* ================= ADMIN SIDE ================= */
 import Login from "./components/Admin/auth/Login";
@@ -36,7 +35,6 @@ export default function App() {
         {/* USER ROUTES */}
         <Route element={<UserLayout />}>
           <Route path="/" element={<UserDashboard />} />
-          <Route path="/category/:categoryName" element={<CategoryPage />} />
           <Route path="/article/:articleId" element={<ArticleDetail />} />
           <Route path="/live/:eventId" element={<LiveDetail />} />
           <Route path="/live-events" element={<LiveEventsPage />} />
