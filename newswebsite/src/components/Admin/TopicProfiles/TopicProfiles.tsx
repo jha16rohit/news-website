@@ -10,10 +10,11 @@ import {
   FileText,
   Instagram,
   Facebook,
-  Twitter,
   Upload,
 } from "lucide-react";
 import "./TopicProfiles.css";
+
+import { FaXTwitter } from "react-icons/fa6";
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 export interface Profile {
@@ -149,7 +150,6 @@ function ProfileForm({ initial, onSave, onClose }: ProfileFormProps) {
               <input
                 value={name}
                 onChange={(e) => handleNameChange(e.target.value)}
-                placeholder="e.g. Virat Kohli"
               />
             </div>
             <div className="tp-field">
@@ -159,7 +159,7 @@ function ProfileForm({ initial, onSave, onClose }: ProfileFormProps) {
                 <input
                   value={slug}
                   onChange={(e) => setSlug(e.target.value)}
-                  placeholder="virat-kohli"
+        
                   className="tp-slug-input"
                 />
               </div>
@@ -194,7 +194,7 @@ function ProfileForm({ initial, onSave, onClose }: ProfileFormProps) {
             <input
               value={caption}
               onChange={(e) => setCaption(e.target.value)}
-              placeholder="e.g. Indian Cricketer"
+              
             />
           </div>
 
@@ -230,7 +230,7 @@ function ProfileForm({ initial, onSave, onClose }: ProfileFormProps) {
             />
           </div>
           <div className="tp-social-field">
-            <span className="tp-social-icon tp-tw"><Twitter size={16} /></span>
+            <span className="tp-social-icon tp-tw"><FaXTwitter size={16} /></span>
             <input
               value={twitter}
               onChange={(e) => setTwitter(e.target.value)}
@@ -334,7 +334,7 @@ export default function TopicProfiles() {
       {/* Header */}
       <div className="tp-header">
         <div>
-          <h1 className="tp-title">Topic / Person Profiles</h1>
+          <h1 className="tp-title">Topic Profiles</h1>
           <p className="tp-subtitle">Create and manage profiles for people and topics linked in articles</p>
         </div>
         <button className="tp-btn-new" onClick={() => setShowCreate(true)}>
@@ -410,7 +410,7 @@ export default function TopicProfiles() {
                 )}
                 {profile.twitter && (
                   <a href={profile.twitter} target="_blank" rel="noreferrer">
-                    <Twitter size={15} />
+                    <FaXTwitter size={15} />
                   </a>
                 )}
               </div>
