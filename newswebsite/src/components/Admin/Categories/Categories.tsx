@@ -1,97 +1,92 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import "./Categories.css";
 import EditCategoryModal from "./EditCategoryModal/EditCategoryModal";
 import AddCategoryModal from "./AddCategoryModal/AddCategoryModal";
 import { Folder, FileText, Eye, Pencil, Trash2, CheckCircle } from "lucide-react";
+import { useNews } from "../NewsStore/NewsStore";
+import type { Category } from "../NewsStore/NewsStore";
 
-export interface Category {
-  id: number; name: string; description: string; articles: string;
-  views: string; featured: boolean; enabled: boolean; color: string;
-}
-
-const initialCategories: Category[] = [
-  { id: 1, name: "Politics", description: "National and international political news", articles: "1,245", views: "2.5M", featured: true, enabled: true, color: "#dc2626" },
-  { id: 2, name: "Business", description: "Markets, economy, and corporate news", articles: "987", views: "1.9M", featured: true, enabled: true, color: "#2563eb" },
-  { id: 3, name: "Sports", description: "Cricket, football, and all sports coverage", articles: "1,567", views: "3.2M", featured: true, enabled: true, color: "#16a34a" },
-  { id: 4, name: "Entertainment", description: "Bollywood, Hollywood, and celebrity news", articles: "2,134", views: "4.5M", featured: false, enabled: true, color: "#9333ea" },
-  { id: 5, name: "Technology", description: "Tech news, gadgets, and innovations", articles: "1,024", views: "2.1M", featured: true, enabled: true, color: "#0ea5e9" },
-];
+const FEATURED_LIMIT = 5;
 
 export default function Categories() {
+  const { categories, addCategory, updateCategory, deleteCategory } = useNews();
+
   const [editingCategory, setEditingCategory] = useState<Category | null>(null);
   const [categoryToDelete, setCategoryToDelete] = useState<Category | null>(null);
   const [search, setSearch] = useState("");
   const [toastMsg, setToastMsg] = useState("");
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
 
-  const [categories, setCategories] = useState<Category[]>(() => {
-    try {
-      const saved = localStorage.getItem("localNewzCategories");
-      return saved ? JSON.parse(saved) : initialCategories;
-    } catch (e) {
-      return initialCategories;
-    }
-  });
-
-useEffect(() => {
-    // 1. Saves to memory
-    localStorage.setItem("localNewzCategories", JSON.stringify(categories));
-    
-    // 2. THIS IS THE MISSING LINE! It shouts to the Navbar to update immediately.
-    window.dispatchEvent(new Event("categoriesUpdated"));
-  }, [categories]);
-  
-  const filtered = (categories || []).filter(c => 
-    (c?.name || "").toLowerCase().includes(search.toLowerCase())
-  );
-
-  const toggleCategory = (id: number) => setCategories(p => p.map(c => c.id === id ? { ...c, enabled: !c.enabled } : c));
+  // ── Helpers ──────────────────────────────────────────────────────────────
 
   const showToast = (msg: string) => {
     setToastMsg(msg);
     setTimeout(() => setToastMsg(""), 4000);
   };
 
+  const filtered = categories.filter((c) =>
+    c.name.toLowerCase().includes(search.toLowerCase())
+  );
+
+  // ── Toggle enabled ────────────────────────────────────────────────────────
+
+  const toggleCategory = (id: number) => {
+    const cat = categories.find((c) => c.id === id);
+    if (!cat) return;
+    updateCategory(id, { enabled: !cat.enabled });
+  };
+
+  // ── Delete ────────────────────────────────────────────────────────────────
+
   const executeDelete = () => {
     if (!categoryToDelete) return;
-    setCategories(p => p.filter(c => c.id !== categoryToDelete.id));
+    deleteCategory(categoryToDelete.id);
     showToast(`"${categoryToDelete.name}" category deleted.`);
     setCategoryToDelete(null);
   };
 
-  // --- PRO LOGIC: Enforce 5 Featured Limit ---
+  // ── Edit (called by EditCategoryModal via onSave prop) ────────────────────
+  // Modal still receives onSave so it can close itself; the actual context
+  // call happens here, keeping the modal decoupled from the store.
+
   const handleEdit = (updatedCat: Category) => {
-    const otherFeaturedCount = categories.filter(c => c.featured && c.id !== updatedCat.id).length;
-    
-    if (updatedCat.featured && otherFeaturedCount >= 5) {
+    const otherFeaturedCount = categories.filter(
+      (c) => c.featured && c.id !== updatedCat.id
+    ).length;
+
+    if (updatedCat.featured && otherFeaturedCount >= FEATURED_LIMIT) {
       showToast("Limit Reached: Only 5 categories can be Featured. Saved as unfeatured.");
-      updatedCat.featured = false;
+      updateCategory(updatedCat.id, { ...updatedCat, featured: false });
     } else {
       showToast(`"${updatedCat.name}" updated successfully!`);
+      updateCategory(updatedCat.id, updatedCat);
     }
-    
-    setCategories(p => p.map(c => c.id === updatedCat.id ? updatedCat : c));
   };
 
-  const handleAdd = (newCat: Category) => {
-    const featuredCount = categories.filter(c => c.featured).length;
-    
-    if (newCat.featured && featuredCount >= 5) {
+  // ── Add (called by AddCategoryModal via onAdd prop) ───────────────────────
+
+  const handleAdd = (newCat: Omit<Category, "id">) => {
+    const featuredCount = categories.filter((c) => c.featured).length;
+
+    if (newCat.featured && featuredCount >= FEATURED_LIMIT) {
       showToast("Limit Reached: Only 5 categories can be Featured. Created as unfeatured.");
-      newCat.featured = false;
+      addCategory({ ...newCat, featured: false });
     } else {
       showToast(`"${newCat.name}" category created successfully!`);
+      addCategory(newCat);
     }
-    
-    setCategories(prev => [...prev, newCat]);
   };
 
+  // ── Stats ─────────────────────────────────────────────────────────────────
+
   const stats = [
-    { icon: <Folder size={22} />, val: categories.length, label: "Total Categories", bg: "bg-gray" },
-    { icon: <FileText size={22} />, val: "8,333", label: "Total Articles", bg: "bg-green" },
-    { icon: <Eye size={22} />, val: "16.8M", label: "Total Views", bg: "bg-light" },
-    { icon: <Folder size={22} />, val: categories.filter(c => c.featured).length, label: "Featured", bg: "bg-gray" }
+    { icon: <Folder size={22} />,   val: categories.length,                          label: "Total Categories", bg: "bg-gray"  },
+    { icon: <FileText size={22} />, val: "8,333",                                    label: "Total Articles",   bg: "bg-green" },
+    { icon: <Eye size={22} />,      val: "16.8M",                                    label: "Total Views",      bg: "bg-light" },
+    { icon: <Folder size={22} />,   val: categories.filter((c) => c.featured).length, label: "Featured",         bg: "bg-gray"  },
   ];
+
+  // ── Render ────────────────────────────────────────────────────────────────
 
   return (
     <div className="cat-root">
@@ -105,11 +100,18 @@ useEffect(() => {
       {categoryToDelete && (
         <div className="cat-modal-overlay">
           <div className="cat-delete-modal">
-            <h3>Delete "{categoryToDelete?.name}"?</h3>
-            <p>This will permanently remove the category and unlink {categoryToDelete?.articles} articles. This action cannot be undone.</p>
+            <h3>Delete "{categoryToDelete.name}"?</h3>
+            <p>
+              This will permanently remove the category and unlink{" "}
+              {categoryToDelete.articles} articles. This action cannot be undone.
+            </p>
             <div className="cat-delete-actions">
-              <button className="cat-btn-cancel" onClick={() => setCategoryToDelete(null)}>Cancel</button>
-              <button className="cat-btn-delete" onClick={executeDelete}>Delete</button>
+              <button className="cat-btn-cancel" onClick={() => setCategoryToDelete(null)}>
+                Cancel
+              </button>
+              <button className="cat-btn-delete" onClick={executeDelete}>
+                Delete
+              </button>
             </div>
           </div>
         </div>
@@ -121,7 +123,9 @@ useEffect(() => {
             <h1 className="cat-title">Categories</h1>
             <p className="cat-subtitle">Organize your news content with categories</p>
           </div>
-          <button className="cat-add-btn" onClick={() => setIsAddModalOpen(true)}>+ Add Category</button>
+          <button className="cat-add-btn" onClick={() => setIsAddModalOpen(true)}>
+            + Add Category
+          </button>
         </div>
 
         <div className="cat-stats">
@@ -137,15 +141,22 @@ useEffect(() => {
         </div>
 
         <div className="cat-search">
-          <input type="text" placeholder="Search categories..." value={search} onChange={(e) => setSearch(e.target.value)} />
+          <input
+            type="text"
+            placeholder="Search categories..."
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+          />
         </div>
 
         <div className="cat-grid">
-          {filtered.map(c => (
+          {filtered.map((c) => (
             <div key={c.id} className="cat-card">
               <div className="cat-drag">⋮⋮</div>
-              <div className="cat-avatar" style={{ background: c.color }}>{c.name.charAt(0)}</div>
-              
+              <div className="cat-avatar" style={{ background: c.color }}>
+                {c.name.charAt(0)}
+              </div>
+
               <div className="cat-content">
                 <div className="cat-top">
                   <h3>{c.name}</h3>
@@ -159,10 +170,22 @@ useEffect(() => {
               </div>
 
               <div className="cat-actions">
-                <button className={`cat-toggle ${c.enabled ? "on" : ""}`} onClick={() => toggleCategory(c.id)}><span /></button>
+                <button
+                  className={`cat-toggle ${c.enabled ? "on" : ""}`}
+                  onClick={() => toggleCategory(c.id)}
+                >
+                  <span />
+                </button>
                 <div className="cat-icons">
-                  <button className="cat-icon-btn" onClick={() => setEditingCategory(c)}><Pencil size={16} /></button>
-                  <button className="cat-icon-btn cat-icon-btn--delete" onClick={() => setCategoryToDelete(c)}><Trash2 size={16} /></button>
+                  <button className="cat-icon-btn" onClick={() => setEditingCategory(c)}>
+                    <Pencil size={16} />
+                  </button>
+                  <button
+                    className="cat-icon-btn cat-icon-btn--delete"
+                    onClick={() => setCategoryToDelete(c)}
+                  >
+                    <Trash2 size={16} />
+                  </button>
                 </div>
               </div>
             </div>
@@ -170,7 +193,7 @@ useEffect(() => {
         </div>
       </div>
 
-      <EditCategoryModal 
+      <EditCategoryModal
         isOpen={editingCategory !== null}
         onClose={() => setEditingCategory(null)}
         category={editingCategory}

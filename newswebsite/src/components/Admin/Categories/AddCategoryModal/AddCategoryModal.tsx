@@ -1,39 +1,31 @@
 import { useState, useEffect } from "react";
 import { X, Check, Palette, Plus } from "lucide-react";
 import "./AddCategoryModal.css";
+import type { Category } from "../../NewsStore/NewsStore";
 
-export interface Category {
-  id: number;
-  name: string;
-  description: string;
-  articles: string;
-  views: string;
-  featured: boolean;
-  enabled: boolean;
-  color: string;
-}
+// Category is imported from the single shared definition — no local redeclaration.
 
-// ---> THIS WAS MISSING! <---
 interface AddCategoryModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onAdd: (newCategory: Category) => void;
+  /** Parent (Categories.tsx) applies the featured-limit guard then calls addCategory. */
+  onAdd: (newCategory: Omit<Category, "id">) => void;
 }
 
 const COLORS = [
-  "#ef4444", "#f97316", "#eab308", "#22c55e", "#10b981", 
-  "#06b6d4", "#3b82f6", "#6366f1", "#a855f7", "#ec4899"
+  "#ef4444", "#f97316", "#eab308", "#22c55e", "#10b981",
+  "#06b6d4", "#3b82f6", "#6366f1", "#a855f7", "#ec4899",
 ];
 
 export default function AddCategoryModal({ isOpen, onClose, onAdd }: AddCategoryModalProps) {
-  const [name, setName] = useState("");
-  const [slug, setSlug] = useState("");
+  const [name, setName]               = useState("");
+  const [slug, setSlug]               = useState("");
   const [description, setDescription] = useState("");
-  const [color, setColor] = useState("#3b82f6"); // Default to blue
-  const [featured, setFeatured] = useState(false);
-  const [enabled, setEnabled] = useState(true);
+  const [color, setColor]             = useState("#3b82f6");
+  const [featured, setFeatured]       = useState(false);
+  const [enabled, setEnabled]         = useState(true);
 
-  // Reset the form every time the modal opens
+  // Reset form every time the modal opens
   useEffect(() => {
     if (isOpen) {
       setName("");
@@ -50,31 +42,31 @@ export default function AddCategoryModal({ isOpen, onClose, onAdd }: AddCategory
   const handleNameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const newName = e.target.value;
     setName(newName);
-    setSlug(newName.toLowerCase().replace(/\s+/g, '-'));
+    setSlug(newName.toLowerCase().replace(/\s+/g, "-"));
   };
 
   const handleSubmit = () => {
-    if (!name.trim()) return; // Prevent adding empty categories
+    if (!name.trim()) return;
 
-    const newCategory: Category = {
-      id: Date.now(), // Generate a unique ID
+    // id is intentionally omitted — parent / context generates it
+    const newCategory: Omit<Category, "id"> = {
       name,
       description,
-      articles: "0", // Default starting stats
+      articles: "0",
       views: "0",
       featured,
       enabled,
       color,
     };
 
-    onAdd(newCategory);
+    onAdd(newCategory);  // parent handles context + toast + featured-limit guard
     onClose();
   };
 
   return (
     <div className="add-modal-overlay">
       <div className="add-modal-container">
-        
+
         {/* Header */}
         <div className="add-modal-header">
           <div className="add-modal-header-left">
@@ -93,32 +85,32 @@ export default function AddCategoryModal({ isOpen, onClose, onAdd }: AddCategory
 
         {/* Body */}
         <div className="add-modal-body">
-          
+
           <div className="add-form-group">
             <label>Category Name <span className="add-required">*</span></label>
-            <input 
-              type="text" 
+            <input
+              type="text"
               placeholder="e.g. Technology"
-              value={name} 
-              onChange={handleNameChange} 
+              value={name}
+              onChange={handleNameChange}
             />
           </div>
 
           <div className="add-form-group">
             <label>Slug <span className="add-required">*</span></label>
-            <input 
-              type="text" 
+            <input
+              type="text"
               placeholder="e.g. technology"
-              value={slug} 
-              onChange={(e) => setSlug(e.target.value)} 
+              value={slug}
+              onChange={(e) => setSlug(e.target.value)}
             />
             <span className="add-input-hint">URL-friendly identifier. Auto-generated from name.</span>
           </div>
 
           <div className="add-form-group">
             <label>Description</label>
-            <textarea 
-              rows={3} 
+            <textarea
+              rows={3}
               placeholder="Brief description of this category..."
               value={description}
               onChange={(e) => setDescription(e.target.value)}
@@ -151,7 +143,7 @@ export default function AddCategoryModal({ isOpen, onClose, onAdd }: AddCategory
               ><span /></button>
               <label>Featured</label>
             </div>
-            
+
             <div className="add-toggle-group">
               <button
                 className={`add-modal-toggle ${enabled ? "on" : ""}`}

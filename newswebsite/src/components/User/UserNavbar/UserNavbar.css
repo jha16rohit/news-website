@@ -330,7 +330,7 @@
 
 
 /* ===== BULLETPROOF HAMBURGER BUTTON ===== */
-.hamburger-btn {
+.hamburger-btn-xx {
   display: flex !important; 
   align-items: center;
   justify-content: center;
@@ -349,7 +349,7 @@
 }
 
 /* Forces the SVG icon itself to be strictly white */
-.hamburger-btn svg {
+.hamburger-btn-xx svg {
   stroke: #ffffff !important;
   color: #ffffff !important;
   width: 28px;

@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Outlet } from "react-router-dom";
 import AdminSidebar from "../AdminSidebar/AdminSidebar";
 import AdminTopBar from "../AdminTopBar/AdminTopBar";
-import { NewsProvider } from "../NewsProvider/NewsProvide";
+
 
 const SIDEBAR_WIDTH = 260;
 const TOPBAR_HEIGHT = 60;
@@ -11,7 +11,7 @@ const AdminLayout = () => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
   return (
-    <NewsProvider>
+    <>
       <AdminSidebar open={sidebarOpen} onClose={() => setSidebarOpen(false)} />
 
       <div
@@ -43,7 +43,7 @@ const AdminLayout = () => {
           .admin-main { margin-left: 0; padding: ${TOPBAR_HEIGHT}px 16px 16px; }
         }
       `}</style>
-    </NewsProvider>
+   </>
   );
 };
 

@@ -26,9 +26,11 @@ import CreateNewArticle from "./components/Admin/CreateNewArticle/CreateNewArtic
 import LiveStoriesPage from "./components/Admin/Livestories/Livestories";
 import Notifications from "./components/Admin/Notifications/Notifications";
 import TopicProfiles from "./components/Admin/TopicProfiles/TopicProfiles";
+import { NewsProvider } from "./components/Admin/NewsProvider/NewsProvide";
 
 export default function App() {
   return (
+    <NewsProvider>
     <BrowserRouter>
       <Routes>
 
@@ -69,5 +71,6 @@ export default function App() {
 
       </Routes>
     </BrowserRouter>
+    </NewsProvider>
   );
 }

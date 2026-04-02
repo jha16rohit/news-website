@@ -1,41 +1,37 @@
 import { useState, useEffect } from "react";
 import { X, Check, Palette } from "lucide-react";
 import "./EditCategoryModal.css";
+import type { Category } from "../../NewsStore/NewsStore";
 
-// You can also export this interface from Categories.tsx and import it here
-export interface Category {
-  id: number;
-  name: string;
-  description: string;
-  articles: string;
-  views: string;
-  featured: boolean;
-  enabled: boolean;
-  color: string;
-}
+// Category is imported from the single shared definition — no local redeclaration.
 
 interface EditCategoryModalProps {
   isOpen: boolean;
   onClose: () => void;
   category: Category | null;
+  /** Parent (Categories.tsx) calls updateCategory on the context then closes. */
   onSave: (updatedCategory: Category) => void;
 }
 
 const COLORS = [
-  "#ef4444", "#f97316", "#eab308", "#22c55e", "#10b981", 
-  "#06b6d4", "#3b82f6", "#6366f1", "#a855f7", "#ec4899"
+  "#ef4444", "#f97316", "#eab308", "#22c55e", "#10b981",
+  "#06b6d4", "#3b82f6", "#6366f1", "#a855f7", "#ec4899",
 ];
 
-export default function EditCategoryModal({ isOpen, onClose, category, onSave }: EditCategoryModalProps) {
-  // Local state for the form
+export default function EditCategoryModal({
+  isOpen,
+  onClose,
+  category,
+  onSave,
+}: EditCategoryModalProps) {
   const [formData, setFormData] = useState<Category | null>(null);
   const [slug, setSlug] = useState("");
 
-  // Populate form when modal opens with a category
+  // Populate form whenever the modal opens with a category
   useEffect(() => {
     if (category) {
       setFormData(category);
-      setSlug(category.name.toLowerCase().replace(/\s+/g, '-'));
+      setSlug(category.name.toLowerCase().replace(/\s+/g, "-"));
     }
   }, [category]);
 
@@ -44,19 +40,18 @@ export default function EditCategoryModal({ isOpen, onClose, category, onSave }:
   const handleNameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const newName = e.target.value;
     setFormData({ ...formData, name: newName });
-    // Auto-generate slug
-    setSlug(newName.toLowerCase().replace(/\s+/g, '-'));
+    setSlug(newName.toLowerCase().replace(/\s+/g, "-"));
   };
 
   const handleSave = () => {
-    onSave(formData);
+    onSave(formData);  // parent handles context + toast
     onClose();
   };
 
   return (
     <div className="modal-overlay">
       <div className="modal-container">
-        
+
         {/* Header */}
         <div className="modal-header">
           <div>
@@ -70,30 +65,22 @@ export default function EditCategoryModal({ isOpen, onClose, category, onSave }:
 
         {/* Body */}
         <div className="modal-body">
-          
+
           <div className="form-group">
             <label>Category Name <span className="required">*</span></label>
-            <input 
-              type="text" 
-              value={formData.name} 
-              onChange={handleNameChange} 
-            />
+            <input type="text" value={formData.name} onChange={handleNameChange} />
           </div>
 
           <div className="form-group">
             <label>Slug <span className="required">*</span></label>
-            <input 
-              type="text" 
-              value={slug} 
-              onChange={(e) => setSlug(e.target.value)} 
-            />
+            <input type="text" value={slug} onChange={(e) => setSlug(e.target.value)} />
             <span className="input-hint">URL-friendly identifier. Auto-generated from name.</span>
           </div>
 
           <div className="form-group">
             <label>Description</label>
-            <textarea 
-              rows={3} 
+            <textarea
+              rows={3}
               value={formData.description}
               onChange={(e) => setFormData({ ...formData, description: e.target.value })}
             />
@@ -125,7 +112,7 @@ export default function EditCategoryModal({ isOpen, onClose, category, onSave }:
               ><span /></button>
               <label>Featured</label>
             </div>
-            
+
             <div className="toggle-group">
               <button
                 className={`modal-toggle ${formData.enabled ? "on" : ""}`}
