@@ -4,7 +4,6 @@ import LatestNews from "../LatestNews/LatestNews";
 import LiveCoverage from "../LiveCoverage/LiveCoverage";
 import TrendingToday from "../TrendingToday/TrendingToday";
 import Videos from "../Videos/Videos";
-import PhotoGallery from "../PhotoGallery/PhotoGallery";
 import Newsletter from "../NewsLetter/NewsLetter";
 import Advertisment from "../Advertisment/Advertisment";  
 import "./UserDashboard.css";
@@ -25,7 +24,6 @@ const UserDashboard: React.FC = () => {
       <Advertisment adData={adminAdData} />
       <TrendingToday />
       <Videos />
-      <PhotoGallery />
       <Advertisment adData={adminAdData} />
       <Newsletter />
     </>

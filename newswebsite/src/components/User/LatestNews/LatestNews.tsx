@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { Clock, Eye, MoreHorizontal, ChevronDown } from "lucide-react";
+import { Clock, Eye } from "lucide-react";
 import { Link } from "react-router-dom";
 import "./LatestNews.css";
 
@@ -99,7 +99,7 @@ const LatestNews: React.FC = () => {
         
         {/* Section Header */}
         <div className="section-header">
-          <h2>Latest News</h2>
+          <h2>Trending News</h2>
           <div className="header-underline"></div>
         </div>
 

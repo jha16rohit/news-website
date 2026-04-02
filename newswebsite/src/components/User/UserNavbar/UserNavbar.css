@@ -144,8 +144,8 @@
   top: -40px; 
   left: 0;
   box-shadow: 2px 0px 8px rgba(0,0,0,0.15); 
-  border-bottom-left-radius: 4px; 
-  border-bottom-right-radius: 4px;
+  /* border-bottom-left-radius: 4px; 
+  border-bottom-right-radius: 4px; */
 }
 
 /* ===== NAV LINKS (Clean Rectangle Design) ===== */

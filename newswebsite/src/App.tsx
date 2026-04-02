@@ -26,7 +26,7 @@ import CreateNewArticle from "./components/Admin/CreateNewArticle/CreateNewArtic
 import LiveStoriesPage from "./components/Admin/Livestories/Livestories";
 import Notifications from "./components/Admin/Notifications/Notifications";
 import TopicProfiles from "./components/Admin/TopicProfiles/TopicProfiles";
-import { NewsProvider } from "./components/Admin/NewsProvider/NewsProvide";
+import { NewsProvider } from "./components/Admin/NewsProvider/NewsProvider";
 
 export default function App() {
   return (

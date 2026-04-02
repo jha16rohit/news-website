@@ -1,5 +1,5 @@
 import React from "react";
-import { Clock, Eye, TrendingUp, Flame } from "lucide-react";
+import { Clock, Eye } from "lucide-react";
 import { Link } from "react-router-dom";
 import "./HomeHero.css";
 
@@ -35,27 +35,6 @@ const HeroSection: React.FC = () => {
       imgUrl: "https://images.unsplash.com/photo-1485846234645-a62644f84728?auto=format&fit=crop&q=80&w=200",
     },
   ];
-
-  // 👇 NEW: Live Updates Data
-  const liveUpdates = [
-    { id: 1, time: "12:45 PM", text: "PM addresses the nation on education reform passage" },
-    { id: 2, time: "12:30 PM", text: "Opposition parties react to the bill — mixed responses" },
-    { id: 3, time: "12:15 PM", text: "Bill passed with 356 votes in favor, 98 against" },
-    { id: 4, time: "12:00 PM", text: "Final round of voting begins in Parliament" },
-    { id: 5, time: "11:45 AM", text: "Heated debate continues on digital literacy provisions" },
-    { id: 6, time: "11:30 AM", text: "Education Minister presents the bill's key highlights" },
-    { id: 7, time: "11:00 AM", text: "Parliament session begins with the education reform bill on the agenda" },
-  ];
-
-  // 👇 NEW: Numbered Trending Data
-  const numberedTrending = [
-    { id: 1, title: "Education Reform: What It Means for Students", views: "250K" },
-    { id: 2, title: "Stock Market Analysis: Bulls vs Bears in 2026", views: "180K" },
-    { id: 3, title: "Cricket World Cup Squad Selection Controversy", views: "156K" },
-    { id: 4, title: "AI Revolution: India's Tech Giants Lead the Way", views: "134K" },
-    { id: 5, title: "Budget 2026: Key Takeaways for Common Man", views: "98K" }
-  ];
-
   return (
     <section className="hero-section">
       <div className="hero-container">
@@ -87,6 +66,10 @@ const HeroSection: React.FC = () => {
 
           {/* Right Side: Image Trending Sidebar */}
           <div className="trending-sidebar">          
+            <div className="section-header">
+          <h2>Recent News</h2>
+          <div className="header-underline"></div>
+        </div>
             <div className="trending-list">
               {trendingArticles.map((article) => (
                 <Link 
@@ -105,48 +88,6 @@ const HeroSection: React.FC = () => {
             </div>
           </div>
         </div>
-
-        {/* ================= BOTTOM ROW (NEW!) ================= */}
-        <div className="hero-bottom-row">
-          
-          {/* Left Side: Live Updates (2/3 width) */}
-          <div className="live-updates-card">
-            <div className="section-header">
-              <span className="live-dot"></span>
-              <h2>LIVE UPDATES</h2>
-            </div>
-            <div className="live-list">
-              {liveUpdates.map((update) => (
-                <div key={update.id} className="live-item">
-                  <span className="live-time">{update.time}</span>
-                  <span className="live-text">{update.text}</span>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          {/* Right Side: Numbered Trending (1/3 width) */}
-          <div className="trending-numbered-card">
-            <div className="section-header">
-              <TrendingUp size={20} color="#dc2626" strokeWidth={3} />
-              <Flame size={20} color="#f97316" fill="#f97316" />
-              <h2>TRENDING</h2>
-            </div>
-            <div className="numbered-list">
-              {numberedTrending.map((trend, index) => (
-                <Link key={trend.id} to={`/article/${trend.id}`} className="numbered-item text-decoration-none">
-                  <div className="trend-rank">{index + 1}</div>
-                  <div className="trend-details">
-                    <h4>{trend.title}</h4>
-                    <span className="trend-views"><Eye size={14} /> {trend.views} views</span>
-                  </div>
-                </Link>
-              ))}
-            </div>
-          </div>
-
-        </div>
-
       </div>
     </section>
   );
