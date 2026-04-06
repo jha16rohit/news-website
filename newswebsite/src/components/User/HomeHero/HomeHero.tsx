@@ -4,6 +4,7 @@ import { Link } from "react-router-dom";
 import "./HomeHero.css";
 
 const HeroSection: React.FC = () => {
+  // Existing Image Trending Data
   const trendingArticles = [
     {
       id: 1, 
@@ -34,58 +35,59 @@ const HeroSection: React.FC = () => {
       imgUrl: "https://images.unsplash.com/photo-1485846234645-a62644f84728?auto=format&fit=crop&q=80&w=200",
     },
   ];
-
   return (
     <section className="hero-section">
       <div className="hero-container">
         
-        {/* Left Side: Featured Article mapped to article ID 1 as an example */}
-        <Link to="/article/1" className="featured-article text-decoration-none">
-          <img 
-            src="https://images.unsplash.com/photo-1523995462485-3d171b5c8fa9?auto=format&fit=crop&q=80&w=1200" 
-            alt="Parliament" 
-            className="featured-bg-img" 
-          />
-          <div className="featured-overlay">
-            <span className="category-badge politics">POLITICS</span>
-            <h1 className="featured-title">
-              Parliament Passes Historic Budget Bill: What It Means For India's Economy
-            </h1>
-            <p className="featured-excerpt">
-              In a landmark session, the Indian Parliament has passed the most ambitious budget bill in recent history, promising sweeping reforms across healthcare, education, and infrastructure sectors.
-            </p>
-            <div className="featured-meta">
-              <span><Clock size={16} /> 2 hours ago</span>
-              <span><Eye size={16} /> 24,500 views</span>
+        {/* ================= TOP ROW ================= */}
+        <div className="hero-top-row">
+          
+          {/* Left Side: Featured Article */}
+          <Link to="/article/1" className="featured-article text-decoration-none">
+            <img 
+              src="https://images.unsplash.com/photo-1523995462485-3d171b5c8fa9?auto=format&fit=crop&q=80&w=1200" 
+              alt="Parliament" 
+              className="featured-bg-img" 
+            />
+            <div className="featured-overlay">
+              <span className="category-badge politics">POLITICS</span>
+              <h1 className="featured-title">
+                Parliament Passes Historic Budget Bill: What It Means For India's Economy
+              </h1>
+              <p className="featured-excerpt">
+                In a landmark session, the Indian Parliament has passed the most ambitious budget bill in recent history, promising sweeping reforms across healthcare, education, and infrastructure sectors.
+              </p>
+              <div className="featured-meta">
+                <span><Clock size={16} /> 2 hours ago</span>
+                <span><Eye size={16} /> 24,500 views</span>
+              </div>
+            </div>
+          </Link>
+
+          {/* Right Side: Image Trending Sidebar */}
+          <div className="trending-sidebar">          
+            <div className="section-header">
+          <h2>Recent News</h2>
+          <div className="header-underline"></div>
+        </div>
+            <div className="trending-list">
+              {trendingArticles.map((article) => (
+                <Link 
+                  to={`/article/${article.id}`} 
+                  className="trending-card text-decoration-none" 
+                  key={article.id}
+                >
+                  <img src={article.imgUrl} alt={article.title} className="trending-img" />
+                  <div className="trending-info">
+                    <span className="trending-category">{article.category}</span>
+                    <h3 className="trending-title">{article.title}</h3>
+                    <span className="trending-time">{article.time}</span>
+                  </div>
+                </Link>
+              ))}
             </div>
           </div>
-        </Link>
-
-        {/* Right Side: Trending Sidebar */}
-        <div className="trending-sidebar">
-          <div className="trending-header">
-            <span className="red-dot"></span>
-            <h2>Trending Now</h2>
-          </div>
-          
-          <div className="trending-list">
-            {trendingArticles.map((article) => (
-              <Link 
-                to={`/article/${article.id}`} 
-                className="trending-card text-decoration-none" 
-                key={article.id}
-              >
-                <img src={article.imgUrl} alt={article.title} className="trending-img" />
-                <div className="trending-info">
-                  <span className="trending-category">{article.category}</span>
-                  <h3 className="trending-title">{article.title}</h3>
-                  <span className="trending-time">{article.time}</span>
-                </div>
-              </Link>
-            ))}
-          </div>
         </div>
-
       </div>
     </section>
   );

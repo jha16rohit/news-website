@@ -2,6 +2,7 @@ import React from "react";
 import { Outlet } from "react-router-dom";
 import UserNavbar from "../UserNavbar/UserNavbar";
 import UserFooter from "../UserFooter/UserFooter";
+import "./UserLayout.css";
 
 const UserLayout: React.FC = () => {
   return (
