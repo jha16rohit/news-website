@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import {
   User,
   Plus,
@@ -108,17 +108,91 @@ function ProfileForm({ initial, onSave, onClose }: ProfileFormProps) {
   const [imageUrl, setImageUrl] = useState(initial?.imageUrl ?? "");
   const fileRef = useRef<HTMLInputElement>(null);
 
+  const [isWikiLoading, setIsWikiLoading] = useState(false);
+  const [isDragging, setIsDragging] = useState(false);
+
   const handleNameChange = (v: string) => {
     setName(v);
     if (!initial?.slug) setSlug(toSlug(v));
   };
 
-  const handleFile = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
+  // Helper function to read the image file
+  const processFile = (file: File) => {
     const reader = new FileReader();
     reader.onload = (ev) => setImageUrl(ev.target?.result as string);
     reader.readAsDataURL(file);
+  };
+
+  const handleFile = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    processFile(file);
+  };
+
+  const handleDragOver = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    setIsDragging(true);
+  };
+
+  const handleDragLeave = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    setIsDragging(false);
+  };
+
+  const handleDrop = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    setIsDragging(false);
+    const file = e.dataTransfer.files?.[0];
+    if (!file) return;
+    processFile(file);
+  };
+
+  const handleQuickSearch = (platform: string) => {
+    if (!name.trim()) {
+      alert("Please enter the person's Name at the top first!");
+      return;
+    }
+    const query = encodeURIComponent(`${name} official ${platform}`);
+    window.open(`https://www.google.com/search?q=${query}`, "_blank");
+  };
+
+  const handleFetchWiki = async () => {
+    if (!name.trim()) {
+      alert("Please enter the Name first so I know who to search for on Wikipedia!");
+      return;
+    }
+    setIsWikiLoading(true);
+    try {
+      const url = `https://en.wikipedia.org/w/api.php?action=query&prop=extracts&explaintext=true&format=json&origin=*&titles=${encodeURIComponent(name)}`;
+      
+      const response = await fetch(url);
+      if (response.ok) {
+        const data = await response.json();
+        const pages = data.query.pages;
+        const pageId = Object.keys(pages)[0];
+
+        if (pageId === "-1") {
+          alert("Could not find a Wikipedia page matching that exact name.");
+        } else if (pages[pageId].extract) {
+          let fullText = pages[pageId].extract;
+          if (fullText.length > 6000) {
+            let choppedText = fullText.substring(0, 6000);
+            choppedText = choppedText.substring(0, choppedText.lastIndexOf(".")) + ".";
+            setDescription(choppedText);
+          } else {
+            setDescription(fullText);
+          }
+        } else {
+          alert("Wikipedia didn't return a description for this name.");
+        }
+      } else {
+        alert("Could not connect to Wikipedia.");
+      }
+    } catch (error) {
+      alert("Failed to connect to Wikipedia.");
+    } finally {
+      setIsWikiLoading(false);
+    }
   };
 
   const handleSubmit = () => {
@@ -159,7 +233,6 @@ function ProfileForm({ initial, onSave, onClose }: ProfileFormProps) {
                 <input
                   value={slug}
                   onChange={(e) => setSlug(e.target.value)}
-        
                   className="tp-slug-input"
                 />
               </div>
@@ -173,8 +246,11 @@ function ProfileForm({ initial, onSave, onClose }: ProfileFormProps) {
           </div>
 
           <div
-            className="tp-upload-zone"
+            className={`tp-upload-zone ${isDragging ? "dragging" : ""}`}
             onClick={() => fileRef.current?.click()}
+            onDragOver={handleDragOver}
+            onDragLeave={handleDragLeave}
+            onDrop={handleDrop}
             style={imageUrl ? { padding: 0, border: "none" } : {}}
           >
             {imageUrl ? (
@@ -182,7 +258,7 @@ function ProfileForm({ initial, onSave, onClose }: ProfileFormProps) {
             ) : (
               <>
                 <Upload size={28} strokeWidth={1.5} />
-                <span>Click to upload or drag &amp; drop</span>
+                <span>{isDragging ? "Drop image here!" : "Click to upload or drag & drop"}</span>
                 <small>PNG, JPG up to 5MB</small>
               </>
             )}
@@ -190,21 +266,31 @@ function ProfileForm({ initial, onSave, onClose }: ProfileFormProps) {
           <input ref={fileRef} type="file" accept="image/*" style={{ display: "none" }} onChange={handleFile} />
 
           <div className="tp-field" style={{ marginTop: 12 }}>
-            <label>Image Caption</label>
+            <label>Image Caption (Red Highlight Tag)</label>
             <input
               value={caption}
               onChange={(e) => setCaption(e.target.value)}
-              
             />
           </div>
 
           <div className="tp-field" style={{ marginTop: 12 }}>
-            <label>Description / Biography <span className="required">*</span></label>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <label>Description / Biography <span className="required">*</span></label>
+              <button 
+                type="button" 
+                className="tp-wiki-fetch-btn" 
+                onClick={handleFetchWiki}
+                disabled={isWikiLoading}
+              >
+                {isWikiLoading ? "Fetching..." : "✨ Auto-Fetch from Wikipedia"}
+              </button>
+            </div>
+            
             <textarea
               value={description}
               onChange={(e) => setDescription(e.target.value)}
-              placeholder="Write a detailed biography or description..."
-              rows={4}
+              placeholder="Write a detailed biography or click Auto-Fetch..."
+              rows={8}
             />
           </div>
 
@@ -220,7 +306,11 @@ function ProfileForm({ initial, onSave, onClose }: ProfileFormProps) {
               onChange={(e) => setInstagram(e.target.value)}
               placeholder="https://instagram.com/username"
             />
+            <button type="button" className="tp-quick-search-btn" onClick={() => handleQuickSearch("Instagram")} title="Find Instagram">
+              <Search size={14} />
+            </button>
           </div>
+
           <div className="tp-social-field">
             <span className="tp-social-icon tp-fb"><Facebook size={16} /></span>
             <input
@@ -228,7 +318,11 @@ function ProfileForm({ initial, onSave, onClose }: ProfileFormProps) {
               onChange={(e) => setFacebook(e.target.value)}
               placeholder="https://facebook.com/username"
             />
+            <button type="button" className="tp-quick-search-btn" onClick={() => handleQuickSearch("Facebook")} title="Find Facebook">
+              <Search size={14} />
+            </button>
           </div>
+
           <div className="tp-social-field">
             <span className="tp-social-icon tp-tw"><FaXTwitter size={16} /></span>
             <input
@@ -236,6 +330,9 @@ function ProfileForm({ initial, onSave, onClose }: ProfileFormProps) {
               onChange={(e) => setTwitter(e.target.value)}
               placeholder="https://x.com/username"
             />
+            <button type="button" className="tp-quick-search-btn" onClick={() => handleQuickSearch("Twitter")} title="Find Twitter">
+              <Search size={14} />
+            </button>
           </div>
 
           {/* Preview */}

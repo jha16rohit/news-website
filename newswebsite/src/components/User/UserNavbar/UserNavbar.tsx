@@ -1,12 +1,14 @@
 import React, { useState, useEffect, useRef } from "react";
 import "./UserNavbar.css";
-import { NavLink } from "react-router-dom";
+import { NavLink, useLocation, useNavigate } from "react-router-dom"; // 👇 Added useNavigate
 import { Bell, User, Menu, X, Search } from "lucide-react";
 import logo from "../../../assets/Logo.png";
 import { useNews } from "../../Admin/NewsStore/NewsStore";
 
 const UserNavbar: React.FC = () => {
   const { categories } = useNews();
+  const location = useLocation();
+  const navigate = useNavigate(); // 👇 Initialize navigate
 
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [isSearchOpen, setIsSearchOpen]     = useState(false);
@@ -32,6 +34,20 @@ const UserNavbar: React.FC = () => {
     "Sensex Surges 800 Points As Foreign Investors Pour In Record Capital",
     "PM Modi Meets World Leaders",
   ];
+
+  // 👇 The SMART Subscribe Button Logic
+  const handleSubscribeClick = () => {
+    if (location.pathname === "/") {
+      // Already on Home? Just scroll down smoothly.
+      document.getElementById("newsletter-section")?.scrollIntoView({ behavior: "smooth" });
+    } else {
+      // On another page? Go to Home first, then scroll!
+      navigate("/");
+      setTimeout(() => {
+        document.getElementById("newsletter-section")?.scrollIntoView({ behavior: "smooth" });
+      }, 150); // Tiny delay to let the homepage render before scrolling
+    }
+  };
 
   return (
     <div className="navbar-wrapper">
@@ -85,7 +101,19 @@ const UserNavbar: React.FC = () => {
 
             {/* Desktop nav — enabled + featured categories only */}
             <nav className="nav-links">
-              <NavLink to="/" end>Home</NavLink>
+              <NavLink 
+                to="/" 
+                end
+                onClick={(e) => {
+                  if (location.pathname === "/") {
+                    e.preventDefault(); 
+                    // 👇 The new foolproof scroll command
+                    document.getElementById("hero-section")?.scrollIntoView({ behavior: "smooth" }); 
+                  }
+                }}
+              >
+                Home
+              </NavLink>
 
               {categories
                 .filter((cat) => cat.enabled && cat.featured)
@@ -105,7 +133,18 @@ const UserNavbar: React.FC = () => {
                 <X size={26} />
               </button>
 
-              <NavLink to="/" className="mobile-link" onClick={() => setMobileMenuOpen(false)}>
+              <NavLink 
+                to="/" 
+                className="mobile-link" 
+                onClick={(e) => {
+                  setMobileMenuOpen(false); 
+                  if (location.pathname === "/") {
+                    e.preventDefault();
+                    // 👇 The new foolproof scroll command
+                    document.getElementById("hero-section")?.scrollIntoView({ behavior: "smooth" });
+                  }
+                }}
+              >
                 Home
               </NavLink>
 
@@ -121,7 +160,7 @@ const UserNavbar: React.FC = () => {
                     {cat.name}
                   </NavLink>
                 ))}
-
+              <NavLink to="/Topic"         onClick={() => setMobileMenuOpen(false)}>Topic</NavLink>
               <div className="dropdown-divider" />
               <NavLink to="/about"          onClick={() => setMobileMenuOpen(false)}>About Us</NavLink>
               <NavLink to="/contact"        onClick={() => setMobileMenuOpen(false)}>Contact Us</NavLink>
@@ -150,7 +189,15 @@ const UserNavbar: React.FC = () => {
               <Bell size={20} />
               <span className="notification-dot" />
             </div>
-            <button className="subscribe-btn">Subscribe</button>
+
+            {/* 👇 Used the smart function here! */}
+            <button 
+              className="subscribe-btn"
+              onClick={handleSubscribeClick}
+            >
+              Subscribe
+            </button>
+            
             <User size={20} />
           </div>
 

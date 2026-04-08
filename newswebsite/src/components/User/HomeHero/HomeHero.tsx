@@ -36,7 +36,7 @@ const HeroSection: React.FC = () => {
     },
   ];
   return (
-    <section className="hero-section">
+    <section id="hero-section" className="hero-section">
       <div className="hero-container">
         
         {/* ================= TOP ROW ================= */}

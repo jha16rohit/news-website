@@ -6,6 +6,8 @@ import UserDashboard from "./components/User/UserDashboard/UserDashboard";
 import ArticleDetail from "./components/User/ArticalDetails/ArticalDetails";
 import LiveDetail from "./components/User/LiveDetails/LiveDetails";
 import LiveEventsPage from "./components/User/LiveEventsPage/LiveEventsPage";
+import TopicPage from "./components/User/TopicPage/TopicPage";
+import TopicDetail from "./components/User/TopicDetail/TopicDetail";
 
 /* ================= ADMIN SIDE ================= */
 import Login from "./components/Admin/auth/Login";
@@ -31,46 +33,49 @@ import { NewsProvider } from "./components/Admin/NewsProvider/NewsProvider";
 export default function App() {
   return (
     <NewsProvider>
-    <BrowserRouter>
-      <Routes>
+      <BrowserRouter>
+        <Routes>
 
-        {/* USER ROUTES */}
-        <Route element={<UserLayout />}>
-          <Route path="/" element={<UserDashboard />} />
-          <Route path="/article/:articleId" element={<ArticleDetail />} />
-          <Route path="/live/:eventId" element={<LiveDetail />} />
-          <Route path="/live-events" element={<LiveEventsPage />} />
-        </Route>
+          {/* USER ROUTES */}
+          <Route element={<UserLayout />}>
+            <Route path="/" element={<UserDashboard />} />
+            <Route path="/article/:articleId" element={<ArticleDetail />} />
+            <Route path="/live/:eventId" element={<LiveDetail />} />
+            <Route path="/live-events" element={<LiveEventsPage />} />
+            <Route path="/Topic" element={<TopicPage />} />
+            {/* 👇 Cleaned this up to ONLY use the ID route! */}
+            <Route path="/topic/:id" element={<TopicDetail />} />
+          </Route>
 
-        {/* ADMIN LOGIN */}
-        <Route path="/admin/login-xyzsft" element={<Login />} />
+          {/* ADMIN LOGIN */}
+          <Route path="/admin/login-xyzsft" element={<Login />} />
 
-        {/* ADMIN PANEL — NewsProvider lives inside AdminLayout */}
-        <Route path="/admin" element={<AdminLayout />}>
-          <Route index element={<AdminDashboard />} />
-          <Route path="dashboard" element={<AdminDashboard />} />
-          <Route path="news" element={<AllNews />} />
-          <Route path="news/create" element={<CreateNewArticle />} />
-          <Route path="breaking" element={<BreakingNews />} />
-          <Route path="trending" element={<TrendingNews />} />
-          <Route path="feature" element={<FeaturedContent />} />
-          <Route path="schedule" element={<ScheduledPosts />} />
-          <Route path="comments" element={<CommentsPage />} />
-          <Route path="categories" element={<Categories />} />
-          <Route path="tags" element={<Tags />} />
-          <Route path="medialibrary" element={<MediaLibrary />} />
-          <Route path="analytics" element={<Analytics />} />
-          <Route path="setting" element={<AccountSettings />} />
-          <Route path="live" element={<LiveStoriesPage />} />
-          <Route path="notification" element={<Notifications />} />
-          <Route path="profile" element={<TopicProfiles />} />
-        </Route>
+          {/* ADMIN PANEL — NewsProvider lives inside AdminLayout */}
+          <Route path="/admin" element={<AdminLayout />}>
+            <Route index element={<AdminDashboard />} />
+            <Route path="dashboard" element={<AdminDashboard />} />
+            <Route path="news" element={<AllNews />} />
+            <Route path="news/create" element={<CreateNewArticle />} />
+            <Route path="breaking" element={<BreakingNews />} />
+            <Route path="trending" element={<TrendingNews />} />
+            <Route path="feature" element={<FeaturedContent />} />
+            <Route path="schedule" element={<ScheduledPosts />} />
+            <Route path="comments" element={<CommentsPage />} />
+            <Route path="categories" element={<Categories />} />
+            <Route path="tags" element={<Tags />} />
+            <Route path="medialibrary" element={<MediaLibrary />} />
+            <Route path="analytics" element={<Analytics />} />
+            <Route path="setting" element={<AccountSettings />} />
+            <Route path="live" element={<LiveStoriesPage />} />
+            <Route path="notification" element={<Notifications />} />
+            <Route path="profile" element={<TopicProfiles />} />
+          </Route>
 
-        {/* 404 */}
-        <Route path="*" element={<h1>Page Not Found</h1>} />
+          {/* 404 */}
+          <Route path="*" element={<h1>Page Not Found</h1>} />
 
-      </Routes>
-    </BrowserRouter>
+        </Routes>
+      </BrowserRouter>
     </NewsProvider>
   );
 }

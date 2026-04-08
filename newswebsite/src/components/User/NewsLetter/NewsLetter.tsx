@@ -4,7 +4,7 @@ import "./NewsLetter.css";
 
 const Newsletter: React.FC = () => {
   return (
-    <section className="newsletter-section">
+    <section id="newsletter-section" className="newsletter-section">
       <div className="newsletter-box">
         
         {/* Icon */}

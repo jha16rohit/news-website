@@ -1,5 +1,6 @@
 import React from "react";
-import { Facebook, Twitter, Instagram, Youtube, Mail } from "lucide-react";
+import { Facebook, Instagram, Youtube, Mail } from "lucide-react";
+import { FaXTwitter } from 'react-icons/fa6';
 import logo from "../../../assets/Logo.png"; // 👈 Import your logo here!
 import "./UserFooter.css";
 
@@ -26,7 +27,7 @@ const Footer: React.FC = () => {
             </p>
             <div className="social-icons">
               <a href="#" className="social-link"><Facebook size={18} /></a>
-              <a href="#" className="social-link"><Twitter size={18} /></a>
+              <a href="#" className="social-link"><FaXTwitter size={18} /></a>
               <a href="#" className="social-link"><Instagram size={18} /></a>
               <a href="#" className="social-link"><Youtube size={18} /></a>
             </div>
@@ -51,8 +52,9 @@ const Footer: React.FC = () => {
           <div className="footer-col">
             <h3>Quick Links</h3>
             <ul>
-              <li><a href="#">Latest News</a></li>
+              <li><a href="#">Recent News</a></li>
               <li><a href="#">Trending</a></li>
+              <li><a href="#">Topic</a></li>
               <li><a href="#">Live Coverage</a></li>
               <li><a href="#">Videos</a></li>
               <li><a href="#">Photo Gallery</a></li>

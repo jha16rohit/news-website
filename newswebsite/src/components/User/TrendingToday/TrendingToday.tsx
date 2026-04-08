@@ -3,14 +3,12 @@ import { TrendingUp, ArrowRight } from "lucide-react";
 import "./TrendingToday.css";
 
 const TrendingToday: React.FC = () => {
-  // Data matching your image perfectly
   const trendingData = [
     {
       id: 1,
       category: "POLITICS",
       title: "Parliament Passes Historic Budget Bill: What It Means For India's Economy",
       meta: "2 hours ago · 24,500 views",
-      // Using a valid image since the one in the screenshot was broken!
       imgUrl: "https://images.unsplash.com/photo-1504711434969-e33886168f5c?auto=format&fit=crop&q=80&w=200",
     },
     {
@@ -61,13 +59,12 @@ const TrendingToday: React.FC = () => {
 
         {/* List Container */}
         <div className="trending-list-card">
-          {trendingData.map((item, index) => (
+          {trendingData.map((item) => (
             <div className="trending-row" key={item.id}>
               
-              {/* Large Number (01, 02, etc.) */}
-              <div className="trending-number">
-                {/* Pads the index with a leading zero */}
-                {String(index + 1).padStart(2, '0')}
+              {/* Thumbnail Image Moved to the Left! */}
+              <div className="trending-image-wrapper">
+                <img src={item.imgUrl} alt={item.title} className="trending-thumbnail" />
               </div>
 
               {/* Text Content */}
@@ -75,11 +72,6 @@ const TrendingToday: React.FC = () => {
                 <span className="trending-category">{item.category}</span>
                 <h3 className="trending-title">{item.title}</h3>
                 <span className="trending-meta">{item.meta}</span>
-              </div>
-
-              {/* Thumbnail Image */}
-              <div className="trending-image-wrapper">
-                <img src={item.imgUrl} alt={item.title} className="trending-thumbnail" />
               </div>
 
             </div>
