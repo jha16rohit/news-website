@@ -36,7 +36,7 @@ const HeroSection: React.FC = () => {
     },
   ];
   return (
-    <section id="hero-section" className="hero-section">
+    <section className="hero-section">
       <div className="hero-container">
         
         {/* ================= TOP ROW ================= */}
@@ -66,7 +66,7 @@ const HeroSection: React.FC = () => {
 
           {/* Right Side: Image Trending Sidebar */}
           <div className="trending-sidebar">          
-            <div className="section-header">
+            <div className="section-header aa1">
           <h2>Recent News</h2>
           <div className="header-underline"></div>
         </div>

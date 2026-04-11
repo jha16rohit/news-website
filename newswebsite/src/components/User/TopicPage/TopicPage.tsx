@@ -27,7 +27,7 @@ const TopicPage: React.FC = () => {
         setTopics(JSON.parse(raw));
       }
     };
-    
+
     loadTopics();
     window.addEventListener("storage", loadTopics);
     return () => window.removeEventListener("storage", loadTopics);
@@ -41,7 +41,7 @@ const TopicPage: React.FC = () => {
     <div className="topic-page-wrapper">
       <main className="topic-main-content">
         <div className="topic-container">
-          
+
           <div className="topic-header-section">
             <h1 className="topic-page-heading">Topics</h1>
             <p className="topic-page-subheading">Follow your favorite people, trends, and categories.</p>
@@ -49,9 +49,9 @@ const TopicPage: React.FC = () => {
 
           <div className="topic-grid">
             {topics.slice(0, visibleCount).map((topic) => (
-              
+
               <Link to={`/topic/${topic.id}`} key={topic.id} className="topic-card text-decoration-none">
-                
+
                 {/* 1. Full Width Image at Top */}
                 <div className="topic-card-image-wrapper">
                   {topic.imageUrl ? (
@@ -64,14 +64,17 @@ const TopicPage: React.FC = () => {
                 </div>
 
                 <div className="topic-card-body">
+
+                  {/* 3. Title (Topic Name) */}
+                  <h2 className="topic-card-title">{topic.name}</h2>
+
                   {/* 2. Red Highlighted Caption (Badge) */}
                   {topic.caption && (
                     <span className="topic-card-badge">{topic.caption}</span>
                   )}
-                  
-                  {/* 3. Title (Topic Name) */}
-                  <h2 className="topic-card-title">{topic.name}</h2>
-                  
+
+
+
                   {/* 4. Description with "..." truncation */}
                   <p className="topic-card-desc">{topic.description}</p>
                 </div>
@@ -85,7 +88,7 @@ const TopicPage: React.FC = () => {
 
               </Link>
             ))}
-            
+
             {topics.length === 0 && (
               <div style={{ gridColumn: "1 / -1", textAlign: "center", padding: "40px", color: "#64748b" }}>
                 No topics available yet. Create some in the Admin panel!

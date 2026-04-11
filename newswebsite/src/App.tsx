@@ -8,6 +8,7 @@ import LiveDetail from "./components/User/LiveDetails/LiveDetails";
 import LiveEventsPage from "./components/User/LiveEventsPage/LiveEventsPage";
 import TopicPage from "./components/User/TopicPage/TopicPage";
 import TopicDetail from "./components/User/TopicDetail/TopicDetail";
+import CategoryTemplate from "./components/User/CategoryTemplate/CategoryTemplate";
 
 /* ================= ADMIN SIDE ================= */
 import Login from "./components/Admin/auth/Login";
@@ -43,14 +44,21 @@ export default function App() {
             <Route path="/live/:eventId" element={<LiveDetail />} />
             <Route path="/live-events" element={<LiveEventsPage />} />
             <Route path="/Topic" element={<TopicPage />} />
-            {/* 👇 Cleaned this up to ONLY use the ID route! */}
             <Route path="/topic/:id" element={<TopicDetail />} />
           </Route>
+
+          {/*
+            Dynamic category route — outside UserLayout so it renders
+            its own Navbar + Footer (matching the sports page template).
+            CategoryTemplate handles any slug; the component itself shows
+            a "not found" state if the slug doesn't match a known category.
+          */}
+          <Route path="/category/:slug" element={<CategoryTemplate />} />
 
           {/* ADMIN LOGIN */}
           <Route path="/admin/login-xyzsft" element={<Login />} />
 
-          {/* ADMIN PANEL — NewsProvider lives inside AdminLayout */}
+          {/* ADMIN PANEL */}
           <Route path="/admin" element={<AdminLayout />}>
             <Route index element={<AdminDashboard />} />
             <Route path="dashboard" element={<AdminDashboard />} />
