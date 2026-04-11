@@ -1,0 +1,206 @@
+/* ===== Account Settings Styles (Updated Text Sizes) ===== */
+
+.settings-page {
+  margin: 0 auto;
+  /* padding: 32px 16px; */
+  background-color: #f5f5f5;
+  min-height: 100vh;
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+
+/* Header */
+.settings-header {
+  margin-bottom: 24px;
+}
+
+.settings-title {
+  font-size: 36px;
+  font-weight: 700;
+  color: #111;
+  margin: 0 0 8px 0;
+}
+
+.settings-subtitle {
+  font-size: 19px;
+  color: #666;
+  margin: 0;
+}
+
+/* Card */
+.settings-card {
+  background: #fff;
+  border: 1px solid #e5e7eb;
+  border-radius: 10px;
+  padding: 28px;
+  margin-bottom: 20px;
+}
+
+/* Card Header */
+.card-header {
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+  margin-bottom: 24px;
+}
+
+.card-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-top: 4px;
+  color: #111;
+}
+
+.card-title {
+  font-size: 20px;
+  color: #111;
+  margin: 0 0 6px 0;
+}
+
+.card-subtitle {
+  font-size: 19px;
+  color: #777;
+  margin: 0;
+}
+
+/* Avatar */
+.avatar-row {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 24px;
+}
+
+/* Form */
+.profile-form {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.form-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
+}
+
+.form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.form-label {
+  font-size: 19px;
+  font-weight: 500;
+  color: #333;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.label-icon {
+  display: flex;
+  align-items: center;
+  color: #555;
+}
+
+.form-input {
+  width: 100%;
+  padding: 14px 16px;
+  font-size: 19px;
+  color: #222;
+  background-color: #fff;
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  outline: none;
+  box-sizing: border-box;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.form-input::placeholder {
+  color: #aaa;
+  font-size: 19px;
+}
+
+.form-input:focus {
+  border-color: #555;
+  box-shadow: 0 0 0 3px rgba(0, 0, 0, 0.06);
+}
+
+/* Buttons */
+.btn-primary {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  width: 100%;
+  padding: 16px 20px;
+  font-size: 19px;
+  font-weight: 600;
+  color: #fff;
+  background-color: #0f172a;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: background-color 0.2s ease, transform 0.1s ease;
+  margin-top: 8px;
+}
+
+.btn-primary:hover {
+  background-color: #333;
+}
+
+.btn-primary:active {
+  transform: scale(0.99);
+}
+
+.btn-secondary {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  width: 100%;
+  padding: 16px 20px;
+  font-size: 19px;
+  font-weight: 600;
+  color: #fff;
+  background-color: #0f172a;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: background-color 0.2s ease, transform 0.1s ease;
+  margin-top: 8px;
+}
+
+.btn-secondary:hover {
+  background-color: #333;
+}
+
+.btn-secondary:active {
+  transform: scale(0.99);
+}
+
+/* Responsive */
+@media (max-width: 480px) {
+  .form-row {
+    grid-template-columns: 1fr;
+  }
+
+  .settings-page {
+    padding: 20px 12px;
+  }
+}
+.settings-cards-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 24px;
+  align-items: start;
+}
+
+/* Responsive */
+@media (max-width: 900px) {
+  .settings-cards-row {
+    grid-template-columns: 1fr;
+  }
+}

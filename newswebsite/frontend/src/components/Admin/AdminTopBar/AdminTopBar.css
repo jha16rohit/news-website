@@ -1,0 +1,348 @@
+/* ================= TOPBAR ================= */
+.admin-topbar {
+  height: 60px;
+  width: 100%;
+  background: #ffffff;
+  border-bottom: 1px solid #e5e7eb;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 20px;
+  box-sizing: border-box;
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+  gap: 12px;
+}
+
+/* ================= HAMBURGER ================= */
+.hamburger-btn {
+  display: none;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  color: #374151;
+  padding: 6px;
+  border-radius: 8px;
+  flex-shrink: 0;
+}
+
+.hamburger-btn:hover { background: #f3f4f6; }
+
+/* ================= SEARCH ================= */
+.topbar-search {
+  position: relative;
+  display: flex;
+  align-items: center;
+  flex: 1;
+  max-width: 500px;
+}
+
+/* Icon-only button — hidden on desktop */
+.search-icon-btn {
+  display: none;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  color: #6b7280;
+  padding: 8px;
+  border-radius: 10px;
+  flex-shrink: 0;
+}
+
+.search-icon-btn:hover { background: #f3f4f6; color: #111; }
+
+/* Input wrapper — always visible on desktop */
+.search-input-wrap {
+  position: relative;
+  display: flex;
+  align-items: center;
+  width: 100%;
+}
+
+.search-prefix-icon {
+  position: absolute;
+  left: 14px;
+  color: #9ca3af;
+  pointer-events: none;
+}
+
+.search-input-wrap input {
+  width: 100%;
+  height: 38px;
+  border-radius: 14px;
+  border: 1px solid #d1d5db;
+  padding: 0 38px 0 38px;
+  font-size: 14px;
+  outline: none;
+  background: #f9fafb;
+  transition: border-color 0.2s;
+}
+
+.search-input-wrap input:focus { border-color: #6b7280; }
+.search-input-wrap input::placeholder { color: #9ca3af; }
+
+/* X button inside input — hidden on desktop */
+.search-clear-btn {
+  display: none;
+  position: absolute;
+  right: 10px;
+  background: #e5e7eb;
+  border: none;
+  cursor: pointer;
+  color: #6b7280;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.search-clear-btn:hover { background: #d1d5db; color: #111; }
+
+/* ================= ACTIONS ================= */
+.topbar-actions {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  flex-shrink: 0;
+}
+
+/* ================= LIVE BADGE ================= */
+.live-badge {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 16px;
+  height: 38px;
+  border-radius: 999px;
+  background: #fee2e2;
+  color: #dc2626;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.live-dot {
+  width: 8px;
+  height: 8px;
+  background: #dc2626;
+  border-radius: 50%;
+  position: relative;
+  flex-shrink: 0;
+  animation: liveBlink 1.2s infinite ease-in-out;
+}
+
+.live-dot::after {
+  content: "";
+  position: absolute;
+  inset: -4px;
+  border-radius: 50%;
+  background: rgba(220, 38, 38, 0.35);
+  animation: livePulse 1.2s infinite ease-out;
+}
+
+/* ================= NOTIFICATION ================= */
+.notification {
+  position: relative;
+  width: 40px;
+  height: 40px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+
+.notification:hover { background: #f3f4f6; }
+
+.notification-count {
+  position: absolute;
+  top: -2px;
+  right: -2px;
+  background: #ef4444;
+  color: #fff;
+  font-size: 10px;
+  font-weight: 600;
+  padding: 2px 5px;
+  border-radius: 999px;
+}
+
+/* ================= ADD NEWS ================= */
+.add-news-wrapper { position: relative; }
+
+.add-news-btn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  height: 42px;
+  padding: 0 18px;
+  background: #111827;
+  color: #ffffff;
+  border: none;
+  border-radius: 12px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.add-news-btn:hover { background: #1f2937; }
+
+.add-news-dropdown {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  width: 210px;
+  background: #ffffff;
+  border-radius: 14px;
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.12);
+  padding: 8px;
+  z-index: 2000;
+  animation: dropdownFade 0.15s ease-out;
+}
+
+.dropdown-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 11px 13px;
+  border-radius: 10px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  color: #111827;
+}
+
+.dropdown-item:hover { background: #f3f4f6; }
+.dropdown-item.danger svg { color: #ef4444; }
+
+/* ================= PROFILE ================= */
+.profile-wrapper { position: relative; }
+
+.profile-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+}
+
+.user-avatar {
+  width: 40px;
+  height: 40px;
+  background: #2563eb;
+  color: #ffffff;
+  font-size: 14px;
+  font-weight: 600;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.profile-dropdown {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  width: 200px;
+  background: #ffffff;
+  border-radius: 14px;
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.12);
+  padding: 8px 0;
+  z-index: 2000;
+  animation: dropdownFade 0.15s ease-out;
+}
+
+.profile-header {
+  padding: 11px 15px;
+  font-size: 15px;
+  font-weight: 600;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.profile-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 11px 15px;
+  font-size: 14px;
+  cursor: pointer;
+  color: #111827;
+}
+
+.profile-item:hover { background: #f3f4f6; }
+.profile-item.danger { color: #ef4444; }
+
+.profile-divider { height: 1px; background: #e5e7eb; margin: 6px 0; }
+
+/* ================= ANIMATIONS ================= */
+@keyframes dropdownFade {
+  from { opacity: 0; transform: translateY(-6px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes liveBlink {
+  0%, 100% { opacity: 1; }
+  50%       { opacity: 0.35; }
+}
+
+@keyframes livePulse {
+  0%   { transform: scale(0.6); opacity: 0.7; }
+  100% { transform: scale(1.8); opacity: 0; }
+}
+
+/* ===============================
+   TABLET  ≤ 1024px
+================================ */
+@media (max-width: 1024px) {
+  .hamburger-btn { display: flex; }
+}
+
+/* ===============================
+   MOBILE  ≤ 640px
+================================ */
+@media (max-width: 640px) {
+  .admin-topbar { padding: 0 12px; gap: 8px; }
+
+  /* Default: search is just an icon button, takes no flex space */
+  .topbar-search {
+    flex: unset;
+    max-width: unset;
+  }
+
+  /* Show the search icon button */
+  .search-icon-btn { display: flex; }
+
+  /* Hide the input wrap by default */
+  .search-input-wrap { display: none; }
+
+  /* When expanded: topbar-search grows to fill remaining space */
+  .topbar-search.search-expanded {
+    flex: 1;
+  }
+
+  .topbar-search.search-expanded .search-input-wrap {
+    display: flex;
+  }
+
+  /* Show X button inside input on mobile when expanded */
+  .topbar-search.search-expanded .search-clear-btn {
+    display: flex;
+  }
+
+  /* Hide "Add News" label, icon+chevron only */
+  .btn-label { display: none; }
+  .add-news-btn { padding: 0 12px; gap: 4px; }
+
+  /* Hide live text, dot only */
+  /* .live-text { display: none; } */
+  /* .live-badge { padding: 8px 10px; } */
+
+  /* Hide profile chevron */
+  .profile-chevron { display: none; }
+
+
+  .aa{
+    margin-left: auto;
+  }
+}

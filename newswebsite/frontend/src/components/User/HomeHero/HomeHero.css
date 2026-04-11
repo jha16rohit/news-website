@@ -1,0 +1,303 @@
+/* ===== HERO SECTION WRAPPER ===== */
+.hero-section {
+  padding: 40px 0;
+  width: 100%;
+  background-color: #f8f9fa; 
+}
+
+.hero-container {
+  width: 95%;
+  max-width: 1400px; 
+  margin: auto;
+  display: flex;
+  flex-direction: column; /* Changed to column to stack the rows */
+  gap: 30px;
+}
+
+/* ===== TOP ROW ===== */
+.hero-top-row {
+  display: flex;
+  gap: 30px;
+  width: 100%;
+}
+
+/* ===== LEFT SIDE: FEATURED ARTICLE ===== */
+.featured-article {
+  flex: 2; 
+  position: relative;
+  border-radius: 12px;
+  overflow: hidden;
+  min-height: 500px;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  cursor: pointer;
+
+  max-width: 780px;
+  height: 470px;
+}
+
+.featured-bg-img {
+  position: absolute;
+  top: 0; left: 0;
+  width: 100%; height: 100%;
+  object-fit: cover;
+  z-index: 1;
+  transition: transform 0.6s ease; 
+}
+
+/* .featured-article:hover .featured-bg-img {
+  transform: scale(1.05);
+} */
+
+.featured-overlay {
+  position: relative;
+  z-index: 2;
+  background: linear-gradient(to top, rgba(0, 0, 0, 0.95) 0%, rgba(0, 0, 0, 0.6) 60%, transparent 100%);
+  padding: 40px 30px;
+  color: white;
+}
+
+.category-badge {
+  display: inline-block;
+  padding: 4px 12px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 700;
+  margin-bottom: 15px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.category-badge.politics { background-color: #e60000; color: white; }
+
+.featured-title {
+  font-size: 38px;
+  font-weight: 800;
+  line-height: 1.25;
+  margin: 0 0 15px 0;
+}
+
+.featured-excerpt {
+  font-size: 16px;
+  line-height: 1.6;
+  color: #e2e8f0;
+  margin: 0 0 20px 0;
+  max-width: 95%;
+}
+
+.featured-meta {
+  display: flex;
+  gap: 20px;
+  font-size: 14px;
+  color: #cbd5e1;
+}
+
+.featured-meta span { display: flex; align-items: center; gap: 6px; }
+
+/* ===== RIGHT SIDE: TRENDING SIDEBAR ===== */
+.trending-sidebar {
+  flex: 1; 
+  display: flex;
+  flex-direction: column;
+}
+
+.trending-list {
+  display: flex;
+  flex-direction: column;
+  /* gap: 15px; */
+}
+
+.trending-card {
+  display: flex;
+  gap: 15px;
+  background-color: white;
+  padding: 12px;
+  border-radius: 12px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.03);
+  border: 1px solid #f1f5f9;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  cursor: pointer;
+}
+
+.trending-card:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 8px 15px rgba(0, 0, 0, 0.08);
+}
+
+.trending-img {
+  width: 100px; height: 90px;
+  border-radius: 8px;
+  object-fit: cover;
+  flex-shrink: 0;
+}
+
+.trending-info {
+  display: flex; flex-direction: column; justify-content: center;
+}
+
+.trending-category {
+  color: #e60000; font-size: 11px; font-weight: 800;
+  text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 6px;
+}
+
+.trending-title {
+  font-size: 14px; font-weight: 700; line-height: 1.4;
+  color: #0f172a; margin: 0 0 8px 0;
+}
+
+.trending-time { font-size: 12px; color: #64748b; }
+
+/* ========================================= */
+/* ===== NEW BOTTOM ROW STYLES (IMAGE) ===== */
+/* ========================================= */
+
+.hero-bottom-row {
+  display: flex;
+  gap: 30px;
+  width: 100%;
+}
+
+/* White Card Containers */
+.live-updates-card,
+.trending-numbered-card {
+  background: white;
+  border-radius: 12px;
+  padding: 24px;
+  box-shadow: 0 4px 15px rgba(0,0,0,0.03);
+  border: 1px solid #f1f5f9;
+}
+
+.live-updates-card { flex: 2; }
+.trending-numbered-card { flex: 1; }
+
+/* Section Headers */
+.section-header {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  /* margin-bottom: 12px !important; */
+}
+.aa1{
+  margin-bottom: 12px !important;
+}
+
+.section-header h2 {
+  font-size: 18px;
+  font-weight: 800;
+  color: #0f172a;
+  margin: 0;
+  letter-spacing: 0.5px;
+}
+
+.live-dot {
+  width: 12px; height: 12px;
+  background-color: #fca5a5;
+  border-radius: 50%;
+}
+
+/* Live List Items */
+.live-item {
+  display: flex;
+  gap: 20px;
+  padding: 14px 0;
+  border-bottom: 1px solid #f1f5f9;
+}
+
+.live-item:last-child { border-bottom: none; padding-bottom: 0; }
+
+.live-time {
+  color: #dc2626;
+  font-weight: 700;
+  font-size: 13px;
+  min-width: 70px;
+  white-space: nowrap;
+}
+
+.live-text {
+  color: #1e293b;
+  font-size: 15px;
+  font-weight: 500;
+  line-height: 1.5;
+}
+
+/* Numbered Trending Items */
+.numbered-item {
+  display: flex;
+  gap: 16px;
+  align-items: center;
+  padding: 14px 0;
+  border-bottom: 1px solid #f1f5f9;
+  transition: transform 0.2s ease;
+}
+
+.numbered-item:hover {
+  transform: translateX(4px);
+}
+
+.numbered-item:last-child { border-bottom: none; padding-bottom: 0; }
+
+.trend-rank {
+  font-size: 32px;
+  font-weight: 800;
+  color: #fca5a5;
+  min-width: 25px;
+  text-align: center;
+}
+
+.trend-details {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.trend-details h4 {
+  font-size: 14px;
+  font-weight: 700;
+  color: #0f172a;
+  margin: 0;
+  line-height: 1.4;
+}
+
+.trend-views {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 12px;
+  color: #64748b;
+  font-weight: 500;
+}
+
+/* Add this to prevent React Router links from turning blue and underlined */
+.text-decoration-none {
+  text-decoration: none !important;
+  color: inherit !important;
+}
+
+/* ===== RESPONSIVE DESIGN ===== */
+@media (max-width: 1024px) {
+  .hero-top-row,
+  .hero-bottom-row {
+    flex-direction: column;
+  }
+  
+  .featured-article { min-height: 400px; }
+}
+
+@media (max-width: 768px) {
+  .featured-title { font-size: 28px; }
+  .featured-excerpt { font-size: 14px; }
+}
+
+@media (max-width: 480px) {
+  .featured-overlay { padding: 20px 15px; }
+  .featured-title { font-size: 22px; }
+  
+  .trending-card {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+  .trending-img { width: 100%; height: 160px; }
+  
+  .live-item { flex-direction: column; gap: 6px; }
+}

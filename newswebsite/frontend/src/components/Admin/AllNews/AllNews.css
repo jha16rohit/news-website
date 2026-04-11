@@ -1,0 +1,258 @@
+/* ================= ROOT ================= */
+.all-news-container {
+  background: #f8fafc;
+  min-height: 100vh;
+  color: #0f172a;
+}
+
+/* ================= HEADER ================= */
+.all-news-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.all-news-header h1 { font-size: 26px; font-weight: 700; margin: 0; }
+.all-news-header p  { margin: 4px 0 0; font-size: 14px; color: #64748b; }
+
+.add-news-btn {
+  display: inline-flex; align-items: center; gap: 8px;
+  padding: 10px 18px; background: #0f172a; color: #fff;
+  border: none; border-radius: 10px; font-size: 14px; font-weight: 500;
+  cursor: pointer; transition: background 0.2s;
+}
+.add-news-btn:hover { background: #1e293b; }
+
+/* ================= TABS ================= */
+.article-type-tabs {
+  display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 16px;
+}
+
+.type-tab {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 7px 14px; border-radius: 20px; border: 1px solid #e2e8f0;
+  background: #fff; font-size: 13px; font-weight: 500; color: #475569;
+  cursor: pointer; transition: all 0.15s;
+}
+.type-tab:hover { background: #f1f5f9; }
+.type-tab.active { background: #0f172a; color: #fff; border-color: #0f172a; }
+
+.type-tab--breaking { color: #dc2626; }
+.type-tab--breaking:hover { background: #fff1f1; border-color: #fca5a5; }
+.type-tab--breaking.active { background: #dc2626; color: #fff; border-color: #dc2626; }
+
+.type-tab--exclusive { color: #d97706; }
+.type-tab--exclusive:hover { background: #fffbeb; border-color: #fde68a; }
+.type-tab--exclusive.active { background: #d97706; color: #fff; border-color: #d97706; }
+
+.type-tab--live { color: #16a34a; }
+.type-tab--live:hover { background: #f0fdf4; border-color: #bbf7d0; }
+.type-tab--live.active { background: #16a34a; color: #fff; border-color: #16a34a; }
+
+.type-tab--video { color: #2563eb; }
+.type-tab--video:hover { background: #eff6ff; border-color: #bfdbfe; }
+.type-tab--video.active { background: #2563eb; color: #fff; border-color: #2563eb; }
+
+.type-tab--photo { color: #0d9488; }
+.type-tab--photo:hover { background: #f0fdfa; border-color: #99f6e4; }
+.type-tab--photo.active { background: #0d9488; color: #fff; border-color: #0d9488; }
+
+.type-tab--opinion { color: #7c3aed; }
+.type-tab--opinion:hover { background: #f5f3ff; border-color: #ddd6fe; }
+.type-tab--opinion.active { background: #7c3aed; color: #fff; border-color: #7c3aed; }
+
+.type-tab.active svg { color: #fff; }
+
+/* ================= FILTERS ================= */
+.filters-card {
+  display: flex; align-items: center;
+  padding: 12px 16px; border: 1px solid #e2e8f0;
+  border-radius: 12px; background: #fff; margin-bottom: 16px;
+}
+
+.search-box {
+  display: flex; align-items: center; gap: 10px;
+  padding: 8px 12px; border: 1px solid #cbd5e1;
+  border-radius: 10px; background: #fff; width: 380px;
+}
+.search-box input { border: none; outline: none; width: 100%; font-size: 14px; }
+.search-box svg  { color: #94a3b8; flex-shrink: 0; }
+.search-clear    { background: transparent; border: none; cursor: pointer; color: #94a3b8; display: flex; }
+.search-clear:hover { color: #475569; }
+
+/* ================= SELECTION BANNER ================= */
+.selection-banner {
+  display: flex; align-items: center; justify-content: space-between;
+  background: #eff6ff; border: 1px solid #bfdbfe; border-radius: 10px;
+  padding: 12px 16px; margin-bottom: 16px; flex-wrap: wrap; gap: 10px;
+}
+.selection-info  { display: flex; align-items: center; gap: 12px; }
+.selection-count { font-weight: 600; color: #1d4ed8; font-size: 14px; }
+.clear-selection-btn {
+  display: flex; align-items: center; gap: 5px;
+  background: transparent; border: none; color: #1d4ed8;
+  cursor: pointer; font-size: 13px; font-weight: 500; padding: 3px 8px; border-radius: 6px;
+}
+.clear-selection-btn:hover { background: rgba(29, 78, 216, 0.08); }
+.selection-actions { display: flex; gap: 10px; }
+.action-btn {
+  padding: 7px 14px; border-radius: 8px; font-size: 13px;
+  font-weight: 500; cursor: pointer; border: 1px solid; transition: all 0.15s;
+}
+.publish-btn { background: #fff; border-color: #e2e8f0; color: #374151; }
+.publish-btn:hover { background: #f8fafc; }
+.draft-btn   { background: #fff; border-color: #e2e8f0; color: #374151; }
+.draft-btn:hover { background: #f8fafc; }
+.delete-btn  { background: #fff; border-color: #fecaca; color: #dc2626; }
+.delete-btn:hover { background: #fff1f1; }
+
+/* ================= TABLE WRAPPER ================= */
+.news-table-wrapper {
+  border: 1px solid #e2e8f0; border-radius: 14px;
+  overflow: visible; background: #fff;
+}
+
+.news-table { width: 100%; border-collapse: collapse; }
+
+.news-table thead th {
+  background: #f8fafc; font-size: 12px; font-weight: 600;
+  color: #64748b; padding: 12px 14px; text-align: left;
+  border-bottom: 1px solid #e2e8f0; white-space: nowrap;
+}
+
+.news-row td {
+  padding: 14px; border-bottom: 1px solid #f1f5f9; vertical-align: middle;
+}
+.news-row:last-child td { border-bottom: none; }
+.news-row:hover { background: #fafcff; }
+
+/* ================= DRAG ================= */
+.drag-handle-cell { width: 28px; cursor: grab; padding: 14px 6px 14px 12px !important; }
+.drag-handle { color: #cbd5e1; display: block; }
+.drag-handle:hover { color: #94a3b8; }
+
+.news-row.row-dragging {
+  opacity: 0.4;
+  background: #eff6ff;
+}
+.news-row.row-drag-over td { border-top: 2px solid #3b82f6 !important; }
+
+/* ================= ARTICLE CELL ================= */
+.article-cell { display: flex; flex-direction: column; gap: 4px; }
+.article-tags { display: flex; align-items: center; gap: 5px; flex-wrap: wrap; }
+
+.tag { font-size: 10px; padding: 2px 8px; border-radius: 999px; font-weight: 700; }
+.tag.breaking  { background: #fee2e2; color: #dc2626; }
+.tag.exclusive { background: #fef3c7; color: #b45309; }
+.tag.live      { background: #dcfce7; color: #15803d; }
+.tag.opinion   { background: #ede9fe; color: #6d28d9; }
+
+.inline-icon { flex-shrink: 0; }
+.star-icon   { color: #f59e0b; }
+.pin-icon    { color: #3b82f6; }
+
+.article-title    { font-size: 13px; font-weight: 600; color: #0f172a; }
+.article-subtitle { font-size: 12px; color: #94a3b8; }
+
+/* ================= AUTHOR ================= */
+.author-cell { display: flex; align-items: center; gap: 8px; }
+.avatar {
+  width: 30px; height: 30px; border-radius: 50%;
+  background: #e2e8f0; display: flex; align-items: center;
+  justify-content: center; font-size: 11px; font-weight: 700; color: #475569; flex-shrink: 0;
+}
+.author-name { font-size: 13px; font-weight: 500; color: #0f172a; }
+.author-last { font-size: 11px; color: #94a3b8; }
+
+/* ================= STATUS ================= */
+.status-pill { font-size: 11px; padding: 4px 10px; border-radius: 999px; font-weight: 600; }
+.status-pill.published { background: #dcfce7; color: #15803d; }
+.status-pill.draft     { background: #f1f5f9; color: #475569; }
+.status-pill.scheduled { background: #fef9c3; color: #a16207; }
+
+/* ================= PRIORITY ================= */
+.priority-pill { font-size: 11px; padding: 4px 10px; border-radius: 999px; font-weight: 600; }
+.priority-pill.high   { background: #fff1f1; border: 1px solid #fca5a5; color: #dc2626; }
+.priority-pill.medium { background: #fff7ed; border: 1px solid #fdba74; color: #c2410c; }
+.priority-pill.normal { background: #ede9fe; border: 1px solid #c4b5fd; color: #5b21b6; }
+
+/* ================= UTILS ================= */
+.muted { font-size: 13px; color: #94a3b8; }
+.views { font-size: 13px; font-weight: 600; }
+.empty-row { text-align: center; padding: 40px !important; color: #94a3b8; font-size: 14px; }
+
+/* ================= ACTIONS ================= */
+.actions { position: relative; }
+.action-dropdown-wrapper { position: relative; }
+.action-menu-btn {
+  background: transparent; border: none; cursor: pointer;
+  padding: 5px; border-radius: 6px; display: flex; align-items: center; color: #94a3b8;
+}
+.action-menu-btn:hover { background: #f1f5f9; color: #475569; }
+
+.action-dropdown {
+  position: absolute; right: 0; top: calc(100% + 4px);
+  background: #fff; border: 1px solid #e2e8f0; border-radius: 10px;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.10); min-width: 210px; z-index: 1000;
+  padding: 5px; animation: dropFade 0.12s ease-out;
+}
+
+.dropdown-item {
+  width: 100%; display: flex; align-items: center; gap: 10px;
+  padding: 9px 12px; background: transparent; border: none;
+  cursor: pointer; font-size: 13px; color: #374151; border-radius: 7px;
+  text-align: left; transition: background 0.15s;
+}
+.dropdown-item:hover  { background: #f8fafc; }
+.dropdown-item.danger { color: #dc2626; }
+.dropdown-item.danger:hover { background: #fff1f1; }
+.dropdown-item.danger svg { color: #dc2626; }
+
+.icon-gold { color: #f59e0b; }
+.icon-blue { color: #3b82f6; }
+.icon-red  { color: #ef4444; }
+
+.dropdown-divider { height: 1px; background: #f1f5f9; margin: 4px 0; }
+
+/* ================= DELETE MODAL ================= */
+.modal-overlay {
+  position: fixed; inset: 0; background: rgba(0,0,0,0.4);
+  display: flex; align-items: center; justify-content: center; z-index: 2000;
+  animation: dropFade 0.15s ease-out;
+}
+.modal {
+  background: #fff; border-radius: 16px; padding: 28px 24px;
+  width: 340px; text-align: center; box-shadow: 0 20px 40px rgba(0,0,0,0.15);
+}
+.modal-icon {
+  width: 48px; height: 48px; background: #fff1f1; color: #ef4444;
+  border-radius: 50%; display: flex; align-items: center;
+  justify-content: center; margin: 0 auto 16px;
+}
+.modal h4 { font-size: 18px; font-weight: 700; margin: 0 0 8px; }
+.modal p  { font-size: 14px; color: #6b7280; margin: 0 0 22px; }
+.modal-actions { display: flex; gap: 10px; }
+.modal-cancel  {
+  flex: 1; padding: 10px; border-radius: 10px; border: 1px solid #e5e7eb;
+  background: #fff; font-size: 14px; font-weight: 500; cursor: pointer;
+}
+.modal-cancel:hover  { background: #f9fafb; }
+.modal-confirm {
+  flex: 1; padding: 10px; border-radius: 10px; border: none;
+  background: #ef4444; color: #fff; font-size: 14px; font-weight: 600; cursor: pointer;
+}
+.modal-confirm:hover { background: #dc2626; }
+
+@keyframes dropFade {
+  from { opacity: 0; transform: translateY(-4px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.dropdown-item.breaking-active {
+  color: #dc2626;
+  background: #fff1f1;
+}
+.dropdown-item.breaking-active:hover { background: #fee2e2; }
