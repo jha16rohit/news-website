@@ -1,13 +1,13 @@
 /* ===== SECTION WRAPPER ===== */
 .trending-section {
   padding: 50px 0;
-  background-color: #fafafa; /* Subtle background to make the white card pop */
+  background-color: #fafafa; 
   width: 100%;
 }
 
 .trending-container {
   width: 95%;
-  max-width: 1200px; /* Slightly narrower than navbar for a focused reading column */
+  max-width: 1300px; 
   margin: auto;
 }
 
@@ -15,7 +15,7 @@
 .trending-header {
   display: flex;
   justify-content: space-between;
-  align-items: flex-end; /* Aligns "View All" with the bottom of the title */
+  align-items: flex-end; 
   margin-bottom: 25px;
   position: relative;
 }
@@ -25,7 +25,7 @@
   align-items: center;
   gap: 10px;
   position: relative;
-  padding-bottom: 8px; /* Space for the underline */
+  padding-bottom: 8px; 
 }
 
 .trending-icon {
@@ -59,7 +59,7 @@
   font-size: 14px;
   text-decoration: none;
   transition: opacity 0.3s ease;
-  padding-bottom: 8px; /* Aligns with the red line */
+  padding-bottom: 8px; 
 }
 
 .view-all-link:hover {
@@ -68,41 +68,53 @@
 
 /* ===== LIST CARD CONTAINER ===== */
 .trending-list-card {
-  background-color: #ffffff;
-  border-radius: 12px;
-  border: 1px solid #e2e8f0;
-  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
-  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
 }
 
 /* ===== INDIVIDUAL ROW ===== */
 .trending-row {
   display: flex;
   align-items: center;
+  gap: 24px;
   padding: 24px 30px;
-  border-bottom: 1px solid #f1f5f9;
-  transition: background-color 0.2s ease;
+  
+  /* 👇 Moved the card styling here so each article is its own box */
+  background-color: #ffffff;
+  border-radius: 12px;
+  border: 1px solid #e2e8f0;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+  
+  /* Upgraded the hover transition to feel like a premium card */
+  transition: box-shadow 0.2s ease, transform 0.2s ease, border-color 0.2s ease;
   cursor: pointer;
 }
 
-/* Removes the bottom border from the very last item */
-.trending-row:last-child {
-  border-bottom: none;
-}
-
 .trending-row:hover {
-  background-color: #f8fafc; /* Very subtle grey hover effect */
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.08); 
+  transform: translateY(-2px);
+  border-color: #cbd5e1;
 }
 
-/* ===== LARGE NUMBERS ===== */
-.trending-number {
-  font-size: 48px;
-  font-weight: 900;
-  color: rgba(230, 0, 0, 0.25); /* The light translucent red color from the image */
-  width: 80px; /* Fixed width so all text aligns perfectly */
+/* ===== THUMBNAIL IMAGE ===== */
+.trending-image-wrapper {
+  width: 110px; /* Made slightly wider to look great as a leading image */
+  height: 75px;
   flex-shrink: 0;
-  line-height: 1;
-  letter-spacing: -2px;
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.trending-thumbnail {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform 0.4s ease;
+}
+
+.trending-row:hover .trending-thumbnail {
+  transform: scale(1.08); 
 }
 
 /* ===== TEXT CONTENT ===== */
@@ -110,7 +122,6 @@
   flex-grow: 1;
   display: flex;
   flex-direction: column;
-  padding-right: 30px; /* Space between text and image */
 }
 
 .trending-category {
@@ -136,39 +147,21 @@
   font-weight: 500;
 }
 
-/* ===== THUMBNAIL IMAGE ===== */
-.trending-image-wrapper {
-  width: 90px;
-  height: 65px;
-  flex-shrink: 0;
-  border-radius: 8px;
-  overflow: hidden;
-}
-
-.trending-thumbnail {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  transition: transform 0.4s ease;
-}
-
-.trending-row:hover .trending-thumbnail {
-  transform: scale(1.08); /* Slight zoom on hover */
-}
 
 /* ===== RESPONSIVE ===== */
 @media (max-width: 768px) {
   .trending-row {
     padding: 20px;
-  }
-  
-  .trending-number {
-    font-size: 38px;
-    width: 60px;
+    gap: 15px;
   }
   
   .trending-title {
     font-size: 16px;
+  }
+
+  .trending-image-wrapper {
+    width: 90px;
+    height: 65px;
   }
 }
 
@@ -177,17 +170,8 @@
     padding: 15px;
   }
 
-  .trending-number {
-    font-size: 32px;
-    width: 45px;
-  }
-
   .trending-image-wrapper {
-    display: none; /* Hides image on very small screens to save space */
-  }
-
-  .trending-content {
-    padding-right: 0;
+    display: none; /* Still hides image on very small screens to save space */
   }
   
   .trending-title {

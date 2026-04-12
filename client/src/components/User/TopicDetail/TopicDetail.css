@@ -1,0 +1,428 @@
+/* ===== WRAPPER ===== */
+.topic-detail-wrapper {
+  background-color: #f8fafc;
+  min-height: 100vh;
+  padding-bottom: 80px;
+  font-family: 'Inter', system-ui, sans-serif;
+}
+
+.topic-detail-container {
+  width: 95%;
+  max-width: 1200px;
+  margin: auto;
+}
+
+/* ===== BREADCRUMB & HEADER ===== */
+.topic-detail-breadcrumb {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 40px 0 20px 0;
+  font-size: 13px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.topic-detail-breadcrumb a {
+  color: #dc2626;
+  text-decoration: none;
+  transition: color 0.2s;
+}
+
+.topic-detail-breadcrumb a:hover {
+  color: #991b1b;
+}
+
+.topic-detail-breadcrumb svg {
+  color: #94a3b8;
+}
+
+.topic-detail-current {
+  background-color: #dc2626;
+  color: white;
+  padding: 3px 10px;
+  border-radius: 4px;
+  font-size: 11px;
+}
+
+.topic-detail-main-title {
+  font-size: 48px;
+  font-family: 'Georgia', serif;
+  color: #0f172a;
+  margin: 0 0 30px 0;
+  letter-spacing: -0.5px;
+}
+
+/* ===== MAIN GRID ===== */
+.topic-detail-grid {
+  display: block; 
+  margin-bottom: 30px; 
+}
+
+.topic-detail-left {
+  width: 100%; 
+}
+
+/* ===== TOPIC INFO CARD ===== */
+.topic-detail-info-card {
+  background: white;
+  border-top: 4px solid #0f172a; 
+  border-radius: 8px;
+  padding: 40px; 
+  box-shadow: 0 10px 25px rgba(0,0,0,0.03); 
+}
+
+.topic-detail-info-body {
+  display: flex;
+  gap: 40px; 
+}
+
+/* --- Left Column Wrapper --- */
+.topic-detail-left-column {
+  width: 280px; 
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+/* --- The Image Box --- */
+.topic-detail-img-box {
+  width: 100%; 
+  display: flex;
+  flex-direction: column;
+}
+
+.topic-detail-img-box img {
+  width: 100%;
+  height: 320px; 
+  object-fit: cover;
+  border-radius: 6px;
+  box-shadow: 0 4px 15px rgba(0,0,0,0.1); 
+}
+
+.topic-detail-img-caption {
+  padding: 12px 0;
+  text-align: center;
+  font-size: 13px;
+  color: #64748b;
+  font-style: italic; 
+  border-bottom: 1px solid #e2e8f0;
+}
+
+/* --- FULL WIDTH ADVERTISEMENT ANIMATION --- */
+.topic-detail-ad-fullwidth {
+  width: 100%;
+  margin: 0 0 40px 0;
+  display: flex;
+  justify-content: center;
+  animation: fadeInDown 0.4s ease forwards;
+}
+
+@keyframes fadeInDown {
+  0% { opacity: 0; transform: translateY(-10px); }
+  100% { opacity: 1; transform: translateY(0); }
+}
+
+/* --- The Text Content --- */
+.topic-detail-text-box {
+  flex-grow: 1;
+}
+
+.topic-detail-label {
+  color: #dc2626;
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  margin: 0 0 20px 0;
+}
+
+/* 👇 NEW: Smart Biography Box */
+.topic-detail-bio {
+  white-space: pre-line; /* This makes sure "Enter" line breaks work! */
+  color: #334155;
+  font-size: 16px; 
+  line-height: 1.8; 
+  margin: 0 0 15px 0;
+}
+
+/* When collapsed, it hides extra text and adds "..." */
+.topic-detail-bio.collapsed {
+  display: -webkit-box;
+  -webkit-line-clamp: 4; /* Shows only 4 lines of text. Change this number if you want more/less! */
+  line-clamp: 4;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+/* When expanded, it shows everything! */
+.topic-detail-bio.expanded {
+  display: block;
+}
+
+.topic-detail-text-box p {
+  color: #334155;
+  font-size: 16px; 
+  line-height: 1.8; 
+  margin: 0 0 20px 0;
+}
+
+.topic-detail-text-hidden {
+  display: none;
+}
+
+.topic-detail-text-hidden.expanded {
+  display: block;
+}
+
+/* Elegant Read More Pill Button */
+.topic-detail-read-more {
+  background-color: #f8fafc;
+  border: 1px solid #e2e8f0;
+  color: #0f172a;
+  font-size: 13px;
+  font-weight: 600;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  cursor: pointer;
+  padding: 8px 16px;
+  border-radius: 20px;
+  transition: all 0.2s;
+  margin-top: 10px;
+}
+
+.topic-detail-read-more:hover {
+  background-color: #f1f5f9;
+  border-color: #cbd5e1;
+}
+
+/* --- Social Footer --- */
+.topic-detail-social-footer {
+  margin-top: 40px; 
+  padding-top: 20px; 
+  border-top: 1px solid #e2e8f0;
+  display: flex;
+  justify-content: space-between; 
+  align-items: center;
+}
+
+.social-text {
+  font-size: 14px;
+  font-weight: 600;
+  color: #64748b;
+}
+
+.topic-detail-social-icons {
+  display: flex;
+  gap: 10px;
+}
+
+.topic-detail-social-icons button {
+  width: 36px; 
+  height: 36px;
+  border-radius: 50%;
+  border: 1px solid #e2e8f0;
+  background-color: white;
+  color: #475569;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.topic-detail-social-icons button:hover {
+  background-color: #0f172a;
+  color: white;
+  border-color: #0f172a;
+  transform: translateY(-2px);
+}
+
+/* ===== RELATED NEWS ===== */
+.topic-detail-related-section {
+  margin-top: 50px;
+}
+
+.topic-detail-related-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 25px;
+}
+
+.topic-detail-related-header h2 {
+  margin: 0;
+  font-size: 24px;
+  font-family: 'Georgia', serif;
+  color: #0f172a;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-weight: 800;
+}
+
+.topic-detail-related-header h2::before {
+  content: '';
+  display: block;
+  width: 4px;
+  height: 22px;
+  background-color: #dc2626;
+  border-radius: 2px;
+}
+
+.topic-detail-related-header span {
+  font-size: 13px;
+  color: #64748b;
+  font-weight: 500;
+}
+
+.topic-detail-related-list {
+  display: flex;
+  flex-direction: column;
+  gap: 16px; 
+}
+
+/* Horizontal News Card */
+.topic-detail-news-card {
+  display: flex;
+  background: white;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px; 
+  overflow: hidden;
+  transition: box-shadow 0.2s, transform 0.2s;
+  height: 145px; /* 👇 PERFECTLY MATCHING BOX SIZES */
+}
+
+.text-decoration-none {
+  text-decoration: none !important;
+  color: inherit !important;
+}
+
+.topic-detail-news-card:hover {
+  box-shadow: 0 6px 20px rgba(0,0,0,0.06);
+  transform: translateY(-2px);
+  border-color: #cbd5e1;
+}
+
+.topic-detail-news-img-wrap {
+  width: 250px;
+  position: relative;
+  flex-shrink: 0;
+  height: 100%;
+}
+
+.topic-detail-news-img-wrap img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.topic-detail-live-badge {
+  position: absolute;
+  top: 12px;
+  left: 12px;
+  background: #dc2626;
+  color: white;
+  font-size: 10px;
+  font-weight: 800;
+  padding: 4px 10px;
+  border-radius: 20px;
+  letter-spacing: 0.5px;
+  box-shadow: 0 2px 5px rgba(220, 38, 38, 0.4);
+}
+
+.topic-detail-news-content {
+  padding: 20px 25px; 
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  flex-grow: 1;
+}
+
+.topic-detail-news-title {
+  margin: 0 0 8px 0;
+  font-size: 19px;
+  font-family: 'Georgia', serif; 
+  color: #0f172a;
+  font-weight: 700;
+  line-height: 1.3;
+  display: -webkit-box;
+  line-clamp: 2;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.topic-detail-news-desc {
+  margin: 0 0 12px 0;
+  font-size: 14px;
+  color: #64748b;
+  line-height: 1.5;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.topic-detail-news-meta {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-size: 13px;
+  color: #94a3b8;
+  font-weight: 500;
+}
+
+.topic-detail-news-cat {
+  color: #dc2626;
+  font-weight: 700;
+}
+
+.topic-detail-divider {
+  color: #cbd5e1;
+}
+
+.topic-detail-time {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+/* ===== RESPONSIVE ===== */
+@media (max-width: 768px) {
+  .topic-detail-info-card {
+    padding: 24px;
+  }
+
+  .topic-detail-info-body {
+    flex-direction: column;
+  }
+  
+  .topic-detail-left-column {
+    width: 100%; 
+  }
+
+  .topic-detail-social-footer {
+    flex-direction: column;
+    gap: 15px;
+  }
+  
+  .topic-detail-news-card {
+    flex-direction: column;
+    height: auto; 
+  }
+  
+  .topic-detail-news-img-wrap {
+    width: 100%;
+    height: 200px;
+  }
+  
+  .topic-detail-news-desc {
+    white-space: normal; 
+    display: -webkit-box;
+    line-clamp: 2;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+  }
+}

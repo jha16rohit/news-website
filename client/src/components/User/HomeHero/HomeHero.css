@@ -32,6 +32,9 @@
   flex-direction: column;
   justify-content: flex-end;
   cursor: pointer;
+
+  max-width: 780px;
+  height: 470px;
 }
 
 .featured-bg-img {
@@ -43,9 +46,9 @@
   transition: transform 0.6s ease; 
 }
 
-.featured-article:hover .featured-bg-img {
+/* .featured-article:hover .featured-bg-img {
   transform: scale(1.05);
-}
+} */
 
 .featured-overlay {
   position: relative;
@@ -102,7 +105,7 @@
 .trending-list {
   display: flex;
   flex-direction: column;
-  gap: 15px;
+  /* gap: 15px; */
 }
 
 .trending-card {
@@ -173,7 +176,10 @@
   display: inline-flex;
   align-items: center;
   gap: 10px;
-  margin-bottom: 20px;
+  /* margin-bottom: 12px !important; */
+}
+.aa1{
+  margin-bottom: 12px !important;
 }
 
 .section-header h2 {

@@ -24,7 +24,7 @@ const Login: React.FC = () => {
       <div className="login-card">
         {/* LEFT : LOGIN FORM */}
         <div className="login-form">
-          <h2>Login</h2>
+          <h2>Log in</h2>
 
           {/* Username */}
           <div className="input-group">
@@ -47,7 +47,7 @@ const Login: React.FC = () => {
             className="login-btn"
             onClick={() => navigate("/admin/dashboard")}
           >
-            Login
+            Log in
           </button>
 
         </div>
