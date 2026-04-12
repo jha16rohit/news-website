@@ -42,6 +42,7 @@
   color: #fff;
   font-family: var(--ct-font-ui);
   text-transform: uppercase;
+  width: 65px;
 }
 
 .ct-badge--sm { padding: 2px 8px; font-size: 0.58rem; }

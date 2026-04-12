@@ -1,690 +1,546 @@
-import React, { useState, useRef, useEffect } from "react";
-import { useLocation, useNavigate } from "react-router-dom";
-import "./CreateNewArticle.css";
+import React, { useState, useMemo } from "react";
+import { useNavigate } from "react-router-dom";
+import "./ScheduledPosts.css";
 import { useNews } from "../NewsStore/NewsStore";
+import type { Article } from "../NewsStore/NewsStore";
 import {
-  Bold, Italic, Underline, Heading1, Heading2, List, ListOrdered,
-  Quote, AlignLeft, AlignCenter, AlignRight, Link, Image, Video,
-  Upload, Globe, Eye, Clock, Rocket, Zap, Star, PenLine, Radio,
-  FileText, Tag, MapPin, User, BarChart2, Pin, Trash2,
+  CalendarClock, FileText, Clock, ChevronLeft, ChevronRight,
+  Trash2, Edit3, Eye, Send, MoreHorizontal, Search,
+  AlertCircle, CheckCircle2, CalendarDays, X,
 } from "lucide-react";
 
-type ArticleType =
-  | "Standard Article"
-  | "Breaking News"
-  | "Exclusive Story"
-  | "Opinion / Editorial"
-  | "Live Updates"
-  | "Video Story";
+/* ─── helpers ─── */
+function formatScheduled(iso: string): { date: string; time: string; relative: string } {
+  const d = new Date(iso);
+  const now = new Date();
+  const diffMs = d.getTime() - now.getTime();
+  const diffH  = Math.floor(diffMs / 3_600_000);
+  const diffD  = Math.floor(diffMs / 86_400_000);
 
-const ARTICLE_TYPES: { label: ArticleType; icon: React.ReactNode }[] = [
-  { label: "Standard Article",    icon: <FileText size={15} /> },
-  { label: "Breaking News",       icon: <Zap size={15} /> },
-  { label: "Exclusive Story",     icon: <Star size={15} /> },
-  { label: "Opinion / Editorial", icon: <PenLine size={15} /> },
-  { label: "Live Updates",        icon: <Radio size={15} /> },
-  { label: "Video Story",         icon: <Video size={15} /> },
-];
+  let relative = "";
+  if (diffMs < 0)         relative = "Overdue";
+  else if (diffH < 1)     relative = "< 1 hour";
+  else if (diffH < 24)    relative = `In ${diffH}h`;
+  else if (diffD === 1)   relative = "Tomorrow";
+  else                    relative = `In ${diffD} days`;
 
-const SUGGESTED_TAGS = ["India", "Economy", "Government", "Reform"];
-
-/* ─── Custom Select ─── */
-interface CustomSelectProps {
-  value: string;
-  onChange: (val: string) => void;
-  options: { label: string; value: string }[];
-  placeholder?: string;
-  withAvatar?: boolean;
+  return {
+    date: d.toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" }),
+    time: d.toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit" }),
+    relative,
+  };
 }
 
-const CustomSelect: React.FC<CustomSelectProps> = ({
-  value, onChange, options, placeholder = "Select...", withAvatar = false,
-}) => {
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+function formatDraftAge(_article: Article): string {
+  return "Saved draft";
+}
+
+/* ─── Calendar helpers ─── */
+const MONTHS = ["January","February","March","April","May","June","July","August","September","October","November","December"];
+const DOW    = ["Sun","Mon","Tue","Wed","Thu","Fri","Sat"];
+
+function getDaysInMonth(year: number, month: number): number {
+  return new Date(year, month + 1, 0).getDate();
+}
+function getFirstDayOfMonth(year: number, month: number): number {
+  return new Date(year, month, 1).getDay();
+}
+
+/* ─── Confirm Dialog ─── */
+const ConfirmDialog: React.FC<{
+  message: string;
+  onConfirm: () => void;
+  onCancel: () => void;
+}> = ({ message, onConfirm, onCancel }) => (
+  <div className="sp-confirm-overlay" onClick={e => e.target === e.currentTarget && onCancel()}>
+    <div className="sp-confirm-box">
+      <div className="sp-confirm-icon"><AlertCircle size={22} /></div>
+      <p className="sp-confirm-msg">{message}</p>
+      <div className="sp-confirm-actions">
+        <button className="sp-btn sp-btn-ghost" onClick={onCancel}>Cancel</button>
+        <button className="sp-btn sp-btn-danger" onClick={onConfirm}>Confirm</button>
+      </div>
+    </div>
+  </div>
+);
+
+/* ─── Article Row Menu ─── */
+const ArticleMenu: React.FC<{
+  onPublish?: () => void;
+  onDelete: () => void;
+  onEdit: () => void;
+}> = ({ onPublish, onDelete, onEdit }) => {
   const [open, setOpen] = useState(false);
-  const ref = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    const handler = (e: MouseEvent) => {
-      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
-    };
-    document.addEventListener("mousedown", handler);
-    return () => document.removeEventListener("mousedown", handler);
-  }, []);
-
-  const selectedLabel = options.find((o) => o.value === value)?.label ?? "";
-
   return (
-    <div className="cna-custom-select" ref={ref}>
-      <button
-        type="button"
-        className={`cna-select-trigger${open ? " cna-select-trigger--open" : ""}`}
-        onClick={() => setOpen((p) => !p)}
-      >
-        <span className="cna-select-trigger-left">
-          {withAvatar && selectedLabel && (
-            <span className="cna-author-avatar cna-author-avatar--sm">
-              {selectedLabel.split(" ").map((w) => w[0]).join("").slice(0, 2).toUpperCase()}
-            </span>
-          )}
-          <span className={selectedLabel ? "cna-select-value" : "cna-select-placeholder"}>
-            {selectedLabel || placeholder}
-          </span>
-        </span>
-        <svg className={`cna-select-chevron${open ? " cna-select-chevron--open" : ""}`} width="14" height="14" viewBox="0 0 14 14" fill="none">
-          <path d="M2.5 5L7 9.5L11.5 5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-        </svg>
+    <div className="sp-menu-wrap">
+      <button className="sp-icon-btn" onClick={() => setOpen(p => !p)} aria-label="Options">
+        <MoreHorizontal size={16} />
       </button>
       {open && (
-        <ul className="cna-select-dropdown" role="listbox">
-          {options.map((opt) => (
-            <li key={opt.value} role="option" aria-selected={opt.value === value}
-              className={`cna-select-option${opt.value === value ? " cna-select-option--selected" : ""}`}
-              onMouseDown={(e) => { e.preventDefault(); onChange(opt.value); setOpen(false); }}
-            >
-              {withAvatar && (
-                <span className="cna-author-avatar cna-author-avatar--sm">
-                  {opt.label.split(" ").map((w) => w[0]).join("").slice(0, 2).toUpperCase()}
-                </span>
-              )}
-              {opt.label}
-            </li>
-          ))}
-        </ul>
+        <div className="sp-dropdown" onMouseLeave={() => setOpen(false)}>
+          <button className="sp-dropdown-item" onClick={() => { onEdit(); setOpen(false); }}>
+            <Edit3 size={14} /> Edit
+          </button>
+          {onPublish && (
+            <button className="sp-dropdown-item sp-dropdown-item--publish" onClick={() => { onPublish(); setOpen(false); }}>
+              <Send size={14} /> Publish Now
+            </button>
+          )}
+          <button className="sp-dropdown-item sp-dropdown-item--danger" onClick={() => { onDelete(); setOpen(false); }}>
+            <Trash2 size={14} /> Delete
+          </button>
+        </div>
       )}
     </div>
   );
 };
 
-type SeoTab = "settings" | "google";
-
-const TYPE_PARAM_MAP: Record<string, ArticleType> = {
-  breaking:  "Breaking News",
-  exclusive: "Exclusive Story",
-  opinion:   "Opinion / Editorial",
-  live:      "Live Updates",
-  video:     "Video Story",
-};
-
-/* ─── Toggle component ─── */
-const Toggle: React.FC<{ on: boolean; onClick: () => void; label: string; dark?: boolean }> = ({ on, onClick, label, dark }) => (
-  <button
-    className={`cna-toggle${dark ? " cna-toggle--dark" : ""}${on ? " cna-toggle--on" : ""}`}
-    onClick={onClick}
-    aria-label={label}
-  >
-    <span className="cna-toggle-knob" />
-  </button>
-);
-
 /* ─── Main Component ─── */
-const CreateNewArticle: React.FC = () => {
-  const routerLocation = useLocation();
-  const { addArticle } = useNews();
+const ScheduledPosts: React.FC = () => {
+  const { articles, updateArticle, deleteArticle } = useNews();
   const navigate = useNavigate();
 
-  const getInitialType = (): ArticleType => {
-    const params = new URLSearchParams(routerLocation.search);
-    return TYPE_PARAM_MAP[params.get("type") ?? ""] ?? "Standard Article";
-  };
+  // Calendar state
+  const today = new Date();
+  const [calYear,  setCalYear]  = useState(today.getFullYear());
+  const [calMonth, setCalMonth] = useState(today.getMonth());
+  const [selectedDay, setSelectedDay] = useState<number | null>(today.getDate());
 
-  const [selectedType, setSelectedType] = useState<ArticleType>(getInitialType);
-  const [headline, setHeadline] = useState("");
-  const [shortTitle, setShortTitle] = useState("");
-  const [content, setContent] = useState("");
-  const [tags, setTags] = useState<string[]>(["Politics", "Parliament", "Budget"]);
-  const [tagInput, setTagInput] = useState("");
-  const [category, setCategory] = useState("");
-  const [language, setLanguage] = useState("english");
-  const [articleLocation, setArticleLocation] = useState("");
-  const [author, setAuthor] = useState("editor-admin");
-  const [editorialPriority, setEditorialPriority] = useState({
-    breakingNews: false, topStory: false, pinToHomepage: false, categoryFeatured: false,
-  });
+  // Search / filter
+  const [searchQuery, setSearchQuery] = useState("");
 
-  const [breakingToggles, setBreakingToggles] = useState({ newsTicker: true, pushNotification: true, homepageAlert: true });
-  const [exclusiveToggles, setExclusiveToggles] = useState({ featureOnHomepage: true, premiumOnly: false });
-  const [authorBio, setAuthorBio] = useState("");
-  const [disclaimer, setDisclaimer] = useState("Views expressed are personal and do not represent the views of this publication.");
-  const [opinionToggles, setOpinionToggles] = useState({ showAuthorPhoto: true, allowComments: true });
+  // Confirm dialog
+  const [confirmAction, setConfirmAction] = useState<null | { message: string; fn: () => void }>(null);
 
-  const [liveInput, setLiveInput] = useState("");
-  const [liveUpdates, setLiveUpdates] = useState([{ id: 1, time: "10:30 AM", text: "Initial report coming in..." }]);
-  const addLiveUpdate = () => {
-    if (!liveInput.trim()) return;
-    const time = new Date().toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit" });
-    setLiveUpdates((p) => [...p, { id: Date.now(), time, text: liveInput.trim() }]);
-    setLiveInput("");
-  };
-  const removeLiveUpdate = (id: number) => setLiveUpdates((p) => p.filter((u) => u.id !== id));
+  // Tabs for drafts/scheduled
+  const [activeTab, setActiveTab] = useState<"scheduled" | "drafts">("scheduled");
 
-  const [videoUrl, setVideoUrl] = useState("");
-  const [videoDuration, setVideoDuration] = useState("00:00");
-  const [videoQuality, setVideoQuality] = useState("1080p");
-  const videoFileRef = useRef<HTMLInputElement>(null);
+  /* ── Derived data ── */
+  const scheduledArticles = useMemo(
+    () => articles.filter(a => a.status === "Scheduled" && a.scheduledFor),
+    [articles],
+  );
 
-  const [dragOver, setDragOver] = useState(false);
-  const [, setMediaFile] = useState<File | null>(null);
-  const [mediaPreview, setMediaPreview] = useState<string | null>(null);
-  const [imageCaption, setImageCaption] = useState("");
-  const [photoCredit, setPhotoCredit] = useState("");
-  const fileInputRef = useRef<HTMLInputElement>(null);
+  const draftArticles = useMemo(
+    () => articles.filter(a => a.status === "Draft"),
+    [articles],
+  );
 
-  const [seoTab, setSeoTab] = useState<SeoTab>("settings");
-  const [metaTitle, setMetaTitle] = useState("");
-  const [metaDesc, setMetaDesc] = useState("");
-  const [urlSlug, setUrlSlug] = useState("");
-  const [focusKeywords, setFocusKeywords] = useState("");
-
-  const wordCount = content.trim() === "" ? 0 : content.trim().split(/\s+/).length;
-  const readTime = Math.max(1, Math.ceil(wordCount / 200));
-
-  const handleTagAdd = (tag: string) => {
-    const t = tag.trim();
-    if (t && !tags.includes(t)) setTags([...tags, t]);
-    setTagInput("");
-  };
-  const handleTagRemove = (tag: string) => setTags(tags.filter((t) => t !== tag));
-
-  const handleFileDrop = (e: React.DragEvent<HTMLDivElement>) => {
-    e.preventDefault(); setDragOver(false);
-    const file = e.dataTransfer.files[0];
-    if (file?.type.startsWith("image/")) { setMediaFile(file); setMediaPreview(URL.createObjectURL(file)); }
-  };
-  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file?.type.startsWith("image/")) { setMediaFile(file); setMediaPreview(URL.createObjectURL(file)); }
-  };
-
-  const googlePreviewUrl = `https://yournewssite.com/news/${urlSlug || "article-slug"}`;
-  const googlePreviewTitle = metaTitle || headline || "Your article title will appear here";
-  const googlePreviewDesc = metaDesc || "Your meta description will appear here. Make it compelling to increase click-through rates from search results.";
-
-  const categoryOptions = [
-    { label: "Politics", value: "politics" }, { label: "Economy", value: "economy" },
-    { label: "Sports", value: "sports" },     { label: "Technology", value: "tech" },
-    { label: "World", value: "world" },
-  ];
-  const languageOptions = [
-    { label: "English", value: "english" }, { label: "Hindi", value: "hindi" },
-    { label: "Bengali", value: "bengali" }, { label: "Tamil", value: "tamil" },
-  ];
-  const locationOptions = [
-    { label: "National", value: "national" },     { label: "Delhi", value: "delhi" },
-    { label: "Mumbai", value: "mumbai" },          { label: "Bangalore", value: "bangalore" },
-    { label: "Chennai", value: "chennai" },        { label: "Kolkata", value: "kolkata" },
-    { label: "Hyderabad", value: "hyderabad" },    { label: "Pune", value: "pune" },
-    { label: "Ahmedabad", value: "ahmedabad" },    { label: "International", value: "international" },
-  ];
-  const authorOptions = [
-    { label: "Editor Admin", value: "editor-admin" },
-  ];
-
-  const priorityItems: { key: keyof typeof editorialPriority; icon: React.ReactNode; label: string; desc: string }[] = [
-    { key: "breakingNews",     icon: <Zap size={15} />,     label: "Breaking News",      desc: "Show in breaking news ticker" },
-    { key: "topStory",         icon: <Star size={15} />,    label: "Top Story",           desc: "Feature as top story" },
-    { key: "pinToHomepage",    icon: <Pin size={15} />,     label: "Pin to Homepage",     desc: "Keep at top of homepage" },
-    { key: "categoryFeatured", icon: <Tag size={15} />,     label: "Category Featured",   desc: "Feature in category page" },
-  ];
-
-  const handlePublish = () => {
-    if (!headline.trim()) return;
-    const authorOption = authorOptions.find((a) => a.value === author);
-    const nameParts = (authorOption?.label ?? "Editor Admin").split(" ");
-    addArticle({
-      title: headline,
-      subtitle: shortTitle || headline.slice(0, 40),
-      category: selectedType,
-      authorFirst: nameParts[0] ?? "Editor",
-      authorLast: nameParts.slice(1).join(" ") || "Admin",
-      status: "Published",
-      statusType: "published",
-      priority: "Normal",
-      priorityType: "normal",
-      published: "Just now",
-      views: "0",
-      tag: selectedType === "Breaking News" ? "Breaking" : selectedType === "Exclusive Story" ? "Exclusive" : selectedType === "Live Updates" ? "Live" : selectedType === "Opinion / Editorial" ? "Opinion" : undefined,
-      tagType: selectedType === "Breaking News" ? "breaking" : selectedType === "Exclusive Story" ? "exclusive" : selectedType === "Live Updates" ? "live" : selectedType === "Opinion / Editorial" ? "opinion" : undefined,
-      leftBorder: selectedType === "Breaking News" ? "breaking-left" : selectedType === "Exclusive Story" ? "exclusive-left" : selectedType === "Live Updates" ? "live-left" : undefined,
-      isTopStory: editorialPriority.topStory,
-      isPinned: editorialPriority.pinToHomepage,
+  // Dates that have scheduled articles this month
+  const scheduledDates = useMemo(() => {
+    const set = new Set<number>();
+    scheduledArticles.forEach(a => {
+      if (a.scheduledFor) {
+        const d = new Date(a.scheduledFor);
+        if (d.getFullYear() === calYear && d.getMonth() === calMonth) {
+          set.add(d.getDate());
+        }
+      }
     });
-    navigate("/admin/news");
-  };
+    return set;
+  }, [scheduledArticles, calYear, calMonth]);
 
-  const handleSaveDraft = () => {
-    if (!headline.trim()) return;
-    const authorOption = authorOptions.find((a) => a.value === author);
-    const nameParts = (authorOption?.label ?? "Editor Admin").split(" ");
-    addArticle({
-      title: headline,
-      subtitle: shortTitle || headline.slice(0, 40),
-      category: selectedType,
-      authorFirst: nameParts[0] ?? "Editor",
-      authorLast: nameParts.slice(1).join(" ") || "Admin",
-      status: "Draft",
-      statusType: "draft",
-      priority: "Normal",
-      priorityType: "normal",
-      published: "-",
-      views: "-",
-      isTopStory: false,
-      isPinned: false,
+  // Articles for selected day
+  const selectedDayArticles = useMemo(() => {
+    if (!selectedDay) return scheduledArticles;
+    return scheduledArticles.filter(a => {
+      if (!a.scheduledFor) return false;
+      const d = new Date(a.scheduledFor);
+      return d.getFullYear() === calYear && d.getMonth() === calMonth && d.getDate() === selectedDay;
     });
-    navigate("/admin/news");
+  }, [scheduledArticles, selectedDay, calYear, calMonth]);
+
+  // Filter by search
+  const filteredScheduled = useMemo(() => {
+    const base = selectedDay ? selectedDayArticles : scheduledArticles;
+    if (!searchQuery.trim()) return base;
+    const q = searchQuery.toLowerCase();
+    return base.filter(a => a.title.toLowerCase().includes(q) || a.articleCategory.toLowerCase().includes(q));
+  }, [selectedDayArticles, scheduledArticles, selectedDay, searchQuery]);
+
+  const filteredDrafts = useMemo(() => {
+    if (!searchQuery.trim()) return draftArticles;
+    const q = searchQuery.toLowerCase();
+    return draftArticles.filter(a => a.title.toLowerCase().includes(q) || a.articleCategory.toLowerCase().includes(q));
+  }, [draftArticles, searchQuery]);
+
+  /* ── Calendar rendering ── */
+  const daysInMonth  = getDaysInMonth(calYear, calMonth);
+  const firstDayDow  = getFirstDayOfMonth(calYear, calMonth);
+
+  const prevMonth = () => {
+    if (calMonth === 0) { setCalYear(y => y - 1); setCalMonth(11); }
+    else setCalMonth(m => m - 1);
+    setSelectedDay(null);
+  };
+  const nextMonth = () => {
+    if (calMonth === 11) { setCalYear(y => y + 1); setCalMonth(0); }
+    else setCalMonth(m => m + 1);
+    setSelectedDay(null);
   };
 
+  /* ── Actions ── */
+  const confirm = (message: string, fn: () => void) => setConfirmAction({ message, fn });
+
+  const publishNow = (article: Article) => {
+    confirm(`Publish "${article.title.slice(0, 50)}…" now?`, () => {
+      updateArticle(article.id, {
+        status: "Published", statusType: "published",
+        publishedAt: new Date().toISOString(),
+        scheduledFor: null,
+        published: "Just now",
+      });
+      setConfirmAction(null);
+    });
+  };
+
+  const deleteArt = (article: Article) => {
+    confirm(`Delete "${article.title.slice(0, 50)}…"? This cannot be undone.`, () => {
+      deleteArticle(article.id);
+      setConfirmAction(null);
+    });
+  };
+
+  const publishDraft = (article: Article) => {
+    confirm(`Publish draft "${article.title.slice(0, 50)}…" now?`, () => {
+      updateArticle(article.id, {
+        status: "Published", statusType: "published",
+        publishedAt: new Date().toISOString(),
+        scheduledFor: null,
+        published: "Just now",
+        views: "0",
+      });
+      setConfirmAction(null);
+    });
+  };
+
+  /* ── Category color ── */
+  const catColors: Record<string, string> = {
+    Politics: "#dc2626", Business: "#2563eb", Sports: "#16a34a",
+    Entertainment: "#9333ea", Technology: "#0ea5e9",
+  };
+  const getCatColor = (cat: string) => {
+    for (const [key, val] of Object.entries(catColors)) {
+      if (cat.toLowerCase().includes(key.toLowerCase())) return val;
+    }
+    return "#6b7280";
+  };
 
   return (
-    <div className="cna-root">
-      {/* Header */}
-      <header className="cna-header">
-        <div className="cna-header-left">
-          <div className="cna-title-group">
-            <h1 className="cna-title">Create New Article</h1>
-            <span className="cna-badge"><span className="cna-badge-dot" />{selectedType}</span>
-          </div>
-          <p className="cna-subtitle">Regular news article with full editorial features</p>
+    <div className="sp-root">
+      {confirmAction && (
+        <ConfirmDialog
+          message={confirmAction.message}
+          onConfirm={confirmAction.fn}
+          onCancel={() => setConfirmAction(null)}
+        />
+      )}
+
+      {/* ── Page Header ── */}
+      <header className="sp-page-header">
+        <div className="sp-page-header-left">
+          <h1 className="sp-page-title">Scheduled &amp; Drafts</h1>
+          <p className="sp-page-subtitle">Manage your scheduled articles and saved drafts</p>
         </div>
-        <div className="cna-header-actions">
-          <button className="cna-btn cna-btn-ghost"><Eye size={15} /> Preview</button>
-          <button className="cna-btn cna-btn-outline"><Clock size={15} /> Schedule</button>
-          <button className="cna-btn cna-btn-secondary" onClick={handleSaveDraft}>Save Draft</button>
-          <button className="cna-btn cna-btn-primary" onClick={handlePublish}><Rocket size={15} /> Publish Now</button>
+        <div className="sp-page-header-right">
+          <div className="sp-search-wrap">
+            <Search size={14} className="sp-search-icon" />
+            <input
+              className="sp-search-input"
+              placeholder="Search articles…"
+              value={searchQuery}
+              onChange={e => setSearchQuery(e.target.value)}
+            />
+            {searchQuery && (
+              <button className="sp-search-clear" onClick={() => setSearchQuery("")}>
+                <X size={13} />
+              </button>
+            )}
+          </div>
+          <button className="sp-btn sp-btn-primary" onClick={() => navigate("/admin/news/create")}>
+            + New Article
+          </button>
         </div>
       </header>
 
-      <div className="cna-body">
-        <main className="cna-main">
+      {/* ── Stats Bar ── */}
+      <div className="sp-stats-bar">
+        <div className="sp-stat sp-stat--scheduled">
+          <CalendarClock size={16} />
+          <span className="sp-stat-value">{scheduledArticles.length}</span>
+          <span className="sp-stat-label">Scheduled</span>
+        </div>
+        <div className="sp-stat sp-stat--draft">
+          <FileText size={16} />
+          <span className="sp-stat-value">{draftArticles.length}</span>
+          <span className="sp-stat-label">Drafts</span>
+        </div>
+        <div className="sp-stat sp-stat--today">
+          <CalendarDays size={16} />
+          <span className="sp-stat-value">
+            {scheduledArticles.filter(a => {
+              if (!a.scheduledFor) return false;
+              const d = new Date(a.scheduledFor);
+              return d.toDateString() === today.toDateString();
+            }).length}
+          </span>
+          <span className="sp-stat-label">Today</span>
+        </div>
+        <div className="sp-stat sp-stat--overdue">
+          <AlertCircle size={16} />
+          <span className="sp-stat-value">
+            {scheduledArticles.filter(a => a.scheduledFor && new Date(a.scheduledFor) < today).length}
+          </span>
+          <span className="sp-stat-label">Overdue</span>
+        </div>
+      </div>
 
-          {/* Article Type */}
-          <section className="cna-section">
-            <label className="cna-section-label">Article Type</label>
-            <div className="cna-type-grid">
-              {ARTICLE_TYPES.map(({ label, icon }) => (
-                <button
-                  key={label}
-                  className={`cna-type-btn${selectedType === label ? " cna-type-btn--active" : ""}`}
-                  onClick={() => setSelectedType(label)}
-                >
-                  <span className="cna-type-icon">{icon}</span>
-                  {label}
-                </button>
-              ))}
-            </div>
-          </section>
+      <div className="sp-body">
 
-          {/* Breaking News Panel */}
-          {selectedType === "Breaking News" && (
-            <section className="cna-section cna-type-panel cna-type-panel--breaking">
-              <div className="cna-type-panel-header">
-                <div className="cna-type-panel-icon cna-type-panel-icon--breaking"><Zap size={18} /></div>
-                <div>
-                  <h3 className="cna-type-panel-title cna-type-panel-title--breaking">Breaking News Mode</h3>
-                  <p className="cna-type-panel-desc">This article will be published immediately and shown in the breaking news ticker. Push notifications will be sent to subscribers.</p>
-                </div>
-              </div>
-              <div className="cna-type-panel-toggles">
-                {([
-                  { key: "newsTicker", label: "News Ticker" },
-                  { key: "pushNotification", label: "Push Notification" },
-                  { key: "homepageAlert", label: "Homepage Alert" },
-                ] as const).map(({ key, label }) => (
-                  <label key={key} className="cna-inline-toggle">
-                    <Toggle on={breakingToggles[key]} onClick={() => setBreakingToggles(p => ({ ...p, [key]: !p[key] }))} label={label} dark />
-                    <span className="cna-inline-toggle-label">{label}</span>
-                  </label>
-                ))}
-              </div>
-            </section>
-          )}
-
-          {/* Exclusive Story Panel */}
-          {selectedType === "Exclusive Story" && (
-            <section className="cna-section cna-type-panel cna-type-panel--exclusive">
-              <div className="cna-type-panel-header">
-                <div className="cna-type-panel-icon cna-type-panel-icon--exclusive"><Star size={18} /></div>
-                <div>
-                  <h3 className="cna-type-panel-title cna-type-panel-title--exclusive">Exclusive Content</h3>
-                  <p className="cna-type-panel-desc">This article will be marked as an exclusive and featured prominently across the platform.</p>
-                </div>
-              </div>
-              <div className="cna-type-panel-toggles">
-                {([
-                  { key: "featureOnHomepage", label: "Feature on Homepage" },
-                  { key: "premiumOnly", label: "Premium Only" },
-                ] as const).map(({ key, label }) => (
-                  <label key={key} className="cna-inline-toggle">
-                    <Toggle on={exclusiveToggles[key]} onClick={() => setExclusiveToggles(p => ({ ...p, [key]: !p[key] }))} label={label} dark />
-                    <span className="cna-inline-toggle-label">{label}</span>
-                  </label>
-                ))}
-              </div>
-            </section>
-          )}
-
-          {/* Opinion / Editorial Panel */}
-          {selectedType === "Opinion / Editorial" && (
-            <section className="cna-section cna-type-panel cna-type-panel--opinion">
-              <div className="cna-type-panel-header cna-type-panel-header--opinion">
-                <div className="cna-type-panel-icon cna-type-panel-icon--opinion"><PenLine size={18} /></div>
-                <h3 className="cna-type-panel-title cna-type-panel-title--opinion">Opinion / Editorial Settings</h3>
-              </div>
-              <div className="cna-field-group">
-                <label className="cna-field-label">Author Bio (Displayed with article)</label>
-                <textarea className="cna-input cna-seo-textarea" placeholder="Brief bio about the author and their expertise..." value={authorBio} onChange={(e) => setAuthorBio(e.target.value)} />
-              </div>
-              <div className="cna-field-group">
-                <label className="cna-field-label">Disclaimer</label>
-                <textarea className="cna-input cna-seo-textarea" value={disclaimer} onChange={(e) => setDisclaimer(e.target.value)} />
-              </div>
-              <div className="cna-type-panel-toggles">
-                {([
-                  { key: "showAuthorPhoto", label: "Show Author Photo" },
-                  { key: "allowComments", label: "Allow Comments" },
-                ] as const).map(({ key, label }) => (
-                  <label key={key} className="cna-inline-toggle">
-                    <Toggle on={opinionToggles[key]} onClick={() => setOpinionToggles(p => ({ ...p, [key]: !p[key] }))} label={label} dark />
-                    <span className="cna-inline-toggle-label">{label}</span>
-                  </label>
-                ))}
-              </div>
-            </section>
-          )}
-
-          {/* Live Updates Panel */}
-          {selectedType === "Live Updates" && (
-            <section className="cna-section cna-type-panel cna-type-panel--live">
-              <div className="cna-type-panel-header">
-                <span className="cna-live-dot" />
-                <h3 className="cna-type-panel-title cna-type-panel-title--breaking">Live Updates Feed</h3>
-              </div>
-              <div className="cna-live-input-row">
-                <input className="cna-input" placeholder="Add a new update..." value={liveInput}
-                  onChange={(e) => setLiveInput(e.target.value)}
-                  onKeyDown={(e) => e.key === "Enter" && addLiveUpdate()} />
-                <button className="cna-btn cna-btn-live" onClick={addLiveUpdate}>+ Add Update</button>
-              </div>
-              <div className="cna-live-feed">
-                {liveUpdates.map((u) => (
-                  <div key={u.id} className="cna-live-item">
-                    <span className="cna-live-time">{u.time}</span>
-                    <span className="cna-live-text">{u.text}</span>
-                    <button className="cna-live-delete" onClick={() => removeLiveUpdate(u.id)} aria-label="Delete">
-                      <Trash2 size={14} />
-                    </button>
-                  </div>
-                ))}
-              </div>
-            </section>
-          )}
-
-          {/* Video Story Panel */}
-          {selectedType === "Video Story" && (
-            <section className="cna-section cna-type-panel cna-type-panel--video">
-              <div className="cna-type-panel-header">
-                <Video size={18} />
-                <h3 className="cna-type-panel-title" style={{ marginLeft: 8 }}>Video Content</h3>
-              </div>
-              <div className="cna-dropzone cna-video-dropzone" onClick={() => videoFileRef.current?.click()}>
-                <div className="cna-dropzone-inner">
-                  <div className="cna-dropzone-icon-wrap"><Video size={22} strokeWidth={1.5} /></div>
-                  <p className="cna-dropzone-title">Upload Video</p>
-                  <p className="cna-dropzone-sub">MP4, WebM up to 500MB</p>
-                  <button className="cna-btn cna-btn-secondary cna-dropzone-btn"
-                    onClick={(e) => { e.stopPropagation(); videoFileRef.current?.click(); }}>Choose File</button>
-                </div>
-                <input ref={videoFileRef} type="file" accept="video/mp4,video/webm" style={{ display: "none" }} />
-              </div>
-              <p className="cna-video-or">or</p>
-              <div className="cna-field-group">
-                <label className="cna-field-label">Video URL (YouTube, Vimeo)</label>
-                <input className="cna-input" placeholder="https://youtube.com/watch?v=..." value={videoUrl} onChange={(e) => setVideoUrl(e.target.value)} />
-              </div>
-              <div className="cna-seo-row">
-                <div className="cna-field-group">
-                  <label className="cna-field-label">Duration</label>
-                  <input className="cna-input" placeholder="00:00" value={videoDuration} onChange={(e) => setVideoDuration(e.target.value)} />
-                </div>
-                <div className="cna-field-group">
-                  <label className="cna-field-label">Video Quality</label>
-                  <CustomSelect value={videoQuality} onChange={setVideoQuality} options={[
-                    { label: "1080p Full HD", value: "1080p" }, { label: "720p HD", value: "720p" },
-                    { label: "480p SD", value: "480p" },        { label: "4K Ultra HD", value: "4k" },
-                  ]} />
-                </div>
-              </div>
-            </section>
-          )}
-
-          {/* Main Headline */}
-          <section className="cna-section">
-            <label className="cna-field-label">Main Headline <span className="cna-required">*</span></label>
-            <input className="cna-input cna-headline-input" placeholder="Enter your compelling headline here..."
-              value={headline} maxLength={120} onChange={(e) => setHeadline(e.target.value)} />
-            <p className="cna-hint">{headline.length}/120 characters • Recommended: 60–80 characters</p>
-          </section>
-
-          {/* Short Title */}
-          <section className="cna-section">
-            <label className="cna-field-label">Short Title (Mobile)</label>
-            <input className="cna-input" placeholder="Shorter version for mobile devices..."
-              value={shortTitle} maxLength={50} onChange={(e) => setShortTitle(e.target.value)} />
-            <p className="cna-hint">{shortTitle.length}/50 characters • Used in mobile and notifications</p>
-          </section>
-
-          {/* Rich Text Editor */}
-          <section className="cna-section cna-editor-section">
-            <div className="cna-toolbar">
-              {[
-                { icon: <Heading1 size={16} />, title: "Heading 1" },
-                { icon: <Heading2 size={16} />, title: "Heading 2" },
-                { icon: <Bold size={16} />, title: "Bold" },
-                { icon: <Italic size={16} />, title: "Italic" },
-                { icon: <Underline size={16} />, title: "Underline" },
-                { icon: <List size={16} />, title: "Bullet List" },
-                { icon: <ListOrdered size={16} />, title: "Numbered List" },
-                { icon: <Quote size={16} />, title: "Quote" },
-                { icon: <AlignLeft size={16} />, title: "Align Left" },
-                { icon: <AlignCenter size={16} />, title: "Align Center" },
-                { icon: <AlignRight size={16} />, title: "Align Right" },
-                { icon: <Link size={16} />, title: "Link" },
-                { icon: <Image size={16} />, title: "Image" },
-                { icon: <Video size={16} />, title: "Video" },
-              ].map(({ icon, title }) => (
-                <button key={title} className="cna-toolbar-btn" title={title}>{icon}</button>
-              ))}
-            </div>
-            <textarea className="cna-editor"
-              placeholder={`Start writing your article content here...\n\nTips for great journalism:\n• Start with a strong lead paragraph\n• Use short paragraphs for better readability\n• Include relevant quotes and sources`}
-              value={content} onChange={(e) => setContent(e.target.value)} />
-            <div className="cna-editor-footer">
-              <span>Words: {wordCount}</span>
-              <span>Est. read time: {readTime} min</span>
-            </div>
-          </section>
-
-          {/* Featured Media */}
-          <section className="cna-section">
-            <label className="cna-section-label">Featured Media</label>
-            <div
-              className={`cna-dropzone${dragOver ? " cna-dropzone--over" : ""}${mediaPreview ? " cna-dropzone--has-image" : ""}`}
-              onDragOver={(e) => { e.preventDefault(); setDragOver(true); }}
-              onDragLeave={() => setDragOver(false)}
-              onDrop={handleFileDrop}
-              onClick={() => !mediaPreview && fileInputRef.current?.click()}
-            >
-              {mediaPreview ? (
-                <>
-                  <img src={mediaPreview} alt="Preview" className="cna-dropzone-preview" />
-                  <button className="cna-dropzone-remove" onClick={(e) => { e.stopPropagation(); setMediaFile(null); setMediaPreview(null); }}>×</button>
-                </>
-              ) : (
-                <div className="cna-dropzone-inner">
-                  <div className="cna-dropzone-icon-wrap"><Upload size={22} strokeWidth={1.5} /></div>
-                  <p className="cna-dropzone-title">Drag and drop your featured image</p>
-                  <p className="cna-dropzone-sub">or click to browse • PNG, JPG up to 10MB</p>
-                  <button className="cna-btn cna-btn-secondary cna-dropzone-btn"
-                    onClick={(e) => { e.stopPropagation(); fileInputRef.current?.click(); }}>Choose File</button>
-                </div>
-              )}
-              <input ref={fileInputRef} type="file" accept="image/png,image/jpeg" style={{ display: "none" }} onChange={handleFileSelect} />
-            </div>
-            <div className="cna-media-meta">
-              <div className="cna-media-meta-field">
-                <label className="cna-field-label">Image Caption</label>
-                <input className="cna-input" placeholder="Enter image caption..." value={imageCaption} onChange={(e) => setImageCaption(e.target.value)} />
-              </div>
-              <div className="cna-media-meta-field">
-                <label className="cna-field-label">Photo Credit</label>
-                <input className="cna-input" placeholder="Photographer / Source" value={photoCredit} onChange={(e) => setPhotoCredit(e.target.value)} />
-              </div>
-            </div>
-          </section>
-
-          {/* SEO */}
-          <section className="cna-section cna-section--last">
-            <div className="cna-seo-tabs">
-              {(["settings", "google"] as SeoTab[]).map((tab) => (
-                <button key={tab} className={`cna-seo-tab${seoTab === tab ? " cna-seo-tab--active" : ""}`} onClick={() => setSeoTab(tab)}>
-                  {tab === "settings" ? "SEO Settings" : "Google Preview"}
-                </button>
-              ))}
-            </div>
-            {seoTab === "settings" && (
-              <div className="cna-seo-panel">
-                <div className="cna-field-group">
-                  <label className="cna-field-label">Meta Title</label>
-                  <input className="cna-input" placeholder="SEO-optimized title..." value={metaTitle} maxLength={60} onChange={(e) => setMetaTitle(e.target.value)} />
-                  <p className="cna-hint">{metaTitle.length}/60 characters</p>
-                </div>
-                <div className="cna-field-group">
-                  <label className="cna-field-label">Meta Description</label>
-                  <textarea className="cna-input cna-seo-textarea" placeholder="Brief description for search results..." value={metaDesc} maxLength={160} onChange={(e) => setMetaDesc(e.target.value)} />
-                  <p className="cna-hint">{metaDesc.length}/160 characters</p>
-                </div>
-                <div className="cna-seo-row">
-                  <div className="cna-field-group cna-seo-slug-group">
-                    <label className="cna-field-label">URL Slug</label>
-                    <div className="cna-slug-input-wrap">
-                      <span className="cna-slug-prefix">/news/</span>
-                      <input className="cna-input cna-slug-input" placeholder="article-url-slug" value={urlSlug}
-                        onChange={(e) => setUrlSlug(e.target.value.toLowerCase().replace(/\s+/g, "-"))} />
-                    </div>
-                  </div>
-                  <div className="cna-field-group cna-seo-kw-group">
-                    <label className="cna-field-label">Focus Keywords</label>
-                    <input className="cna-input" placeholder="keyword1, keyword2" value={focusKeywords} onChange={(e) => setFocusKeywords(e.target.value)} />
-                  </div>
-                </div>
-              </div>
-            )}
-            {seoTab === "google" && (
-              <div className="cna-seo-panel">
-                <div className="cna-google-preview">
-                  <div className="cna-google-url-row">
-                    <Globe size={14} className="cna-google-globe" />
-                    <span className="cna-google-url">{googlePreviewUrl}</span>
-                  </div>
-                  <p className="cna-google-title">{googlePreviewTitle}</p>
-                  <p className="cna-google-desc">{googlePreviewDesc}</p>
-                </div>
-              </div>
-            )}
-          </section>
-
-        </main>
-
-        {/* Sidebar */}
-        <aside className="cna-sidebar">
-
-          {/* Author */}
-          <div className="cna-card">
-            <div className="cna-card-header">
-              <User size={15} className="cna-card-icon-svg" />
-              <h2 className="cna-card-title">Author</h2>
-            </div>
-            <CustomSelect value={author} onChange={setAuthor} options={authorOptions} withAvatar />
-          </div>
-
-          {/* Editorial Priority */}
-          <div className="cna-card">
-            <div className="cna-card-header">
-              <BarChart2 size={15} className="cna-card-icon-svg" />
-              <h2 className="cna-card-title">Editorial Priority</h2>
-            </div>
-            <p className="cna-card-desc">Full manual control over how this news appears on your website</p>
-            <div className="cna-priority-list">
-              {priorityItems.map(({ key, icon, label, desc }) => (
-                <div key={key} className="cna-priority-item">
-                  <div className="cna-priority-info">
-                    <span className="cna-priority-icon">{icon}</span>
-                    <div>
-                      <p className="cna-priority-label">{label}</p>
-                      <p className="cna-priority-desc">{desc}</p>
-                    </div>
-                  </div>
-                  <Toggle on={editorialPriority[key]} onClick={() => setEditorialPriority(p => ({ ...p, [key]: !p[key] }))} label={label} />
-                </div>
-              ))}
-            </div>
-          </div>
-
-          {/* Classification */}
-          <div className="cna-card">
-            <div className="cna-card-header">
-              <MapPin size={15} className="cna-card-icon-svg" />
-              <h2 className="cna-card-title">Classification</h2>
-            </div>
-            <div className="cna-field-group">
-              <label className="cna-field-label">Category <span className="cna-required">*</span></label>
-              <CustomSelect value={category} onChange={setCategory} options={categoryOptions} placeholder="Select category" />
-            </div>
-            <div className="cna-field-group">
-              <label className="cna-field-label">Language</label>
-              <CustomSelect value={language} onChange={setLanguage} options={languageOptions} />
-            </div>
-            <div className="cna-field-group">
-              <label className="cna-field-label">Location</label>
-              <CustomSelect value={articleLocation} onChange={setArticleLocation} options={locationOptions} placeholder="Select location" />
-            </div>
-          </div>
-
-          {/* Tags */}
-          <div className="cna-card">
-            <div className="cna-card-header">
-              <Tag size={15} className="cna-card-icon-svg" />
-              <h2 className="cna-card-title">Tags</h2>
-            </div>
-            <div className="cna-tags">
-              {tags.map((tag) => (
-                <span key={tag} className="cna-tag">
-                  {tag}
-                  <button className="cna-tag-remove" onClick={() => handleTagRemove(tag)}>×</button>
-                </span>
-              ))}
-            </div>
-            <div className="cna-tag-input-row">
-              <input className="cna-input cna-tag-input" placeholder="Add tag..." value={tagInput}
-                onChange={(e) => setTagInput(e.target.value)}
-                onKeyDown={(e) => e.key === "Enter" && handleTagAdd(tagInput)} />
-              <button className="cna-tag-search-btn" onClick={() => handleTagAdd(tagInput)}>
-                <Tag size={14} />
+        {/* ── LEFT: Calendar ── */}
+        <div className="sp-left-col">
+          <div className="sp-calendar-card">
+            <div className="sp-cal-header">
+              <button className="sp-cal-nav" onClick={prevMonth} aria-label="Previous month">
+                <ChevronLeft size={16} />
+              </button>
+              <span className="sp-cal-month-label">{MONTHS[calMonth]} {calYear}</span>
+              <button className="sp-cal-nav" onClick={nextMonth} aria-label="Next month">
+                <ChevronRight size={16} />
               </button>
             </div>
-            <div className="cna-suggested-tags">
-              <p className="cna-hint">Suggested tags:</p>
-              <div className="cna-suggested-list">
-                {SUGGESTED_TAGS.map((tag) => (
-                  <button key={tag} className="cna-suggested-tag" onClick={() => handleTagAdd(tag)}>+ {tag}</button>
-                ))}
-              </div>
+
+            <div className="sp-cal-grid">
+              {DOW.map(d => <div key={d} className="sp-cal-dow">{d}</div>)}
+              {Array.from({ length: firstDayDow }, (_, i) => <div key={`empty-${i}`} />)}
+              {Array.from({ length: daysInMonth }, (_, i) => {
+                const day    = i + 1;
+                const isToday = today.getDate() === day && today.getMonth() === calMonth && today.getFullYear() === calYear;
+                const hasDot  = scheduledDates.has(day);
+                const isSel   = selectedDay === day;
+                return (
+                  <button
+                    key={day}
+                    className={`sp-cal-day${isToday ? " sp-cal-day--today" : ""}${isSel ? " sp-cal-day--selected" : ""}${hasDot ? " sp-cal-day--has-events" : ""}`}
+                    onClick={() => setSelectedDay(isSel ? null : day)}
+                  >
+                    {day}
+                    {hasDot && <span className="sp-cal-dot" />}
+                  </button>
+                );
+              })}
             </div>
+
+            {selectedDay && (
+              <div className="sp-cal-footer">
+                <span>{selectedDayArticles.length} article{selectedDayArticles.length !== 1 ? "s" : ""} on {MONTHS[calMonth]} {selectedDay}</span>
+                <button className="sp-cal-clear" onClick={() => setSelectedDay(null)}>Show all</button>
+              </div>
+            )}
           </div>
 
-        </aside>
+          {/* ── Quick upcoming list ── */}
+          <div className="sp-upcoming-card">
+            <h3 className="sp-upcoming-title">
+              <Clock size={14} /> Upcoming (Next 7 days)
+            </h3>
+            <div className="sp-upcoming-list">
+              {scheduledArticles
+                .filter(a => {
+                  if (!a.scheduledFor) return false;
+                  const d = new Date(a.scheduledFor);
+                  const diff = d.getTime() - today.getTime();
+                  return diff > 0 && diff < 7 * 86_400_000;
+                })
+                .sort((a, b) => new Date(a.scheduledFor!).getTime() - new Date(b.scheduledFor!).getTime())
+                .slice(0, 5)
+                .map(a => {
+                  const { date, time } = formatScheduled(a.scheduledFor!);
+                  return (
+                    <div key={a.id} className="sp-upcoming-item">
+                      <div className="sp-upcoming-dot" style={{ background: getCatColor(a.articleCategory) }} />
+                      <div className="sp-upcoming-info">
+                        <p className="sp-upcoming-headline">{a.title.slice(0, 48)}{a.title.length > 48 ? "…" : ""}</p>
+                        <p className="sp-upcoming-time">{date} · {time}</p>
+                      </div>
+                    </div>
+                  );
+                })
+              }
+              {scheduledArticles.filter(a => {
+                if (!a.scheduledFor) return false;
+                const diff = new Date(a.scheduledFor!).getTime() - today.getTime();
+                return diff > 0 && diff < 7 * 86_400_000;
+              }).length === 0 && (
+                <p className="sp-upcoming-empty">No articles in the next 7 days.</p>
+              )}
+            </div>
+          </div>
+        </div>
+
+        {/* ── RIGHT: Tabs (Scheduled | Drafts) ── */}
+        <div className="sp-right-col">
+
+          {/* Tab bar */}
+          <div className="sp-tabs">
+            <button
+              className={`sp-tab${activeTab === "scheduled" ? " sp-tab--active" : ""}`}
+              onClick={() => setActiveTab("scheduled")}
+            >
+              <CalendarClock size={15} />
+              Scheduled
+              {scheduledArticles.length > 0 && <span className="sp-tab-badge">{scheduledArticles.length}</span>}
+            </button>
+            <button
+              className={`sp-tab${activeTab === "drafts" ? " sp-tab--active" : ""}`}
+              onClick={() => setActiveTab("drafts")}
+            >
+              <FileText size={15} />
+              Drafts
+              {draftArticles.length > 0 && <span className="sp-tab-badge sp-tab-badge--draft">{draftArticles.length}</span>}
+            </button>
+          </div>
+
+          {/* ── SCHEDULED PANEL ── */}
+          {activeTab === "scheduled" && (
+            <div className="sp-panel">
+              <div className="sp-panel-header">
+                <h2 className="sp-panel-title">
+                  {selectedDay
+                    ? `Scheduled on ${MONTHS[calMonth]} ${selectedDay}`
+                    : "All Scheduled Articles"}
+                </h2>
+                <span className="sp-panel-count">{filteredScheduled.length} article{filteredScheduled.length !== 1 ? "s" : ""}</span>
+              </div>
+
+              {filteredScheduled.length === 0 ? (
+                <div className="sp-empty">
+                  <CalendarClock size={40} strokeWidth={1.2} />
+                  <p className="sp-empty-title">No scheduled articles</p>
+                  <p className="sp-empty-sub">
+                    {selectedDay ? "No articles scheduled for this day." : "Create an article and use the Schedule button to plan ahead."}
+                  </p>
+                  <button className="sp-btn sp-btn-primary" onClick={() => navigate("/admin/news/create")}>
+                    Create Article
+                  </button>
+                </div>
+              ) : (
+                <div className="sp-article-list">
+                  {filteredScheduled
+                    .sort((a, b) => new Date(a.scheduledFor!).getTime() - new Date(b.scheduledFor!).getTime())
+                    .map(article => {
+                      const { date, time, relative } = formatScheduled(article.scheduledFor!);
+                      const isOverdue = new Date(article.scheduledFor!) < today;
+                      return (
+                        <div key={article.id} className={`sp-article-row${isOverdue ? " sp-article-row--overdue" : ""}`}>
+                          <div className="sp-article-color-bar" style={{ background: getCatColor(article.articleCategory) }} />
+                          <div className="sp-article-main">
+                            <div className="sp-article-top-row">
+                              <span className={`sp-badge sp-badge--scheduled${isOverdue ? " sp-badge--overdue" : ""}`}>
+                                {isOverdue ? <AlertCircle size={11} /> : <CalendarClock size={11} />}
+                                {isOverdue ? "Overdue" : "Scheduled"}
+                              </span>
+                              <span className="sp-article-cat" style={{ color: getCatColor(article.articleCategory) }}>
+                                {article.articleCategory || article.category}
+                              </span>
+                            </div>
+                            <h3 className="sp-article-title">{article.title}</h3>
+                            <div className="sp-article-meta-row">
+                              <span className="sp-article-meta-item">
+                                <Clock size={12} /> {date} at {time}
+                              </span>
+                              <span className={`sp-relative-badge${isOverdue ? " sp-relative-badge--overdue" : ""}`}>
+                                {relative}
+                              </span>
+                            </div>
+                          </div>
+                          <div className="sp-article-actions">
+                            <ArticleMenu
+                              onPublish={() => publishNow(article)}
+                              onDelete={() => deleteArt(article)}
+                              onEdit={() => navigate("/admin/news/create")}
+                            />
+                          </div>
+                        </div>
+                      );
+                    })}
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* ── DRAFTS PANEL ── */}
+          {activeTab === "drafts" && (
+            <div className="sp-panel">
+              <div className="sp-panel-header">
+                <h2 className="sp-panel-title">Draft Articles</h2>
+                <span className="sp-panel-count">{filteredDrafts.length} draft{filteredDrafts.length !== 1 ? "s" : ""}</span>
+              </div>
+
+              {filteredDrafts.length === 0 ? (
+                <div className="sp-empty">
+                  <FileText size={40} strokeWidth={1.2} />
+                  <p className="sp-empty-title">No drafts saved</p>
+                  <p className="sp-empty-sub">Save a draft while creating an article to continue editing it later.</p>
+                  <button className="sp-btn sp-btn-primary" onClick={() => navigate("/admin/news/create")}>
+                    Create Article
+                  </button>
+                </div>
+              ) : (
+                <div className="sp-article-list">
+                  {filteredDrafts.map(article => (
+                    <div key={article.id} className="sp-article-row sp-article-row--draft">
+                      <div className="sp-article-color-bar sp-article-color-bar--draft" />
+                      <div className="sp-article-main">
+                        <div className="sp-article-top-row">
+                          <span className="sp-badge sp-badge--draft">
+                            <FileText size={11} /> Draft
+                          </span>
+                          <span className="sp-article-cat" style={{ color: getCatColor(article.articleCategory) }}>
+                            {article.articleCategory || article.category}
+                          </span>
+                        </div>
+                        <h3 className="sp-article-title">{article.title}</h3>
+                        <div className="sp-article-meta-row">
+                          <span className="sp-article-meta-item">
+                            <Eye size={12} /> {article.views === "-" ? "Not published" : `${article.views} views`}
+                          </span>
+                          <span className="sp-draft-age">{formatDraftAge(article)}</span>
+                        </div>
+                      </div>
+                      <div className="sp-article-actions">
+                        <button
+                          className="sp-publish-draft-btn"
+                          onClick={() => publishDraft(article)}
+                          title="Publish now"
+                        >
+                          <Send size={14} />
+                        </button>
+                        <ArticleMenu
+                          onPublish={() => publishDraft(article)}
+                          onDelete={() => deleteArt(article)}
+                          onEdit={() => navigate("/admin/news/create")}
+                        />
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {filteredDrafts.length > 0 && (
+                <div className="sp-draft-info-banner">
+                  <CheckCircle2 size={14} />
+                  <span>Drafts are only visible to admins and will not appear on the live site until published.</span>
+                </div>
+              )}
+            </div>
+          )}
+
+        </div>
       </div>
     </div>
   );
 };
 
-export default CreateNewArticle;
+export default ScheduledPosts;

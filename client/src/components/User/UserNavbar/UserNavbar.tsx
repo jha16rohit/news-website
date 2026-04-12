@@ -1,29 +1,31 @@
 import React, { useState, useEffect, useRef } from "react";
 import "./UserNavbar.css";
-import { NavLink, useLocation, useNavigate } from "react-router-dom"; // 👇 Added useNavigate
-import { Bell, User, Menu, X, Search } from "lucide-react";
+import { NavLink, useLocation, useNavigate } from "react-router-dom";
+import { Bell, User, Menu, X, Search, ChevronDown } from "lucide-react";
 import logo from "../../../assets/Logo.png";
 import { useNews } from "../../Admin/NewsStore/NewsStore";
+import type { Category } from "../../Admin/NewsStore/NewsStore";
 
 const UserNavbar: React.FC = () => {
   const { categories } = useNews();
   const location = useLocation();
-  const navigate = useNavigate(); // 👇 Initialize navigate
+  const navigate = useNavigate();
 
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const [isSearchOpen, setIsSearchOpen]     = useState(false);
-  const [weekday, setWeekday]               = useState("");
-  const [date, setDate]                     = useState("");
-  const searchInputRef = useRef<HTMLInputElement>(null);
+  const [isSearchOpen,   setIsSearchOpen]   = useState(false);
+  const [weekday,        setWeekday]        = useState("");
+  const [date,           setDate]           = useState("");
+  const [openDropdown,   setOpenDropdown]   = useState<number | null>(null);
 
-  // Set current date once on mount
+  const searchInputRef   = useRef<HTMLInputElement>(null);
+  const dropdownTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
   useEffect(() => {
     const now = new Date();
     setWeekday(now.toLocaleDateString("en-US", { weekday: "long" }));
     setDate(now.toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" }));
   }, []);
 
-  // Focus search input when search bar opens
   useEffect(() => {
     if (isSearchOpen && searchInputRef.current) searchInputRef.current.focus();
   }, [isSearchOpen]);
@@ -35,17 +37,34 @@ const UserNavbar: React.FC = () => {
     "PM Modi Meets World Leaders",
   ];
 
-  // 👇 The SMART Subscribe Button Logic
+  const slugOf = (name: string) => name.toLowerCase().replace(/\s+/g, "-");
+
+  // Returns enabled children of a given parent
+  const childrenOf = (parentId: number): Category[] =>
+    categories.filter(c => c.parentId === parentId && c.enabled);
+
+  // Featured top-level only → desktop nav
+  const featuredTopLevel = categories.filter(c => !c.parentId && c.enabled && c.featured);
+  // All enabled top-level → hamburger drawer
+  const allTopLevel = categories.filter(c => !c.parentId && c.enabled);
+
+  const handleMouseEnter = (id: number) => {
+    if (dropdownTimerRef.current) clearTimeout(dropdownTimerRef.current);
+    setOpenDropdown(id);
+  };
+
+  const handleMouseLeave = () => {
+    dropdownTimerRef.current = setTimeout(() => setOpenDropdown(null), 150);
+  };
+
   const handleSubscribeClick = () => {
     if (location.pathname === "/") {
-      // Already on Home? Just scroll down smoothly.
       document.getElementById("newsletter-section")?.scrollIntoView({ behavior: "smooth" });
     } else {
-      // On another page? Go to Home first, then scroll!
       navigate("/");
       setTimeout(() => {
         document.getElementById("newsletter-section")?.scrollIntoView({ behavior: "smooth" });
-      }, 150); // Tiny delay to let the homepage render before scrolling
+      }, 150);
     }
   };
 
@@ -58,21 +77,19 @@ const UserNavbar: React.FC = () => {
           <span className="breaking-label">BREAKING NEWS</span>
           <div className="ticker">
             <div className="ticker-track">
-              {[...headlines, ...headlines].map((headline, index) => (
-                <React.Fragment key={index}>
-                  <span className="ticker-text">{headline}</span>
+              {[...headlines, ...headlines].map((h, i) => (
+                <React.Fragment key={i}>
+                  <span className="ticker-text">{h}</span>
                   <span className="ticker-separator">|</span>
                 </React.Fragment>
               ))}
             </div>
           </div>
-          <div className="breaking-search">
-            <span className="breaking-date">{weekday}, <br />{date}</span>
-          </div>
+          <span className="breaking-date">{weekday},<br />{date}</span>
         </div>
       </div>
 
-      {/* Top Navigation */}
+      {/* Main Navbar */}
       <header className="navbar">
         <div className="navbar-container">
 
@@ -89,7 +106,7 @@ const UserNavbar: React.FC = () => {
             </button>
 
             <div
-              className={`menu-overlay ${mobileMenuOpen ? "open" : ""}`}
+              className={`menu-overlay${mobileMenuOpen ? " open" : ""}`}
               onClick={() => setMobileMenuOpen(false)}
             />
 
@@ -99,48 +116,14 @@ const UserNavbar: React.FC = () => {
               </NavLink>
             </div>
 
-            {/* Desktop nav — enabled + featured categories only */}
+            {/* ── Desktop Nav ── */}
             <nav className="nav-links">
-              <NavLink 
-                to="/" 
+              <NavLink
+                to="/"
                 end
-                onClick={(e) => {
-                  if (location.pathname === "/") {
-                    e.preventDefault(); 
-                    // 👇 The new foolproof scroll command
-                    document.getElementById("hero-section")?.scrollIntoView({ behavior: "smooth" }); 
-                  }
-                }}
-              >
-                Home
-              </NavLink>
-
-              {categories
-                .filter((cat) => cat.enabled && cat.featured)
-                .map((cat) => (
-                  <NavLink
-                    key={cat.id}
-                    to={`/category/${cat.name.toLowerCase().replace(/\s+/g, "-")}`}
-                  >
-                    {cat.name}
-                  </NavLink>
-                ))}
-            </nav>
-
-            {/* Mobile drawer — all enabled categories */}
-            <div className={`hamburger-dropdown ${mobileMenuOpen ? "open" : ""}`}>
-              <button className="close-drawer-btn" onClick={() => setMobileMenuOpen(false)}>
-                <X size={26} />
-              </button>
-
-              <NavLink 
-                to="/" 
-                className="mobile-link" 
-                onClick={(e) => {
-                  setMobileMenuOpen(false); 
+                onClick={e => {
                   if (location.pathname === "/") {
                     e.preventDefault();
-                    // 👇 The new foolproof scroll command
                     document.getElementById("hero-section")?.scrollIntoView({ behavior: "smooth" });
                   }
                 }}
@@ -148,26 +131,114 @@ const UserNavbar: React.FC = () => {
                 Home
               </NavLink>
 
-              {categories
-                .filter((cat) => cat.enabled)
-                .map((cat) => (
-                  <NavLink
+              {featuredTopLevel.map(cat => {
+                const children    = childrenOf(cat.id);
+                const hasChildren = children.length > 0;
+
+                return (
+                  <div
                     key={cat.id}
-                    to={`/category/${cat.name.toLowerCase().replace(/\s+/g, "-")}`}
-                    className="mobile-link"
-                    onClick={() => setMobileMenuOpen(false)}
+                    className={`nav-item${hasChildren ? " nav-item--has-dropdown" : ""}`}
+                    onMouseEnter={() => hasChildren && handleMouseEnter(cat.id)}
+                    onMouseLeave={hasChildren ? handleMouseLeave : undefined}
                   >
-                    {cat.name}
-                  </NavLink>
-                ))}
-              <NavLink to="/Topic"         onClick={() => setMobileMenuOpen(false)}>Topic</NavLink>
+                    <NavLink
+                      to={`/category/${slugOf(cat.name)}`}
+                      className="nav-link-inner"
+                    >
+                      {cat.name}
+                      {hasChildren && <ChevronDown size={12} className="nav-chevron" />}
+                    </NavLink>
+
+                    {/* Dropdown — keep hover alive while cursor moves into it */}
+                    {hasChildren && openDropdown === cat.id && (
+                      <div
+                        className="nav-dropdown"
+                        onMouseEnter={() => handleMouseEnter(cat.id)}
+                        onMouseLeave={handleMouseLeave}
+                      >
+                        {children.map(child => (
+                          <NavLink
+                            key={child.id}
+                            to={`/category/${slugOf(cat.name)}/${slugOf(child.name)}`}
+                            className="nav-dropdown-item"
+                          >
+                            <span className="nav-dropdown-dot" style={{ background: child.color }} />
+                            {child.name}
+                          </NavLink>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </nav>
+
+            {/* ── Mobile Drawer ── */}
+            <div className={`hamburger-dropdown${mobileMenuOpen ? " open" : ""}`}>
+              <button className="close-drawer-btn" onClick={() => setMobileMenuOpen(false)}>
+                <X size={26} />
+              </button>
+
+              <NavLink
+                to="/"
+                className="mobile-link"
+                onClick={e => {
+                  setMobileMenuOpen(false);
+                  if (location.pathname === "/") {
+                    e.preventDefault();
+                    document.getElementById("hero-section")?.scrollIntoView({ behavior: "smooth" });
+                  }
+                }}
+              >
+                Home
+              </NavLink>
+
+              {allTopLevel.map(cat => {
+                const children = childrenOf(cat.id);
+                return (
+                  <React.Fragment key={cat.id}>
+                    {/* Parent link */}
+                    <NavLink
+                      to={`/category/${slugOf(cat.name)}`}
+                      className="mobile-link"
+                      onClick={() => setMobileMenuOpen(false)}
+                    >
+                      {cat.name}
+                      {children.length > 0 && (
+                        <span className="mobile-child-count">{children.length}</span>
+                      )}
+                    </NavLink>
+
+                    {/* Child links indented below parent */}
+                    {children.map(child => (
+                      <NavLink
+                        key={child.id}
+                        to={`/category/${slugOf(cat.name)}/${slugOf(child.name)}`}
+                        className="mobile-link mobile-link--child"
+                        onClick={() => setMobileMenuOpen(false)}
+                      >
+                        <span className="mobile-child-dot" style={{ background: child.color }} />
+                        {child.name}
+                      </NavLink>
+                    ))}
+                  </React.Fragment>
+                );
+              })}
+
+              <NavLink to="/Topic" className="mobile-link" onClick={() => setMobileMenuOpen(false)}>
+                Topic
+              </NavLink>
+
               <div className="dropdown-divider" />
-              <NavLink to="/about"          onClick={() => setMobileMenuOpen(false)}>About Us</NavLink>
-              <NavLink to="/contact"        onClick={() => setMobileMenuOpen(false)}>Contact Us</NavLink>
-              <NavLink to="/privacy-policy" onClick={() => setMobileMenuOpen(false)}>Privacy Policy</NavLink>
+
+              <NavLink to="/about"          className="mobile-link" onClick={() => setMobileMenuOpen(false)}>About Us</NavLink>
+              <NavLink to="/contact"        className="mobile-link" onClick={() => setMobileMenuOpen(false)}>Contact Us</NavLink>
+              <NavLink to="/privacy-policy" className="mobile-link" onClick={() => setMobileMenuOpen(false)}>Privacy Policy</NavLink>
             </div>
           </div>
 
+          {/* ── Right Actions ── */}
           <div className="nav-actions">
             <div className="search-container">
               <button
@@ -177,7 +248,7 @@ const UserNavbar: React.FC = () => {
               >
                 <Search size={20} />
               </button>
-              <div className={`search-bar-expandable ${isSearchOpen ? "open" : ""}`}>
+              <div className={`search-bar-expandable${isSearchOpen ? " open" : ""}`}>
                 <input type="text" placeholder="Search news..." ref={searchInputRef} />
                 <button className="close-search-btn" onClick={() => setIsSearchOpen(false)}>
                   <X size={18} />
@@ -190,14 +261,8 @@ const UserNavbar: React.FC = () => {
               <span className="notification-dot" />
             </div>
 
-            {/* 👇 Used the smart function here! */}
-            <button 
-              className="subscribe-btn"
-              onClick={handleSubscribeClick}
-            >
-              Subscribe
-            </button>
-            
+            <button className="subscribe-btn" onClick={handleSubscribeClick}>Subscribe</button>
+
             <User size={20} />
           </div>
 
