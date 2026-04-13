@@ -1,6 +1,6 @@
 import React, { useState, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
-import "./ScheduledPosts.css";
+import "../ScheduledPosts/ScheduledPosts.css";
 import { useNews } from "../NewsStore/NewsStore";
 import type { Article } from "../NewsStore/NewsStore";
 import {

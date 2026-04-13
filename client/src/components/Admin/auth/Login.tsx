@@ -3,14 +3,43 @@ import { FaUser, FaEye, FaEyeSlash, FaGlobeAsia } from "react-icons/fa";
 import { useState } from "react";
 import { motion } from "framer-motion";
 import { useNavigate } from "react-router-dom";
-
-
+import { loginUser } from "../../../api/auth"; // ✅ import API
 
 const Login: React.FC = () => {
-  const [showPassword, setShowPassword] = useState<boolean>(false);
+  const [showPassword, setShowPassword] = useState(false);
+
+  // ✅ ADD STATE
+  const [form, setForm] = useState({
+    email: "",
+    password: "",
+  });
+
   const navigate = useNavigate();
-  const togglePassword = (): void => {
+
+  const togglePassword = () => {
     setShowPassword((prev) => !prev);
+  };
+
+  // ✅ HANDLE INPUT
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setForm({
+      ...form,
+      [e.target.name]: e.target.value,
+    });
+  };
+
+  // ✅ HANDLE LOGIN
+  const handleLogin = async () => {
+    try {
+      const res = await loginUser(form);
+
+      console.log("Login success:", res);
+
+      // ✅ redirect after login
+      navigate("/admin/dashboard");
+    } catch (err: any) {
+      alert(err.message);
+    }
   };
 
   return (
@@ -22,37 +51,41 @@ const Login: React.FC = () => {
       transition={{ duration: 0.4, ease: "easeInOut" }}
     >
       <div className="login-card">
-        {/* LEFT : LOGIN FORM */}
         <div className="login-form">
           <h2>Log in</h2>
 
-          {/* Username */}
+          {/* EMAIL */}
           <div className="input-group">
-            <input type="text" placeholder="Username" />
+            <input
+              type="email"
+              name="email"
+              placeholder="Email"
+              value={form.email}
+              onChange={handleChange}
+            />
             <FaUser className="end-icon" />
           </div>
 
-          {/* Password */}
+          {/* PASSWORD */}
           <div className="input-group">
             <input
               type={showPassword ? "text" : "password"}
+              name="password"
               placeholder="Password"
+              value={form.password}
+              onChange={handleChange}
             />
             <span className="end-icon clickable" onClick={togglePassword}>
               {showPassword ? <FaEyeSlash /> : <FaEye />}
             </span>
           </div>
 
-          <button
-            className="login-btn"
-            onClick={() => navigate("/admin/dashboard")}
-          >
+          <button className="login-btn" onClick={handleLogin}>
             Log in
           </button>
-
         </div>
 
-        {/* RIGHT : BRAND PANEL */}
+        {/* RIGHT PANEL */}
         <div className="login-welcome">
           <div className="brand branddd">
             <div className="brand-row">
