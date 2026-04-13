@@ -1,4 +1,4 @@
-const BASE_URL = "https://potential-meme-q79w5pp5qppgh95rq-5000.app.github.dev";
+const BASE_URL = "http://localhost:5000";
 
 export const apiClient = async (
   endpoint: string,
@@ -6,7 +6,7 @@ export const apiClient = async (
 ) => {
   const res = await fetch(`${BASE_URL}${endpoint}`, {
     ...options,
-    credentials: "include", // 🔥 always send cookies
+    credentials: "include", // agar cookies use kar rahe ho toh theek hai
     headers: {
       "Content-Type": "application/json",
       ...(options.headers || {}),

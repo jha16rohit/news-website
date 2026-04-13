@@ -3,12 +3,11 @@ import { FaUser, FaEye, FaEyeSlash, FaGlobeAsia } from "react-icons/fa";
 import { useState } from "react";
 import { motion } from "framer-motion";
 import { useNavigate } from "react-router-dom";
-import { loginUser } from "../../../api/auth"; // ✅ import API
+import { loginUser } from "../../../api/auth";
 
 const Login: React.FC = () => {
   const [showPassword, setShowPassword] = useState(false);
 
-  // ✅ ADD STATE
   const [form, setForm] = useState({
     email: "",
     password: "",
@@ -20,7 +19,6 @@ const Login: React.FC = () => {
     setShowPassword((prev) => !prev);
   };
 
-  // ✅ HANDLE INPUT
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setForm({
       ...form,
@@ -28,17 +26,25 @@ const Login: React.FC = () => {
     });
   };
 
-  // ✅ HANDLE LOGIN
   const handleLogin = async () => {
     try {
       const res = await loginUser(form);
 
       console.log("Login success:", res);
 
-      // ✅ redirect after login
+      // ✅ store login
+      localStorage.setItem("admin-auth", "true");
+
+      // ✅ optionally store token
+      if (res?.token) {
+        localStorage.setItem("admin-token", res.token);
+      }
+
+      // ✅ redirect
       navigate("/admin/dashboard");
+
     } catch (err: any) {
-      alert(err.message);
+      alert(err.message || "Login failed");
     }
   };
 
@@ -85,7 +91,6 @@ const Login: React.FC = () => {
           </button>
         </div>
 
-        {/* RIGHT PANEL */}
         <div className="login-welcome">
           <div className="brand branddd">
             <div className="brand-row">

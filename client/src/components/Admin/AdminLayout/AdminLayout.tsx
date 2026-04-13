@@ -1,14 +1,20 @@
 import { useState } from "react";
-import { Outlet } from "react-router-dom";
+import { Outlet, Navigate } from "react-router-dom";
 import AdminSidebar from "../AdminSidebar/AdminSidebar";
 import AdminTopBar from "../AdminTopBar/AdminTopBar";
-
 
 const SIDEBAR_WIDTH = 260;
 const TOPBAR_HEIGHT = 60;
 
 const AdminLayout = () => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
+
+  // ✅ admin auth check
+  const isAuth = localStorage.getItem("admin-auth");
+
+  if (!isAuth) {
+    return <Navigate to="/admin/login-xyzsft" />;
+  }
 
   return (
     <>
@@ -29,7 +35,15 @@ const AdminLayout = () => {
         <AdminTopBar onMenuClick={() => setSidebarOpen(true)} />
       </div>
 
-      <main className="admin-main" style={{ paddingTop: TOPBAR_HEIGHT, minHeight: "100vh", background: "#f5f5f5", boxSizing: "border-box" }}>
+      <main
+        className="admin-main"
+        style={{
+          paddingTop: TOPBAR_HEIGHT,
+          minHeight: "100vh",
+          background: "#f5f5f5",
+          boxSizing: "border-box",
+        }}
+      >
         <Outlet />
       </main>
 
@@ -43,7 +57,7 @@ const AdminLayout = () => {
           .admin-main { margin-left: 0; padding: ${TOPBAR_HEIGHT}px 16px 16px; }
         }
       `}</style>
-   </>
+    </>
   );
 };
 
