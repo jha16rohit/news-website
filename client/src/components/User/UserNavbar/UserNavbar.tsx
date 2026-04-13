@@ -160,7 +160,7 @@ const UserNavbar: React.FC = () => {
                         {children.map(child => (
                           <NavLink
                             key={child.id}
-                            to={`/category/${slugOf(cat.name)}/${slugOf(child.name)}`}
+                            to={`/category/${slugOf(child.name)}`}
                             className="nav-dropdown-item"
                           >
                             <span className="nav-dropdown-dot" style={{ background: child.color }} />
@@ -214,7 +214,7 @@ const UserNavbar: React.FC = () => {
                     {children.map(child => (
                       <NavLink
                         key={child.id}
-                        to={`/category/${slugOf(cat.name)}/${slugOf(child.name)}`}
+                        to={`/category/${slugOf(child.name)}`}
                         className="mobile-link mobile-link--child"
                         onClick={() => setMobileMenuOpen(false)}
                       >

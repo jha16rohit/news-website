@@ -156,6 +156,7 @@ function ProfileForm({ initial, onSave, onClose }: ProfileFormProps) {
     window.open(`https://www.google.com/search?q=${query}`, "_blank");
   };
 
+  // 👇 ULTIMATE Clean-Fetch Wikipedia Function!
   const handleFetchWiki = async () => {
     if (!name.trim()) {
       alert("Please enter the Name first so I know who to search for on Wikipedia!");
@@ -174,14 +175,24 @@ function ProfileForm({ initial, onSave, onClose }: ProfileFormProps) {
         if (pageId === "-1") {
           alert("Could not find a Wikipedia page matching that exact name.");
         } else if (pages[pageId].extract) {
+          
           let fullText = pages[pageId].extract;
-          if (fullText.length > 6000) {
-            let choppedText = fullText.substring(0, 6000);
+          
+          // ✨ NEW: The Magic Cleaner! ✨
+          // 1. Removes all the ugly Wikipedia headings (e.g., == Etymology ==)
+          let cleanText = fullText.replace(/^=+.+?=+$/gm, '');
+          // 2. Removes extra blank lines left behind by the deleted headings
+          cleanText = cleanText.replace(/\n{3,}/g, '\n\n').trim();
+          
+          // Slice 6,000 characters and end gracefully at the last full stop
+          if (cleanText.length > 6000) {
+            let choppedText = cleanText.substring(0, 6000);
             choppedText = choppedText.substring(0, choppedText.lastIndexOf(".")) + ".";
             setDescription(choppedText);
           } else {
-            setDescription(fullText);
+            setDescription(cleanText); 
           }
+
         } else {
           alert("Wikipedia didn't return a description for this name.");
         }
