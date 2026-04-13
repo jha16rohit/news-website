@@ -1,0 +1,335 @@
+.cat-root {
+  background: #f8fafc;
+  min-height: 100vh;
+  font-family: Inter, sans-serif;
+}
+
+.cat-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 25px;
+}
+
+.cat-title { font-size: 32px; font-weight: 700; }
+
+.cat-subtitle {
+  color: #64748b;
+  font-size: 15px;
+  margin-top: 4px;
+}
+
+.cat-add-btn {
+  background: #0f172a;
+  color: white;
+  border: none;
+  padding: 10px 18px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.cat-stats {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 16px;
+  margin-bottom: 20px;
+}
+
+.cat-stat-card {
+  background: white;
+  padding: 18px;
+  border-radius: 12px;
+  border: 1px solid #e2e8f0;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.cat-stat-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px rgba(0,0,0,0.08);
+}
+
+.cat-stat-icon {
+  width: 42px;
+  height: 42px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.bg-gray  { background: #f1f5f9; color: #0f172a; }
+.bg-green { background: #dcfce7; color: #16a34a; }
+.bg-light { background: #f1f5f9; color: #0f172a; }
+
+.cat-stat-value { font-size: 20px; font-weight: 700; }
+.cat-stat-label { font-size: 12px; color: #64748b; margin-top: 2px; }
+
+.cat-search input {
+  width: 320px;
+  padding: 10px 14px;
+  border-radius: 8px;
+  border: 1px solid #e2e8f0;
+  margin-bottom: 20px;
+  font-size: 14px;
+  outline: none;
+}
+
+.cat-search input:focus { border-color: #94a3b8; }
+
+.cat-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 12px;
+}
+
+.cat-card {
+  background: white;
+  border: 1px solid #e2e8f0;
+  border-radius: 14px;
+  padding: 16px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  transition: box-shadow 0.2s;
+}
+
+.cat-card:hover { box-shadow: 0 4px 16px rgba(0,0,0,0.07); }
+
+/* Child category visual treatment */
+.cat-card--child {
+  background: #fafbfc;
+  border-color: #e8edf2;
+  border-left: 3px solid #cbd5e1;
+  margin-left: 20px;
+}
+
+.cat-drag { color: #cbd5e1; cursor: grab; font-size: 13px; }
+
+.cat-child-indent {
+  color: #94a3b8;
+  display: flex;
+  align-items: center;
+  flex-shrink: 0;
+}
+
+.cat-avatar {
+  width: 46px;
+  height: 46px;
+  border-radius: 10px;
+  color: white;
+  font-size: 18px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.cat-card--child .cat-avatar {
+  width: 38px;
+  height: 38px;
+  font-size: 15px;
+  border-radius: 8px;
+}
+
+.cat-content { flex: 1; min-width: 0; }
+
+.cat-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.cat-name-row {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.cat-breadcrumb {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  font-size: 11px;
+  color: #94a3b8;
+  white-space: nowrap;
+}
+
+.cat-name-row h3 { font-size: 15px; font-weight: 600; margin: 0; }
+
+.cat-badges { display: flex; gap: 6px; align-items: center; }
+
+.cat-featured {
+  background: #f1f5f9;
+  padding: 3px 8px;
+  border-radius: 20px;
+  font-size: 11px;
+  font-weight: 500;
+  color: #334155;
+}
+
+.cat-child-count {
+  background: #eff6ff;
+  color: #3b82f6;
+  padding: 3px 8px;
+  border-radius: 20px;
+  font-size: 11px;
+  font-weight: 500;
+}
+
+.cat-desc {
+  font-size: 13px;
+  color: #64748b;
+  margin: 4px 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.cat-meta {
+  font-size: 12px;
+  color: #94a3b8;
+  display: flex;
+  gap: 12px;
+}
+
+.cat-actions {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.cat-toggle {
+  width: 38px;
+  height: 20px;
+  border-radius: 20px;
+  background: #e2e8f0;
+  border: none;
+  position: relative;
+  cursor: pointer;
+}
+
+.cat-toggle span {
+  width: 14px;
+  height: 14px;
+  background: white;
+  border-radius: 50%;
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  transition: left 0.2s;
+}
+
+.cat-toggle.on { background: #0f172a; }
+.cat-toggle.on span { left: 21px; }
+
+.cat-icons { display: flex; gap: 6px; }
+
+.cat-icon-btn {
+  width: 32px;
+  height: 32px;
+  border-radius: 7px;
+  background: #f1f5f9;
+  border: 1px solid #e2e8f0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  color: #334155;
+  transition: all 0.15s;
+}
+
+.cat-icon-btn:hover { background: #e2e8f0; transform: translateY(-1px); }
+
+.cat-icon-btn--delete { color: #ef4444; }
+.cat-icon-btn--delete:hover { background: #fee2e2; border-color: #fecaca; }
+
+/* Toast */
+.cat-toast {
+  position: fixed;
+  bottom: 28px;
+  right: 28px;
+  background: #10b981;
+  color: white;
+  padding: 12px 20px;
+  border-radius: 8px;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.15);
+  z-index: 9999;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 14px;
+  font-weight: 500;
+  animation: slideIn 0.25s ease-out;
+}
+
+@keyframes slideIn {
+  from { transform: translateX(110%); opacity: 0; }
+  to   { transform: translateX(0);    opacity: 1; }
+}
+
+/* Delete Modal */
+.cat-modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(15,23,42,0.55);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 10000;
+}
+
+.cat-delete-modal {
+  background: white;
+  max-width: 420px;
+  width: 100%;
+  border-radius: 12px;
+  padding: 24px;
+  box-shadow: 0 20px 40px rgba(0,0,0,0.15);
+  animation: fadeUp 0.2s ease-out;
+}
+
+@keyframes fadeUp {
+  from { transform: translateY(-16px); opacity: 0; }
+  to   { transform: translateY(0);     opacity: 1; }
+}
+
+.cat-delete-modal h3 { font-size: 18px; font-weight: 600; margin: 0 0 10px; }
+.cat-delete-modal p  { font-size: 14px; color: #64748b; line-height: 1.5; margin: 0 0 22px; }
+
+.cat-delete-actions { display: flex; justify-content: flex-end; gap: 10px; }
+
+.cat-btn-cancel {
+  background: white;
+  border: 1px solid #cbd5e1;
+  color: #334155;
+  padding: 9px 16px;
+  border-radius: 7px;
+  font-size: 14px;
+  cursor: pointer;
+}
+
+.cat-btn-cancel:hover { background: #f1f5f9; }
+
+.cat-btn-delete {
+  background: #ef4444;
+  border: none;
+  color: white;
+  padding: 9px 16px;
+  border-radius: 7px;
+  font-size: 14px;
+  cursor: pointer;
+}
+
+.cat-btn-delete:hover { background: #dc2626; }
+
+.cat-container { padding: 0; }
