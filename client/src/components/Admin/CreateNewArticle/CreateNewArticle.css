@@ -938,7 +938,7 @@
 /* hide browser number spinners */
 .cna-time-input::-webkit-outer-spin-button,
 .cna-time-input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
-/* .cna-time-input[type=number] { -moz-appearance: textfield; } */
+
 
 .cna-time-sep {
   font-size: 1.5rem;
