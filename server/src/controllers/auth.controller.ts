@@ -6,10 +6,9 @@ import { generateToken } from "../utils/generateToken";
 // 🔐 Cookie config helper
 const cookieOptions = {
   httpOnly: true,
-  secure: true, // REQUIRED for HTTPS (Codespaces)
-  sameSite: "none" as const, // REQUIRED for cross-origin (frontend)
+  secure: false,      // ✅ VERY IMPORTANT (for localhost)
+  sameSite: "lax" as const, // ✅ works for localhost
 };
-
 // ✅ REGISTER USER
 export const register = async (req: Request, res: Response) => {
   try {

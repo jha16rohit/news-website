@@ -5,8 +5,7 @@ import authRoutes from "./routes/auth.routes";
 
 const app = express();
 
-app.use(express.json());
-
+// ✅ 1. CORS FIRST
 app.use(
   cors({
     origin: "http://localhost:5173",
@@ -14,8 +13,17 @@ app.use(
   })
 );
 
+// ✅ 2. HANDLE PREFLIGHT (THIS IS YOUR MAIN ISSUE)
+app.use((req, res, next) => {
+  if (req.method === "OPTIONS") {
+    return res.sendStatus(200);
+  }
+  next();
+});
 app.use(cookieParser());
+app.use(express.json());
 
+// ✅ 3. ROUTES
 app.use("/api/auth", authRoutes);
 
 export default app;
