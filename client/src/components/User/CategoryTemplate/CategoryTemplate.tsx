@@ -9,6 +9,7 @@ import UserNavbar from "../UserNavbar/UserNavbar";
 import "./CategoryTemplate.css";
 import Advertisement from "../Advertisment/Advertisment";
 import UserFooter from "../UserFooter/UserFooter";
+import SubCategoryTemplate from "../SubCategoryTemplate/SubCategoryTemplate";
 
 // ─── Static placeholder data ──────────────────────────────────────────────────
 const STATIC_ARTICLES = [
@@ -189,11 +190,11 @@ export default function CategoryTemplate() {
   
   // 2. If this is a sub-category, find its parent!
   const parentCategory = category?.parentId 
-    ? categories.find((c) => c.id === category.parentId) 
+    ? categories.find((c) => c.id === category.parentId) ?? null
     : null;
 
-  // 3. Inherit the parent's color if the sub-category doesn't have its own
-  const color = category?.color || parentCategory?.color || "#dc2626";
+// 3. Force the standard Brand Red color for ALL User-facing pages
+  const color = "#e60000";
 
   const storeFiltered = storeArticles.filter((a) => a.category.toLowerCase() === (category?.name ?? "").toLowerCase());
   
@@ -210,6 +211,11 @@ export default function CategoryTemplate() {
   // Check if we can show more or if we need to show less
   const canShowMore = visible < allGrid.length;
   const canShowLess = visible > INITIAL_VISIBLE;
+
+  if (category && category.parentId) {
+    // If it has a parentId, it is a sub-category! Send it to the new template.
+    return <SubCategoryTemplate category={category} parentCategory={parentCategory} color={color} />;
+  }
 
   function handleShowMore() {
     setVisible((v) => Math.min(v + LOAD_MORE_COUNT, allGrid.length));

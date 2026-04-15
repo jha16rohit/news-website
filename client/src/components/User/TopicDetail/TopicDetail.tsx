@@ -81,38 +81,36 @@ const TopicDetail: React.FC = () => {
           <div className="topic-detail-info-card">
             <div className="topic-detail-info-body">
               
-              <div className="topic-detail-left-column">
-                <div className="topic-detail-img-box">
-                  {topic.imageUrl ? (
-                    <img src={topic.imageUrl} alt={topic.name} />
-                  ) : (
-                    <div style={{ height: "320px", background: "#e2e8f0", display: "flex", alignItems: "center", justifyContent: "center", color: "#64748b" }}>
-                      No Image Found
-                    </div>
-                  )}
-                  <div className="topic-detail-img-caption">
-                    {topic.name} - {topic.caption}
+              {/* 👇 The Image Box (Now set up to float) 👇 */}
+              <div className="topic-detail-img-box">
+                {topic.imageUrl ? (
+                  <img src={topic.imageUrl} alt={topic.name} />
+                ) : (
+                  <div style={{ height: "320px", background: "#e2e8f0", display: "flex", alignItems: "center", justifyContent: "center", color: "#64748b" }}>
+                    No Image Found
                   </div>
+                )}
+                <div className="topic-detail-img-caption">
+                  {topic.name} - {topic.caption}
                 </div>
               </div>
 
-              <div className="topic-detail-text-box">
-                <h3 className="topic-detail-label">{topic.caption}</h3>
-                
-                {/* 👇 UPGRADED: Smart text box that preserves paragraphs and truncates! */}
-                <div className={`topic-detail-bio ${isExpanded ? "expanded" : "collapsed"}`}>
-                  {topic.description}
-                  {topic.fullDetails && `\n\n${topic.fullDetails}`}
-                </div>
-
-                <button 
-                  className="topic-detail-read-more" 
-                  onClick={() => setIsExpanded(!isExpanded)}
-                >
-                  {isExpanded ? "Show Less" : "Read More"} 
-                  <ChevronDown size={14} style={{ transform: isExpanded ? 'rotate(180deg)' : 'none', transition: '0.3s' }} />
-                </button>
+              {/* 👇 The Text Content (No longer trapped in a column!) 👇 */}
+              <h3 className="topic-detail-label">{topic.caption}</h3>
+              
+              <div className={`topic-detail-bio ${isExpanded ? "expanded" : "collapsed"}`}>
+                {topic.description}
+                {topic.fullDetails && `\n\n${topic.fullDetails}`}
               </div>
+
+              <button 
+                className="topic-detail-read-more" 
+                onClick={() => setIsExpanded(!isExpanded)}
+              >
+                {isExpanded ? "Show Less" : "Read More"} 
+                <ChevronDown size={14} style={{ transform: isExpanded ? 'rotate(180deg)' : 'none', transition: '0.3s' }} />
+              </button>
+
             </div>
 
             <div className="topic-detail-social-footer">

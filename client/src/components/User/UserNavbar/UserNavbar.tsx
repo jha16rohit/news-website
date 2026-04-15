@@ -16,6 +16,9 @@ const UserNavbar: React.FC = () => {
   const [weekday,        setWeekday]        = useState("");
   const [date,           setDate]           = useState("");
   const [openDropdown,   setOpenDropdown]   = useState<number | null>(null);
+  
+  // 👇 NEW STATE: Tracks which mobile sub-category menu is currently open
+  const [expandedMobileCat, setExpandedMobileCat] = useState<number | null>(null);
 
   const searchInputRef   = useRef<HTMLInputElement>(null);
   const dropdownTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -39,13 +42,10 @@ const UserNavbar: React.FC = () => {
 
   const slugOf = (name: string) => name.toLowerCase().replace(/\s+/g, "-");
 
-  // Returns enabled children of a given parent
   const childrenOf = (parentId: number): Category[] =>
     categories.filter(c => c.parentId === parentId && c.enabled);
 
-  // Featured top-level only → desktop nav
   const featuredTopLevel = categories.filter(c => !c.parentId && c.enabled && c.featured);
-  // All enabled top-level → hamburger drawer
   const allTopLevel = categories.filter(c => !c.parentId && c.enabled);
 
   const handleMouseEnter = (id: number) => {
@@ -68,10 +68,28 @@ const UserNavbar: React.FC = () => {
     }
   };
 
+  const handleHomeClick = (e: React.MouseEvent) => {
+    if (location.pathname === "/") {
+      e.preventDefault();
+      const hero = document.getElementById("hero-section");
+      if (hero) {
+        hero.scrollIntoView({ behavior: "smooth" });
+      } else {
+        window.scrollTo({ top: 0, behavior: "smooth" });
+      }
+    } else {
+      window.scrollTo(0, 0);
+    }
+  };
+
+  // 👇 Toggles the mobile accordion open/closed
+  const toggleMobileCat = (id: number, e: React.MouseEvent) => {
+    e.preventDefault(); // Stops the link from clicking when you just want to open the menu
+    setExpandedMobileCat(prev => prev === id ? null : id);
+  };
+
   return (
     <div className="navbar-wrapper">
-
-      {/* Breaking News Bar */}
       <div className="breaking-bar">
         <div className="breaking-container">
           <span className="breaking-label">BREAKING NEWS</span>
@@ -89,10 +107,8 @@ const UserNavbar: React.FC = () => {
         </div>
       </div>
 
-      {/* Main Navbar */}
       <header className="navbar">
         <div className="navbar-container">
-
           <div className="navbar-left">
             <button
               className="hamburger-btn-xx"
@@ -116,18 +132,8 @@ const UserNavbar: React.FC = () => {
               </NavLink>
             </div>
 
-            {/* ── Desktop Nav ── */}
             <nav className="nav-links">
-              <NavLink
-                to="/"
-                end
-                onClick={e => {
-                  if (location.pathname === "/") {
-                    e.preventDefault();
-                    document.getElementById("hero-section")?.scrollIntoView({ behavior: "smooth" });
-                  }
-                }}
-              >
+              <NavLink to="/" end onClick={handleHomeClick}>
                 Home
               </NavLink>
 
@@ -142,15 +148,11 @@ const UserNavbar: React.FC = () => {
                     onMouseEnter={() => hasChildren && handleMouseEnter(cat.id)}
                     onMouseLeave={hasChildren ? handleMouseLeave : undefined}
                   >
-                    <NavLink
-                      to={`/category/${slugOf(cat.name)}`}
-                      className="nav-link-inner"
-                    >
+                    <NavLink to={`/category/${slugOf(cat.name)}`} className="nav-link-inner">
                       {cat.name}
                       {hasChildren && <ChevronDown size={12} className="nav-chevron" />}
                     </NavLink>
 
-                    {/* Dropdown — keep hover alive while cursor moves into it */}
                     {hasChildren && openDropdown === cat.id && (
                       <div
                         className="nav-dropdown"
@@ -163,7 +165,6 @@ const UserNavbar: React.FC = () => {
                             to={`/category/${slugOf(child.name)}`}
                             className="nav-dropdown-item"
                           >
-                            <span className="nav-dropdown-dot" style={{ background: child.color }} />
                             {child.name}
                           </NavLink>
                         ))}
@@ -174,55 +175,61 @@ const UserNavbar: React.FC = () => {
               })}
             </nav>
 
-            {/* ── Mobile Drawer ── */}
             <div className={`hamburger-dropdown${mobileMenuOpen ? " open" : ""}`}>
               <button className="close-drawer-btn" onClick={() => setMobileMenuOpen(false)}>
                 <X size={26} />
               </button>
 
-              <NavLink
-                to="/"
-                className="mobile-link"
-                onClick={e => {
-                  setMobileMenuOpen(false);
-                  if (location.pathname === "/") {
-                    e.preventDefault();
-                    document.getElementById("hero-section")?.scrollIntoView({ behavior: "smooth" });
-                  }
-                }}
-              >
+              <NavLink to="/" className="mobile-link" onClick={e => { setMobileMenuOpen(false); handleHomeClick(e); }}>
                 Home
               </NavLink>
 
               {allTopLevel.map(cat => {
                 const children = childrenOf(cat.id);
-                return (
-                  <React.Fragment key={cat.id}>
-                    {/* Parent link */}
-                    <NavLink
-                      to={`/category/${slugOf(cat.name)}`}
-                      className="mobile-link"
-                      onClick={() => setMobileMenuOpen(false)}
-                    >
-                      {cat.name}
-                      {children.length > 0 && (
-                        <span className="mobile-child-count">{children.length}</span>
-                      )}
-                    </NavLink>
+                const hasChildren = children.length > 0;
+                const isExpanded = expandedMobileCat === cat.id;
 
-                    {/* Child links indented below parent */}
-                    {children.map(child => (
+                return (
+                  <div key={cat.id} className="mobile-cat-group">
+                    <div className="mobile-cat-header">
                       <NavLink
-                        key={child.id}
-                        to={`/category/${slugOf(child.name)}`}
-                        className="mobile-link mobile-link--child"
+                        to={`/category/${slugOf(cat.name)}`}
+                        className="mobile-link mobile-link--parent"
                         onClick={() => setMobileMenuOpen(false)}
                       >
-                        <span className="mobile-child-dot" style={{ background: child.color }} />
-                        {child.name}
+                        {cat.name}
                       </NavLink>
-                    ))}
-                  </React.Fragment>
+                      
+                      {/* 👇 Only show the expand arrow if there are sub-categories */}
+                      {hasChildren && (
+                        <button className="mobile-expand-btn" onClick={(e) => toggleMobileCat(cat.id, e)}>
+                          <ChevronDown 
+                            size={18} 
+                            style={{ 
+                              transform: isExpanded ? "rotate(180deg)" : "rotate(0deg)",
+                              transition: "transform 0.3s ease"
+                            }} 
+                          />
+                        </button>
+                      )}
+                    </div>
+
+                    {/* 👇 The hidden 2-Column Grid that opens when clicked */}
+                    {hasChildren && (
+                      <div className={`mobile-subcats-grid ${isExpanded ? "open" : ""}`}>
+                        {children.map(child => (
+                          <NavLink
+                            key={child.id}
+                            to={`/category/${slugOf(child.name)}`}
+                            className="mobile-sub-link"
+                            onClick={() => setMobileMenuOpen(false)}
+                          >
+                            <span className="mobile-sub-dash">-</span> {child.name}
+                          </NavLink>
+                        ))}
+                      </div>
+                    )}
+                  </div>
                 );
               })}
 
@@ -230,6 +237,7 @@ const UserNavbar: React.FC = () => {
                 Topic
               </NavLink>
 
+              {/* 👇 The Fixed White Divider 👇 */}
               <div className="dropdown-divider" />
 
               <NavLink to="/about"          className="mobile-link" onClick={() => setMobileMenuOpen(false)}>About Us</NavLink>
@@ -238,7 +246,6 @@ const UserNavbar: React.FC = () => {
             </div>
           </div>
 
-          {/* ── Right Actions ── */}
           <div className="nav-actions">
             <div className="search-container">
               <button

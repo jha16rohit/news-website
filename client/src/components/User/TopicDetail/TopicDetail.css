@@ -74,21 +74,15 @@
 }
 
 .topic-detail-info-body {
-  display: flex;
-  gap: 40px; 
+  display: block; /* 👇 Changed from flex to block to allow text wrapping */
 }
 
-/* --- Left Column Wrapper --- */
-.topic-detail-left-column {
-  width: 280px; 
-  flex-shrink: 0;
-  display: flex;
-  flex-direction: column;
-}
-
-/* --- The Image Box --- */
+/* --- The Image Box (Floated!) --- */
 .topic-detail-img-box {
-  width: 100%; 
+  width: 300px; 
+  float: left; /* 👇 THIS IS THE MAGIC LINE! It makes text wrap around it */
+  margin-right: 40px;
+  margin-bottom: 10px;
   display: flex;
   flex-direction: column;
 }
@@ -110,25 +104,7 @@
   border-bottom: 1px solid #e2e8f0;
 }
 
-/* --- FULL WIDTH ADVERTISEMENT ANIMATION --- */
-.topic-detail-ad-fullwidth {
-  width: 100%;
-  margin: 0 0 40px 0;
-  display: flex;
-  justify-content: center;
-  animation: fadeInDown 0.4s ease forwards;
-}
-
-@keyframes fadeInDown {
-  0% { opacity: 0; transform: translateY(-10px); }
-  100% { opacity: 1; transform: translateY(0); }
-}
-
 /* --- The Text Content --- */
-.topic-detail-text-box {
-  flex-grow: 1;
-}
-
 .topic-detail-label {
   color: #dc2626;
   font-size: 12px;
@@ -136,43 +112,26 @@
   letter-spacing: 1px;
   text-transform: uppercase;
   margin: 0 0 20px 0;
+  padding-top: 10px; /* Aligns header nicely with top of image */
 }
 
-/* 👇 NEW: Smart Biography Box */
 .topic-detail-bio {
-  white-space: pre-line; /* This makes sure "Enter" line breaks work! */
+  white-space: pre-line; 
   color: #334155;
   font-size: 16px; 
   line-height: 1.8; 
   margin: 0 0 15px 0;
 }
 
-/* When collapsed, it hides extra text and adds "..." */
 .topic-detail-bio.collapsed {
   display: -webkit-box;
-  -webkit-line-clamp: 4; /* Shows only 4 lines of text. Change this number if you want more/less! */
-  line-clamp: 4;
+  -webkit-line-clamp: 10; /* Increased so it fills space next to image before cutting off */
+  line-clamp: 10;
   -webkit-box-orient: vertical;
   overflow: hidden;
 }
 
-/* When expanded, it shows everything! */
 .topic-detail-bio.expanded {
-  display: block;
-}
-
-.topic-detail-text-box p {
-  color: #334155;
-  font-size: 16px; 
-  line-height: 1.8; 
-  margin: 0 0 20px 0;
-}
-
-.topic-detail-text-hidden {
-  display: none;
-}
-
-.topic-detail-text-hidden.expanded {
   display: block;
 }
 
@@ -200,6 +159,7 @@
 
 /* --- Social Footer --- */
 .topic-detail-social-footer {
+  clear: both; /* 👇 This forces the footer to stay below the image/text */
   margin-top: 40px; 
   padding-top: 20px; 
   border-top: 1px solid #e2e8f0;
@@ -424,5 +384,12 @@
     line-clamp: 2;
     -webkit-line-clamp: 2;
     -webkit-box-orient: vertical;
+  }
+
+  .topic-detail-img-box {
+    float: none;
+    width: 100%;
+    margin-right: 0;
+    margin-bottom: 25px;
   }
 }
