@@ -268,3 +268,27 @@
 
 .dropdown-item.breaking-active { color: #dc2626; background: #fff1f1; }
 .dropdown-item.breaking-active:hover { background: #fee2e2; }
+
+.status-pill.live-published {
+  background: #fee2e2;
+  color: #991b1b;
+  font-weight: 700;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+ 
+.status-pill.live-published::before {
+  content: "";
+  display: inline-block;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #ef4444;
+  animation: live-pulse 1.5s ease-in-out infinite;
+}
+ 
+@keyframes live-pulse {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50%       { opacity: 0.5; transform: scale(1.3); }
+}

@@ -1,14 +1,21 @@
 import { createContext, useContext } from "react";
 
-export type ArticleStatus   = "Published" | "Draft" | "Scheduled";
+export type ArticleStatus   = "Published" | "Draft" | "Scheduled" | "Ended";
 export type ArticlePriority = "High" | "Medium" | "Normal";
+
+export interface LiveUpdate {
+  id:        number;
+  time:      string;   // e.g. "10:30 AM"
+  text:      string;
+  timestamp: string;   // ISO
+}
 
 export interface Article {
   id:              number;
   title:           string;
   subtitle:        string;
   category:        string;          // article type: "Breaking News", "Standard Article" etc.
-  articleCategory: string;          // classification category: "Sports", "Sports / Cricket" etc.
+  articleCategory: string;          // classification: "Sports", "Politics" etc.
   authorFirst:     string;
   authorLast:      string;
   status:          ArticleStatus;
@@ -22,9 +29,15 @@ export interface Article {
   leftBorder?:     string;
   isTopStory:      boolean;
   isPinned:        boolean;
-  // New scheduling fields
-  scheduledFor?:   string | null;   // ISO datetime string, set when status = "Scheduled"
-  publishedAt?:    string | null;   // ISO datetime string, set when status = "Published"
+  // Scheduling
+  scheduledFor?:   string | null;   // ISO datetime
+  publishedAt?:    string | null;   // ISO datetime
+  // Breaking-specific
+  channels?:       string[];        // ["web", "mobile", "push", "ticker"]
+  expiryTime?:     string | null;   // ISO datetime for auto-expiry
+  // Live-specific
+  liveUpdates?:    LiveUpdate[];
+  liveStartedAt?:  string | null;   // ISO datetime when live started
 }
 
 export interface Category {
@@ -40,11 +53,19 @@ export interface Category {
 }
 
 export interface NewsStore {
-  articles:      Article[];
-  setArticles:   (a: Article[]) => void;
-  addArticle:    (a: Omit<Article, "id">) => void;
-  updateArticle: (id: number, patch: Partial<Article>) => void;
-  deleteArticle: (id: number) => void;
+  articles:           Article[];
+  setArticles:        (a: Article[]) => void;
+  addArticle:         (a: Omit<Article, "id">) => void;
+  updateArticle:      (id: number, patch: Partial<Article>) => void;
+  deleteArticle:      (id: number) => void;
+  convertToBreaking:  (id: number) => void;
+  convertToLive:      (id: number) => void;
+  endLive:            (id: number) => void;
+  promoteToBreaking:  (ids: number[]) => void;
+  addLiveUpdate:      (articleId: number, text: string) => void;
+  togglePause:        (id: number) => void;
+  increasePriority:   (id: number) => void;
+  decreasePriority:   (id: number) => void;
 
   categories:     Category[];
   addCategory:    (c: Omit<Category, "id">) => void;

@@ -480,3 +480,51 @@
   color: #e02020;
 }
 .ls-dropdown-item--danger:hover { background: #fff5f5; }
+/* ── Inline Update Input ── */
+.ls-inline-update {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 10px;
+  padding: 10px;
+  background: #f8f8f8;
+  border: 1px solid #e0e0e0;
+  border-radius: 7px;
+}
+
+.ls-update-input {
+  flex: 1;
+  border: none;
+  background: transparent;
+  font-size: 13px;
+  color: #333;
+  outline: none;
+}
+.ls-update-input::placeholder { color: #bbb; }
+
+/* ── Delete Modal ── */
+.ls-modal-overlay {
+  position: fixed; inset: 0; background: rgba(0,0,0,0.4);
+  display: flex; align-items: center; justify-content: center; z-index: 2000;
+}
+.ls-modal {
+  background: #fff; border-radius: 16px; padding: 28px 24px;
+  width: 340px; text-align: center; box-shadow: 0 20px 40px rgba(0,0,0,0.15);
+}
+.ls-modal-icon {
+  width: 48px; height: 48px; background: #fff1f1; color: #ef4444;
+  border-radius: 50%; display: flex; align-items: center;
+  justify-content: center; margin: 0 auto 16px;
+}
+.ls-modal h4 { font-size: 18px; font-weight: 700; margin: 0 0 8px; }
+.ls-modal p  { font-size: 14px; color: #6b7280; margin: 0 0 22px; }
+.ls-modal-actions { display: flex; gap: 10px; }
+.ls-modal-cancel {
+  flex: 1; padding: 10px; border-radius: 10px; border: 1px solid #e5e7eb;
+  background: #fff; font-size: 14px; font-weight: 500; cursor: pointer;
+}
+.ls-modal-confirm {
+  flex: 1; padding: 10px; border-radius: 10px; border: none;
+  background: #ef4444; color: #fff; font-size: 14px; font-weight: 600; cursor: pointer;
+}
+.ls-modal-confirm:hover { background: #dc2626; }
