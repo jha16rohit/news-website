@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect } from "react";
 import "./AllNews.css";
 import { useNews } from "../NewsStore/NewsStore";
+import { useNavigate } from "react-router-dom";
 import {
   Search, Flame, Video, Radio, X,
   Edit, ExternalLink, Trash2, Zap, MoreVertical, Pin, GripVertical,
@@ -22,12 +23,17 @@ const CATEGORY_MAP: Record<string, string> = {
 };
 
 const AllNews: React.FC = () => {
-  const { articles, setArticles, updateArticle, deleteArticle } = useNews();
-  const [activeType, setActiveType]     = useState("all");
-  const [search, setSearch]             = useState("");
+  const {
+    articles, setArticles, updateArticle, deleteArticle,
+    convertToBreaking, endLive,
+  } = useNews();
+  const navigate = useNavigate();
+
+  const [activeType, setActiveType]       = useState("all");
+  const [search, setSearch]               = useState("");
   const [selectedItems, setSelectedItems] = useState<Set<number>>(new Set());
-  const [openDropdown, setOpenDropdown] = useState<number | null>(null);
-  const [deleteModal, setDeleteModal]   = useState<number | null>(null);
+  const [openDropdown, setOpenDropdown]   = useState<number | null>(null);
+  const [deleteModal, setDeleteModal]     = useState<number | null>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
   // Drag state
@@ -56,7 +62,7 @@ const AllNews: React.FC = () => {
   });
 
   // Selection
-  const allIds       = filtered.map((a) => a.id);
+  const allIds        = filtered.map((a) => a.id);
   const isAllSelected  = allIds.length > 0 && allIds.every((id) => selectedItems.has(id));
   const isSomeSelected = allIds.some((id) => selectedItems.has(id));
 
@@ -73,12 +79,10 @@ const AllNews: React.FC = () => {
     setDraggingId(id);
     e.dataTransfer.effectAllowed = "move";
   };
-
   const onDragEnter = (index: number, id: number) => {
     dragOverIndex.current = index;
     setDragOverId(id);
   };
-
   const onDragEnd = () => {
     if (
       dragIndex.current !== null &&
@@ -102,21 +106,93 @@ const AllNews: React.FC = () => {
 
   const handleMenuAction = (action: string, id: number) => {
     const item = articles.find((a) => a.id === id);
-    if (action === "mark-breaking") {
-      const isBreaking = item?.tagType === "breaking";
-      updateArticle(id, {
-        tag:        isBreaking ? undefined : "Breaking",
-        tagType:    isBreaking ? undefined : "breaking",
-        leftBorder: isBreaking ? undefined : "breaking-left",
-      });
-    }
-    if (action === "pin")    updateArticle(id, { isPinned: !item?.isPinned });
-    if (action === "delete") setDeleteModal(id);
     setOpenDropdown(null);
+
+    switch (action) {
+      case "edit":
+        navigate(`/admin/create?edit=${id}&type=${
+          item?.tagType === "breaking" ? "breaking"
+          : item?.tagType === "live"    ? "live"
+          : item?.category === "Video Story" ? "video"
+          : "standard"
+        }`);
+        break;
+
+      case "view-live":
+        if (item?.tagType === "breaking") navigate("/admin/breaking");
+        else if (item?.tagType === "live") navigate("/admin/live");
+        break;
+
+      case "pin":
+        updateArticle(id, { isPinned: !item?.isPinned });
+        break;
+
+      case "mark-breaking": {
+        const isBreaking = item?.tagType === "breaking";
+        if (isBreaking) {
+          updateArticle(id, {
+            category:    "Standard Article",
+            tag:         undefined,
+            tagType:     undefined,
+            leftBorder:  undefined,
+            priority:    "Normal",
+            priorityType: "normal",
+            channels:    undefined,
+            expiryTime:  undefined,
+          });
+        } else {
+          convertToBreaking(id);
+        }
+        break;
+      }
+
+      case "convert-live": {
+        const isLive = item?.tagType === "live";
+        if (isLive) {
+          // End live — just update status, no navigation
+          endLive(id);
+        } else {
+          // Convert to live — update status only, no navigation
+          // Set category to "Live Updates" and mark as live with red Live badge
+          updateArticle(id, {
+            category:      "Live Updates",
+            tag:           "Live",
+            tagType:       "live",
+            leftBorder:    "live-left",
+            status:        "Published",
+            statusType:    "live-published",   // custom statusType so CSS shows red
+            published:     "Live",
+            views:         item?.views ?? "0",
+            liveStartedAt: new Date().toISOString(),
+            liveUpdates:   item?.liveUpdates ?? [],
+            channels:      undefined,
+            expiryTime:    undefined,
+          });
+        }
+        break;
+      }
+
+      case "delete":
+        setDeleteModal(id);
+        break;
+    }
   };
 
   const confirmDelete = () => {
     if (deleteModal !== null) { deleteArticle(deleteModal); setDeleteModal(null); }
+  };
+
+  const handleBulkPublish = () => {
+    selectedItems.forEach(id => updateArticle(id, { status: "Published", statusType: "published", published: "Just now" }));
+    setSelectedItems(new Set());
+  };
+  const handleBulkDraft = () => {
+    selectedItems.forEach(id => updateArticle(id, { status: "Draft", statusType: "draft", published: "-", views: "-" }));
+    setSelectedItems(new Set());
+  };
+  const handleBulkDelete = () => {
+    selectedItems.forEach(id => deleteArticle(id));
+    setSelectedItems(new Set());
   };
 
   return (
@@ -130,7 +206,7 @@ const AllNews: React.FC = () => {
         </div>
       </div>
 
-      {/* TABS — only Standard, Breaking, Live, Video */}
+      {/* TABS */}
       <div className="article-type-tabs">
         {articleTypes.map((item) => (
           <button
@@ -171,9 +247,9 @@ const AllNews: React.FC = () => {
             </button>
           </div>
           <div className="selection-actions">
-            <button className="action-btn publish-btn">Publish Selected</button>
-            <button className="action-btn draft-btn">Move to Draft</button>
-            <button className="action-btn delete-btn">Delete Selected</button>
+            <button className="action-btn publish-btn" onClick={handleBulkPublish}>Publish Selected</button>
+            <button className="action-btn draft-btn"   onClick={handleBulkDraft}>Move to Draft</button>
+            <button className="action-btn delete-btn"  onClick={handleBulkDelete}>Delete Selected</button>
           </div>
         </div>
       )}
@@ -249,7 +325,7 @@ const AllNews: React.FC = () => {
                     </span>
                   </td>
 
-                  {/* CATEGORY (Sports, Sports/Cricket, etc.) */}
+                  {/* CATEGORY */}
                   <td className="muted">
                     {news.articleCategory
                       ? <span className="category-breadcrumb">{news.articleCategory}</span>
@@ -270,7 +346,9 @@ const AllNews: React.FC = () => {
                   </td>
 
                   {/* STATUS */}
-                  <td><span className={`status-pill ${news.statusType}`}>{news.status}</span></td>
+                  <td>
+                    <span className={`status-pill ${news.statusType}`}>{news.status}</span>
+                  </td>
 
                   {/* PUBLISHED */}
                   <td className="muted">{news.published}</td>
@@ -309,6 +387,16 @@ const AllNews: React.FC = () => {
                           >
                             <Zap size={15} className={news.tagType === "breaking" ? "icon-red" : ""} />
                             {news.tagType === "breaking" ? "Remove Breaking" : "Mark as Breaking"}
+                          </button>
+                          <button
+                            className={`dropdown-item${news.tagType === "live" ? " breaking-active" : ""}`}
+                            onClick={() => handleMenuAction("convert-live", news.id)}
+                            style={news.tagType === "live" ? { color: "#16a34a" } : {}}
+                          >
+                            <Radio size={15} />
+                            {news.tagType === "live"
+                              ? news.statusType === "ended" ? "Ended" : "End Live"
+                              : "Convert to Live"}
                           </button>
                           <div className="dropdown-divider" />
                           <button className="dropdown-item danger" onClick={() => handleMenuAction("delete", news.id)}>

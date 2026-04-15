@@ -9,6 +9,7 @@ import {
   FileText, Tag, MapPin, User, Trash2, Search, Video, X, CalendarClock,
 } from "lucide-react";
 
+// ─── Types ────────────────────────────────────────────────────────────────────
 type ArticleType = "Standard Article" | "Breaking News" | "Live Updates" | "Video Story";
 
 const ARTICLE_TYPES: { label: ArticleType; icon: React.ReactNode }[] = [
@@ -20,7 +21,25 @@ const ARTICLE_TYPES: { label: ArticleType; icon: React.ReactNode }[] = [
 
 const SUGGESTED_TAGS = ["India", "Economy", "Government", "Reform"];
 
-/* ─── Save / restore browser selection ─── */
+// ─── Topic Profile type (mirrors TopicProfiles localStorage schema) ──────────
+interface TopicProfile {
+  id:          number;
+  name:        string;
+  slug:        string;
+  caption:     string;
+  description: string;
+  imageUrl?:   string;
+}
+
+function loadTopicProfiles(): TopicProfile[] {
+  try {
+    const raw = localStorage.getItem("topic_profiles");
+    if (raw) return JSON.parse(raw) as TopicProfile[];
+  } catch {}
+  return [];
+}
+
+// ─── Selection save/restore ───────────────────────────────────────────────────
 function saveSelection(): Range | null {
   const sel = window.getSelection();
   return sel && sel.rangeCount > 0 ? sel.getRangeAt(0).cloneRange() : null;
@@ -32,65 +51,251 @@ function restoreSelection(range: Range | null) {
   sel?.addRange(range);
 }
 
-function applyRichFormat(action: string, editorRef: React.RefObject<HTMLDivElement | null>) {
-  const el = editorRef.current;
-  if (!el) return;
-  el.focus();
-  const exec = (cmd: string, val?: string) => document.execCommand(cmd, false, val);
-  const block = (tag: string) => exec("formatBlock", tag);
-  switch (action) {
-    case "bold":        return exec("bold");
-    case "italic":      return exec("italic");
-    case "underline":   return exec("underline");
-    case "h1":          return block("h1");
-    case "h2":          return block("h2");
-    case "bullet":      return exec("insertUnorderedList");
-    case "ordered":     return exec("insertOrderedList");
-    case "quote":       return block("blockquote");
-    case "alignLeft":   return exec("justifyLeft");
-    case "alignCenter": return exec("justifyCenter");
-    case "alignRight":  return exec("justifyRight");
-    case "link": {
-      const saved = saveSelection();
-      const url = window.prompt("Enter URL:");
-      if (!url) return;
-      restoreSelection(saved);
-      const sel = window.getSelection();
-      if (sel && sel.toString().trim()) {
-        exec("createLink", url);
-        const range = sel.getRangeAt(0);
-        const anchor = range.commonAncestorContainer.parentElement?.closest("a");
-        if (anchor) { anchor.target = "_blank"; anchor.rel = "noopener noreferrer"; }
-      } else {
-        const a = `<a href="${url}" target="_blank" rel="noopener noreferrer">${url}</a>`;
-        exec("insertHTML", a);
+// ─── Topic Link Modal ─────────────────────────────────────────────────────────
+interface TopicLinkModalProps {
+  savedRange: Range | null;
+  editorRef:  React.RefObject<HTMLDivElement | null>;
+  onClose:    () => void;
+}
+
+const TopicLinkModal: React.FC<TopicLinkModalProps> = ({ savedRange, editorRef, onClose }) => {
+  const [query,    setQuery]    = useState("");
+  const [profiles, setProfiles] = useState<TopicProfile[]>([]);
+  const [filtered, setFiltered] = useState<TopicProfile[]>([]);
+  const [manualSlug, setManualSlug] = useState("");
+  const [tab,      setTab]      = useState<"search" | "manual">("search");
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    const loaded = loadTopicProfiles();
+    setProfiles(loaded);
+    setFiltered(loaded);
+    setTimeout(() => inputRef.current?.focus(), 50);
+  }, []);
+
+  useEffect(() => {
+    const q = query.toLowerCase().trim();
+    setFiltered(q ? profiles.filter(p =>
+      p.name.toLowerCase().includes(q) ||
+      p.slug.toLowerCase().includes(q) ||
+      p.caption.toLowerCase().includes(q)
+    ) : profiles);
+  }, [query, profiles]);
+
+  const applyLink = (href: string, label: string) => {
+    const el = editorRef.current;
+    if (!el) return;
+    el.focus();
+    restoreSelection(savedRange);
+    const sel = window.getSelection();
+    if (!sel || !sel.rangeCount) return;
+
+    // If there's selected text, wrap it. Otherwise insert label text.
+    if (sel.toString().trim()) {
+      document.execCommand("createLink", false, href);
+      // Find the newly created anchor and style it
+      const range = sel.getRangeAt(0);
+      const node  = range.commonAncestorContainer;
+      const anchor = (node as Element).closest?.("a") ??
+                     (node.parentElement as Element)?.closest("a");
+      if (anchor) {
+        (anchor as HTMLAnchorElement).target = "_blank";
+        (anchor as HTMLAnchorElement).rel    = "noopener noreferrer";
+        (anchor as HTMLAnchorElement).dataset.topicLink = "true";
+        (anchor as HTMLAnchorElement).className = "cna-topic-link";
       }
-      break;
+    } else {
+      const html = `<a href="${href}" class="cna-topic-link" data-topic-link="true" target="_blank" rel="noopener noreferrer">${label}</a>`;
+      document.execCommand("insertHTML", false, html);
     }
+    onClose();
+  };
+
+  const handleSelectProfile = (p: TopicProfile) => {
+    applyLink(`/topic/${p.slug}`, p.name);
+  };
+
+  const handleManualApply = () => {
+    if (!manualSlug.trim()) return;
+    const slug = manualSlug.trim().toLowerCase().replace(/^\/topic\//i, "").replace(/\s+/g, "-");
+    applyLink(`/topic/${slug}`, slug);
+  };
+
+  return (
+    <div className="cna-modal-overlay" onClick={e => { if (e.target === e.currentTarget) onClose(); }}>
+      <div className="cna-modal cna-modal--topic" role="dialog" aria-modal="true" aria-labelledby="topic-modal-title">
+
+        {/* Header */}
+        <div className="cna-modal-header">
+          <div className="cna-modal-title-wrap">
+            <div className="cna-modal-icon cna-modal-icon--topic">
+              <Link size={20} />
+            </div>
+            <div>
+              <h2 className="cna-modal-title" id="topic-modal-title">Insert Topic Link</h2>
+              <p className="cna-modal-subtitle">Link selected text to a topic profile page</p>
+            </div>
+          </div>
+          <button className="cna-modal-close" onClick={onClose} aria-label="Close"><X size={18} /></button>
+        </div>
+
+        {/* Tabs */}
+        <div className="cna-topic-tabs">
+          <button
+            className={`cna-topic-tab${tab === "search" ? " cna-topic-tab--active" : ""}`}
+            onClick={() => setTab("search")}
+          >
+            <Search size={13} /> Search Profiles
+          </button>
+          <button
+            className={`cna-topic-tab${tab === "manual" ? " cna-topic-tab--active" : ""}`}
+            onClick={() => setTab("manual")}
+          >
+            <Link size={13} /> Manual Slug
+          </button>
+        </div>
+
+        {/* Body */}
+        <div className="cna-modal-body cna-modal-body--topic">
+          {tab === "search" && (
+            <>
+              <div className="cna-topic-search-wrap">
+                <Search size={14} className="cna-topic-search-icon" />
+                <input
+                  ref={inputRef}
+                  className="cna-input cna-topic-search-input"
+                  placeholder="Search by name, slug, or caption…"
+                  value={query}
+                  onChange={e => setQuery(e.target.value)}
+                />
+                {query && (
+                  <button className="cna-topic-clear" onClick={() => setQuery("")}>
+                    <X size={13} />
+                  </button>
+                )}
+              </div>
+
+              {profiles.length === 0 ? (
+                <div className="cna-topic-empty">
+                  <User size={32} />
+                  <p>No topic profiles found.</p>
+                  <span>Create profiles in the Topic Profiles section first.</span>
+                </div>
+              ) : filtered.length === 0 ? (
+                <div className="cna-topic-empty">
+                  <Search size={28} />
+                  <p>No profiles match "{query}"</p>
+                </div>
+              ) : (
+                <ul className="cna-topic-list">
+                  {filtered.map(p => (
+                    <li key={p.id} className="cna-topic-item" onClick={() => handleSelectProfile(p)}>
+                      <div className="cna-topic-avatar">
+                        {p.imageUrl
+                          ? <img src={p.imageUrl} alt={p.name} />
+                          : <span>{p.name.charAt(0).toUpperCase()}</span>}
+                      </div>
+                      <div className="cna-topic-info">
+                        <span className="cna-topic-name">{p.name}</span>
+                        {p.caption && <span className="cna-topic-caption">{p.caption}</span>}
+                        <span className="cna-topic-slug">/topic/{p.slug}</span>
+                      </div>
+                      <div className="cna-topic-arrow">→</div>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </>
+          )}
+
+          {tab === "manual" && (
+            <div className="cna-topic-manual">
+              <p className="cna-topic-manual-hint">
+                Enter a topic slug directly. The link will be formatted as <code>/topic/your-slug</code>.
+              </p>
+              <div className="cna-slug-input-wrap">
+                <span className="cna-slug-prefix">/topic/</span>
+                <input
+                  className="cna-input cna-slug-input"
+                  placeholder="your-topic-slug"
+                  value={manualSlug}
+                  onChange={e => setManualSlug(e.target.value.toLowerCase().replace(/\s+/g, "-"))}
+                  onKeyDown={e => e.key === "Enter" && handleManualApply()}
+                  autoFocus
+                />
+              </div>
+              <button
+                className="cna-btn cna-btn-primary"
+                style={{ marginTop: 12, width: "100%", justifyContent: "center" }}
+                onClick={handleManualApply}
+                disabled={!manualSlug.trim()}
+              >
+                <Link size={14} /> Apply Link
+              </button>
+            </div>
+          )}
+        </div>
+
+        <div className="cna-modal-footer">
+          <button className="cna-btn cna-btn-outline" onClick={onClose}>Cancel</button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+// ─── Rich format helper ────────────────────────────────────────────────────────
+// Returns true if the action was handled here, false if the caller should open topic modal
+function applyRichFormat(
+  action: string,
+  editorRef: React.RefObject<HTMLDivElement | null>,
+): "handled" | "open-topic-modal" {
+  const el = editorRef.current;
+  if (!el) return "handled";
+  el.focus();
+  const exec  = (cmd: string, val?: string) => document.execCommand(cmd, false, val);
+  const block = (tag: string) => exec("formatBlock", tag);
+
+  switch (action) {
+    case "bold":        exec("bold");        return "handled";
+    case "italic":      exec("italic");      return "handled";
+    case "underline":   exec("underline");   return "handled";
+    case "h1":          block("h1");         return "handled";
+    case "h2":          block("h2");         return "handled";
+    case "bullet":      exec("insertUnorderedList"); return "handled";
+    case "ordered":     exec("insertOrderedList");   return "handled";
+    case "quote":       block("blockquote"); return "handled";
+    case "alignLeft":   exec("justifyLeft");   return "handled";
+    case "alignCenter": exec("justifyCenter"); return "handled";
+    case "alignRight":  exec("justifyRight"); return "handled";
+    case "link":        return "open-topic-modal";
+    default:            return "handled";
   }
 }
 
 const TOOLBAR_ITEMS = [
-  { action: "h1",          icon: <Heading1 size={16} />,    title: "Heading 1"     },
-  { action: "h2",          icon: <Heading2 size={16} />,    title: "Heading 2"     },
-  { action: "bold",        icon: <Bold size={16} />,        title: "Bold"          },
-  { action: "italic",      icon: <Italic size={16} />,      title: "Italic"        },
-  { action: "underline",   icon: <Underline size={16} />,   title: "Underline"     },
-  { action: "bullet",      icon: <List size={16} />,        title: "Bullet List"   },
-  { action: "ordered",     icon: <ListOrdered size={16} />, title: "Numbered List" },
-  { action: "quote",       icon: <Quote size={16} />,       title: "Blockquote"    },
-  { action: "alignLeft",   icon: <AlignLeft size={16} />,   title: "Align Left"    },
-  { action: "alignCenter", icon: <AlignCenter size={16} />, title: "Align Center"  },
-  { action: "alignRight",  icon: <AlignRight size={16} />,  title: "Align Right"   },
-  { action: "link",        icon: <Link size={16} />,        title: "Insert Link"   },
+  { action: "h1",          icon: <Heading1 size={16} />,    title: "Heading 1"      },
+  { action: "h2",          icon: <Heading2 size={16} />,    title: "Heading 2"      },
+  { action: "bold",        icon: <Bold size={16} />,        title: "Bold"           },
+  { action: "italic",      icon: <Italic size={16} />,      title: "Italic"         },
+  { action: "underline",   icon: <Underline size={16} />,   title: "Underline"      },
+  { action: "bullet",      icon: <List size={16} />,        title: "Bullet List"    },
+  { action: "ordered",     icon: <ListOrdered size={16} />, title: "Numbered List"  },
+  { action: "quote",       icon: <Quote size={16} />,       title: "Blockquote"     },
+  { action: "alignLeft",   icon: <AlignLeft size={16} />,   title: "Align Left"     },
+  { action: "alignCenter", icon: <AlignCenter size={16} />, title: "Align Center"   },
+  { action: "alignRight",  icon: <AlignRight size={16} />,  title: "Align Right"    },
+  { action: "link",        icon: <Link size={16} />,        title: "Topic Link"     },
 ];
 
+// ─── RichEditor ───────────────────────────────────────────────────────────────
 interface RichEditorProps {
-  editorRef: React.RefObject<HTMLDivElement | null>;
-  onInput: (html: string) => void;
-  wordCount: number;
-  readTime: number;
+  editorRef:  React.RefObject<HTMLDivElement | null>;
+  onInput:    (html: string) => void;
+  wordCount:  number;
+  readTime:   number;
 }
+
 const RichEditor: React.FC<RichEditorProps> = ({ editorRef, onInput, wordCount, readTime }) => {
   const handleInput = useCallback(
     () => onInput(editorRef.current?.innerHTML ?? ""),
@@ -130,6 +335,7 @@ const RichEditor: React.FC<RichEditorProps> = ({ editorRef, onInput, wordCount, 
   );
 };
 
+// ─── CustomSelect ─────────────────────────────────────────────────────────────
 interface CustomSelectProps {
   value: string; onChange: (v: string) => void;
   options: { label: string; value: string }[];
@@ -171,6 +377,7 @@ const CustomSelect: React.FC<CustomSelectProps> = ({ value, onChange, options, p
   );
 };
 
+// ─── LocationSearch ────────────────────────────────────────────────────────────
 const LocationSearch: React.FC<{ value: string; onChange: (v: string) => void }> = ({ value, onChange }) => {
   const [query, setQuery]     = useState(value);
   const [results, setResults] = useState<string[]>([]);
@@ -224,43 +431,28 @@ const Toggle: React.FC<{ on: boolean; onClick: () => void; label: string; dark?:
   </button>
 );
 
-/* ─────────────────────────────────────────────────────────────
-   SCHEDULE MODAL  — Custom Calendar + Analog Clock
-───────────────────────────────────────────────────────────── */
+// ─── Schedule Modal ────────────────────────────────────────────────────────────
 interface ScheduleModalProps {
-  onClose: () => void;
+  onClose:   () => void;
   onConfirm: (datetime: string) => void;
 }
 
-const MONTHS = [
-  "January","February","March","April","May","June",
-  "July","August","September","October","November","December",
-];
+const MONTHS      = ["January","February","March","April","May","June","July","August","September","October","November","December"];
 const DAYS_OF_WEEK = ["SUN","MON","TUE","WED","THU","FRI","SAT"];
 
-function getDaysInMonth(year: number, month: number) {
-  return new Date(year, month + 1, 0).getDate();
-}
-function getFirstDayOfMonth(year: number, month: number) {
-  return new Date(year, month, 1).getDay();
-}
+function getDaysInMonth(year: number, month: number) { return new Date(year, month + 1, 0).getDate(); }
+function getFirstDayOfMonth(year: number, month: number) { return new Date(year, month, 1).getDay(); }
 
 const ScheduleModal: React.FC<ScheduleModalProps> = ({ onClose, onConfirm }) => {
   const now = new Date();
-
-  /* ── Calendar state ── */
   const [viewMonth, setViewMonth] = useState(now.getMonth());
   const [viewYear,  setViewYear]  = useState(now.getFullYear());
   const [selDay,    setSelDay]    = useState<number | null>(null);
-
-  /* ── Time state ── */
   const [hour,   setHour]   = useState("12");
   const [minute, setMinute] = useState("00");
   const [ampm,   setAmpm]   = useState<"AM" | "PM">("PM");
+  const [error,  setError]  = useState("");
 
-  const [error, setError] = useState("");
-
-  /* ── Calendar helpers ── */
   const daysInMonth = getDaysInMonth(viewYear, viewMonth);
   const firstDay    = getFirstDayOfMonth(viewYear, viewMonth);
   const yearOptions = Array.from({ length: 6 }, (_, i) => now.getFullYear() + i);
@@ -283,7 +475,6 @@ const ScheduleModal: React.FC<ScheduleModalProps> = ({ onClose, onConfirm }) => 
     return d < t;
   };
 
-  /* ── Clock angle helpers ── */
   const h = parseInt(hour) || 12;
   const m = parseInt(minute) || 0;
   const h24 = ampm === "AM" ? (h % 12) : (h % 12) + 12;
@@ -296,10 +487,8 @@ const ScheduleModal: React.FC<ScheduleModalProps> = ({ onClose, onConfirm }) => 
   };
   const hourEnd   = handCoords(hourAngle, 26);
   const minuteEnd = handCoords(minuteAngle, 34);
-  /* second hand static at ~10 o'clock position like the reference image */
   const secondEnd = handCoords(55, 38);
 
-  /* ── Confirm ── */
   const handleConfirm = () => {
     if (!selDay) { setError("Please select a date."); return; }
     const hNum = parseInt(hour);
@@ -317,7 +506,6 @@ const ScheduleModal: React.FC<ScheduleModalProps> = ({ onClose, onConfirm }) => 
       + ` at ${hour}:${String(minute).padStart(2, "0")} ${ampm}`
     : "";
 
-  /* ── Grid cells ── */
   const cells: (number | null)[] = [];
   for (let i = 0; i < firstDay; i++) cells.push(null);
   for (let d = 1; d <= daysInMonth; d++) cells.push(d);
@@ -326,8 +514,6 @@ const ScheduleModal: React.FC<ScheduleModalProps> = ({ onClose, onConfirm }) => 
   return (
     <div className="cna-modal-overlay" onClick={e => { if (e.target === e.currentTarget) onClose(); }}>
       <div className="cna-modal cna-modal--schedule" role="dialog" aria-modal="true" aria-labelledby="schedule-modal-title">
-
-        {/* Header */}
         <div className="cna-modal-header">
           <div className="cna-modal-title-wrap">
             <div className="cna-modal-icon"><CalendarClock size={20} /></div>
@@ -341,8 +527,6 @@ const ScheduleModal: React.FC<ScheduleModalProps> = ({ onClose, onConfirm }) => 
 
         <div className="cna-modal-body cna-modal-body--schedule">
           <div className="cna-schedule-cols">
-
-            {/* ── LEFT: Calendar ── */}
             <div className="cna-cal">
               <div className="cna-cal-nav">
                 <button className="cna-cal-nav-btn" onClick={prevMonth}>&#8249;</button>
@@ -358,15 +542,11 @@ const ScheduleModal: React.FC<ScheduleModalProps> = ({ onClose, onConfirm }) => 
                 </div>
                 <button className="cna-cal-nav-btn" onClick={nextMonth}>&#8250;</button>
               </div>
-
-              {/* Day-of-week headers */}
               <div className="cna-cal-grid cna-cal-grid--header">
                 {DAYS_OF_WEEK.map(d => (
                   <span key={d} className={`cna-cal-dow${d === "SUN" || d === "SAT" ? " cna-cal-dow--weekend" : ""}`}>{d}</span>
                 ))}
               </div>
-
-              {/* Day cells */}
               <div className="cna-cal-grid">
                 {cells.map((day, idx) => {
                   if (!day) return <span key={idx} className="cna-cal-cell cna-cal-cell--empty" />;
@@ -391,23 +571,16 @@ const ScheduleModal: React.FC<ScheduleModalProps> = ({ onClose, onConfirm }) => 
                   );
                 })}
               </div>
-
-              {/* Confirm button */}
               <button className="cna-cal-confirm-btn" onClick={handleConfirm}>
                 <CalendarClock size={15} /> Schedule Article
               </button>
             </div>
 
-            {/* ── RIGHT: Clock + Time inputs ── */}
             <div className="cna-clock-col">
-              {/* Analog clock SVG */}
               <div className="cna-clock-wrap">
                 <svg className="cna-clock-svg" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
-                  {/* Subtle outer glow ring */}
                   <circle cx="50" cy="50" r="49" fill="none" stroke="#f0d0d0" strokeWidth="0.8" opacity="0.6" />
-                  {/* Clock face */}
                   <circle cx="50" cy="50" r="47" fill="white" stroke="#1a1a18" strokeWidth="2.2" />
-                  {/* Tick marks */}
                   {Array.from({ length: 60 }, (_, i) => {
                     const ang   = (i * 6 - 90) * (Math.PI / 180);
                     const isHr  = i % 5 === 0;
@@ -419,77 +592,48 @@ const ScheduleModal: React.FC<ScheduleModalProps> = ({ onClose, onConfirm }) => 
                         stroke="#1a1a18" strokeWidth={isHr ? 1.5 : 0.55} strokeLinecap="round" />
                     );
                   })}
-                  {/* Hour numbers */}
                   {[12,1,2,3,4,5,6,7,8,9,10,11].map((n, i) => {
                     const ang = (i * 30 - 90) * (Math.PI / 180);
                     return (
                       <text key={n}
-                        x={50 + 32 * Math.cos(ang)}
-                        y={50 + 32 * Math.sin(ang)}
+                        x={50 + 32 * Math.cos(ang)} y={50 + 32 * Math.sin(ang)}
                         textAnchor="middle" dominantBaseline="central"
                         fontSize="6.8" fontFamily="Georgia, serif"
-                        fill="#1a1a18" fontWeight="600">
-                        {n}
-                      </text>
+                        fill="#1a1a18" fontWeight="600">{n}</text>
                     );
                   })}
-                  {/* LocalNews brand text in red */}
                   <text x="50" y="67" textAnchor="middle"
                     fontSize="5.2" fontFamily="Georgia, serif"
-                    fill="#e53e3e" fontWeight="700" letterSpacing="0.4">
-                    LocalNews
-                  </text>
-                  {/* Hour hand */}
-                  <line x1="50" y1="50" x2={hourEnd.x} y2={hourEnd.y}
-                    stroke="#1a1a18" strokeWidth="3" strokeLinecap="round" />
-                  {/* Minute hand */}
-                  <line x1="50" y1="50" x2={minuteEnd.x} y2={minuteEnd.y}
-                    stroke="#1a1a18" strokeWidth="1.8" strokeLinecap="round" />
-                  {/* Second hand (static, red) */}
-                  <line x1="50" y1="50" x2={secondEnd.x} y2={secondEnd.y}
-                    stroke="#e53e3e" strokeWidth="0.9" strokeLinecap="round" />
-                  {/* Center cap */}
+                    fill="#e53e3e" fontWeight="700" letterSpacing="0.4">LocalNews</text>
+                  <line x1="50" y1="50" x2={hourEnd.x} y2={hourEnd.y} stroke="#1a1a18" strokeWidth="3" strokeLinecap="round" />
+                  <line x1="50" y1="50" x2={minuteEnd.x} y2={minuteEnd.y} stroke="#1a1a18" strokeWidth="1.8" strokeLinecap="round" />
+                  <line x1="50" y1="50" x2={secondEnd.x} y2={secondEnd.y} stroke="#e53e3e" strokeWidth="0.9" strokeLinecap="round" />
                   <circle cx="50" cy="50" r="2.8" fill="#e53e3e" />
                   <circle cx="50" cy="50" r="1.2" fill="white" />
                 </svg>
               </div>
-
-              {/* Two separate time inputs + AM/PM */}
               <div className="cna-time-inputs">
                 <div className="cna-time-field">
                   <label className="cna-field-label">Hour</label>
-                  <input
-                    className="cna-input cna-time-input"
-                    type="number" min={1} max={12}
-                    value={hour}
-                    onChange={e => { setHour(e.target.value); setError(""); }}
-                  />
+                  <input className="cna-input cna-time-input" type="number" min={1} max={12}
+                    value={hour} onChange={e => { setHour(e.target.value); setError(""); }} />
                 </div>
                 <span className="cna-time-sep">:</span>
                 <div className="cna-time-field">
                   <label className="cna-field-label">Minute</label>
-                  <input
-                    className="cna-input cna-time-input"
-                    type="number" min={0} max={59}
-                    value={minute}
-                    onChange={e => { setMinute(e.target.value); setError(""); }}
-                  />
+                  <input className="cna-input cna-time-input" type="number" min={0} max={59}
+                    value={minute} onChange={e => { setMinute(e.target.value); setError(""); }} />
                 </div>
                 <div className="cna-time-field">
                   <label className="cna-field-label">&nbsp;</label>
                   <div className="cna-ampm-toggle">
                     {(["AM", "PM"] as const).map(p => (
-                      <button key={p}
-                        className={`cna-ampm-btn${ampm === p ? " cna-ampm-btn--active" : ""}`}
-                        onClick={() => setAmpm(p)}>{p}
-                      </button>
+                      <button key={p} className={`cna-ampm-btn${ampm === p ? " cna-ampm-btn--active" : ""}`} onClick={() => setAmpm(p)}>{p}</button>
                     ))}
                   </div>
                 </div>
               </div>
-
               {error && <p className="cna-modal-error">{error}</p>}
-
               {previewLabel && (
                 <div className="cna-modal-preview">
                   <span className="cna-modal-preview-icon"><Clock size={14} /></span>
@@ -498,7 +642,6 @@ const ScheduleModal: React.FC<ScheduleModalProps> = ({ onClose, onConfirm }) => 
               )}
             </div>
           </div>
-
           <div className="cna-modal-info">
             <p>The article will not appear on the live site until the scheduled time. You can edit or cancel the schedule from the Scheduled Posts page.</p>
           </div>
@@ -512,10 +655,11 @@ const ScheduleModal: React.FC<ScheduleModalProps> = ({ onClose, onConfirm }) => 
   );
 };
 
+// ─── Type / param map ──────────────────────────────────────────────────────────
 type SeoTab = "settings" | "google";
 const TYPE_PARAM_MAP: Record<string, ArticleType> = { breaking: "Breaking News", live: "Live Updates", video: "Video Story" };
 
-/* ─── Main Component ─── */
+// ─── Main Component ────────────────────────────────────────────────────────────
 const CreateNewArticle: React.FC = () => {
   const routerLocation = useLocation();
   const { addArticle, categories } = useNews();
@@ -526,6 +670,7 @@ const CreateNewArticle: React.FC = () => {
     return TYPE_PARAM_MAP[p.get("type") ?? ""] ?? "Standard Article";
   };
 
+  // ── State ──────────────────────────────────────────────────────────────────
   const [selectedType, setSelectedType]         = useState<ArticleType>(getInitialType);
   const [headline, setHeadline]                 = useState("");
   const [shortTitle, setShortTitle]             = useState("");
@@ -553,10 +698,16 @@ const CreateNewArticle: React.FC = () => {
   const [focusKeywords, setFocusKeywords]       = useState("");
   const [showScheduleModal, setShowScheduleModal] = useState(false);
 
+  // Topic link modal state
+  const [showTopicModal, setShowTopicModal]     = useState(false);
+  const [savedRange,     setSavedRange]         = useState<Range | null>(null);
+
+  // ── Refs ───────────────────────────────────────────────────────────────────
   const editorRef    = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const videoFileRef = useRef<HTMLInputElement>(null);
 
+  // ── Computed ───────────────────────────────────────────────────────────────
   const plainText = editorRef.current?.innerText ?? content.replace(/<[^>]+>/g, " ");
   const wordCount = plainText.trim() === "" ? 0 : plainText.trim().split(/\s+/).length;
   const readTime  = Math.max(1, Math.ceil(wordCount / 200));
@@ -576,6 +727,7 @@ const CreateNewArticle: React.FC = () => {
     { label: "Bengali", value: "bengali" }, { label: "Tamil",   value: "tamil"   },
   ];
 
+  // ── Handlers ───────────────────────────────────────────────────────────────
   const addLiveUpdate = () => {
     if (!liveInput.trim()) return;
     const time = new Date().toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit" });
@@ -593,6 +745,24 @@ const CreateNewArticle: React.FC = () => {
     if (file?.type.startsWith("image/")) { setMediaFile(file); setMediaPreview(URL.createObjectURL(file)); }
   };
 
+  // Toolbar click — intercept "link" to open topic modal with saved selection
+  const handleToolbarClick = (e: React.MouseEvent, action: string) => {
+    e.preventDefault();
+    const el = editorRef.current;
+    if (!el) return;
+    el.focus();
+
+    if (action === "link") {
+      // Save the current selection before the modal opens and focus moves
+      const range = saveSelection();
+      setSavedRange(range);
+      setShowTopicModal(true);
+      return;
+    }
+
+    applyRichFormat(action, editorRef);
+  };
+
   const googlePreviewUrl   = `https://yournewssite.com/news/${urlSlug || "article-slug"}`;
   const googlePreviewTitle = metaTitle || headline || "Your article title will appear here";
   const googlePreviewDesc  = metaDesc || "Your meta description will appear here. Make it compelling to increase click-through rates.";
@@ -608,17 +778,30 @@ const CreateNewArticle: React.FC = () => {
   const handlePublish = () => {
     if (!headline.trim()) return;
     const now = new Date().toISOString();
+    const isBreaking = selectedType === "Breaking News";
+    const isLive     = selectedType === "Live Updates";
+
     addArticle({
       ...buildBase(),
-      status: "Published", statusType: "published",
-      published: "Just now", views: "0",
+      status:      "Published",
+      statusType:  isLive ? "live-published" : "published",
+      published:   isLive ? "Live" : "Just now",
+      views:       "0",
       publishedAt: now,
       scheduledFor: null,
-      tag:        selectedType === "Breaking News" ? "Breaking" : selectedType === "Live Updates" ? "Live" : undefined,
-      tagType:    selectedType === "Breaking News" ? "breaking" : selectedType === "Live Updates" ? "live" : undefined,
-      leftBorder: selectedType === "Breaking News" ? "breaking-left" : selectedType === "Live Updates" ? "live-left" : undefined,
+      tag:         isBreaking ? "Breaking" : isLive ? "Live" : undefined,
+      tagType:     isBreaking ? "breaking"  : isLive ? "live"  : undefined,
+      leftBorder:  isBreaking ? "breaking-left" : isLive ? "live-left" : undefined,
+      priority:    isBreaking ? "High" : buildBase().priority,
+      priorityType: isBreaking ? "high" : buildBase().priorityType,
+      channels:    isBreaking ? (breakingToggles.pushNotification ? ["web", "mobile", "push"] : ["web", "mobile"]) : undefined,
+      expiryTime:  isBreaking ? new Date(Date.now() + 6 * 60 * 60 * 1000).toISOString() : undefined,
+      liveStartedAt: isLive ? now : undefined,
+      liveUpdates: isLive ? liveUpdates.map((u, i) => ({ ...u, id: i + 1, timestamp: now })) : undefined,
     });
-    navigate("/admin/news");
+
+    if (isBreaking) navigate("/admin/breaking");
+    else navigate("/admin/news");
   };
 
   const handleSaveDraft = () => {
@@ -648,6 +831,7 @@ const CreateNewArticle: React.FC = () => {
     navigate("/admin/schedule");
   };
 
+  // ── Render ─────────────────────────────────────────────────────────────────
   return (
     <div className="cna-root">
       <header className="cna-header">
@@ -671,10 +855,15 @@ const CreateNewArticle: React.FC = () => {
         </div>
       </header>
 
+      {/* Modals */}
       {showScheduleModal && (
-        <ScheduleModal
-          onClose={() => setShowScheduleModal(false)}
-          onConfirm={handleScheduleConfirm}
+        <ScheduleModal onClose={() => setShowScheduleModal(false)} onConfirm={handleScheduleConfirm} />
+      )}
+      {showTopicModal && (
+        <TopicLinkModal
+          savedRange={savedRange}
+          editorRef={editorRef}
+          onClose={() => setShowTopicModal(false)}
         />
       )}
 
@@ -767,7 +956,7 @@ const CreateNewArticle: React.FC = () => {
                   <label className="cna-field-label">Video Quality</label>
                   <CustomSelect value={videoQuality} onChange={setVideoQuality} options={[
                     { label: "4K Ultra HD", value: "4k" }, { label: "1080p Full HD", value: "1080p" },
-                    { label: "720p HD", value: "720p" },   { label: "480p SD", value: "480p" },
+                    { label: "720p HD",     value: "720p" }, { label: "480p SD",      value: "480p" },
                   ]} />
                 </div>
               </div>
@@ -794,9 +983,14 @@ const CreateNewArticle: React.FC = () => {
           <section className="cna-section cna-editor-section">
             <div className="cna-toolbar">
               {TOOLBAR_ITEMS.map(({ action, icon, title }) => (
-                <button key={action} className="cna-toolbar-btn" title={title}
-                  onMouseDown={e => { e.preventDefault(); applyRichFormat(action, editorRef); }}>
+                <button
+                  key={action}
+                  className={`cna-toolbar-btn${action === "link" ? " cna-toolbar-btn--topic" : ""}`}
+                  title={title}
+                  onMouseDown={e => handleToolbarClick(e, action)}
+                >
                   {icon}
+                  {action === "link" && <span className="cna-toolbar-topic-label">Topic</span>}
                 </button>
               ))}
             </div>
@@ -944,7 +1138,6 @@ const CreateNewArticle: React.FC = () => {
             </div>
           </div>
 
-          {/* Article Status Info Card */}
           <div className="cna-card cna-card--status-info">
             <div className="cna-card-header">
               <Clock size={15} className="cna-card-icon-svg" />

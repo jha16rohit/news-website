@@ -31,6 +31,9 @@ import Notifications from "./components/Admin/Notifications/Notifications";
 import TopicProfiles from "./components/Admin/TopicProfiles/TopicProfiles";
 import { NewsProvider } from "./components/Admin/NewsProvider/NewsProvider";
 
+
+import ProtectedRoute from "./routes/protectedroutes";
+
 export default function App() {
   return (
     <NewsProvider>
@@ -59,7 +62,14 @@ export default function App() {
           <Route path="/admin/login-xyzsft" element={<Login />} />
 
           {/* ADMIN PANEL */}
-          <Route path="/admin" element={<AdminLayout />}>
+         <Route
+  path="/admin"
+  element={
+    <ProtectedRoute>
+      <AdminLayout />
+    </ProtectedRoute>
+  }
+>
             <Route index element={<AdminDashboard />} />
             <Route path="dashboard" element={<AdminDashboard />} />
             <Route path="news" element={<AllNews />} />

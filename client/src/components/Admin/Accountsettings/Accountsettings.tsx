@@ -1,12 +1,21 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import "./Accountsettings.css";
+import {
+  getMe,
+  updateProfile,
+  changePassword,
+  logoutUser,
+} from "../../../api/auth";
+import { useNavigate } from "react-router-dom";
 
 const AccountSettings: React.FC = () => {
+  const navigate = useNavigate();
+
   const [profile, setProfile] = useState({
-    firstName: "Admin",
-    lastName: "Developer",
-    email: "admin@newsdesk.com",
-    phone: "+91 98765 43210",
+    firstName: "",
+    lastName: "",
+    email: "",
+    phone: "",
   });
 
   const [password, setPassword] = useState({
@@ -14,6 +23,33 @@ const AccountSettings: React.FC = () => {
     newPass: "",
     confirm: "",
   });
+
+  const [loading, setLoading] = useState(true);
+
+  // ✅ FETCH USER DATA
+  useEffect(() => {
+    const fetchUser = async () => {
+      try {
+        const res = await getMe();
+        const user = res.user || res.data?.user;
+
+        const [firstName, lastName] = (user.name || "").split(" ");
+
+        setProfile({
+          firstName: firstName || "",
+          lastName: lastName || "",
+          email: user.email || "",
+          phone: user.phone || "",
+        });
+      } catch (err) {
+        console.error(err);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchUser();
+  }, []);
 
   const handleProfileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setProfile({ ...profile, [e.target.name]: e.target.value });
@@ -23,15 +59,53 @@ const AccountSettings: React.FC = () => {
     setPassword({ ...password, [e.target.name]: e.target.value });
   };
 
-  const handleSaveProfile = (e: React.FormEvent) => {
+  // ✅ SAVE PROFILE
+  const handleSaveProfile = async (e: React.FormEvent) => {
     e.preventDefault();
-    alert("Profile saved!");
+
+    try {
+      const fullName = `${profile.firstName} ${profile.lastName}`;
+
+      await updateProfile({
+        name: fullName,
+        email: profile.email,
+        phone: profile.phone,
+      });
+
+      alert("Profile saved!");
+    } catch (err) {
+      console.error(err);
+      alert("Error saving profile ❌");
+    }
   };
 
-  const handleUpdatePassword = (e: React.FormEvent) => {
+  // ✅ CHANGE PASSWORD + LOGOUT
+  const handleUpdatePassword = async (e: React.FormEvent) => {
     e.preventDefault();
-    alert("Password updated!");
+
+    if (password.newPass !== password.confirm) {
+      return alert("Passwords do not match ❌");
+    }
+
+    try {
+      await changePassword({
+        currentPassword: password.current,
+        newPassword: password.newPass,
+      });
+
+      // 🔥 Logout after password change
+      await logoutUser();
+
+      alert("Password updated! Please login again 🔐");
+
+      navigate("/admin/login-xyzsft");
+    } catch (err: any) {
+      console.error(err);
+      alert(err?.message || "Error updating password ❌");
+    }
   };
+
+  if (loading) return <div>Loading...</div>;
 
   return (
     <div className="settings-page">
