@@ -23,6 +23,8 @@ export interface Article {
   isTopStory:      boolean;
   isPinned:        boolean;
   // New scheduling fields
+  imageUrl?:       string; 
+  img?:            string;
   scheduledFor?:   string | null;   // ISO datetime string, set when status = "Scheduled"
   publishedAt?:    string | null;   // ISO datetime string, set when status = "Published"
 }
@@ -37,6 +39,7 @@ export interface Category {
   enabled:     boolean;
   color:       string;
   parentId?:   number | null;
+  inShowcase?: boolean;
 }
 
 export interface NewsStore {

@@ -45,6 +45,7 @@ export default function App() {
             <Route path="/live-events" element={<LiveEventsPage />} />
             <Route path="/Topic" element={<TopicPage />} />
             <Route path="/topic/:id" element={<TopicDetail />} />
+            <Route path="/article/:articleId" element={<ArticleDetail />} />
           </Route>
 
           {/*

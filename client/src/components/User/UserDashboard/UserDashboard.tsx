@@ -7,6 +7,7 @@ import Videos from "../Videos/Videos";
 import Newsletter from "../NewsLetter/NewsLetter";
 import Advertisment from "../Advertisment/Advertisment";  
 import "./UserDashboard.css";
+import CategoryShowcase from "../CategoryShowcase/CategoryShowcase";
 
 const UserDashboard: React.FC = () => {
   return (
@@ -14,6 +15,7 @@ const UserDashboard: React.FC = () => {
       <HeroSection />
       <Advertisment/>
       <LatestNews />
+      <CategoryShowcase />
       <LiveCoverage/>
       <Advertisment/>
       <TrendingToday/>

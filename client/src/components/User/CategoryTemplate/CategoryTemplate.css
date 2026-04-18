@@ -33,8 +33,8 @@
   padding: 0 24px;
 }
 
-.ct-section { padding: 48px 0; }
-.ct-section--top { padding: 32px 0 48px; }
+.ct-section { padding: 10px 0 30px; }
+.ct-section--top { padding: 32px 0 30px; }
 .ct-section--gray { background: #f1f5f9; border-top: 1px solid var(--ct-border); }
 
 /* ── Badges ────────────────────────────────────────── */
@@ -49,6 +49,7 @@
   letter-spacing: 0.08em;
   color: #fff;
   text-transform: uppercase;
+  align-self: flex-start;
 }
 
 .ct-badge--text {

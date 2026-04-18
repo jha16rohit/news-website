@@ -1,7 +1,9 @@
 import React from "react";
 import { useParams, Link } from "react-router-dom";
-import { Calendar, Clock, User, Share2, Facebook, Twitter, Linkedin } from "lucide-react";
-import "./ArticalDetails.css"; // Make sure to create this CSS file for styling
+import { Calendar, Clock, User, Share2, Facebook, Twitter, Linkedin,Instagram} from "lucide-react";
+import { FaXTwitter } from "react-icons/fa6";
+import "./ArticalDetails.css"; 
+import Advertisement from "../Advertisment/Advertisment";
 
 const ArticleDetail: React.FC = () => {
   // We will use this ID later to fetch the real article from your backend!
@@ -15,6 +17,17 @@ const ArticleDetail: React.FC = () => {
     date: "March 2, 2026",
     readTime: "5 min read",
     imageUrl: "https://images.unsplash.com/photo-1523995462485-3d171b5c8fa9?auto=format&fit=crop&q=80&w=1200",
+    
+    // 👇 NEW LOGIC: Admin controls for Live Updates 👇
+    isLive: true, // Change this to false to see the widget disappear!
+    liveUpdates: [
+      { time: "12:45 PM", text: "PM addresses the nation on education reform passage" },
+      { time: "12:30 PM", text: "Opposition parties react to the bill — mixed responses" },
+      { time: "12:15 PM", text: "Bill passed with 356 votes in favor, 98 against" },
+      { time: "12:00 PM", text: "Final round of voting begins in Parliament" },
+      { time: "11:45 AM", text: "Heated debate continues on digital literacy provisions" },
+    ],
+
     content: `
       In a landmark session, the Indian Parliament has passed the most ambitious budget bill in recent history, promising sweeping reforms across healthcare, education, and infrastructure sectors. 
 
@@ -55,7 +68,8 @@ const ArticleDetail: React.FC = () => {
             <div className="social-share">
               <span className="share-text"><Share2 size={16} /> Share:</span>
               <button className="share-btn fb"><Facebook size={16} /></button>
-              <button className="share-btn tw"><Twitter size={16} /></button>
+              <button className="share-btn ig"><Instagram size={16} /></button>
+              <button className="share-btn tw"><FaXTwitter size={16} /></button>
               <button className="share-btn in"><Linkedin size={16} /></button>
             </div>
           </div>
@@ -80,6 +94,28 @@ const ArticleDetail: React.FC = () => {
 
         {/* Right Sidebar for Related Content */}
         <aside className="article-sidebar">
+          
+          {/* 👇 THE CONDITIONAL LIVE UPDATES WIDGET 👇 */}
+          {article.isLive && article.liveUpdates && article.liveUpdates.length > 0 && (
+            <div className="sidebar-widget live-widget">
+              <div className="live-header">
+                <span className="live-pulse-dot"></span>
+                <h3 className="widget-title">LIVE UPDATES</h3>
+              </div>
+              <div className="widget-underline"></div>
+              
+              <div className="live-updates-list">
+                {article.liveUpdates.map((update, index) => (
+                  <div key={index} className="live-update-item">
+                    <span className="live-time">{update.time}</span>
+                    <p className="live-text">{update.text}</p>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Related News Widget */}
           <div className="sidebar-widget">
             <h3 className="widget-title">Related News</h3>
             <div className="widget-underline"></div>
@@ -103,6 +139,7 @@ const ArticleDetail: React.FC = () => {
         </aside>
 
       </div>
+      <Advertisement />
     </div>
   );
 };

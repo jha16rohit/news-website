@@ -63,26 +63,23 @@ type Article = typeof STATIC_ARTICLES[0];
 
 function HeroCard({ a, color }: { a: Article; color: string }) {
   return (
-    <div className="ct-hero">
+    // 👇 Changed from div to Link, added the URL path, and removed default link styling
+    <Link to={`/article/${a.id}`} className="ct-hero" style={{ textDecoration: "none", color: "inherit" }}>
       <img src={a.img} alt={a.title} className="ct-hero__img" />
       <div className="ct-hero__overlay">
-        
-        {/* 👇 We removed the parentName logic here so it just shows the category directly 👇 */}
-        <span className="ct-badge" style={{ background: color }}>
-          {a.category}
-        </span>
-        
+        <span className="ct-badge" style={{ background: color }}>{a.category}</span>
         <h2 className="ct-hero__title">{a.title}</h2>
         <p className="ct-hero__sub">{a.subtitle}</p>
         <div className="ct-meta"><Clock size={14} /><span>{a.published}</span></div>
       </div>
-    </div>
+    </Link>
   );
 }
 
 function StackCard({ a, color }: { a: Article; color: string }) {
   return (
-    <div className="ct-stack">
+    // 👇 Changed from div to Link
+    <Link to={`/article/${a.id}`} className="ct-stack" style={{ textDecoration: "none", color: "inherit" }}>
       <div className="ct-stack__imgwrap">
         <img src={a.img} alt={a.title} className="ct-stack__img" />
       </div>
@@ -91,13 +88,14 @@ function StackCard({ a, color }: { a: Article; color: string }) {
         <p className="ct-stack__title">{a.title}</p>
         <div className="ct-meta"><Clock size={12} /><span>{a.published}</span></div>
       </div>
-    </div>
+    </Link>
   );
 }
 
 function GridCard({ a, color, delay = 0 }: { a: Article; color: string; delay?: number }) {
   return (
-    <div className="ct-gcard" style={{ animationDelay: `${delay}ms` }}>
+    // 👇 Changed from div to Link
+    <Link to={`/article/${a.id}`} className="ct-gcard" style={{ animationDelay: `${delay}ms`, textDecoration: "none", color: "inherit", display: "flex" }}>
       <div className="ct-gcard__imgwrap">
         <img src={a.img} alt={a.title} className="ct-gcard__img" />
         <span className="ct-badge ct-badge--sm" style={{ background: color }}>{a.category}</span>
@@ -110,12 +108,13 @@ function GridCard({ a, color, delay = 0 }: { a: Article; color: string; delay?: 
             <Clock size={12} /><span>{a.published}</span>
             <Eye size={12} style={{marginLeft: '8px'}} /><span>{a.views}</span>
           </div>
-          <button className="ct-read-more" style={{ color }}>
+          {/* 👇 Changed from <button> to <span> so it doesn't break the HTML inside a link */}
+          <span className="ct-read-more" style={{ color }}>
             Read More <ArrowRight size={14} />
-          </button>
+          </span>
         </div>
       </div>
-    </div>
+    </Link>
   );
 }
 

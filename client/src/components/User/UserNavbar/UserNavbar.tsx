@@ -17,7 +17,6 @@ const UserNavbar: React.FC = () => {
   const [date,           setDate]           = useState("");
   const [openDropdown,   setOpenDropdown]   = useState<number | null>(null);
   
-  // 👇 NEW STATE: Tracks which mobile sub-category menu is currently open
   const [expandedMobileCat, setExpandedMobileCat] = useState<number | null>(null);
 
   const searchInputRef   = useRef<HTMLInputElement>(null);
@@ -32,6 +31,18 @@ const UserNavbar: React.FC = () => {
   useEffect(() => {
     if (isSearchOpen && searchInputRef.current) searchInputRef.current.focus();
   }, [isSearchOpen]);
+
+  // 👇 NEW EFFECT: Auto-expands the mobile drawer for the active category!
+  useEffect(() => {
+    const currentSlug = location.pathname.split("/").pop();
+    if (currentSlug && location.pathname.includes("/category/")) {
+      const activeCategory = categories.find(c => slugOf(c.name) === currentSlug);
+      if (activeCategory) {
+        // Automatically expands the parent category (or itself if it is a parent)
+        setExpandedMobileCat(activeCategory.parentId || activeCategory.id);
+      }
+    }
+  }, [location.pathname, categories]);
 
   const headlines = [
     "India Passes Historic Budget Bill With Overwhelming Majority",
@@ -82,9 +93,8 @@ const UserNavbar: React.FC = () => {
     }
   };
 
-  // 👇 Toggles the mobile accordion open/closed
   const toggleMobileCat = (id: number, e: React.MouseEvent) => {
-    e.preventDefault(); // Stops the link from clicking when you just want to open the menu
+    e.preventDefault(); 
     setExpandedMobileCat(prev => prev === id ? null : id);
   };
 
@@ -189,9 +199,14 @@ const UserNavbar: React.FC = () => {
                 const hasChildren = children.length > 0;
                 const isExpanded = expandedMobileCat === cat.id;
 
+                // 👇 Checks if the parent OR any child is currently active
+                const isActiveGroup = location.pathname === `/category/${slugOf(cat.name)}` ||
+                  children.some(child => location.pathname === `/category/${slugOf(child.name)}`);
+
                 return (
                   <div key={cat.id} className="mobile-cat-group">
-                    <div className="mobile-cat-header">
+                    {/* 👇 Applies the active background to the entire wrapper row 👇 */}
+                    <div className={`mobile-cat-header ${isActiveGroup ? 'active-group' : ''}`}>
                       <NavLink
                         to={`/category/${slugOf(cat.name)}`}
                         className="mobile-link mobile-link--parent"
@@ -200,7 +215,6 @@ const UserNavbar: React.FC = () => {
                         {cat.name}
                       </NavLink>
                       
-                      {/* 👇 Only show the expand arrow if there are sub-categories */}
                       {hasChildren && (
                         <button className="mobile-expand-btn" onClick={(e) => toggleMobileCat(cat.id, e)}>
                           <ChevronDown 
@@ -214,7 +228,6 @@ const UserNavbar: React.FC = () => {
                       )}
                     </div>
 
-                    {/* 👇 The hidden 2-Column Grid that opens when clicked */}
                     {hasChildren && (
                       <div className={`mobile-subcats-grid ${isExpanded ? "open" : ""}`}>
                         {children.map(child => (
@@ -224,7 +237,7 @@ const UserNavbar: React.FC = () => {
                             className="mobile-sub-link"
                             onClick={() => setMobileMenuOpen(false)}
                           >
-                            <span className="mobile-sub-dash">-</span> {child.name}
+                            <span className="mobile-sub-dash">•</span> {child.name}
                           </NavLink>
                         ))}
                       </div>
@@ -237,7 +250,6 @@ const UserNavbar: React.FC = () => {
                 Topic
               </NavLink>
 
-              {/* 👇 The Fixed White Divider 👇 */}
               <div className="dropdown-divider" />
 
               <NavLink to="/about"          className="mobile-link" onClick={() => setMobileMenuOpen(false)}>About Us</NavLink>
