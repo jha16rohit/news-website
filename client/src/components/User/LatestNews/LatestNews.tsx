@@ -117,7 +117,8 @@ const LatestNews: React.FC = () => {
               </div>
               
               <div className="news-content">
-                <span className="news-category">{article.category}</span>
+                {/* Applied the badge class here */}
+                <span className="card-badge">{article.category}</span>
                 <h3 className="news-title">{article.title}</h3>
                 <p className="news-excerpt">{article.excerpt}</p>
                 

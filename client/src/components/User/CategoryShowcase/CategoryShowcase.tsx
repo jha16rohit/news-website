@@ -1,56 +1,56 @@
 import React from "react";
 import { Link } from "react-router-dom";
-import { ArrowRight } from "lucide-react";
+import { ArrowRight, Clock } from "lucide-react";
 import { useNews } from "../../Admin/NewsStore/NewsStore";
 import "./CategoryShowcase.css";
 
-// Professional fallback articles for empty categories
+// 10 Professional fallback articles
 const FALLBACK_ARTICLES = [
-  { id: 901, title: "Waiting for new articles to be published in this category...", img: "https://images.unsplash.com/photo-1504711434969-e33886168f5c?w=800&q=80" },
-  { id: 902, title: "Stay tuned for more updates and breaking news coverage.", img: "https://images.unsplash.com/photo-1495020689067-958852a7765e?w=400&q=80" },
-  { id: 903, title: "Our reporters are gathering the latest information right now.", img: "https://images.unsplash.com/photo-1585829365295-ab7cd400c167?w=400&q=80" },
-  { id: 904, title: "Check back later for deep dives and analytical pieces.", img: "https://images.unsplash.com/photo-1526470608115-b77826f047df?w=400&q=80" },
-  { id: 905, title: "Explore our other sections while we update this feed.", img: "https://images.unsplash.com/photo-1451187580459-43490279c0fa?w=400&q=80" },
+  { id: 901, title: "Waiting for new articles to be published in this category...", subtitle: "Our editorial team is currently gathering the latest information and deep-dive analysis on this topic.", img: "https://images.unsplash.com/photo-1504711434969-e33886168f5c?w=800&q=80", time: "10 mins ago" },
+  { id: 902, title: "Stay tuned for more updates and breaking news coverage.", subtitle: "We provide real-time updates and comprehensive breakdowns of the stories that matter most to you.", img: "https://images.unsplash.com/photo-1495020689067-958852a7765e?w=400&q=80", time: "1 hour ago" },
+  { id: 903, title: "Our reporters are gathering the latest information right now.", subtitle: "On the ground and in the studio, our network ensures you get the most accurate and timely news.", img: "https://images.unsplash.com/photo-1585829365295-ab7cd400c167?w=400&q=80", time: "3 hours ago" },
+  { id: 904, title: "Check back later for deep dives and analytical pieces.", subtitle: "Beyond the headlines, we explore the intricate details and long-term impacts of global events.", img: "https://images.unsplash.com/photo-1526470608115-b77826f047df?w=400&q=80", time: "5 hours ago" },
+  { id: 905, title: "Explore our other sections while we update this feed.", subtitle: "From Politics to Technology, discover a wide range of award-winning journalism across our platform.", img: "https://images.unsplash.com/photo-1451187580459-43490279c0fa?w=400&q=80", time: "7 hours ago" },
+  { id: 906, title: "Global markets react to recent economic shifts and policies.", subtitle: "Investors are closely monitoring the situation as new regulatory frameworks begin to take effect.", img: "https://images.unsplash.com/photo-1611974789855-9c2a0a7236a3?w=400&q=80", time: "8 hours ago" },
+  { id: 907, title: "New technological advancements announced today.", subtitle: "Industry leaders unveil next-generation solutions that promise to reshape the digital landscape.", img: "https://images.unsplash.com/photo-1518770660439-4636190af475?w=400&q=80", time: "12 hours ago" },
+  { id: 908, title: "Exclusive interview with industry leaders on future trends.", subtitle: "A candid conversation about the challenges and opportunities facing the sector in the coming decade.", img: "https://images.unsplash.com/photo-1572949645841-094f3a9c4c94?w=400&q=80", time: "14 hours ago" },
+  { id: 909, title: "Analysis: What the latest policy changes mean for you.", subtitle: "Breaking down the complex legal jargon into understandable takeaways for everyday citizens.", img: "https://images.unsplash.com/photo-1555848962-6e79363ec58f?w=400&q=80", time: "1 day ago" },
+  { id: 910, title: "Breaking down the week's biggest headlines and stories.", subtitle: "A comprehensive review of the events that shaped the news cycle over the past seven days.", img: "https://images.unsplash.com/photo-1541872703-74c5e44368f9?w=400&q=80", time: "1 day ago" },
 ];
 
 const slugOf = (text: string) => text ? text.toLowerCase().replace(/\s+/g, "-") : "";
 
-// Cycles through layouts to keep the page looking dynamic
 const LAYOUT_STYLES = ["hero-sidebar", "grid-3", "hero-reversed", "grid-4", "split-sidebar"];
 
 const CategoryShowcase: React.FC = () => {
-  // SAFETY FIX: If useNews returns undefined, default to empty arrays to prevent white screen crash
   const { categories, articles } = useNews() || {};
   const safeCategories = categories || [];
   const safeArticles = articles || [];
 
-  // Only grab categories that have the Showcase toggle turned ON
   const showcaseCategories = safeCategories.filter(c => c.inShowcase && c.enabled);
 
-  if (showcaseCategories.length === 0) return null; // Hides section completely if none are selected
+  if (showcaseCategories.length === 0) return null; 
 
   return (
     <div className="cs-wrapper">
       {showcaseCategories.map((cat, index) => {
-        // Find real articles for this category (with safety checks)
         const realArticles = safeArticles
           .filter(a => a?.category?.toLowerCase() === cat.name?.toLowerCase())
           .map(a => ({ 
             id: a.id, 
             title: a.title, 
-            img: (a as any).imageUrl || (a as any).img || FALLBACK_ARTICLES[0].img 
+            subtitle: (a as any).subtitle || "Read the full story to discover more details about this breaking news event.",
+            img: (a as any).imageUrl || (a as any).img || FALLBACK_ARTICLES[0].img,
+            category: a.category,
+            time: (a as any).publishedAt || (a as any).published || "Just now" 
           }));
 
-        // Rotate the fallback images so no two categories look the same!
         const rotatedFallbacks = [
           ...FALLBACK_ARTICLES.slice(index % FALLBACK_ARTICLES.length),
           ...FALLBACK_ARTICLES.slice(0, index % FALLBACK_ARTICLES.length)
-        ];
+        ].map(fb => ({ ...fb, category: cat.name }));
 
-        // Fill empty spots with the newly rotated fallbacks
-        const displayArticles = [...realArticles, ...rotatedFallbacks].slice(0, 5);
-
-        // Pick a layout style based on its order in the list
+        const displayArticles = [...realArticles, ...rotatedFallbacks].slice(0, 10);
         const layout = LAYOUT_STYLES[index % LAYOUT_STYLES.length];
 
         return (
@@ -71,16 +71,27 @@ const CategoryShowcase: React.FC = () => {
               {layout === "hero-sidebar" && (
                 <>
                   <div className="cs-hero-col">
-                    <Link to={`/article/${displayArticles[0].id}`} className="cs-hero-card">
-                      <img src={displayArticles[0].img} alt="" className="cs-hero-img" />
-                      <h3 className="cs-hero-title">{displayArticles[0].title}</h3>
+                    <Link to={`/article/${displayArticles[0].id}`} className="cs-dark-card">
+                      <div className="cs-img-wrap">
+                        <img src={displayArticles[0].img} alt="" />
+                      </div>
+                      <div className="cs-card-body">
+                        <span className="cs-card-badge">{displayArticles[0].category}</span>
+                        <h3 className="cs-card-title">{displayArticles[0].title}</h3>
+                        <p className="cs-card-sub">{displayArticles[0].subtitle}</p>
+                        <div className="cs-card-time"><Clock size={14}/> {displayArticles[0].time}</div>
+                      </div>
                     </Link>
                   </div>
                   <div className="cs-sidebar-col">
                     {displayArticles.slice(1, 5).map((article, i) => (
                       <Link to={`/article/${article.id}`} key={article.id || i} className="cs-list-item">
                         <img src={article.img} alt="" className="cs-list-img" />
-                        <h4 className="cs-list-title">{article.title}</h4>
+                        <div className="cs-list-content">
+                          <span className="cs-list-cat">{article.category}</span>
+                          <h4 className="cs-list-title">{article.title}</h4>
+                          <div className="cs-card-time"><Clock size={14}/> {displayArticles[0].time}</div>
+                        </div>
                       </Link>
                     ))}
                   </div>
@@ -89,29 +100,47 @@ const CategoryShowcase: React.FC = () => {
 
               {/* LAYOUT 3: 3-COLUMN GRID */}
               {layout === "grid-3" && (
-                displayArticles.slice(0, 3).map((article, i) => (
-                  <Link to={`/article/${article.id}`} key={article.id || i} className="cs-grid-card">
-                    <img src={article.img} alt="" className="cs-grid-img" />
-                    <h3 className="cs-grid-title">{article.title}</h3>
+                displayArticles.slice(0, 6).map((article, i) => (
+                  <Link to={`/article/${article.id}`} key={article.id || i} className="cs-dark-card">
+                    <div className="cs-img-wrap">
+                      <img src={article.img} alt="" />
+                    </div>
+                    <div className="cs-card-body">
+                      <span className="cs-card-badge">{article.category}</span>
+                      <h3 className="cs-card-title">{article.title}</h3>
+                      <p className="cs-card-sub">{article.subtitle}</p>
+                      <div className="cs-card-time"><Clock size={14}/> {article.time}</div>
+                    </div>
                   </Link>
                 ))
               )}
 
-            {/* LAYOUT 5: HERO REVERSED (List Left, Big Image Right) */}
+              {/* LAYOUT 5: HERO REVERSED */}
               {layout === "hero-reversed" && (
                 <>
                   <div className="cs-sidebar-col cs-sidebar-reversed">
                     {displayArticles.slice(1, 5).map((article, i) => (
                       <Link to={`/article/${article.id}`} key={article.id || i} className="cs-list-item">
                         <img src={article.img} alt="" className="cs-list-img" />
-                        <h4 className="cs-list-title">{article.title}</h4>
+                        <div className="cs-list-content">
+                          <span className="cs-list-cat">{article.category}</span>
+                          <h4 className="cs-list-title">{article.title}</h4>
+                          <div className="cs-card-time"><Clock size={14}/> {displayArticles[0].time}</div>
+                        </div>
                       </Link>
                     ))}
                   </div>
                   <div className="cs-hero-col cs-hero-reversed">
-                    <Link to={`/article/${displayArticles[0].id}`} className="cs-hero-card">
-                      <img src={displayArticles[0].img} alt="" className="cs-hero-img" />
-                      <h3 className="cs-hero-title">{displayArticles[0].title}</h3>
+                    <Link to={`/article/${displayArticles[0].id}`} className="cs-dark-card">
+                      <div className="cs-img-wrap">
+                        <img src={displayArticles[0].img} alt="" />
+                      </div>
+                      <div className="cs-card-body">
+                        <span className="cs-card-badge">{displayArticles[0].category}</span>
+                        <h3 className="cs-card-title">{displayArticles[0].title}</h3>
+                        <p className="cs-card-sub">{displayArticles[0].subtitle}</p>
+                        <div className="cs-card-time"><Clock size={14}/> {displayArticles[0].time}</div>
+                      </div>
                     </Link>
                   </div>
                 </>
@@ -119,10 +148,17 @@ const CategoryShowcase: React.FC = () => {
 
               {/* LAYOUT 4: 4-COLUMN GRID */}
               {layout === "grid-4" && (
-                displayArticles.slice(0, 4).map((article, i) => (
-                  <Link to={`/article/${article.id}`} key={article.id || i} className="cs-grid-card">
-                    <img src={article.img} alt="" className="cs-grid-img" />
-                    <h3 className="cs-grid-title-small">{article.title}</h3>
+                displayArticles.slice(0, 8).map((article, i) => (
+                  <Link to={`/article/${article.id}`} key={article.id || i} className="cs-dark-card">
+                    <div className="cs-img-wrap">
+                      <img src={article.img} alt="" />
+                    </div>
+                    <div className="cs-card-body">
+                      <span className="cs-card-badge">{article.category}</span>
+                      <h3 className="cs-card-title cs-grid-title-small">{article.title}</h3>
+                      <p className="cs-card-sub">{article.subtitle}</p>
+                      <div className="cs-card-time"><Clock size={14}/> {article.time}</div>
+                    </div>
                   </Link>
                 ))
               )}
@@ -131,20 +167,27 @@ const CategoryShowcase: React.FC = () => {
               {layout === "split-sidebar" && (
                 <>
                   <div className="cs-split-col">
-                    <Link to={`/article/${displayArticles[0].id}`} className="cs-split-main-card">
-                      <img src={displayArticles[0].img} alt="" className="cs-split-main-img" />
-                      <h3 className="cs-split-main-title">{displayArticles[0].title}</h3>
-                    </Link>
-                    <Link to={`/article/${displayArticles[1].id}`} className="cs-split-sub-card">
-                      <img src={displayArticles[1].img} alt="" className="cs-list-img" />
-                      <h4 className="cs-list-title">{displayArticles[1].title}</h4>
+                    <Link to={`/article/${displayArticles[0].id}`} className="cs-dark-card">
+                      <div className="cs-img-wrap">
+                        <img src={displayArticles[0].img} alt="" />
+                      </div>
+                      <div className="cs-card-body">
+                        <span className="cs-card-badge">{displayArticles[0].category}</span>
+                        <h3 className="cs-card-title">{displayArticles[0].title}</h3>
+                        <p className="cs-card-sub">{displayArticles[0].subtitle}</p>
+                        <div className="cs-card-time"><Clock size={14}/> {displayArticles[0].time}</div>
+                      </div>
                     </Link>
                   </div>
                   <div className="cs-sidebar-col">
-                    {displayArticles.slice(2, 5).map((article, i) => (
+                    {displayArticles.slice(1, 5).map((article, i) => (
                       <Link to={`/article/${article.id}`} key={article.id || i} className="cs-list-item">
                         <img src={article.img} alt="" className="cs-list-img" />
-                        <h4 className="cs-list-title">{article.title}</h4>
+                        <div className="cs-list-content">
+                          <span className="cs-list-cat">{article.category}</span>
+                          <h4 className="cs-list-title">{article.title}</h4>
+                          <div className="cs-card-time"><Clock size={14}/> {displayArticles[0].time}</div>
+                        </div>
                       </Link>
                     ))}
                   </div>
