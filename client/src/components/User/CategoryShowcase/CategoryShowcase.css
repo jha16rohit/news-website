@@ -79,6 +79,7 @@
    THE NEW CINEMATIC DARK CARD (LOCKED SIZES)
 ========================================= */
 .cs-dark-card {
+  position: relative;
   background-color: #101e36; 
   display: flex;
   flex-direction: column;
@@ -86,6 +87,36 @@
   overflow: hidden;
   height: 100% !important; /* Forces all cards in a row to be identical height */
   transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.cs-list-item, .cs-split-sub-card {
+  position: relative; /* 👇 Required for the floating save icon */
+  display: flex !important;
+  flex-direction: column !important; 
+  /* ... rest of your existing css ... */
+}
+
+/* 👇 PASTE THIS ANYWHERE IN YOUR CSS FILE 👇 */
+.category-save-btn {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  background-color: rgba(0, 0, 0, 0.4); /* Dark translucent background */
+  border: none;
+  border-radius: 50%;
+  padding: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  backdrop-filter: blur(4px);
+  z-index: 10;
+}
+
+.category-save-btn:hover {
+  background-color: rgba(0, 0, 0, 0.7);
+  transform: scale(1.1);
 }
 
 .cs-dark-card:hover {

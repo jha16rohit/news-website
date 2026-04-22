@@ -1,10 +1,22 @@
-import React from "react";
-import { Clock, Eye } from "lucide-react";
+import React, { useState } from "react";
+import { Clock, Eye, Bookmark } from "lucide-react"; // 👇 Added Bookmark
 import { Link } from "react-router-dom";
 import "./HomeHero.css";
 
 const HeroSection: React.FC = () => {
-  // Existing Image Trending Data
+  // State to track which articles are saved (by ID)
+  const [savedArticles, setSavedArticles] = useState<number[]>([]);
+
+  // Toggle save function
+  const toggleSave = (e: React.MouseEvent, id: number) => {
+    e.preventDefault(); // Prevents the Link from triggering when clicking the save button
+    if (savedArticles.includes(id)) {
+      setSavedArticles(savedArticles.filter(savedId => savedId !== id));
+    } else {
+      setSavedArticles([...savedArticles, id]);
+    }
+  };
+
   const trendingArticles = [
     {
       id: 1, 
@@ -35,6 +47,7 @@ const HeroSection: React.FC = () => {
       imgUrl: "https://images.unsplash.com/photo-1485846234645-a62644f84728?auto=format&fit=crop&q=80&w=200",
     },
   ];
+
   return (
     <section className="hero-section">
       <div className="hero-container">
@@ -61,6 +74,17 @@ const HeroSection: React.FC = () => {
                 <span><Clock size={16} /> 2 hours ago</span>
                 <span><Eye size={16} /> 24,500 views</span>
               </div>
+              <button 
+                className="save-btn featured-save-btn" 
+                onClick={(e) => toggleSave(e, 999)}
+                aria-label="Save featured article"
+              >
+                <Bookmark 
+                  size={24} 
+                  fill={savedArticles.includes(999) ? "#e60000" : "none"} 
+                  color={savedArticles.includes(999) ? "#e60000" : "#ffffff"} 
+                />
+              </button>
             </div>
           </Link>
 
@@ -79,7 +103,23 @@ const HeroSection: React.FC = () => {
                 >
                   <img src={article.imgUrl} alt={article.title} className="trending-img" />
                   <div className="trending-info">
-                    <span className="trending-category">{article.category}</span>
+                    
+                    {/* Header Row: Category on left, Save Icon on right */}
+                    <div className="trending-info-header">
+                      <span className="trending-category">{article.category}</span>
+                      <button 
+                        className="save-btn" 
+                        onClick={(e) => toggleSave(e, article.id)}
+                        aria-label="Save article"
+                      >
+                        <Bookmark 
+                          size={18} 
+                          fill={savedArticles.includes(article.id) ? "#e60000" : "none"} 
+                          color={savedArticles.includes(article.id) ? "#e60000" : "#94a3b8"} 
+                        />
+                      </button>
+                    </div>
+
                     <h3 className="trending-title">{article.title}</h3>
                     <span className="trending-time">{article.time}</span>
                   </div>
