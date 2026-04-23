@@ -1,7 +1,7 @@
 import { Request, Response, NextFunction } from "express";
 import jwt from "jsonwebtoken";
 
-// Extend Request type
+// Extend Request
 export interface AuthRequest extends Request {
   user?: {
     id: string;
@@ -9,7 +9,7 @@ export interface AuthRequest extends Request {
   };
 }
 
-// 🔐 PROTECT ROUTE
+// 🔐 PROTECT ROUTE (JWT BASED)
 export const protect = (
   req: AuthRequest,
   res: Response,
@@ -18,12 +18,12 @@ export const protect = (
   try {
     const token = req.cookies?.token;
 
-    // 1. Check token
+    // 1. Token check
     if (!token) {
       return res.status(401).json({ message: "Not authorized, no token" });
     }
 
-    // 2. Verify token
+    // 2. Verify
     const decoded = jwt.verify(
       token,
       process.env.JWT_SECRET!
@@ -38,7 +38,7 @@ export const protect = (
   }
 };
 
-// 👑 ADMIN ONLY (NO DB CALL)
+// 👑 ADMIN ONLY
 export const isAdmin = (
   req: AuthRequest,
   res: Response,

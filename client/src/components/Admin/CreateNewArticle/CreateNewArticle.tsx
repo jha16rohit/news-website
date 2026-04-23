@@ -2,6 +2,7 @@ import React, { useState, useRef, useEffect, useCallback } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import "./CreateNewArticle.css";
 import { useNews } from "../NewsStore/NewsStore";
+import { createNews } from "../../../api/news";
 import {
   Bold, Italic, Underline, Heading1, Heading2, List, ListOrdered,
   Quote, AlignLeft, AlignCenter, AlignRight, Link,
@@ -701,6 +702,8 @@ const CreateNewArticle: React.FC = () => {
   // Topic link modal state
   const [showTopicModal, setShowTopicModal]     = useState(false);
   const [savedRange,     setSavedRange]         = useState<Range | null>(null);
+  const [submitError,    setSubmitError]        = useState<string | null>(null);
+  const [isSubmitting,   setIsSubmitting]       = useState(false);
 
   // ── Refs ───────────────────────────────────────────────────────────────────
   const editorRef    = useRef<HTMLDivElement>(null);
@@ -775,60 +778,154 @@ const CreateNewArticle: React.FC = () => {
     isTopStory: false, isPinned: false,
   });
 
-  const handlePublish = () => {
-    if (!headline.trim()) return;
-    const now = new Date().toISOString();
+  // ── Article type helper ────────────────────────────────────────────────────
+  const toApiArticleType = (): "STANDARD" | "BREAKING" | "LIVE" | "VIDEO" => {
+    const map: Record<ArticleType, "STANDARD" | "BREAKING" | "LIVE" | "VIDEO"> = {
+      "Standard Article": "STANDARD",
+      "Breaking News":    "BREAKING",
+      "Live Updates":     "LIVE",
+      "Video Story":      "VIDEO",
+    };
+    return map[selectedType];
+  };
+
+  // ── Build API payload ──────────────────────────────────────────────────────
+  const buildPayload = (status: "PUBLISHED" | "DRAFT" | "SCHEDULED", publishAt?: string) => {
+    const apiType = toApiArticleType();
+    return {
+      headline:    headline.trim(),
+      shortTitle:  shortTitle.trim() || undefined,
+      content,
+      category:    getCategoryLabel() || category,
+      language,
+      location:    articleLocation || undefined,
+      tags,
+      articleType: apiType,
+
+      // Breaking extras
+      breakingNewsTicker:    apiType === "BREAKING" ? breakingToggles.newsTicker        : undefined,
+      breakingPushNotif:     apiType === "BREAKING" ? breakingToggles.pushNotification  : undefined,
+      breakingHomepageAlert: apiType === "BREAKING" ? breakingToggles.homepageAlert     : undefined,
+
+      // Live extras
+      liveUpdates: apiType === "LIVE" ? liveUpdates : undefined,
+
+      // Video extras
+      videoUrl:      apiType === "VIDEO" ? videoUrl      || undefined : undefined,
+      videoDuration: apiType === "VIDEO" ? videoDuration || undefined : undefined,
+      videoQuality:  apiType === "VIDEO" ? videoQuality  || undefined : undefined,
+
+      // Media
+      featuredImage: mediaPreview || undefined,
+      imageCaption:  imageCaption || undefined,
+      photoCredit:   photoCredit  || undefined,
+
+      // SEO
+      metaTitle:       metaTitle      || undefined,
+      metaDescription: metaDesc       || undefined,
+      focusKeywords:   focusKeywords  || undefined,
+      canonicalUrl:    urlSlug ? `https://yournewssite.com/news/${urlSlug}` : undefined,
+      keywords:        focusKeywords ? focusKeywords.split(",").map(k => k.trim()).filter(Boolean) : [],
+
+      // Publishing
+      status,
+      publishAt,
+    };
+  };
+
+  const handlePublish = async () => {
+    setSubmitError(null);
+    if (!headline.trim()) { setSubmitError("Headline is required."); return; }
+    if (!getCategoryLabel() && !category) { setSubmitError("Please select a category before publishing."); return; }
+
     const isBreaking = selectedType === "Breaking News";
     const isLive     = selectedType === "Live Updates";
+    setIsSubmitting(true);
+    try {
+      await createNews(buildPayload("PUBLISHED"));
+      const now = new Date().toISOString();
 
-    addArticle({
-      ...buildBase(),
-      status:      "Published",
-      statusType:  isLive ? "live-published" : "published",
-      published:   isLive ? "Live" : "Just now",
-      views:       "0",
-      publishedAt: now,
-      scheduledFor: null,
-      tag:         isBreaking ? "Breaking" : isLive ? "Live" : undefined,
-      tagType:     isBreaking ? "breaking"  : isLive ? "live"  : undefined,
-      leftBorder:  isBreaking ? "breaking-left" : isLive ? "live-left" : undefined,
-      priority:    isBreaking ? "High" : buildBase().priority,
-      priorityType: isBreaking ? "high" : buildBase().priorityType,
-      channels:    isBreaking ? (breakingToggles.pushNotification ? ["web", "mobile", "push"] : ["web", "mobile"]) : undefined,
-      expiryTime:  isBreaking ? new Date(Date.now() + 6 * 60 * 60 * 1000).toISOString() : undefined,
-      liveStartedAt: isLive ? now : undefined,
-      liveUpdates: isLive ? liveUpdates.map((u, i) => ({ ...u, id: i + 1, timestamp: now })) : undefined,
-    });
+      addArticle({
+        ...buildBase(),
+        status:      "Published",
+        statusType:  isLive ? "live-published" : "published",
+        published:   isLive ? "Live" : "Just now",
+        views:       "0",
+        publishedAt: now,
+        scheduledFor: null,
+        tag:         isBreaking ? "Breaking" : isLive ? "Live" : undefined,
+        tagType:     isBreaking ? "breaking"  : isLive ? "live"  : undefined,
+        leftBorder:  isBreaking ? "breaking-left" : isLive ? "live-left" : undefined,
+        priority:    isBreaking ? "High" : buildBase().priority,
+        priorityType: isBreaking ? "high" : buildBase().priorityType,
+        channels:    isBreaking ? (breakingToggles.pushNotification ? ["web", "mobile", "push"] : ["web", "mobile"]) : undefined,
+        expiryTime:  isBreaking ? new Date(Date.now() + 6 * 60 * 60 * 1000).toISOString() : undefined,
+        liveStartedAt: isLive ? now : undefined,
+        liveUpdates: isLive ? liveUpdates.map((u, i) => ({ ...u, id: i + 1, timestamp: now })) : undefined,
+      });
 
-    if (isBreaking) navigate("/admin/breaking");
-    else navigate("/admin/news");
+      if (isBreaking) navigate("/admin/breaking");
+      else navigate("/admin/news");
+    } catch (err: any) {
+      console.error("Publish failed:", err);
+      setSubmitError(err?.message || "Failed to publish. Please try again.");
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
-  const handleSaveDraft = () => {
-    if (!headline.trim()) return;
-    addArticle({
-      ...buildBase(),
-      status: "Draft", statusType: "draft",
-      published: "-", views: "-",
-      publishedAt: null,
-      scheduledFor: null,
-    });
-    navigate("/admin/news");
+  const handleSaveDraft = async () => {
+    setSubmitError(null);
+    if (!headline.trim()) { setSubmitError("Headline is required."); return; }
+    if (!getCategoryLabel() && !category) { setSubmitError("Please select a category before saving."); return; }
+
+    setIsSubmitting(true);
+    try {
+      await createNews(buildPayload("DRAFT"));
+
+      addArticle({
+        ...buildBase(),
+        status: "Draft", statusType: "draft",
+        published: "-", views: "-",
+        publishedAt: null,
+        scheduledFor: null,
+      });
+      navigate("/admin/news");
+    } catch (err: any) {
+      console.error("Save draft failed:", err);
+      setSubmitError(err?.message || "Failed to save draft. Please try again.");
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
-  const handleScheduleConfirm = (isoDatetime: string) => {
+  const handleScheduleConfirm = async (isoDatetime: string) => {
+    setSubmitError(null);
     if (!headline.trim()) { setShowScheduleModal(false); return; }
-    const d = new Date(isoDatetime);
-    const label = d.toLocaleString("en-IN", { dateStyle: "medium", timeStyle: "short" });
-    addArticle({
-      ...buildBase(),
-      status: "Scheduled", statusType: "scheduled",
-      published: label, views: "-",
-      publishedAt: null,
-      scheduledFor: isoDatetime,
-    });
-    setShowScheduleModal(false);
-    navigate("/admin/schedule");
+    if (!getCategoryLabel() && !category) { setSubmitError("Please select a category before scheduling."); setShowScheduleModal(false); return; }
+
+    setIsSubmitting(true);
+    try {
+      await createNews(buildPayload("SCHEDULED", isoDatetime));
+      const d = new Date(isoDatetime);
+      const label = d.toLocaleString("en-IN", { dateStyle: "medium", timeStyle: "short" });
+
+      addArticle({
+        ...buildBase(),
+        status: "Scheduled", statusType: "scheduled",
+        published: label, views: "-",
+        publishedAt: null,
+        scheduledFor: isoDatetime,
+      });
+      setShowScheduleModal(false);
+      navigate("/admin/schedule");
+    } catch (err: any) {
+      console.error("Schedule failed:", err);
+      setSubmitError(err?.message || "Failed to schedule. Please try again.");
+      setShowScheduleModal(false);
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   // ── Render ─────────────────────────────────────────────────────────────────
@@ -843,17 +940,29 @@ const CreateNewArticle: React.FC = () => {
           <p className="cna-subtitle">Regular news article with full editorial features</p>
         </div>
         <div className="cna-header-actions">
-          <button className="cna-btn cna-btn-outline" onClick={() => setShowScheduleModal(true)}>
+          <button className="cna-btn cna-btn-outline" disabled={isSubmitting} onClick={() => setShowScheduleModal(true)}>
             <Clock size={15} /> Schedule
           </button>
-          <button className="cna-btn cna-btn-secondary" onClick={handleSaveDraft}>
-            <FileText size={15} /> Save Draft
+          <button className="cna-btn cna-btn-secondary" disabled={isSubmitting} onClick={handleSaveDraft}>
+            <FileText size={15} /> {isSubmitting ? "Saving…" : "Save Draft"}
           </button>
-          <button className="cna-btn cna-btn-primary" onClick={handlePublish}>
-            <Rocket size={15} /> Publish Now
+          <button className="cna-btn cna-btn-primary" disabled={isSubmitting} onClick={handlePublish}>
+            <Rocket size={15} /> {isSubmitting ? "Publishing…" : "Publish Now"}
           </button>
         </div>
       </header>
+
+      {/* Error banner */}
+      {submitError && (
+        <div style={{
+          background: "#fff1f1", border: "1px solid #fecaca", color: "#dc2626",
+          borderRadius: 10, padding: "10px 16px", margin: "0 0 16px",
+          fontSize: 14, display: "flex", alignItems: "center", justifyContent: "space-between"
+        }}>
+          <span>⚠ {submitError}</span>
+          <button onClick={() => setSubmitError(null)} style={{ background: "none", border: "none", cursor: "pointer", color: "#dc2626", fontSize: 18, lineHeight: 1 }}>×</button>
+        </div>
+      )}
 
       {/* Modals */}
       {showScheduleModal && (

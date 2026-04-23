@@ -2,10 +2,11 @@ import express from "express";
 import cors from "cors";
 import cookieParser from "cookie-parser";
 import authRoutes from "./routes/auth.routes";
+import newsRoutes from "./routes/news.routes";
 
 const app = express();
 
-// ✅ 1. CORS FIRST
+// ✅ 1. CORS
 app.use(
   cors({
     origin: "http://localhost:5173",
@@ -13,17 +14,20 @@ app.use(
   })
 );
 
-// ✅ 2. HANDLE PREFLIGHT (THIS IS YOUR MAIN ISSUE)
+// ✅ 2. PREFLIGHT FIX
 app.use((req, res, next) => {
   if (req.method === "OPTIONS") {
     return res.sendStatus(200);
   }
   next();
 });
+
+// ✅ 3. MIDDLEWARE
 app.use(cookieParser());
 app.use(express.json());
 
-// ✅ 3. ROUTES
+// ✅ 4. ROUTES
 app.use("/api/auth", authRoutes);
+app.use("/api/news", newsRoutes); // 🔥 IMPORTANT
 
 export default app;

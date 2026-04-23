@@ -1,23 +1,34 @@
-const BASE_URL = "http://localhost:5001";
+const BASE_URL = "http://localhost:5001"; // 🔥 IMPORTANT: add /api if your backend uses it
 
 export const apiClient = async (
   endpoint: string,
   options: RequestInit = {}
 ) => {
-  const res = await fetch(`${BASE_URL}${endpoint}`, {
-    ...options,
-    credentials: "include", // agar cookies use kar rahe ho toh theek hai
-    headers: {
-      "Content-Type": "application/json",
-      ...(options.headers || {}),
-    },
-  });
+  try {
+    const res = await fetch(`${BASE_URL}${endpoint}`, {
+      ...options,
+      credentials: "include", // cookies auth
+      headers: {
+        "Content-Type": "application/json",
+        ...(options.headers || {}),
+      },
+    });
 
-  const data = await res.json();
+    // 🔥 Handle empty response (important for DELETE)
+    let data;
+    try {
+      data = await res.json();
+    } catch {
+      data = null;
+    }
 
-  if (!res.ok) {
-    throw new Error(data.message || "Something went wrong");
+    if (!res.ok) {
+      throw new Error(data?.message || "Something went wrong");
+    }
+
+    return data;
+  } catch (error: any) {
+    console.error("API Error:", error.message);
+    throw error;
   }
-
-  return data;
 };

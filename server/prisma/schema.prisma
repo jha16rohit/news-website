@@ -15,4 +15,72 @@ model User {
   phone     String?
   role      String   @default("ADMIN")
   createdAt DateTime @default(now())
+
+  news      News[]
+}
+
+model News {
+  id            String   @id @default(uuid())
+  headline      String
+  shortTitle    String?
+  content       String
+  category      String
+  language      String   @default("English")
+  location      String?
+  tags          String[]
+
+  articleType   ArticleType @default(STANDARD)
+
+  // Breaking news
+  breakingNewsTicker   Boolean @default(false)
+  breakingPushNotif    Boolean @default(false)
+  breakingHomepageAlert Boolean @default(false)
+
+  // Live updates
+  liveUpdates Json?
+
+  // Video
+  videoUrl      String?
+  videoDuration Int?
+  videoQuality  String?
+
+  // Media
+  featuredImage String?
+  imageCaption  String?
+  photoCredit   String?
+
+  // SEO
+  metaTitle       String?
+  metaDescription String?
+  slug            String   @unique
+  keywords        String[]
+  focusKeywords   String?
+  canonicalUrl    String?
+
+  // Publishing
+  status       Status   @default(DRAFT)
+  publishedAt  DateTime?
+  scheduledAt  DateTime?
+
+  // Relations
+  authorId String
+  author   User @relation(fields: [authorId], references: [id])
+
+  // Metrics
+  views     Int      @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+enum ArticleType {
+  STANDARD
+  BREAKING
+  LIVE
+  VIDEO
+}
+
+enum Status {
+  DRAFT
+  PUBLISHED
+  SCHEDULED
 }
