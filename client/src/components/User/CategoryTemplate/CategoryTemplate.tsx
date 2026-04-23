@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useParams, Link } from "react-router-dom";
 import {
   Clock, Eye, ChevronRight, Cloud, Sun, CloudRain,
-  Calendar, MapPin, Thermometer, TrendingUp, ArrowRight,
+  Calendar, MapPin, Thermometer, TrendingUp, ArrowRight, Bookmark // 👇 Added Bookmark
 } from "lucide-react";
 import { useNews } from "../../Admin/NewsStore/NewsStore";
 import UserNavbar from "../UserNavbar/UserNavbar";
@@ -61,12 +61,30 @@ function buildCalendar() {
 
 type Article = typeof STATIC_ARTICLES[0];
 
-function HeroCard({ a, color }: { a: Article; color: string }) {
+// 👇 Props interface added so we can pass the save function cleanly
+interface CardProps {
+  a: Article;
+  color: string;
+  savedArticles: number[];
+  toggleSave: (e: React.MouseEvent, id: number) => void;
+  delay?: number;
+}
+
+function HeroCard({ a, color, savedArticles, toggleSave }: CardProps) {
   return (
-    // 👇 Changed from div to Link, added the URL path, and removed default link styling
     <Link to={`/article/${a.id}`} className="ct-hero" style={{ textDecoration: "none", color: "inherit" }}>
       <img src={a.img} alt={a.title} className="ct-hero__img" />
       <div className="ct-hero__overlay">
+        
+        {/* 👇 Hero Save Button 👇 */}
+        <button 
+          className="ct-save-btn ct-hero-save-btn" 
+          onClick={(e) => toggleSave(e, a.id)}
+          aria-label="Save article"
+        >
+          <Bookmark size={24} fill={savedArticles.includes(a.id) ? color : "none"} color={savedArticles.includes(a.id) ? color : "#ffffff"} />
+        </button>
+
         <span className="ct-badge" style={{ background: color }}>{a.category}</span>
         <h2 className="ct-hero__title">{a.title}</h2>
         <p className="ct-hero__sub">{a.subtitle}</p>
@@ -76,9 +94,8 @@ function HeroCard({ a, color }: { a: Article; color: string }) {
   );
 }
 
-function StackCard({ a, color }: { a: Article; color: string }) {
+function StackCard({ a, color, savedArticles, toggleSave }: CardProps) {
   return (
-    // 👇 Changed from div to Link
     <Link to={`/article/${a.id}`} className="ct-stack" style={{ textDecoration: "none", color: "inherit" }}>
       <div className="ct-stack__imgwrap">
         <img src={a.img} alt={a.title} className="ct-stack__img" />
@@ -88,17 +105,39 @@ function StackCard({ a, color }: { a: Article; color: string }) {
         <p className="ct-stack__title">{a.title}</p>
         <div className="ct-meta"><Clock size={12} /><span>{a.published}</span></div>
       </div>
+      
+      {/* 👇 MOVED OUTSIDE THE IMAGE: Now it sits on the white background 👇 */}
+      <button 
+        className="ct-save-btn ct-stack-save-btn" 
+        onClick={(e) => toggleSave(e, a.id)}
+        aria-label="Save article"
+      >
+        <Bookmark 
+          size={18} 
+          fill={savedArticles.includes(a.id) ? color : "none"} 
+          /* Icon is grey when not saved, so it shows up on the white background */
+          color={savedArticles.includes(a.id) ? color : "#94a3b8"} 
+        />
+      </button>
     </Link>
   );
 }
 
-function GridCard({ a, color, delay = 0 }: { a: Article; color: string; delay?: number }) {
+function GridCard({ a, color, savedArticles, toggleSave, delay = 0 }: CardProps) {
   return (
-    // 👇 Changed from div to Link
     <Link to={`/article/${a.id}`} className="ct-gcard" style={{ animationDelay: `${delay}ms`, textDecoration: "none", color: "inherit", display: "flex" }}>
       <div className="ct-gcard__imgwrap">
         <img src={a.img} alt={a.title} className="ct-gcard__img" />
         <span className="ct-badge ct-badge--sm" style={{ background: color }}>{a.category}</span>
+        
+        {/* 👇 Grid Save Button 👇 */}
+        <button 
+          className="ct-save-btn" 
+          onClick={(e) => toggleSave(e, a.id)}
+          aria-label="Save article"
+        >
+          <Bookmark size={18} fill={savedArticles.includes(a.id) ? color : "none"} color={savedArticles.includes(a.id) ? color : "#ffffff"} />
+        </button>
       </div>
       <div className="ct-gcard__body">
         <h4 className="ct-gcard__title">{a.title}</h4>
@@ -108,7 +147,6 @@ function GridCard({ a, color, delay = 0 }: { a: Article; color: string; delay?: 
             <Clock size={12} /><span>{a.published}</span>
             <Eye size={12} style={{marginLeft: '8px'}} /><span>{a.views}</span>
           </div>
-          {/* 👇 Changed from <button> to <span> so it doesn't break the HTML inside a link */}
           <span className="ct-read-more" style={{ color }}>
             Read More <ArrowRight size={14} />
           </span>
@@ -118,6 +156,7 @@ function GridCard({ a, color, delay = 0 }: { a: Article; color: string; delay?: 
   );
 }
 
+// ... [WeatherWidget & CalendarWidget functions remain unchanged] ...
 function WeatherWidget({ color }: { color: string }) {
   return (
     <div className="ct-weather" style={{ background: `linear-gradient(135deg, ${color} 0%, #1a1a2e 100%)` }}>
@@ -184,20 +223,28 @@ export default function CategoryTemplate() {
 
   const [visible, setVisible] = useState(INITIAL_VISIBLE);
 
-  // 1. Find the current category (works for both parents and sub-categories)
+  // 👇 Save State Setup
+  const [savedArticles, setSavedArticles] = useState<number[]>([]);
+
+  const toggleSave = (e: React.MouseEvent, id: number) => {
+    e.preventDefault(); 
+    if (savedArticles.includes(id)) {
+      setSavedArticles(savedArticles.filter(savedId => savedId !== id));
+    } else {
+      setSavedArticles([...savedArticles, id]);
+    }
+  };
+
   const category = categories.find((c) => c.name.toLowerCase().replace(/\s+/g, "-") === slug);
   
-  // 2. If this is a sub-category, find its parent!
   const parentCategory = category?.parentId 
     ? categories.find((c) => c.id === category.parentId) ?? null
     : null;
 
-// 3. Force the standard Brand Red color for ALL User-facing pages
   const color = "#e60000";
 
   const storeFiltered = storeArticles.filter((a) => a.category.toLowerCase() === (category?.name ?? "").toLowerCase());
   
-  // 4. Force the fake static articles to use the current page's category name
   const source: Article[] = storeFiltered.length > 0 
     ? storeFiltered.map((a) => ({ ...a, img: "" })) 
     : STATIC_ARTICLES.map((a) => ({ ...a, category: category?.name || "News" }));
@@ -207,12 +254,10 @@ export default function CategoryTemplate() {
   const allGrid = source.slice(4);
   const grid    = allGrid.slice(0, visible);
   
-  // Check if we can show more or if we need to show less
   const canShowMore = visible < allGrid.length;
   const canShowLess = visible > INITIAL_VISIBLE;
 
   if (category && category.parentId) {
-    // If it has a parentId, it is a sub-category! Send it to the new template.
     return <SubCategoryTemplate category={category} parentCategory={parentCategory} color={color} />;
   }
 
@@ -246,9 +291,10 @@ export default function CategoryTemplate() {
           <div className="ct-wrap">
             <div className="ct-hero-layout">
               <div className="ct-hero-left">
-                {hero && <HeroCard a={hero} color={color} />}
+                {/* 👇 Passed props downward */}
+                {hero && <HeroCard a={hero} color={color} savedArticles={savedArticles} toggleSave={toggleSave} />}
                 <div className="ct-stacks">
-                  {stacks.map((a) => <StackCard key={a.id} a={a} color={color} />)}
+                  {stacks.map((a) => <StackCard key={a.id} a={a} color={color} savedArticles={savedArticles} toggleSave={toggleSave} />)}
                 </div>
               </div>
 
@@ -289,7 +335,7 @@ export default function CategoryTemplate() {
               <div className="ct-news-main">
                 <div className="ct-grid">
                   {grid.map((a, i) => (
-                    <GridCard key={a.id} a={a} color={color} delay={i >= INITIAL_VISIBLE ? (i - INITIAL_VISIBLE) * 80 : 0} />
+                    <GridCard key={a.id} a={a} color={color} savedArticles={savedArticles} toggleSave={toggleSave} delay={i >= INITIAL_VISIBLE ? (i - INITIAL_VISIBLE) * 80 : 0} />
                   ))}
                 </div>
 
