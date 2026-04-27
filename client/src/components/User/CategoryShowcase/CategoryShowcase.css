@@ -80,19 +80,21 @@
 ========================================= */
 .cs-dark-card {
   position: relative;
-  background-color: #101e36; 
+  background-color: #ffffff; 
   display: flex;
   flex-direction: column;
   border-radius: 8px;
   overflow: hidden;
   height: 100% !important; /* Forces all cards in a row to be identical height */
   transition: transform 0.3s ease, box-shadow 0.3s ease;
+  box-shadow: 6px 7px 15px -3px rgba(0, 0, 0, 0.4);
 }
 
 .cs-list-item, .cs-split-sub-card {
   position: relative; /* 👇 Required for the floating save icon */
   display: flex !important;
   flex-direction: column !important; 
+  
   /* ... rest of your existing css ... */
 }
 
@@ -121,7 +123,7 @@
 
 .cs-dark-card:hover {
   transform: translateY(-4px);
-  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
+  
 }
 
 /* LOCKS THE IMAGE AREA SO IT NEVER SHRINKS OR GROWS */
@@ -140,9 +142,7 @@
   transition: transform 0.5s ease;
 }
 
-.cs-dark-card:hover img {
-  transform: scale(1.05);
-}
+
 
 .cs-card-body {
   padding: 20px;
@@ -169,7 +169,7 @@
   font-family: 'Georgia', serif;
   font-size: 20px;
   font-weight: 800;
-  color: #ffffff;
+  color: black;
   line-height: 1.3;
   margin: 0 0 12px 0;
   transition: color 0.2s ease;
@@ -189,13 +189,11 @@
   min-height: 46px; 
 }
 
-.cs-dark-card:hover .cs-card-title {
-  color: #fca5a5;
-}
+
 
 /* LOCKS THE SUBTITLE TO EXACTLY 2 LINES */
 .cs-card-sub {
-  color: #cbd5e1;
+  color: #64748b;
   font-size: 14px;
   line-height: 1.5;
   margin: 0 0 16px 0;
@@ -234,18 +232,17 @@
   display: flex !important;
   flex-direction: column !important; /* Image on top, Text on bottom */
   padding: 0 !important;
-  background-color: #101e36 !important; /* Dark blue background */
+  background-color: #ffffff !important; /* Dark blue background */
   border-radius: 6px !important; 
   overflow: hidden !important; 
   height: 100% !important;
-  box-shadow: none !important;
-  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  box-shadow: 6px 7px 15px -3px rgba(0, 0, 0, 0.4);
+  color: black !important;
+}
+.cs-list-item:hover{
+  transform: translateY(-4px) !important;
 }
 
-.cs-list-item:hover, .cs-split-sub-card:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 6px 15px rgba(0,0,0,0.3) !important; /* Stronger shadow for dark mode */
-}
 
 /* Images in the side cards */
 .cs-list-item .cs-list-img, .cs-split-sub-card .cs-list-img {
@@ -283,15 +280,14 @@
   font-family: 'Inter', system-ui, sans-serif !important; 
   font-size: 15px !important; 
   font-weight: 800 !important; 
-  color: #ffffff !important; /* White text for dark background */
+  color: black !important; /* White text for dark background */
   line-height: 1.4 !important;
   margin: 0 0 10px 0 !important;
   transition: color 0.2s ease;
+  
 }
 
-.cs-list-item:hover .cs-list-title, .cs-split-sub-card:hover .cs-list-title {
-  color: #fca5a5 !important; /* Red hover effect */
-}
+
 
 /* ===== LAYOUT CONFIGURATIONS ===== */
 .cs-layout-hero-sidebar, .cs-layout-split-sidebar {

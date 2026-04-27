@@ -43,11 +43,11 @@
 .news-card {
   display: flex;
   flex-direction: column;
-  background: white;
+  background: white ;
   border-radius: 12px;
   overflow: hidden;
   border: 1px solid #e2e8f0;
-  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+  box-shadow: 8px 10px 20px -6px rgba(0, 0, 0, 0.4);
   transition: transform 0.3s ease, box-shadow 0.3s ease;
   cursor: pointer;
   text-decoration: none; /* In case Link adds underlining */
@@ -55,7 +55,6 @@
 
 .news-card:hover {
   transform: translateY(-5px);
-  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
 }
 
 /* ===== IMAGE ===== */
@@ -72,9 +71,6 @@
   transition: transform 0.5s ease;
 }
 
-.news-card:hover .news-img {
-  transform: scale(1.05); /* Slight zoom on hover */
-}
 
 /* ===== TEXT CONTENT ===== */
 .news-content {
@@ -84,7 +80,7 @@
   /* UPDATED: Aligns items to start (left) so badge doesn't stretch */
   align-items: flex-start; 
   flex-grow: 1; /* Pushes meta to the bottom */
-  background-color: #101e36;
+ 
 }
 
 /* UPDATED: Red Badge, White Text */
@@ -105,7 +101,7 @@
 .news-title {
   font-size: 18px;
   font-weight: 800;
-  color: #ffffff;
+  color: black;
   margin: 0 0 10px 0;
   line-height: 1.4;
   /* Reset alignment inherited from parent if necessary */
@@ -193,9 +189,7 @@
   transition: transform 0.5s ease;
 }
 
-.news-card:hover .news-img {
-  transform: scale(1.05); 
-}
+
 
 /* 👇 NEW: Styles for the Save Button over the image 👇 */
 .latest-save-btn {

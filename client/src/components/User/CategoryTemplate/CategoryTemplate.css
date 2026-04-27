@@ -189,7 +189,7 @@
   transition: transform 0.5s ease;
 }
 
-.ct-stack:hover .ct-stack__img { transform: scale(1.08); }
+.ct-stack:hover{ transform: scale(1.05); }
 
 .ct-stack__body {
   padding: 16px;
@@ -319,7 +319,7 @@
   background: var(--ct-white);
   border-radius: var(--ct-radius);
   overflow: hidden;
-  box-shadow: var(--ct-shadow-sm);
+  box-shadow: 8px 10px 20px -6px rgba(0, 0, 0, 0.4);
   border: 1px solid var(--ct-border);
   cursor: pointer;
   display: flex;
@@ -329,8 +329,8 @@
 }
 
 .ct-gcard:hover {
-  transform: translateY(-6px);
-  box-shadow: var(--ct-shadow-lg);
+  transform: translateY(-6px) !important;
+  
 }
 
 @keyframes ct-slidein {
@@ -351,7 +351,7 @@
   transition: transform 0.6s ease;
 }
 
-.ct-gcard:hover .ct-gcard__img { transform: scale(1.08); }
+
 
 .ct-gcard__imgwrap .ct-badge {
   position: absolute;
@@ -411,6 +411,9 @@
 }
 
 .ct-gcard:hover .ct-read-more { gap: 8px; }
+.ct-gcard:hover{
+  transform: ;
+}
 
 .ct-actions {
   display: flex;

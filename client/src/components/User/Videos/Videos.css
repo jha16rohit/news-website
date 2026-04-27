@@ -78,7 +78,7 @@
   background-color: #ffffff;
   border-radius: 12px;
   border: 1px solid #e2e8f0;
-  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+  box-shadow: 8px 10px 20px -6px rgba(0, 0, 0, 0.4);
   overflow: hidden;
   display: flex;
   flex-direction: column;
@@ -88,7 +88,6 @@
 
 .video-card:hover {
   transform: translateY(-5px);
-  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
 }
 
 /* ===== THUMBNAIL WRAPPER ===== */
@@ -106,9 +105,7 @@
   transition: transform 0.5s ease;
 }
 
-.video-card:hover .video-thumbnail {
-  transform: scale(1.08); /* Slight zoom on hover */
-}
+
 
 /* Center Play Button Overlay */
 .play-button-overlay {
