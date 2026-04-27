@@ -1,0 +1,302 @@
+.signin-overlay {
+  position: fixed;
+  inset: 0;
+  background-color: rgba(0, 0, 0, 0.7);
+  backdrop-filter: blur(5px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 2000;
+  padding: 20px;
+}
+
+.signin-modal {
+  background-color: #0b1120; 
+  width: 100%;
+  max-width: 420px;
+  border-radius: 12px;
+  padding: 35px 30px;
+  position: relative;
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5);
+  color: #ffffff;
+  font-family: 'Inter', sans-serif;
+  border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.signin-close-btn {
+  position: absolute;
+  top: 15px;
+  right: 15px;
+  background: none;
+  border: none;
+  color: #94a3b8;
+  cursor: pointer;
+  transition: color 0.2s;
+}
+
+.signin-close-btn:hover {
+  color: #ffffff;
+}
+
+.signin-header {
+  margin-bottom: 25px;
+}
+
+.signin-header h2 {
+  font-family: 'Georgia', serif;
+  font-size: 26px;
+  font-weight: 800;
+  margin: 0 0 8px 0;
+}
+
+.signin-header p {
+  color: #94a3b8;
+  font-size: 14px;
+  margin: 0;
+  line-height: 1.5;
+}
+
+/* Toggles */
+.signin-toggle-wrapper {
+  margin-bottom: 20px;
+}
+
+.signin-toggle, .signin-method-toggle {
+  display: flex;
+  background-color: #1e293b;
+  border-radius: 8px;
+  padding: 4px;
+}
+
+.toggle-btn, .method-btn {
+  flex: 1;
+  background: transparent;
+  border: none;
+  color: #94a3b8;
+  padding: 10px;
+  font-size: 14px;
+  font-weight: 600;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.toggle-btn.active, .method-btn.active {
+  background-color: #0b1120;
+  color: #ffffff;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+}
+
+/* Google Auth */
+.google-auth-btn {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  background-color: transparent;
+  border: 1px solid #334155;
+  color: #ffffff;
+  font-size: 14px;
+  font-weight: 600;
+  padding: 12px;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: background 0.2s;
+  margin-bottom: 20px;
+}
+
+.google-auth-btn:hover {
+  background-color: rgba(255, 255, 255, 0.05);
+}
+
+/* Divider */
+.signin-divider {
+  display: flex;
+  align-items: center;
+  text-align: center;
+  color: #64748b;
+  font-size: 12px;
+  margin-bottom: 20px;
+}
+
+.signin-divider::before,
+.signin-divider::after {
+  content: '';
+  flex: 1;
+  border-bottom: 1px solid #334155;
+}
+
+.signin-divider span {
+  padding: 0 10px;
+}
+
+/* =========================================
+   BULLETPROOF FORM INPUT FIXES
+========================================= */
+.signin-form {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.form-group label {
+  font-size: 13px;
+  font-weight: 600;
+  color: #ffffff;
+}
+
+.input-wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+  width: 100%;
+}
+
+.input-icon {
+  position: absolute;
+  left: 14px;
+  color: #94a3b8;
+  pointer-events: none; /* 👇 CRITICAL: Allows clicking the icon to focus the input */
+  z-index: 2;
+}
+
+.input-wrapper input {
+  width: 100%;
+  box-sizing: border-box !important; /* 👇 Ensures padding is calculated correctly */
+  background-color: #0b1120;
+  border: 1px solid #334155;
+  color: #ffffff;
+  /* 👇 CRITICAL: !important forces the 44px left padding so text never touches the icon */
+  padding: 12px 14px 12px 44px !important; 
+  border-radius: 8px;
+  font-size: 14px;
+  outline: none;
+  transition: border-color 0.2s;
+  z-index: 1;
+}
+
+.input-wrapper input:focus {
+  border-color: #e60000;
+}
+
+.input-wrapper input::placeholder {
+  color: #64748b;
+}
+
+/* Primary Button */
+.signin-submit-btn {
+  margin-top: 10px;
+  background-color: #e60000;
+  color: white;
+  border: none;
+  padding: 14px;
+  border-radius: 8px;
+  font-size: 15px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.signin-submit-btn:hover {
+  background-color: #cc0000;
+}
+
+/* =========================================
+   OTP VERIFICATION STYLES
+========================================= */
+.otp-view-container {
+  animation: dropFade 0.2s ease-out;
+}
+
+@keyframes dropFade {
+  from { opacity: 0; transform: translateY(-5px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.otp-back-btn {
+  background: transparent;
+  border: none;
+  color: #94a3b8;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  padding: 0;
+  margin-bottom: 20px;
+  transition: color 0.2s;
+}
+
+.otp-back-btn:hover {
+  color: #ffffff;
+}
+
+.otp-content h3 {
+  font-size: 20px;
+  margin: 0 0 10px 0;
+  color: #ffffff;
+}
+
+.otp-content p {
+  font-size: 14px;
+  color: #94a3b8;
+  margin: 0 0 24px 0;
+  line-height: 1.5;
+}
+
+.otp-inputs {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 24px;
+}
+
+.otp-box {
+  width: 48px;
+  height: 56px;
+  background-color: #0b1120;
+  border: 1px solid #334155;
+  border-radius: 8px;
+  color: #ffffff;
+  font-size: 24px;
+  font-weight: 700;
+  text-align: center;
+  outline: none;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.otp-box:focus {
+  border-color: #e60000;
+  box-shadow: 0 0 0 2px rgba(230, 0, 0, 0.2);
+}
+
+.otp-footer {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 8px;
+  margin-top: 20px;
+  font-size: 13px;
+  color: #64748b;
+}
+
+.resend-btn {
+  background: none;
+  border: none;
+  color: #e60000;
+  font-weight: 600;
+  cursor: pointer;
+  padding: 0;
+}
+
+.resend-btn:hover {
+  text-decoration: underline;
+}

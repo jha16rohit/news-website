@@ -218,6 +218,39 @@
 }
 .sct-btn-outline:hover { background: #f1f5f9; }
 
+/* ── BOOKMARK (SAVE) BUTTON ── */
+.sct-save-btn {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  background-color: rgba(0, 0, 0, 0.5); /* Professional dark translucent background */
+  border: none;
+  border-radius: 50%;
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: transform 0.2s ease, background-color 0.2s ease;
+  backdrop-filter: blur(4px);
+  z-index: 10;
+  padding: 0;
+}
+
+/* Ensure the Lucide icon fits perfectly inside the circle */
+.sct-save-btn svg {
+  width: 16px;
+  height: 16px;
+  margin-top: 1px; /* Optically centers the bookmark icon */
+  transition: all 0.2s ease;
+}
+
+.sct-save-btn:hover {
+  background-color: rgba(0, 0, 0, 0.8); /* Darkens slightly on hover */
+  transform: scale(1.1); /* Subtle pop effect */
+}
+
 /* ── RESPONSIVE ── */
 @media (max-width: 1100px) {
   .sct-grid { grid-template-columns: repeat(3, 1fr); }

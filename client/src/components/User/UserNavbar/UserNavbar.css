@@ -233,10 +233,77 @@
 .nav-dropdown-item.active { color: #fff; background: rgba(230,0,0,0.2); }
 
 /* ===== RIGHT ACTIONS ===== */
+/* ===== RIGHT ACTIONS ===== */
 .nav-actions { display: flex; align-items: center; gap: 22px; }
 
-.nav-actions svg { cursor: pointer; color: #ffffff; transition: 0.2s; }
-.nav-actions svg:hover { color: #e2e8f0; }
+.nav-actions > svg { cursor: pointer; color: #ffffff; transition: 0.2s; }
+.nav-actions > svg:hover { color: #e2e8f0; }
+
+/* 👇 THIS IS THE NEW RED PILL SIGN IN BUTTON 👇 */
+.nav-signin-btn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background-color: #e60000; /* Red color matching mockup */
+  color: white;
+  border: none;
+  padding: 8px 18px; /* Pill shape padding */
+  border-radius: 25px; /* Fully rounded edges */
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: transform 0.2s, background-color 0.2s;
+  box-shadow: 0 4px 10px rgba(230, 0, 0, 0.2);
+}
+
+.nav-signin-btn:hover {
+  background-color: #cc0000;
+  transform: translateY(-2px);
+}
+
+/* Ensure the icon inside the button is white */
+.nav-signin-btn svg {
+  color: white !important; 
+  stroke-width: 2.5; /* Makes the user icon slightly bolder */
+}
+
+/* 👇 NEW: Logged-in Profile Badge Styles 👇 */
+.nav-profile-btn {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: rgba(255, 255, 255, 0.05); /* Subtle dark highlight */
+  padding: 4px 16px 4px 4px; /* Tight on left for avatar, loose on right for text */
+  border-radius: 30px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  transition: all 0.2s ease;
+  cursor: pointer;
+}
+
+.nav-profile-btn:hover {
+  background: rgba(255, 255, 255, 0.1);
+  border-color: rgba(255, 255, 255, 0.2);
+}
+
+.nav-avatar {
+  width: 28px;
+  height: 28px;
+  background-color: #e60000;
+  color: white;
+  border-radius: 50%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.5px;
+}
+
+.nav-username {
+  color: #ffffff;
+  font-size: 13px;
+  font-weight: 600;
+}
 
 .subscribe-btn {
   background-color: #e60000;
@@ -534,6 +601,97 @@
   margin: 20px 0; 
   width: 100%;
   flex-shrink: 0; 
+}
+
+/* =========================================
+   USER PROFILE DROPDOWN MENU
+========================================= */
+.nav-profile-container {
+  position: relative;
+}
+
+.nav-profile-btn {
+  /* Inherits your existing styles, but ensures button behavior */
+  background: transparent;
+  border: none;
+  outline: none;
+}
+
+.nav-profile-btn.active {
+  background: rgba(255, 255, 255, 0.1);
+  border-color: rgba(255, 255, 255, 0.2);
+}
+
+.profile-dropdown-menu {
+  position: absolute;
+  top: calc(100% + 15px); /* Drops down right below the button */
+  right: 0;
+  width: 260px;
+  background-color: #0b1120; /* Deep dark blue matching your theme */
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 10px;
+  box-shadow: 0 15px 35px rgba(0, 0, 0, 0.5);
+  z-index: 500;
+  display: flex;
+  flex-direction: column;
+  animation: dropFade 0.2s ease-out;
+  overflow: hidden;
+}
+
+.pd-header {
+  padding: 16px 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.pd-name {
+  color: #ffffff;
+  font-weight: 700;
+  font-size: 15px;
+}
+
+.pd-email {
+  color: #94a3b8;
+  font-size: 12px;
+}
+
+.pd-divider {
+  height: 1px;
+  background-color: rgba(255, 255, 255, 0.06);
+  width: 100%;
+}
+
+.pd-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 20px;
+  color: #cbd5e1;
+  text-decoration: none;
+  font-size: 14px;
+  font-weight: 500;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  width: 100%;
+  text-align: left;
+}
+
+.pd-item:hover {
+  background-color: rgba(255, 255, 255, 0.04);
+  color: #ffffff;
+}
+
+/* The Logout Button */
+.pd-item.pd-logout {
+  color: #ef4444; /* Bright Red */
+}
+
+.pd-item.pd-logout:hover {
+  background-color: rgba(239, 68, 68, 0.1);
+  color: #f87171;
 }
 
 /* ===== RESPONSIVE ===== */
