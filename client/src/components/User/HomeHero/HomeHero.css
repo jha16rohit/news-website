@@ -50,12 +50,37 @@
   transform: scale(1.05);
 } */
 
+/* Ensure the overlay can anchor absolutely positioned items */
 .featured-overlay {
-  position: relative;
+  position: relative; 
   z-index: 2;
   background: linear-gradient(to top, rgba(0, 0, 0, 0.95) 0%, rgba(0, 0, 0, 0.6) 60%, transparent 100%);
   padding: 40px 30px;
   color: white;
+}
+
+.featured-meta {
+  display: flex;
+  gap: 20px;
+  font-size: 14px;
+  color: #cbd5e1;
+}
+
+/* 👇 THIS LOCKS IT EXACTLY TO THE BLUE DOT 👇 */
+.featured-save-btn {
+  position: absolute;
+  bottom: 35px; /* Lines up perfectly with the bottom padding */
+  right: 30px;  /* Lines up perfectly with the right padding */
+  padding: 8px;
+  border-radius: 50%;
+  background-color: rgba(255, 255, 255, 0.1); /* Subtle background ring so it pops */
+  backdrop-filter: blur(4px);
+  z-index: 10;
+}
+
+.featured-save-btn:hover {
+  background-color: rgba(255, 255, 255, 0.2);
+  transform: scale(1.1);
 }
 
 .category-badge {
@@ -132,8 +157,49 @@
   flex-shrink: 0;
 }
 
+
 .trending-info {
-  display: flex; flex-direction: column; justify-content: center;
+  display: flex; 
+  flex-direction: column; 
+  justify-content: center;
+  flex: 1; /* Ensures info takes up remaining space */
+}
+
+/* 👇 NEW: Flex container to push Category left, Icon right */
+.trending-info-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 6px;
+}
+
+.trending-category {
+  color: #e60000; 
+  font-size: 11px; 
+  font-weight: 800;
+  text-transform: uppercase; 
+  letter-spacing: 0.5px; 
+  margin-bottom: 0; /* Margin handled by parent wrapper now */
+}
+
+/* 👇 NEW: Clean button styling for the save icon */
+.save-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 4px; /* Give it a slightly larger click area */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: transform 0.1s ease;
+}
+
+.save-btn:hover {
+  transform: scale(1.1); /* Slight pop on hover */
+}
+
+.save-btn svg {
+  transition: all 0.2s ease;
 }
 
 .trending-category {

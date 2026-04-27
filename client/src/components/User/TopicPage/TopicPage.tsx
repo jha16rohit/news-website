@@ -42,11 +42,6 @@ const TopicPage: React.FC = () => {
       <main className="topic-main-content">
         <div className="topic-container">
 
-          <div className="topic-header-section">
-            <h1 className="topic-page-heading">Topics</h1>
-            <p className="topic-page-subheading">Follow your favorite people, trends, and categories.</p>
-          </div>
-
           <div className="topic-grid">
             {topics.slice(0, visibleCount).map((topic) => (
 

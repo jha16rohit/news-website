@@ -29,15 +29,11 @@ export interface Article {
   leftBorder?:     string;
   isTopStory:      boolean;
   isPinned:        boolean;
-  // Scheduling
-  scheduledFor?:   string | null;   // ISO datetime
-  publishedAt?:    string | null;   // ISO datetime
-  // Breaking-specific
-  channels?:       string[];        // ["web", "mobile", "push", "ticker"]
-  expiryTime?:     string | null;   // ISO datetime for auto-expiry
-  // Live-specific
-  liveUpdates?:    LiveUpdate[];
-  liveStartedAt?:  string | null;   // ISO datetime when live started
+  // New scheduling fields
+  imageUrl?:       string; 
+  img?:            string;
+  scheduledFor?:   string | null;   // ISO datetime string, set when status = "Scheduled"
+  publishedAt?:    string | null;   // ISO datetime string, set when status = "Published"
 }
 
 export interface Category {
@@ -50,6 +46,7 @@ export interface Category {
   enabled:     boolean;
   color:       string;
   parentId?:   number | null;
+  inShowcase?: boolean;
 }
 
 export interface NewsStore {

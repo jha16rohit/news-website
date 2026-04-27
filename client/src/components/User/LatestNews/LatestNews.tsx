@@ -1,10 +1,22 @@
 import React, { useState } from "react";
-import { Clock, Eye } from "lucide-react";
+import { Clock, Eye, Bookmark } from "lucide-react"; // 👇 Added Bookmark
 import { Link } from "react-router-dom";
 import "./LatestNews.css";
 
 const LatestNews: React.FC = () => {
   const [showAll, setShowAll] = useState(false);
+
+  // 👇 NEW: State and toggle function for saving articles
+  const [savedArticles, setSavedArticles] = useState<number[]>([]);
+
+  const toggleSave = (e: React.MouseEvent, id: number) => {
+    e.preventDefault(); // Stops the Link from navigating when clicking the save button
+    if (savedArticles.includes(id)) {
+      setSavedArticles(savedArticles.filter(savedId => savedId !== id));
+    } else {
+      setSavedArticles([...savedArticles, id]);
+    }
+  };
 
   // Data matching your mockups perfectly
   const newsData = [
@@ -113,11 +125,24 @@ const LatestNews: React.FC = () => {
               key={article.id}
             >
               <div className="news-img-wrapper">
-                  <img src={article.imgUrl} alt={article.title} className="news-img" />
+                <img src={article.imgUrl} alt={article.title} className="news-img" />
+                
+                {/* 👇 NEW: Properly connected Save Button 👇 */}
+                <button 
+                  className="latest-save-btn" 
+                  onClick={(e) => toggleSave(e, article.id)}
+                  aria-label="Save article"
+                >
+                  <Bookmark 
+                    size={20} 
+                    fill={savedArticles.includes(article.id) ? "#e60000" : "none"} 
+                    color={savedArticles.includes(article.id) ? "#e60000" : "#ffffff"} 
+                  />
+                </button>
               </div>
               
               <div className="news-content">
-                <span className="news-category">{article.category}</span>
+                <span className="card-badge">{article.category}</span>
                 <h3 className="news-title">{article.title}</h3>
                 <p className="news-excerpt">{article.excerpt}</p>
                 

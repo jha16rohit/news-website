@@ -68,10 +68,6 @@ export default function SubCategoryTemplate({ category, parentCategory, color }:
             
             <div className="sct-title-wrapper">
               <div className="sct-title-accent" style={{ backgroundColor: color }} />
-              <div>
-                <h1 className="sct-title">{category.name}</h1>
-                {category.description && <p className="sct-description">{category.description}</p>}
-              </div>
             </div>
           </div>
         </div>
@@ -82,7 +78,13 @@ export default function SubCategoryTemplate({ category, parentCategory, color }:
             
             <div className="sct-grid">
               {gridArticles.map((a, i) => (
-                <div key={a.id} className="sct-card" style={{ animationDelay: `${i * 50}ms` }}>
+                // 👇 Changed the main wrapper to a Link!
+                <Link 
+                  to={`/article/${a.id}`} 
+                  key={a.id} 
+                  className="sct-card" 
+                  style={{ animationDelay: `${i * 50}ms`, textDecoration: "none", color: "inherit" }}
+                >
                   <div className="sct-card-imgwrap">
                     <img src={a.img} alt={a.title} className="sct-card-img" />
                     <span className="sct-badge" style={{ backgroundColor: color }}>{a.category}</span>
@@ -95,12 +97,13 @@ export default function SubCategoryTemplate({ category, parentCategory, color }:
                         <Clock size={12} /><span>{a.published}</span>
                         <Eye size={12} style={{marginLeft: '8px'}} /><span>{a.views}</span>
                       </div>
-                      <button className="sct-read-btn" style={{ color }}>
+                      {/* 👇 Changed from <button> to <span> */}
+                      <span className="sct-read-btn" style={{ color }}>
                         Read <ArrowRight size={14} />
-                      </button>
+                      </span>
                     </div>
                   </div>
-                </div>
+                </Link>
               ))}
             </div>
 

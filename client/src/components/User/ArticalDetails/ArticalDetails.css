@@ -1,7 +1,7 @@
 /* ===== PAGE WRAPPER ===== */
 .article-page {
   background-color: #fafafa;
-  padding: 40px 0 80px 0;
+  padding: 30px 0 30px 0;
   width: 100%;
 }
 
@@ -130,6 +130,7 @@
 
 .share-btn:hover { opacity: 0.8; }
 .share-btn.fb { background-color: #1877F2; }
+.share-btn.ig { background-color: #E4405F; }
 .share-btn.tw { background-color: #000000; }
 .share-btn.in { background-color: #0A66C2; }
 
@@ -230,6 +231,93 @@
 .related-info span {
   font-size: 12px;
   color: #64748b;
+}
+
+/* ===== LIVE UPDATES WIDGET ===== */
+.live-widget {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-top: 4px solid #e60000; /* Crisp, solid red brand line at the very top */
+  border-radius: 8px;
+  padding: 24px;
+  margin-bottom: 35px;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.03); /* Soft, premium shadow */
+}
+
+/* Perfectly aligns the pulsing dot and the text */
+.live-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 20px; 
+}
+
+.live-header .widget-title {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 800;
+  letter-spacing: 0.5px;
+  color: #0f172a;
+}
+
+/* 👇 This hides the broken red line specifically inside the Live widget! 👇 */
+.live-widget .widget-underline {
+  display: none;
+}
+
+/* The Premium Pulsing Red Dot Animation */
+.live-pulse-dot {
+  width: 12px;
+  height: 12px;
+  background-color: #e60000;
+  border-radius: 50%;
+  flex-shrink: 0;
+  animation: pulse-red 2s infinite cubic-bezier(0.4, 0, 0.6, 1);
+}
+
+@keyframes pulse-red {
+  0% { box-shadow: 0 0 0 0 rgba(230, 0, 0, 0.5); }
+  70% { box-shadow: 0 0 0 8px rgba(230, 0, 0, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(230, 0, 0, 0); }
+}
+
+/* Clean Timeline Layout */
+.live-updates-list {
+  display: flex;
+  flex-direction: column;
+}
+
+.live-update-item {
+  display: flex;
+  flex-direction: row;
+  gap: 16px;
+  padding: 16px 0;
+  border-bottom: 1px solid #f1f5f9;
+  align-items: flex-start;
+}
+
+.live-update-item:last-child {
+  border-bottom: none;
+  padding-bottom: 0;
+}
+
+.live-time {
+  font-size: 12px;
+  font-weight: 700;
+  color: #e60000;
+  min-width: 75px; /* Ensures all the text on the right forms a perfectly straight, magazine-style column */
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  padding-top: 2px;
+  flex-shrink: 0;
+}
+
+.live-text {
+  margin: 0;
+  font-size: 14px;
+  color: #334155;
+  line-height: 1.6;
+  font-weight: 500;
 }
 
 /* ===== RESPONSIVE FIXES ===== */

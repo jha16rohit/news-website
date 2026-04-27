@@ -19,20 +19,6 @@
 }
 
 /* ===== PAGE HEADER ===== */
-.topic-header-section {
-  margin-bottom: 40px;
-  text-align: left; /* Aligned left like the screenshot */
-  border-left: 4px solid #dc2626; /* Small red accent line */
-  padding-left: 15px;
-}
-
-.topic-page-heading {
-  font-size: 32px;
-  font-weight: 800;
-  color: #0f172a;
-  margin: 0 0 8px 0;
-}
-
 .topic-page-subheading {
   font-size: 16px;
   color: #64748b;
@@ -73,7 +59,7 @@
 .topic-card-image {
   width: 100%;
   height: 100%;
-  object-fit: cover;
+  object-fit: contain;
 }
 
 .topic-card-no-image {

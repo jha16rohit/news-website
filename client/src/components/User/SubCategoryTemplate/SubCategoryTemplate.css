@@ -17,7 +17,7 @@
 .sct-header-banner {
   background: #ffffff;
   border-bottom: 1px solid #e2e8f0;
-  padding: 32px 0 40px;
+  padding: 32px 0 0px;
   box-shadow: 0 4px 20px rgba(0,0,0,0.02);
 }
 
@@ -55,14 +55,6 @@
   border-radius: 4px;
 }
 
-.sct-title {
-  font-family: 'Playfair Display', serif;
-  font-size: 3rem;
-  font-weight: 800;
-  margin: 0 0 8px;
-  line-height: 1.1;
-  color: #0b1423;
-}
 
 .sct-description {
   font-size: 1rem;
@@ -73,7 +65,7 @@
 }
 
 /* ── PURE NEWS GRID ── */
-.sct-section { padding: 48px 0; }
+.sct-section { padding: 30px 0; }
 
 .sct-grid {
   display: grid;

@@ -17,6 +17,7 @@ const COLORS = [
 ];
 
 export default function EditCategoryModal({ isOpen, onClose, category, onSave, categories }: Props) {
+  // Everything is held inside this single 'form' object!
   const [form, setForm] = useState<Category | null>(null);
   const [slug, setSlug] = useState("");
 
@@ -104,16 +105,38 @@ export default function EditCategoryModal({ isOpen, onClose, category, onSave, c
           </div>
 
           <div className="toggles-row">
-            <div className="toggle-group">
-              <button className={`modal-toggle${form.featured ? " on" : ""}`}
-                onClick={() => setForm({ ...form, featured: !form.featured })}><span /></button>
-              <label>Featured</label>
-            </div>
-            <div className="toggle-group">
-              <button className={`modal-toggle${form.enabled ? " on" : ""}`}
-                onClick={() => setForm({ ...form, enabled: !form.enabled })}><span /></button>
-              <label>Active</label>
-            </div>
+            <label className="toggle-group">
+              {/* 👇 Bound to form.featured 👇 */}
+              <button 
+                className={`modal-toggle${form.featured ? " on" : ""}`} 
+                onClick={() => setForm({ ...form, featured: !form.featured })}
+              >
+                <span />
+              </button>
+              <span>Featured</span>
+            </label>
+            
+            <label className="toggle-group">
+              {/* 👇 Bound to form.inShowcase 👇 */}
+              <button 
+                className={`modal-toggle${form.inShowcase ? " on" : ""}`} 
+                onClick={() => setForm({ ...form, inShowcase: !form.inShowcase })}
+              >
+                <span />
+              </button>
+              <span>Showcase</span>
+            </label>
+
+            <label className="toggle-group">
+              {/* 👇 Bound to form.enabled 👇 */}
+              <button 
+                className={`modal-toggle${form.enabled ? " on" : ""}`} 
+                onClick={() => setForm({ ...form, enabled: !form.enabled })}
+              >
+                <span />
+              </button>
+              <span>Active</span>
+            </label>
           </div>
 
           <div className="preview-section">
