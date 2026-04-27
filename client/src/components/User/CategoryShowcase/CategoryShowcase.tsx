@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { ArrowRight, Clock, Bookmark } from "lucide-react";
 import { useNews } from "../../Admin/NewsStore/NewsStore";
@@ -23,18 +23,44 @@ const slugOf = (text: string) => text ? text.toLowerCase().replace(/\s+/g, "-") 
 const LAYOUT_STYLES = ["hero-sidebar", "grid-3", "hero-reversed", "grid-4", "split-sidebar"];
 
 const CategoryShowcase: React.FC = () => {
-  // 👇 State moved INSIDE the component where it belongs!
-  const [savedArticles, setSavedArticles] = useState<number[]>([]);
+  // 1. Initialize state from localStorage
+  const [savedArticles, setSavedArticles] = useState<number[]>(() => {
+    const saved = localStorage.getItem("localNewzSavedArticles");
+    return saved ? JSON.parse(saved) : [];
+  });
 
+  // 👇 NEW: Listen for saves happening in other components so this stays synced perfectly!
+  useEffect(() => {
+    const syncSavedArticles = () => {
+      const saved = localStorage.getItem("localNewzSavedArticles");
+      setSavedArticles(saved ? JSON.parse(saved) : []);
+    };
+    
+    window.addEventListener("localNewzSavedUpdate", syncSavedArticles);
+    return () => window.removeEventListener("localNewzSavedUpdate", syncSavedArticles);
+  }, []);
+
+  // 2. The universal toggle function
   const toggleSave = (e: React.MouseEvent, id: number) => {
-    e.preventDefault(); 
-    if (savedArticles.includes(id)) {
-      setSavedArticles(savedArticles.filter(savedId => savedId !== id));
+    e.preventDefault(); // Stop links from firing
+    
+    let currentSaved = JSON.parse(localStorage.getItem("localNewzSavedArticles") || "[]");
+    
+    if (currentSaved.includes(id)) {
+      currentSaved = currentSaved.filter((savedId: number) => savedId !== id);
     } else {
-      setSavedArticles([...savedArticles, id]);
+      currentSaved.push(id);
     }
+    
+    // Save to browser
+    localStorage.setItem("localNewzSavedArticles", JSON.stringify(currentSaved));
+    // Update local button color
+    setSavedArticles(currentSaved);
+    
+    // Broadcast the change so the Profile page instantly updates!
+    window.dispatchEvent(new Event("localNewzSavedUpdate"));
   };
-
+  
   const { categories, articles } = useNews() || {};
   const safeCategories = categories || [];
   const safeArticles = articles || [];

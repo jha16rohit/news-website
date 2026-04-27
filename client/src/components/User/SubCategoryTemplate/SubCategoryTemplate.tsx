@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { Link } from "react-router-dom";
-import { Clock, Eye, Home, ChevronRight, ArrowRight } from "lucide-react";
+import { Clock, Eye, Home, ChevronRight, ArrowRight, Bookmark } from "lucide-react"; // 👇 Added Bookmark
 import { useNews } from "../../Admin/NewsStore/NewsStore";
 import type { Category } from "../../Admin/NewsStore/NewsStore";
 import UserNavbar from "../UserNavbar/UserNavbar";
@@ -30,6 +30,18 @@ const LOAD_MORE_COUNT = 4;
 export default function SubCategoryTemplate({ category, parentCategory, color }: SubCategoryProps) {
   const { articles: storeArticles } = useNews();
   const [visible, setVisible] = useState(INITIAL_VISIBLE);
+
+  // 👇 NEW: State and toggle function for saving articles
+  const [savedArticles, setSavedArticles] = useState<number[]>([]);
+
+  const toggleSave = (e: React.MouseEvent, id: number) => {
+    e.preventDefault(); // Prevents the <Link> from triggering when clicking the save button
+    if (savedArticles.includes(id)) {
+      setSavedArticles(savedArticles.filter(savedId => savedId !== id));
+    } else {
+      setSavedArticles([...savedArticles, id]);
+    }
+  };
 
   // Filter articles
   const storeFiltered = storeArticles.filter((a) => a.category.toLowerCase() === category.name.toLowerCase());
@@ -78,7 +90,6 @@ export default function SubCategoryTemplate({ category, parentCategory, color }:
             
             <div className="sct-grid">
               {gridArticles.map((a, i) => (
-                // 👇 Changed the main wrapper to a Link!
                 <Link 
                   to={`/article/${a.id}`} 
                   key={a.id} 
@@ -88,6 +99,19 @@ export default function SubCategoryTemplate({ category, parentCategory, color }:
                   <div className="sct-card-imgwrap">
                     <img src={a.img} alt={a.title} className="sct-card-img" />
                     <span className="sct-badge" style={{ backgroundColor: color }}>{a.category}</span>
+                    
+                    {/* 👇 NEW: Properly connected Save Button 👇 */}
+                    <button 
+                      className="sct-save-btn" 
+                      onClick={(e) => toggleSave(e, a.id)}
+                      aria-label="Save article"
+                    >
+                      <Bookmark 
+                        size={16} 
+                        fill={savedArticles.includes(a.id) ? color : "none"} 
+                        color={savedArticles.includes(a.id) ? color : "#ffffff"} 
+                      />
+                    </button>
                   </div>
                   <div className="sct-card-body">
                     <h3 className="sct-card-title">{a.title}</h3>
@@ -97,7 +121,6 @@ export default function SubCategoryTemplate({ category, parentCategory, color }:
                         <Clock size={12} /><span>{a.published}</span>
                         <Eye size={12} style={{marginLeft: '8px'}} /><span>{a.views}</span>
                       </div>
-                      {/* 👇 Changed from <button> to <span> */}
                       <span className="sct-read-btn" style={{ color }}>
                         Read <ArrowRight size={14} />
                       </span>

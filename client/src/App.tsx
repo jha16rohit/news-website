@@ -30,6 +30,7 @@ import LiveStoriesPage from "./components/Admin/Livestories/Livestories";
 import Notifications from "./components/Admin/Notifications/Notifications";
 import TopicProfiles from "./components/Admin/TopicProfiles/TopicProfiles";
 import { NewsProvider } from "./components/Admin/NewsProvider/NewsProvider";
+import UserProfile from "./components/User/UserProfile/UserProfile";
 
 export default function App() {
   return (
@@ -46,6 +47,7 @@ export default function App() {
             <Route path="/Topic" element={<TopicPage />} />
             <Route path="/topic/:id" element={<TopicDetail />} />
             <Route path="/article/:articleId" element={<ArticleDetail />} />
+            <Route path="/profile" element={<UserProfile />} />
           </Route>
 
           {/*
