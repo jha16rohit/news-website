@@ -411,9 +411,7 @@
 }
 
 .ct-gcard:hover .ct-read-more { gap: 8px; }
-.ct-gcard:hover{
-  transform: ;
-}
+
 
 .ct-actions {
   display: flex;
