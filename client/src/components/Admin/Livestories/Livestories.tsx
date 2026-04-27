@@ -1,56 +1,168 @@
-import React, { useState, useRef } from "react";
+import React, { useState, useRef, useEffect, useCallback } from "react";
 import "./Livestories.css";
-import { useNews } from "../NewsStore/NewsStore";
 import { useNavigate } from "react-router-dom";
+import { fetchAllNews, deleteNews as apiDeleteNews, updateNews as apiUpdateNews } from "../../../api/news";
 
+// ─── Types ────────────────────────────────────────────────────────────────────
+interface LiveUpdate {
+  id:        number;
+  time:      string;
+  text:      string;
+  timestamp: string;
+}
+
+interface LiveStory {
+  id:              string;   // backend UUID
+  title:           string;
+  articleCategory: string;
+  status:          "live" | "ended" | "draft";
+  views:           string;
+  liveStartedAt?:  string | null;
+  liveUpdates:     LiveUpdate[];
+  published:       string;
+}
+
+// ─── helpers ──────────────────────────────────────────────────────────────────
+function timeSince(isoStr?: string | null): string {
+  if (!isoStr) return "—";
+  const diff = Date.now() - new Date(isoStr).getTime();
+  const mins = Math.floor(diff / 60000);
+  if (mins < 60) return `${mins} min ago`;
+  const hrs = Math.floor(mins / 60);
+  return `${hrs} hr${hrs !== 1 ? "s" : ""} ago`;
+}
+
+let nextUpdateId = 1000;
+
+// ─── Component ────────────────────────────────────────────────────────────────
 const LiveStoriesPage: React.FC = () => {
-  const { articles, addLiveUpdate, endLive, deleteArticle, convertToLive } = useNews();
   const navigate = useNavigate();
 
-  const [openMenuId, setOpenMenuId]         = useState<number | null>(null);
-  const [addUpdateId, setAddUpdateId]       = useState<number | null>(null);
-  const [updateInput, setUpdateInput]       = useState("");
-  const [search, setSearch]                 = useState("");
-  const [deleteModal, setDeleteModal]       = useState<number | null>(null);
+  const [stories, setStories]             = useState<LiveStory[]>([]);
+  const [loading, setLoading]             = useState(true);
+  const [openMenuId, setOpenMenuId]       = useState<string | null>(null);
+  const [addUpdateId, setAddUpdateId]     = useState<string | null>(null);
+  const [updateInput, setUpdateInput]     = useState("");
+  const [search, setSearch]               = useState("");
+  const [deleteModal, setDeleteModal]     = useState<string | null>(null);
   const updateInputRef = useRef<HTMLInputElement>(null);
 
-  // Derive live stories from store
-  const liveArticles   = articles.filter(a => a.tagType === "live" && a.statusType !== "ended" && a.status !== "Ended");
-  const endedArticles  = articles.filter(a => a.tagType === "live" && (a.statusType === "ended"  || a.status === "Ended"));
-  // Draft live: live-type articles that are in draft status
-  const draftLiveArticles = articles.filter(a => a.category === "Live Updates" && a.statusType === "draft");
+  // ── Fetch live stories ────────────────────────────────────────────────────
+  const loadData = useCallback(async () => {
+    setLoading(true);
+    try {
+      const data = await fetchAllNews({ articleType: "LIVE", limit: 100 });
+      if (!data?.news) return;
 
-  const filterArticles = <T extends { title: string }>(list: T[]) =>
-    search ? list.filter(a => a.title.toLowerCase().includes(search.toLowerCase())) : list;
+      const mapped: LiveStory[] = data.news.map((n: any) => {
+        let status: LiveStory["status"] = "live";
+        if (n.status === "DRAFT") status = "draft";
+        else if (n.status === "ENDED" || n.statusType === "ended") status = "ended";
+        else status = "live";
 
-  const filteredLive   = filterArticles(liveArticles);
-  const filteredEnded  = filterArticles(endedArticles);
-  const filteredDraft  = filterArticles(draftLiveArticles);
+        return {
+          id:              n.id,
+          title:           n.headline,
+          articleCategory: n.category || "",
+          status,
+          views:           String(n.views ?? 0),
+          liveStartedAt:   n.publishedAt || null,
+          liveUpdates:     (n.liveUpdates ?? []).map((u: any, i: number) => ({
+            id:        i + 1,
+            time:      u.time || new Date(u.timestamp || Date.now()).toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit" }),
+            text:      u.text,
+            timestamp: u.timestamp || new Date().toISOString(),
+          })),
+          published: n.status === "ENDED"
+            ? new Date(n.updatedAt || n.publishedAt || Date.now()).toLocaleDateString("en-IN", { dateStyle: "medium" })
+            : "Live",
+        };
+      });
 
-  // Stats
-  const totalUpdates = liveArticles.reduce((s, a) => s + (a.liveUpdates?.length ?? 0), 0)
-    + endedArticles.reduce((s, a) => s + (a.liveUpdates?.length ?? 0), 0);
+      setStories(mapped);
+    } catch (err) {
+      console.error("Failed to fetch live stories:", err);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
 
-  const timeSince = (isoStr?: string | null) => {
-    if (!isoStr) return "—";
-    const diff = Date.now() - new Date(isoStr).getTime();
-    const mins = Math.floor(diff / 60000);
-    if (mins < 60) return `${mins} min ago`;
-    const hrs = Math.floor(mins / 60);
-    return `${hrs} hr${hrs !== 1 ? "s" : ""} ago`;
-  };
+  useEffect(() => { loadData(); }, [loadData]);
 
-  const handleAddUpdate = (articleId: number) => {
+  // ── Derived lists ─────────────────────────────────────────────────────────
+  const liveArticles  = stories.filter(s => s.status === "live");
+  const endedArticles = stories.filter(s => s.status === "ended");
+  const draftArticles = stories.filter(s => s.status === "draft");
+
+  const filterStories = (list: LiveStory[]) =>
+    search ? list.filter(s => s.title.toLowerCase().includes(search.toLowerCase())) : list;
+
+  const filteredLive  = filterStories(liveArticles);
+  const filteredEnded = filterStories(endedArticles);
+  const filteredDraft = filterStories(draftArticles);
+
+  const totalUpdates = stories.reduce((s, a) => s + (a.liveUpdates?.length ?? 0), 0);
+
+  // ── Actions ───────────────────────────────────────────────────────────────
+  const handleAddUpdate = async (storyId: string) => {
     if (!updateInput.trim()) return;
-    addLiveUpdate(articleId, updateInput);
+    const now = new Date();
+    const newUpdate: LiveUpdate = {
+      id:        nextUpdateId++,
+      time:      now.toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit" }),
+      text:      updateInput.trim(),
+      timestamp: now.toISOString(),
+    };
+    // Optimistic update
+    setStories(prev => prev.map(s =>
+      s.id === storyId ? { ...s, liveUpdates: [newUpdate, ...s.liveUpdates] } : s
+    ));
     setUpdateInput("");
     setAddUpdateId(null);
+    // Persist to backend
+    try {
+      const story = stories.find(s => s.id === storyId);
+      if (story) {
+        await apiUpdateNews(storyId, {
+          liveUpdates: [newUpdate, ...story.liveUpdates],
+        } as any);
+      }
+    } catch (err) { console.error("Failed to add update:", err); }
   };
 
-  const toggleMenu = (id: number) => setOpenMenuId(openMenuId === id ? null : id);
+  const handleEndLive = async (storyId: string) => {
+    setStories(prev => prev.map(s =>
+      s.id === storyId ? { ...s, status: "ended", published: new Date().toLocaleDateString("en-IN", { dateStyle: "medium" }) } : s
+    ));
+    try {
+      await apiUpdateNews(storyId, { status: "ENDED" } as any);
+    } catch (err) { console.error("Failed to end live:", err); }
+  };
 
+  const handleGoLive = async (storyId: string) => {
+    setStories(prev => prev.map(s =>
+      s.id === storyId ? { ...s, status: "live", liveStartedAt: new Date().toISOString(), published: "Live" } : s
+    ));
+    try {
+      await apiUpdateNews(storyId, { status: "PUBLISHED", articleType: "LIVE" } as any);
+    } catch (err) { console.error("Failed to go live:", err); }
+  };
+
+  const handleDelete = async () => {
+    if (!deleteModal) return;
+    try {
+      await apiDeleteNews(deleteModal);
+      setStories(prev => prev.filter(s => s.id !== deleteModal));
+    } catch (err) { console.error("Delete failed:", err); }
+    setDeleteModal(null);
+  };
+
+  const toggleMenu = (id: string) => setOpenMenuId(openMenuId === id ? null : id);
+
+  // ── Render ────────────────────────────────────────────────────────────────
   return (
-    <div className="ls-page" onClick={() => { setOpenMenuId(null); }}>
+    <div className="ls-page" onClick={() => setOpenMenuId(null)}>
+
       {/* Header */}
       <div className="ls-header">
         <div className="ls-header-left">
@@ -61,7 +173,7 @@ const LiveStoriesPage: React.FC = () => {
           <p className="ls-subtitle">Manage real-time live coverage and event updates</p>
         </div>
         <div className="ls-header-actions">
-          <button className="ls-btn-refresh" onClick={() => window.location.reload()}>
+          <button className="ls-btn-refresh" onClick={loadData} disabled={loading}>
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
               <polyline points="1 4 1 10 7 10" /><path d="M3.51 15a9 9 0 1 0 .49-3.51" />
             </svg>
@@ -91,7 +203,7 @@ const LiveStoriesPage: React.FC = () => {
         <div className="ls-stat-card">
           <div className="ls-stat-info">
             <span className="ls-stat-label">Draft (Ready)</span>
-            <span className="ls-stat-value">{draftLiveArticles.length}</span>
+            <span className="ls-stat-value">{draftArticles.length}</span>
           </div>
           <span className="ls-stat-icon ls-stat-icon--draft">
             <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
@@ -139,14 +251,14 @@ const LiveStoriesPage: React.FC = () => {
           <h2 className="ls-section-title">Current Live</h2>
           <span className="ls-badge ls-badge--active">{filteredLive.length} active</span>
         </div>
-
         <div className="ls-stories-list">
-          {filteredLive.length === 0 && (
-            <div style={{ padding: "24px", textAlign: "center", color: "#999", fontSize: "13px" }}>
-              No live stories currently active
-            </div>
+          {loading && (
+            <div style={{ padding: "24px", textAlign: "center", color: "#999", fontSize: "13px" }}>Loading…</div>
           )}
-          {filteredLive.map((story) => (
+          {!loading && filteredLive.length === 0 && (
+            <div style={{ padding: "24px", textAlign: "center", color: "#999", fontSize: "13px" }}>No live stories currently active</div>
+          )}
+          {filteredLive.map(story => (
             <div className="ls-story-card" key={story.id}>
               <div className="ls-story-main">
                 <div className="ls-story-tags">
@@ -209,7 +321,7 @@ const LiveStoriesPage: React.FC = () => {
                   </svg>
                   Add Update
                 </button>
-                <button className="ls-btn-end-live" onClick={() => endLive(story.id)}>
+                <button className="ls-btn-end-live" onClick={() => handleEndLive(story.id)}>
                   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                     <circle cx="12" cy="12" r="10" /><line x1="4.93" y1="4.93" x2="19.07" y2="19.07" />
                   </svg>
@@ -253,7 +365,7 @@ const LiveStoriesPage: React.FC = () => {
             <span className="ls-badge ls-badge--count">{filteredDraft.length}</span>
           </div>
           <div className="ls-stories-list">
-            {filteredDraft.map((story) => (
+            {filteredDraft.map(story => (
               <div className="ls-story-card ls-story-card--draft" key={story.id}>
                 <div className="ls-story-main">
                   <div className="ls-story-tags">
@@ -264,7 +376,7 @@ const LiveStoriesPage: React.FC = () => {
                   <p className="ls-story-note">Ready to go live — click "Go Live Now" to start live coverage</p>
                 </div>
                 <div className="ls-story-actions" onClick={e => e.stopPropagation()}>
-                  <button className="ls-btn-go-live" onClick={() => convertToLive(story.id)}>
+                  <button className="ls-btn-go-live" onClick={() => handleGoLive(story.id)}>
                     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                       <circle cx="12" cy="12" r="2" fill="white" />
                       <path d="M16.24 7.76a6 6 0 0 1 0 8.49" /><path d="M7.76 7.76a6 6 0 0 0 0 8.49" />
@@ -296,11 +408,9 @@ const LiveStoriesPage: React.FC = () => {
         </div>
         <div className="ls-stories-list">
           {filteredEnded.length === 0 && (
-            <div style={{ padding: "24px", textAlign: "center", color: "#999", fontSize: "13px" }}>
-              No ended live stories yet
-            </div>
+            <div style={{ padding: "24px", textAlign: "center", color: "#999", fontSize: "13px" }}>No ended live stories yet</div>
           )}
-          {filteredEnded.map((story) => (
+          {filteredEnded.map(story => (
             <div className="ls-story-card" key={story.id}>
               <div className="ls-story-main">
                 <div className="ls-story-tags">
@@ -353,9 +463,7 @@ const LiveStoriesPage: React.FC = () => {
             <p>This action cannot be undone. All updates will be lost.</p>
             <div className="ls-modal-actions">
               <button className="ls-modal-cancel" onClick={() => setDeleteModal(null)}>Cancel</button>
-              <button className="ls-modal-confirm" onClick={() => { deleteArticle(deleteModal); setDeleteModal(null); }}>
-                Yes, Delete
-              </button>
+              <button className="ls-modal-confirm" onClick={handleDelete}>Yes, Delete</button>
             </div>
           </div>
         </div>

@@ -1,6 +1,5 @@
 import React, { useState, useRef, useEffect } from "react";
 import "./AllNews.css";
-import { useNews } from "../NewsStore/NewsStore";
 import { useNavigate } from "react-router-dom";
 import {
   Search, Flame, Video, Radio, X,
@@ -11,6 +10,32 @@ import {
 } from "../../../api/news";
 import type { ArticleTypeEnum } from "../../../api/news";
 
+// ─── Types ────────────────────────────────────────────────────────────────────
+interface NewsItem {
+  id:              string;   // backend UUID
+  localId:         number;   // for drag-reorder
+  title:           string;
+  subtitle:        string;
+  category:        string;   // "Breaking News", "Standard Article" etc.
+  articleCategory: string;
+  authorFirst:     string;
+  authorLast:      string;
+  status:          "Published" | "Draft" | "Scheduled";
+  statusType:      string;
+  published:       string;
+  views:           string;
+  tag?:            string;
+  tagType?:        string;
+  leftBorder?:     string;
+  isPinned:        boolean;
+  priority:        string;
+  priorityType:    string;
+  liveUpdates?:    any[];
+  liveStartedAt?:  string;
+  scheduledFor?:   string | null;
+  publishedAt?:    string | null;
+}
+
 const articleTypes = [
   { key: "all",      label: "All"              },
   { key: "standard", label: "Standard Article" },
@@ -19,111 +44,86 @@ const articleTypes = [
   { key: "video",    label: "Video Story",     icon: <Video size={13} /> },
 ];
 
+// ─── helpers ──────────────────────────────────────────────────────────────────
+const typeLabel: Record<string, string> = {
+  STANDARD: "Standard Article",
+  BREAKING: "Breaking News",
+  LIVE:     "Live Updates",
+  VIDEO:    "Video Story",
+};
+const tagTypeMap: Record<string, string> = {
+  BREAKING: "breaking",
+  LIVE:     "live",
+  VIDEO:    "video",
+};
 
+function mapNewsItem(n: any, idx: number): NewsItem {
+  const isBreaking = n.articleType === "BREAKING";
+  const isLive     = n.articleType === "LIVE";
+  const isEnded    = n.status !== "PUBLISHED" && isLive;
 
+  let publishedLabel = "-";
+  if (n.status === "PUBLISHED" && n.publishedAt) {
+    const d    = new Date(n.publishedAt);
+    const diff = Date.now() - d.getTime();
+    if (diff < 60_000)         publishedLabel = "Just now";
+    else if (diff < 3_600_000) publishedLabel = `${Math.floor(diff / 60_000)}m ago`;
+    else if (diff < 86_400_000) publishedLabel = `${Math.floor(diff / 3_600_000)}h ago`;
+    else                        publishedLabel = d.toLocaleDateString("en-IN", { dateStyle: "medium" });
+    if (isLive && !isEnded)    publishedLabel = "Live";
+  } else if (n.status === "SCHEDULED" && n.scheduledAt) {
+    const d = new Date(n.scheduledAt);
+    publishedLabel = d.toLocaleString("en-IN", { dateStyle: "medium", timeStyle: "short" });
+  }
 
+  return {
+    id:              n.id,
+    localId:         idx + 1,
+    title:           n.headline,
+    subtitle:        n.shortTitle || n.headline.slice(0, 50),
+    category:        typeLabel[n.articleType] || "Standard Article",
+    articleCategory: n.category || "",
+    authorFirst:     n.author?.name || "Admin",
+    authorLast:      "",
+    status:          n.status === "PUBLISHED" ? "Published" : n.status === "DRAFT" ? "Draft" : "Scheduled",
+    statusType:      n.status === "PUBLISHED"
+                       ? (isLive && !isEnded ? "live-published" : "published")
+                       : n.status === "DRAFT" ? "draft" : "scheduled",
+    published:       publishedLabel,
+    views:           String(n.views ?? 0),
+    publishedAt:     n.publishedAt || null,
+    scheduledFor:    n.scheduledAt || null,
+    tag:             isBreaking ? "Breaking" : (isLive && !isEnded) ? "Live" : undefined,
+    tagType:         tagTypeMap[n.articleType] || undefined,
+    leftBorder:      isBreaking ? "breaking-left" : isLive ? "live-left" : undefined,
+    isPinned:        false,
+    priority:        isBreaking ? "High" : "Normal",
+    priorityType:    isBreaking ? "high"  : "normal",
+    liveUpdates:     n.liveUpdates || undefined,
+    liveStartedAt:   isLive ? n.publishedAt : undefined,
+  };
+}
+
+// ─── Component ────────────────────────────────────────────────────────────────
 const AllNews: React.FC = () => {
-  const {
-    articles, setArticles, updateArticle, deleteArticle,
-    convertToBreaking, endLive,
-  } = useNews();
   const navigate = useNavigate();
 
+  const [articles, setArticles]           = useState<NewsItem[]>([]);
   const [activeType, setActiveType]       = useState("all");
   const [search, setSearch]               = useState("");
-  const [selectedItems, setSelectedItems] = useState<Set<number>>(new Set());
-  const [openDropdown, setOpenDropdown]   = useState<number | null>(null);
-  const [deleteModal, setDeleteModal]     = useState<number | null>(null);
+  const [selectedItems, setSelectedItems] = useState<Set<string>>(new Set());
+  const [openDropdown, setOpenDropdown]   = useState<string | null>(null);
+  const [deleteModal, setDeleteModal]     = useState<string | null>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
-
-  // Maps local numeric id → backend string id (uuid)
-  const dbIdMap = useRef<Map<number, string>>(new Map());
 
   // Drag state
   const dragIndex     = useRef<number | null>(null);
   const dragOverIndex = useRef<number | null>(null);
-  const [draggingId, setDraggingId] = useState<number | null>(null);
-  const [dragOverId, setDragOverId] = useState<number | null>(null);
+  const [draggingId, setDraggingId] = useState<string | null>(null);
+  const [dragOverId, setDragOverId] = useState<string | null>(null);
 
-  // ── Fetch all news from backend on mount ──────────────────────────────────
-  useEffect(() => {
-    const load = async () => {
-      try {
-        const data = await fetchAllNews({ limit: 100 });
-        if (!data?.news) return;
-
-        const typeLabel: Record<string, string> = {
-          STANDARD: "Standard Article",
-          BREAKING: "Breaking News",
-          LIVE:     "Live Updates",
-          VIDEO:    "Video Story",
-        };
-        const tagTypeMap: Record<string, string> = {
-          BREAKING: "breaking",
-          LIVE:     "live",
-          VIDEO:    "video",
-        };
-
-        const mapped = data.news.map((n: any, idx: number) => {
-          const localId = idx + 1;
-          dbIdMap.current.set(localId, n.id);
-
-          const isBreaking = n.articleType === "BREAKING";
-          const isLive     = n.articleType === "LIVE";
-          const isEnded    = n.status !== "PUBLISHED" && isLive;
-
-          let publishedLabel = "-";
-          if (n.status === "PUBLISHED" && n.publishedAt) {
-            const d = new Date(n.publishedAt);
-            const diff = Date.now() - d.getTime();
-            if (diff < 60_000)       publishedLabel = "Just now";
-            else if (diff < 3600_000) publishedLabel = `${Math.floor(diff / 60_000)}m ago`;
-            else if (diff < 86400_000) publishedLabel = `${Math.floor(diff / 3600_000)}h ago`;
-            else publishedLabel = d.toLocaleDateString("en-IN", { dateStyle: "medium" });
-            if (isLive && !isEnded) publishedLabel = "Live";
-          } else if (n.status === "SCHEDULED" && n.scheduledAt) {
-            const d = new Date(n.scheduledAt);
-            publishedLabel = d.toLocaleString("en-IN", { dateStyle: "medium", timeStyle: "short" });
-          }
-
-          return {
-            id:           localId,
-            title:        n.headline,
-            subtitle:     n.shortTitle || n.headline.slice(0, 50),
-            category:     typeLabel[n.articleType] || "Standard Article",
-            articleCategory: n.category || "",
-            authorFirst:  n.author?.name || "Admin",
-            authorLast:   "",
-            status:       n.status === "PUBLISHED" ? "Published" : n.status === "DRAFT" ? "Draft" : "Scheduled",
-            statusType:   n.status === "PUBLISHED" ? (isLive && !isEnded ? "live-published" : "published")
-                          : n.status === "DRAFT" ? "draft" : "scheduled",
-            published:    publishedLabel,
-            views:        String(n.views ?? 0),
-            publishedAt:  n.publishedAt || null,
-            scheduledFor: n.scheduledAt || null,
-            tag:          isBreaking ? "Breaking" : (isLive && !isEnded) ? "Live" : undefined,
-            tagType:      tagTypeMap[n.articleType] || undefined,
-            leftBorder:   isBreaking ? "breaking-left" : isLive ? "live-left" : undefined,
-            isPinned:     false,
-            priority:     isBreaking ? "High" : "Normal",
-            priorityType: isBreaking ? "high"  : "normal",
-            liveUpdates:  n.liveUpdates || undefined,
-            liveStartedAt: isLive ? n.publishedAt : undefined,
-          };
-        });
-
-        setArticles(mapped);
-      } catch (err) {
-        console.error("fetchAllNews failed:", err);
-      }
-    };
-
-    load();
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
-  // ── Re-fetch when search or type filter changes ───────────────────────────
-  useEffect(() => {
+  // ── Fetch ────────────────────────────────────────────────────────────────
+  const loadData = async (type?: string, q?: string) => {
     const apiTypeMap: Record<string, ArticleTypeEnum | undefined> = {
       standard: "STANDARD",
       breaking: "BREAKING",
@@ -131,87 +131,30 @@ const AllNews: React.FC = () => {
       video:    "VIDEO",
       all:      undefined,
     };
+    try {
+      const data = await fetchAllNews({
+        articleType: apiTypeMap[type || "all"],
+        search:      q || undefined,
+        limit:       100,
+      });
+      if (!data?.news) return;
+      setArticles(data.news.map(mapNewsItem));
+    } catch (err) {
+      console.error("fetchAllNews failed:", err);
+    }
+  };
 
-    const load = async () => {
-      try {
-        const data = await fetchAllNews({
-          articleType: apiTypeMap[activeType],
-          search:      search || undefined,
-          limit:       100,
-        });
-        if (!data?.news) return;
+  // Initial load
+  useEffect(() => { loadData(); }, []);
 
-        const typeLabel: Record<string, string> = {
-          STANDARD: "Standard Article",
-          BREAKING: "Breaking News",
-          LIVE:     "Live Updates",
-          VIDEO:    "Video Story",
-        };
-        const tagTypeMap2: Record<string, string> = {
-          BREAKING: "breaking",
-          LIVE:     "live",
-          VIDEO:    "video",
-        };
-
-        const mapped = data.news.map((n: any, idx: number) => {
-          const localId = idx + 1;
-          dbIdMap.current.set(localId, n.id);
-          const isBreaking = n.articleType === "BREAKING";
-          const isLive     = n.articleType === "LIVE";
-          const isEnded    = n.status !== "PUBLISHED" && isLive;
-
-          let publishedLabel = "-";
-          if (n.status === "PUBLISHED" && n.publishedAt) {
-            const d = new Date(n.publishedAt);
-            const diff = Date.now() - d.getTime();
-            if (diff < 60_000)        publishedLabel = "Just now";
-            else if (diff < 3600_000) publishedLabel = `${Math.floor(diff / 60_000)}m ago`;
-            else if (diff < 86400_000) publishedLabel = `${Math.floor(diff / 3600_000)}h ago`;
-            else publishedLabel = d.toLocaleDateString("en-IN", { dateStyle: "medium" });
-            if (isLive && !isEnded)   publishedLabel = "Live";
-          } else if (n.status === "SCHEDULED" && n.scheduledAt) {
-            const d = new Date(n.scheduledAt);
-            publishedLabel = d.toLocaleString("en-IN", { dateStyle: "medium", timeStyle: "short" });
-          }
-
-          return {
-            id:           localId,
-            title:        n.headline,
-            subtitle:     n.shortTitle || n.headline.slice(0, 50),
-            category:     typeLabel[n.articleType] || "Standard Article",
-            articleCategory: n.category || "",
-            authorFirst:  n.author?.name || "Admin",
-            authorLast:   "",
-            status:       n.status === "PUBLISHED" ? "Published" : n.status === "DRAFT" ? "Draft" : "Scheduled",
-            statusType:   n.status === "PUBLISHED" ? (isLive && !isEnded ? "live-published" : "published")
-                          : n.status === "DRAFT" ? "draft" : "scheduled",
-            published:    publishedLabel,
-            views:        String(n.views ?? 0),
-            publishedAt:  n.publishedAt || null,
-            scheduledFor: n.scheduledAt || null,
-            tag:          isBreaking ? "Breaking" : (isLive && !isEnded) ? "Live" : undefined,
-            tagType:      tagTypeMap2[n.articleType] || undefined,
-            leftBorder:   isBreaking ? "breaking-left" : isLive ? "live-left" : undefined,
-            isPinned:     false,
-            priority:     isBreaking ? "High" : "Normal",
-            priorityType: isBreaking ? "high"  : "normal",
-            liveUpdates:  n.liveUpdates || undefined,
-            liveStartedAt: isLive ? n.publishedAt : undefined,
-          };
-        });
-
-        setArticles(mapped);
-      } catch (err) {
-        console.error("fetchAllNews (filter) failed:", err);
-      }
-    };
-
-    // Debounce search by 300 ms
-    const timer = setTimeout(load, search ? 300 : 0);
+  // Re-fetch when filter/search changes (debounce search)
+  useEffect(() => {
+    const timer = setTimeout(() => loadData(activeType, search), search ? 300 : 0);
     return () => clearTimeout(timer);
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activeType, search]);
 
+  // Close dropdown on outside click
   useEffect(() => {
     const handler = (e: MouseEvent) => {
       if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node))
@@ -221,29 +164,25 @@ const AllNews: React.FC = () => {
     return () => document.removeEventListener("mousedown", handler);
   }, []);
 
-  // Articles are already filtered by the backend refetch useEffect above;
-  // we keep a lightweight local pass-through so the rest of the component is unchanged.
-  const filtered = articles;
-
-  // Selection
-  const allIds        = filtered.map((a) => a.id);
-  const isAllSelected  = allIds.length > 0 && allIds.every((id) => selectedItems.has(id));
-  const isSomeSelected = allIds.some((id) => selectedItems.has(id));
+  // ── Selection ────────────────────────────────────────────────────────────
+  const allIds        = articles.map(a => a.id);
+  const isAllSelected  = allIds.length > 0 && allIds.every(id => selectedItems.has(id));
+  const isSomeSelected = allIds.some(id => selectedItems.has(id));
 
   const toggleAll = () => {
-    if (isAllSelected) setSelectedItems((p) => { const s = new Set(p); allIds.forEach((id) => s.delete(id)); return s; });
-    else               setSelectedItems((p) => { const s = new Set(p); allIds.forEach((id) => s.add(id));    return s; });
+    if (isAllSelected) setSelectedItems(p => { const s = new Set(p); allIds.forEach(id => s.delete(id)); return s; });
+    else               setSelectedItems(p => { const s = new Set(p); allIds.forEach(id => s.add(id));    return s; });
   };
-  const toggleItem = (id: number) =>
-    setSelectedItems((p) => { const s = new Set(p); s.has(id) ? s.delete(id) : s.add(id); return s; });
+  const toggleItem = (id: string) =>
+    setSelectedItems(p => { const s = new Set(p); s.has(id) ? s.delete(id) : s.add(id); return s; });
 
-  // Drag handlers
-  const onDragStart = (e: React.DragEvent, index: number, id: number) => {
+  // ── Drag ─────────────────────────────────────────────────────────────────
+  const onDragStart = (e: React.DragEvent, index: number, id: string) => {
     dragIndex.current = index;
     setDraggingId(id);
     e.dataTransfer.effectAllowed = "move";
   };
-  const onDragEnter = (index: number, id: number) => {
+  const onDragEnter = (index: number, id: string) => {
     dragOverIndex.current = index;
     setDragOverId(id);
   };
@@ -254,12 +193,8 @@ const AllNews: React.FC = () => {
       dragIndex.current !== dragOverIndex.current
     ) {
       const reordered = [...articles];
-      const fromId  = filtered[dragIndex.current].id;
-      const toId    = filtered[dragOverIndex.current].id;
-      const fromIdx = reordered.findIndex((a) => a.id === fromId);
-      const toIdx   = reordered.findIndex((a) => a.id === toId);
-      const [moved] = reordered.splice(fromIdx, 1);
-      reordered.splice(toIdx, 0, moved);
+      const [moved] = reordered.splice(dragIndex.current, 1);
+      reordered.splice(dragOverIndex.current, 0, moved);
       setArticles(reordered);
     }
     dragIndex.current     = null;
@@ -268,16 +203,17 @@ const AllNews: React.FC = () => {
     setDragOverId(null);
   };
 
-  const handleMenuAction = async (action: string, id: number) => {
-    const item = articles.find((a) => a.id === id);
-    const dbId = dbIdMap.current.get(id);
+  // ── Menu actions ──────────────────────────────────────────────────────────
+  const handleMenuAction = async (action: string, id: string) => {
+    const item = articles.find(a => a.id === id);
     setOpenDropdown(null);
 
     switch (action) {
       case "edit":
-        navigate(`/admin/create?edit=${id}&type=${
+        // ── FIX: correct route is /admin/create (not /admin/news/create) ──
+        navigate(`/admin/news/create?edit=${id}&type=${
           item?.tagType === "breaking" ? "breaking"
-          : item?.tagType === "live"    ? "live"
+          : item?.tagType === "live"   ? "live"
           : item?.category === "Video Story" ? "video"
           : "standard"
         }`);
@@ -289,61 +225,36 @@ const AllNews: React.FC = () => {
         break;
 
       case "pin":
-        updateArticle(id, { isPinned: !item?.isPinned });
-        // pin is a local-only feature (no DB field), so no API call needed
+        setArticles(prev => prev.map(a => a.id === id ? { ...a, isPinned: !a.isPinned } : a));
         break;
 
       case "mark-breaking": {
         const isBreaking = item?.tagType === "breaking";
-        if (isBreaking) {
-          if (dbId) {
-            try { await apiUpdateNews(dbId, { articleType: "STANDARD" }); } catch (err) { console.error(err); }
+        try {
+          await apiUpdateNews(id, { articleType: isBreaking ? "STANDARD" : "BREAKING", status: "PUBLISHED" } as any);
+        } catch (err) { console.error(err); }
+        setArticles(prev => prev.map(a => {
+          if (a.id !== id) return a;
+          if (isBreaking) {
+            return { ...a, category: "Standard Article", tag: undefined, tagType: undefined, leftBorder: undefined, priority: "Normal", priorityType: "normal" };
           }
-          updateArticle(id, {
-            category:    "Standard Article",
-            tag:         undefined,
-            tagType:     undefined,
-            leftBorder:  undefined,
-            priority:    "Normal",
-            priorityType: "normal",
-            channels:    undefined,
-            expiryTime:  undefined,
-          });
-        } else {
-          if (dbId) {
-            try { await apiUpdateNews(dbId, { articleType: "BREAKING", status: "PUBLISHED" }); } catch (err) { console.error(err); }
-          }
-          convertToBreaking(id);
-        }
+          return { ...a, category: "Breaking News", tag: "Breaking", tagType: "breaking", leftBorder: "breaking-left", priority: "High", priorityType: "high" };
+        }));
         break;
       }
 
       case "convert-live": {
         const isLive = item?.tagType === "live";
-        if (isLive) {
-          if (dbId) {
-            try { await apiUpdateNews(dbId, { articleType: "STANDARD", status: "PUBLISHED" }); } catch (err) { console.error(err); }
+        try {
+          await apiUpdateNews(id, { articleType: isLive ? "STANDARD" : "LIVE", status: "PUBLISHED" } as any);
+        } catch (err) { console.error(err); }
+        setArticles(prev => prev.map(a => {
+          if (a.id !== id) return a;
+          if (isLive) {
+            return { ...a, category: "Standard Article", tag: undefined, tagType: undefined, leftBorder: undefined, statusType: "published", published: a.publishedAt ? new Date(a.publishedAt).toLocaleDateString("en-IN") : "—" };
           }
-          endLive(id);
-        } else {
-          if (dbId) {
-            try { await apiUpdateNews(dbId, { articleType: "LIVE", status: "PUBLISHED" }); } catch (err) { console.error(err); }
-          }
-          updateArticle(id, {
-            category:      "Live Updates",
-            tag:           "Live",
-            tagType:       "live",
-            leftBorder:    "live-left",
-            status:        "Published",
-            statusType:    "live-published",
-            published:     "Live",
-            views:         item?.views ?? "0",
-            liveStartedAt: new Date().toISOString(),
-            liveUpdates:   item?.liveUpdates ?? [],
-            channels:      undefined,
-            expiryTime:    undefined,
-          });
-        }
+          return { ...a, category: "Live Updates", tag: "Live", tagType: "live", leftBorder: "live-left", status: "Published", statusType: "live-published", published: "Live", liveStartedAt: new Date().toISOString() };
+        }));
         break;
       }
 
@@ -354,47 +265,42 @@ const AllNews: React.FC = () => {
   };
 
   const confirmDelete = async () => {
-    if (deleteModal !== null) {
-      const dbId = dbIdMap.current.get(deleteModal);
-      if (dbId) {
-        try { await apiDeleteNews(dbId); } catch (err) { console.error("Delete failed:", err); }
-      }
-      deleteArticle(deleteModal);
-      setDeleteModal(null);
-    }
+    if (!deleteModal) return;
+    try { await apiDeleteNews(deleteModal); } catch (err) { console.error("Delete failed:", err); }
+    setArticles(prev => prev.filter(a => a.id !== deleteModal));
+    setDeleteModal(null);
   };
 
+  // ── Bulk actions ──────────────────────────────────────────────────────────
   const handleBulkPublish = async () => {
     for (const id of selectedItems) {
-      const dbId = dbIdMap.current.get(id);
-      if (dbId) {
-        try { await apiUpdateNews(dbId, { status: "PUBLISHED" }); } catch (err) { console.error(err); }
-      }
-      updateArticle(id, { status: "Published", statusType: "published", published: "Just now" });
+      try { await apiUpdateNews(id, { status: "PUBLISHED" } as any); } catch (err) { console.error(err); }
     }
-    setSelectedItems(new Set());
-  };
-  const handleBulkDraft = async () => {
-    for (const id of selectedItems) {
-      const dbId = dbIdMap.current.get(id);
-      if (dbId) {
-        try { await apiUpdateNews(dbId, { status: "DRAFT" }); } catch (err) { console.error(err); }
-      }
-      updateArticle(id, { status: "Draft", statusType: "draft", published: "-", views: "-" });
-    }
-    setSelectedItems(new Set());
-  };
-  const handleBulkDelete = async () => {
-    for (const id of selectedItems) {
-      const dbId = dbIdMap.current.get(id);
-      if (dbId) {
-        try { await apiDeleteNews(dbId); } catch (err) { console.error(err); }
-      }
-      deleteArticle(id);
-    }
+    setArticles(prev => prev.map(a =>
+      selectedItems.has(a.id) ? { ...a, status: "Published", statusType: "published", published: "Just now" } : a
+    ));
     setSelectedItems(new Set());
   };
 
+  const handleBulkDraft = async () => {
+    for (const id of selectedItems) {
+      try { await apiUpdateNews(id, { status: "DRAFT" } as any); } catch (err) { console.error(err); }
+    }
+    setArticles(prev => prev.map(a =>
+      selectedItems.has(a.id) ? { ...a, status: "Draft", statusType: "draft", published: "-", views: "-" } : a
+    ));
+    setSelectedItems(new Set());
+  };
+
+  const handleBulkDelete = async () => {
+    for (const id of selectedItems) {
+      try { await apiDeleteNews(id); } catch (err) { console.error(err); }
+    }
+    setArticles(prev => prev.filter(a => !selectedItems.has(a.id)));
+    setSelectedItems(new Set());
+  };
+
+  // ── Render ────────────────────────────────────────────────────────────────
   return (
     <div className="all-news-container">
 
@@ -408,7 +314,7 @@ const AllNews: React.FC = () => {
 
       {/* TABS */}
       <div className="article-type-tabs">
-        {articleTypes.map((item) => (
+        {articleTypes.map(item => (
           <button
             key={item.key}
             className={`type-tab type-tab--${item.key} ${activeType === item.key ? "active" : ""}`}
@@ -427,12 +333,10 @@ const AllNews: React.FC = () => {
           <input
             placeholder="Search articles..."
             value={search}
-            onChange={(e) => setSearch(e.target.value)}
+            onChange={e => setSearch(e.target.value)}
           />
           {search && (
-            <button className="search-clear" onClick={() => setSearch("")}>
-              <X size={14} />
-            </button>
+            <button className="search-clear" onClick={() => setSearch("")}><X size={14} /></button>
           )}
         </div>
       </div>
@@ -464,7 +368,7 @@ const AllNews: React.FC = () => {
                 <input
                   type="checkbox"
                   checked={isAllSelected}
-                  ref={(el) => { if (el) el.indeterminate = isSomeSelected && !isAllSelected; }}
+                  ref={el => { if (el) el.indeterminate = isSomeSelected && !isAllSelected; }}
                   onChange={toggleAll}
                 />
               </th>
@@ -479,7 +383,7 @@ const AllNews: React.FC = () => {
             </tr>
           </thead>
           <tbody>
-            {filtered.map((news, index) => {
+            {articles.map((news, index) => {
               const isDragging = draggingId === news.id;
               const isDragOver = dragOverId === news.id && draggingId !== news.id;
               return (
@@ -487,9 +391,9 @@ const AllNews: React.FC = () => {
                   key={news.id}
                   className={`news-row ${news.leftBorder || ""} ${isDragging ? "row-dragging" : ""} ${isDragOver ? "row-drag-over" : ""}`}
                   draggable
-                  onDragStart={(e) => onDragStart(e, index, news.id)}
+                  onDragStart={e => onDragStart(e, index, news.id)}
                   onDragEnter={() => onDragEnter(index, news.id)}
-                  onDragOver={(e) => e.preventDefault()}
+                  onDragOver={e => e.preventDefault()}
                   onDragEnd={onDragEnd}
                 >
                   {/* DRAG HANDLE */}
@@ -536,7 +440,7 @@ const AllNews: React.FC = () => {
                   <td>
                     <div className="author-cell">
                       <div className="avatar">
-                        {news.authorFirst[0]}{news.authorLast[0]}
+                        {news.authorFirst?.[0] ?? "?"}{news.authorLast?.[0] ?? ""}
                       </div>
                       <div>
                         <div className="author-name">{news.authorFirst}</div>
@@ -558,16 +462,20 @@ const AllNews: React.FC = () => {
 
                   {/* ACTIONS */}
                   <td className="actions">
-                    <div className="action-dropdown-wrapper" ref={openDropdown === news.id ? dropdownRef : null}>
+                    <div
+                      className="action-dropdown-wrapper"
+                      ref={openDropdown === news.id ? dropdownRef : null}
+                    >
                       <button
                         className="action-menu-btn"
-                        onClick={(e) => {
+                        onClick={e => {
                           e.stopPropagation();
                           setOpenDropdown(openDropdown === news.id ? null : news.id);
                         }}
                       >
                         <MoreVertical size={16} />
                       </button>
+
                       {openDropdown === news.id && (
                         <div className="action-dropdown">
                           <button className="dropdown-item" onClick={() => handleMenuAction("edit", news.id)}>
@@ -609,8 +517,11 @@ const AllNews: React.FC = () => {
                 </tr>
               );
             })}
-            {filtered.length === 0 && (
-              <tr><td colSpan={10} className="empty-row">No articles found</td></tr>
+
+            {articles.length === 0 && (
+              <tr>
+                <td colSpan={10} className="empty-row">No articles found</td>
+              </tr>
             )}
           </tbody>
         </table>
@@ -619,7 +530,7 @@ const AllNews: React.FC = () => {
       {/* DELETE MODAL */}
       {deleteModal !== null && (
         <div className="modal-overlay" onClick={() => setDeleteModal(null)}>
-          <div className="modal" onClick={(e) => e.stopPropagation()}>
+          <div className="modal" onClick={e => e.stopPropagation()}>
             <div className="modal-icon"><Trash2 size={22} /></div>
             <h4>Delete Article?</h4>
             <p>This action cannot be undone. The article will be permanently removed.</p>

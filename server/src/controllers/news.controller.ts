@@ -149,7 +149,7 @@ export const createNews = async (req: AuthRequest, res: Response) => {
         publishedAt,
         scheduledAt,
 
-        authorId: req.user?.id || "b1ac800b-525b-4bb3-9f71-64997eeb578f",
+        authorId: req.user?.id || "9f1c82a8-b8f9-4662-a4f9-6101130c7607",
       },
     });
 

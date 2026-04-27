@@ -1,29 +1,38 @@
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import "./ScheduledPosts.css";
-import { useNews } from "../NewsStore/NewsStore";
-import type { Article } from "../NewsStore/NewsStore";
+import { fetchAllNews, deleteNews as apiDeleteNews, updateNews as apiUpdateNews } from "../../../api/news";
 import {
   CalendarClock, FileText, Clock, ChevronLeft, ChevronRight,
   Trash2, Edit3, Eye, Send, MoreHorizontal, Search,
   AlertCircle, CheckCircle2, CalendarDays, X,
 } from "lucide-react";
 
+// ─── Types ────────────────────────────────────────────────────────────────────
+interface RemoteArticle {
+  id:              string;
+  title:           string;
+  category:        string;
+  articleCategory: string;
+  status:          "Published" | "Draft" | "Scheduled";
+  scheduledFor:    string | null;
+  publishedAt:     string | null;
+  views:           string;
+}
+
 /* ─── helpers ─── */
 function formatScheduled(iso: string): { date: string; time: string; relative: string } {
-  const d = new Date(iso);
+  const d   = new Date(iso);
   const now = new Date();
   const diffMs = d.getTime() - now.getTime();
   const diffH  = Math.floor(diffMs / 3_600_000);
   const diffD  = Math.floor(diffMs / 86_400_000);
-
   let relative = "";
-  if (diffMs < 0)         relative = "Overdue";
-  else if (diffH < 1)     relative = "< 1 hour";
-  else if (diffH < 24)    relative = `In ${diffH}h`;
-  else if (diffD === 1)   relative = "Tomorrow";
-  else                    relative = `In ${diffD} days`;
-
+  if (diffMs < 0)       relative = "Overdue";
+  else if (diffH < 1)   relative = "< 1 hour";
+  else if (diffH < 24)  relative = `In ${diffH}h`;
+  else if (diffD === 1) relative = "Tomorrow";
+  else                  relative = `In ${diffD} days`;
   return {
     date: d.toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" }),
     time: d.toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit" }),
@@ -31,30 +40,14 @@ function formatScheduled(iso: string): { date: string; time: string; relative: s
   };
 }
 
-// FIX 1: Renamed unused parameter `article` → `_article`
-function formatDraftAge(_article: Article): string {
-  // Articles without publishedAt/scheduledFor and status=Draft
-  // We don't have a createdAt field, so show a placeholder
-  return "Saved draft";
-}
-
 /* ─── Calendar helpers ─── */
 const MONTHS = ["January","February","March","April","May","June","July","August","September","October","November","December"];
 const DOW    = ["Sun","Mon","Tue","Wed","Thu","Fri","Sat"];
-
-function getDaysInMonth(year: number, month: number): number {
-  return new Date(year, month + 1, 0).getDate();
-}
-function getFirstDayOfMonth(year: number, month: number): number {
-  return new Date(year, month, 1).getDay();
-}
+function getDaysInMonth(year: number, month: number): number { return new Date(year, month + 1, 0).getDate(); }
+function getFirstDayOfMonth(year: number, month: number): number { return new Date(year, month, 1).getDay(); }
 
 /* ─── Confirm Dialog ─── */
-const ConfirmDialog: React.FC<{
-  message: string;
-  onConfirm: () => void;
-  onCancel: () => void;
-}> = ({ message, onConfirm, onCancel }) => (
+const ConfirmDialog: React.FC<{ message: string; onConfirm: () => void; onCancel: () => void; }> = ({ message, onConfirm, onCancel }) => (
   <div className="sp-confirm-overlay" onClick={e => e.target === e.currentTarget && onCancel()}>
     <div className="sp-confirm-box">
       <div className="sp-confirm-icon"><AlertCircle size={22} /></div>
@@ -68,13 +61,12 @@ const ConfirmDialog: React.FC<{
 );
 
 /* ─── Article Row Menu ─── */
-// FIX 2: Renamed unused destructured prop `article` → `_article`
 const ArticleMenu: React.FC<{
-  article: Article;
+  article: RemoteArticle;
   onPublish?: () => void;
   onDelete: () => void;
   onEdit: () => void;
-}> = ({ article: _article, onPublish, onDelete, onEdit }) => {
+}> = ({ onPublish, onDelete, onEdit }) => {
   const [open, setOpen] = useState(false);
   return (
     <div className="sp-menu-wrap">
@@ -102,8 +94,11 @@ const ArticleMenu: React.FC<{
 
 /* ─── Main Component ─── */
 const ScheduledPosts: React.FC = () => {
-  const { articles, updateArticle, deleteArticle } = useNews();
   const navigate = useNavigate();
+
+  const [scheduledArticles, setScheduledArticles] = useState<RemoteArticle[]>([]);
+  const [draftArticles, setDraftArticles]         = useState<RemoteArticle[]>([]);
+  const [loading, setLoading]                     = useState(true);
 
   // Calendar state
   const today = new Date();
@@ -117,35 +112,51 @@ const ScheduledPosts: React.FC = () => {
   // Confirm dialog
   const [confirmAction, setConfirmAction] = useState<null | { message: string; fn: () => void }>(null);
 
-  // Tabs for drafts/scheduled
+  // Tabs
   const [activeTab, setActiveTab] = useState<"scheduled" | "drafts">("scheduled");
 
-  /* ── Derived data ── */
-  const scheduledArticles = useMemo(
-    () => articles.filter(a => a.status === "Scheduled" && a.scheduledFor),
-    [articles],
-  );
+  // ── Fetch ────────────────────────────────────────────────────────────────
+  const loadData = useCallback(async () => {
+    setLoading(true);
+    try {
+      const scheduledData = await fetchAllNews({ limit: 100 }).catch(() => null);
 
-  const draftArticles = useMemo(
-    () => articles.filter(a => a.status === "Draft"),
-    [articles],
-  );
+      const allNews = scheduledData?.news ?? [];
 
-  // Dates that have scheduled articles this month
+      const mapArticle = (n: any): RemoteArticle => ({
+        id:              n.id,
+        title:           n.headline,
+        category:        n.articleType || "STANDARD",
+        articleCategory: n.category || "",
+        status:          n.status === "PUBLISHED" ? "Published" : n.status === "DRAFT" ? "Draft" : "Scheduled",
+        scheduledFor:    n.scheduledAt || null,
+        publishedAt:     n.publishedAt || null,
+        views:           String(n.views ?? 0),
+      });
+
+      setScheduledArticles(allNews.filter((n: any) => n.status === "SCHEDULED").map(mapArticle));
+      setDraftArticles(allNews.filter((n: any) => n.status === "DRAFT").map(mapArticle));
+    } catch (err) {
+      console.error("Failed to fetch scheduled/draft posts:", err);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => { loadData(); }, [loadData]);
+
+  /* ── Calendar ── */
   const scheduledDates = useMemo(() => {
     const set = new Set<number>();
     scheduledArticles.forEach(a => {
       if (a.scheduledFor) {
         const d = new Date(a.scheduledFor);
-        if (d.getFullYear() === calYear && d.getMonth() === calMonth) {
-          set.add(d.getDate());
-        }
+        if (d.getFullYear() === calYear && d.getMonth() === calMonth) set.add(d.getDate());
       }
     });
     return set;
   }, [scheduledArticles, calYear, calMonth]);
 
-  // Articles for selected day
   const selectedDayArticles = useMemo(() => {
     if (!selectedDay) return scheduledArticles;
     return scheduledArticles.filter(a => {
@@ -155,7 +166,6 @@ const ScheduledPosts: React.FC = () => {
     });
   }, [scheduledArticles, selectedDay, calYear, calMonth]);
 
-  // Filter by search
   const filteredScheduled = useMemo(() => {
     const base = selectedDay ? selectedDayArticles : scheduledArticles;
     if (!searchQuery.trim()) return base;
@@ -169,52 +179,48 @@ const ScheduledPosts: React.FC = () => {
     return draftArticles.filter(a => a.title.toLowerCase().includes(q) || a.articleCategory.toLowerCase().includes(q));
   }, [draftArticles, searchQuery]);
 
-  /* ── Calendar rendering ── */
-  const daysInMonth  = getDaysInMonth(calYear, calMonth);
-  const firstDayDow  = getFirstDayOfMonth(calYear, calMonth);
+  const daysInMonth = getDaysInMonth(calYear, calMonth);
+  const firstDayDow = getFirstDayOfMonth(calYear, calMonth);
 
   const prevMonth = () => {
-    if (calMonth === 0) { setCalYear(y => y - 1); setCalMonth(11); }
-    else setCalMonth(m => m - 1);
+    if (calMonth === 0) { setCalYear(y => y - 1); setCalMonth(11); } else setCalMonth(m => m - 1);
     setSelectedDay(null);
   };
   const nextMonth = () => {
-    if (calMonth === 11) { setCalYear(y => y + 1); setCalMonth(0); }
-    else setCalMonth(m => m + 1);
+    if (calMonth === 11) { setCalYear(y => y + 1); setCalMonth(0); } else setCalMonth(m => m + 1);
     setSelectedDay(null);
   };
 
   /* ── Actions ── */
   const confirm = (message: string, fn: () => void) => setConfirmAction({ message, fn });
 
-  const publishNow = (article: Article) => {
-    confirm(`Publish "${article.title.slice(0, 50)}…" now?`, () => {
-      updateArticle(article.id, {
-        status: "Published", statusType: "published",
-        publishedAt: new Date().toISOString(),
-        scheduledFor: null,
-        published: "Just now",
-      });
+  const publishNow = (article: RemoteArticle) => {
+    confirm(`Publish "${article.title.slice(0, 50)}…" now?`, async () => {
+      try {
+        await apiUpdateNews(article.id, { status: "PUBLISHED" } as any);
+        setScheduledArticles(prev => prev.filter(a => a.id !== article.id));
+      } catch (err) { console.error(err); }
       setConfirmAction(null);
     });
   };
 
-  const deleteArt = (article: Article) => {
-    confirm(`Delete "${article.title.slice(0, 50)}…"? This cannot be undone.`, () => {
-      deleteArticle(article.id);
+  const deleteArt = (article: RemoteArticle) => {
+    confirm(`Delete "${article.title.slice(0, 50)}…"? This cannot be undone.`, async () => {
+      try {
+        await apiDeleteNews(article.id);
+        setScheduledArticles(prev => prev.filter(a => a.id !== article.id));
+        setDraftArticles(prev => prev.filter(a => a.id !== article.id));
+      } catch (err) { console.error(err); }
       setConfirmAction(null);
     });
   };
 
-  const publishDraft = (article: Article) => {
-    confirm(`Publish draft "${article.title.slice(0, 50)}…" now?`, () => {
-      updateArticle(article.id, {
-        status: "Published", statusType: "published",
-        publishedAt: new Date().toISOString(),
-        scheduledFor: null,
-        published: "Just now",
-        views: "0",
-      });
+  const publishDraft = (article: RemoteArticle) => {
+    confirm(`Publish draft "${article.title.slice(0, 50)}…" now?`, async () => {
+      try {
+        await apiUpdateNews(article.id, { status: "PUBLISHED" } as any);
+        setDraftArticles(prev => prev.filter(a => a.id !== article.id));
+      } catch (err) { console.error(err); }
       setConfirmAction(null);
     });
   };
@@ -234,11 +240,7 @@ const ScheduledPosts: React.FC = () => {
   return (
     <div className="sp-root">
       {confirmAction && (
-        <ConfirmDialog
-          message={confirmAction.message}
-          onConfirm={confirmAction.fn}
-          onCancel={() => setConfirmAction(null)}
-        />
+        <ConfirmDialog message={confirmAction.message} onConfirm={confirmAction.fn} onCancel={() => setConfirmAction(null)} />
       )}
 
       {/* ── Page Header ── */}
@@ -250,19 +252,13 @@ const ScheduledPosts: React.FC = () => {
         <div className="sp-page-header-right">
           <div className="sp-search-wrap">
             <Search size={14} className="sp-search-icon" />
-            <input
-              className="sp-search-input"
-              placeholder="Search articles…"
-              value={searchQuery}
-              onChange={e => setSearchQuery(e.target.value)}
-            />
+            <input className="sp-search-input" placeholder="Search articles…" value={searchQuery}
+              onChange={e => setSearchQuery(e.target.value)} />
             {searchQuery && (
-              <button className="sp-search-clear" onClick={() => setSearchQuery("")}>
-                <X size={13} />
-              </button>
+              <button className="sp-search-clear" onClick={() => setSearchQuery("")}><X size={13} /></button>
             )}
           </div>
-          <button className="sp-btn sp-btn-primary" onClick={() => navigate("/admin/news/create")}>
+          <button className="sp-btn sp-btn-primary" onClick={() => navigate("/admin/create")}>
             + New Article
           </button>
         </div>
@@ -306,36 +302,28 @@ const ScheduledPosts: React.FC = () => {
         <div className="sp-left-col">
           <div className="sp-calendar-card">
             <div className="sp-cal-header">
-              <button className="sp-cal-nav" onClick={prevMonth} aria-label="Previous month">
-                <ChevronLeft size={16} />
-              </button>
+              <button className="sp-cal-nav" onClick={prevMonth} aria-label="Previous month"><ChevronLeft size={16} /></button>
               <span className="sp-cal-month-label">{MONTHS[calMonth]} {calYear}</span>
-              <button className="sp-cal-nav" onClick={nextMonth} aria-label="Next month">
-                <ChevronRight size={16} />
-              </button>
+              <button className="sp-cal-nav" onClick={nextMonth} aria-label="Next month"><ChevronRight size={16} /></button>
             </div>
-
             <div className="sp-cal-grid">
               {DOW.map(d => <div key={d} className="sp-cal-dow">{d}</div>)}
               {Array.from({ length: firstDayDow }, (_, i) => <div key={`empty-${i}`} />)}
               {Array.from({ length: daysInMonth }, (_, i) => {
-                const day    = i + 1;
+                const day     = i + 1;
                 const isToday = today.getDate() === day && today.getMonth() === calMonth && today.getFullYear() === calYear;
                 const hasDot  = scheduledDates.has(day);
                 const isSel   = selectedDay === day;
                 return (
-                  <button
-                    key={day}
+                  <button key={day}
                     className={`sp-cal-day${isToday ? " sp-cal-day--today" : ""}${isSel ? " sp-cal-day--selected" : ""}${hasDot ? " sp-cal-day--has-events" : ""}`}
-                    onClick={() => setSelectedDay(isSel ? null : day)}
-                  >
+                    onClick={() => setSelectedDay(isSel ? null : day)}>
                     {day}
                     {hasDot && <span className="sp-cal-dot" />}
                   </button>
                 );
               })}
             </div>
-
             {selectedDay && (
               <div className="sp-cal-footer">
                 <span>{selectedDayArticles.length} article{selectedDayArticles.length !== 1 ? "s" : ""} on {MONTHS[calMonth]} {selectedDay}</span>
@@ -344,17 +332,14 @@ const ScheduledPosts: React.FC = () => {
             )}
           </div>
 
-          {/* ── Quick upcoming list ── */}
+          {/* Quick upcoming list */}
           <div className="sp-upcoming-card">
-            <h3 className="sp-upcoming-title">
-              <Clock size={14} /> Upcoming (Next 7 days)
-            </h3>
+            <h3 className="sp-upcoming-title"><Clock size={14} /> Upcoming (Next 7 days)</h3>
             <div className="sp-upcoming-list">
               {scheduledArticles
                 .filter(a => {
                   if (!a.scheduledFor) return false;
-                  const d = new Date(a.scheduledFor);
-                  const diff = d.getTime() - today.getTime();
+                  const diff = new Date(a.scheduledFor).getTime() - today.getTime();
                   return diff > 0 && diff < 7 * 86_400_000;
                 })
                 .sort((a, b) => new Date(a.scheduledFor!).getTime() - new Date(b.scheduledFor!).getTime())
@@ -370,8 +355,7 @@ const ScheduledPosts: React.FC = () => {
                       </div>
                     </div>
                   );
-                })
-              }
+                })}
               {scheduledArticles.filter(a => {
                 if (!a.scheduledFor) return false;
                 const diff = new Date(a.scheduledFor!).getTime() - today.getTime();
@@ -383,25 +367,16 @@ const ScheduledPosts: React.FC = () => {
           </div>
         </div>
 
-        {/* ── RIGHT: Tabs (Scheduled | Drafts) ── */}
+        {/* ── RIGHT: Tabs ── */}
         <div className="sp-right-col">
 
-          {/* Tab bar */}
           <div className="sp-tabs">
-            <button
-              className={`sp-tab${activeTab === "scheduled" ? " sp-tab--active" : ""}`}
-              onClick={() => setActiveTab("scheduled")}
-            >
-              <CalendarClock size={15} />
-              Scheduled
+            <button className={`sp-tab${activeTab === "scheduled" ? " sp-tab--active" : ""}`} onClick={() => setActiveTab("scheduled")}>
+              <CalendarClock size={15} /> Scheduled
               {scheduledArticles.length > 0 && <span className="sp-tab-badge">{scheduledArticles.length}</span>}
             </button>
-            <button
-              className={`sp-tab${activeTab === "drafts" ? " sp-tab--active" : ""}`}
-              onClick={() => setActiveTab("drafts")}
-            >
-              <FileText size={15} />
-              Drafts
+            <button className={`sp-tab${activeTab === "drafts" ? " sp-tab--active" : ""}`} onClick={() => setActiveTab("drafts")}>
+              <FileText size={15} /> Drafts
               {draftArticles.length > 0 && <span className="sp-tab-badge sp-tab-badge--draft">{draftArticles.length}</span>}
             </button>
           </div>
@@ -411,23 +386,19 @@ const ScheduledPosts: React.FC = () => {
             <div className="sp-panel">
               <div className="sp-panel-header">
                 <h2 className="sp-panel-title">
-                  {selectedDay
-                    ? `Scheduled on ${MONTHS[calMonth]} ${selectedDay}`
-                    : "All Scheduled Articles"}
+                  {selectedDay ? `Scheduled on ${MONTHS[calMonth]} ${selectedDay}` : "All Scheduled Articles"}
                 </h2>
                 <span className="sp-panel-count">{filteredScheduled.length} article{filteredScheduled.length !== 1 ? "s" : ""}</span>
               </div>
 
-              {filteredScheduled.length === 0 ? (
+              {loading ? (
+                <div className="sp-empty" style={{ color: "#94a3b8", fontSize: 14 }}>Loading…</div>
+              ) : filteredScheduled.length === 0 ? (
                 <div className="sp-empty">
                   <CalendarClock size={40} strokeWidth={1.2} />
                   <p className="sp-empty-title">No scheduled articles</p>
-                  <p className="sp-empty-sub">
-                    {selectedDay ? "No articles scheduled for this day." : "Create an article and use the Schedule button to plan ahead."}
-                  </p>
-                  <button className="sp-btn sp-btn-primary" onClick={() => navigate("/admin/news/create")}>
-                    Create Article
-                  </button>
+                  <p className="sp-empty-sub">{selectedDay ? "No articles scheduled for this day." : "Create an article and use the Schedule button to plan ahead."}</p>
+                  <button className="sp-btn sp-btn-primary" onClick={() => navigate("/admin/create")}>Create Article</button>
                 </div>
               ) : (
                 <div className="sp-article-list">
@@ -451,12 +422,8 @@ const ScheduledPosts: React.FC = () => {
                             </div>
                             <h3 className="sp-article-title">{article.title}</h3>
                             <div className="sp-article-meta-row">
-                              <span className="sp-article-meta-item">
-                                <Clock size={12} /> {date} at {time}
-                              </span>
-                              <span className={`sp-relative-badge${isOverdue ? " sp-relative-badge--overdue" : ""}`}>
-                                {relative}
-                              </span>
+                              <span className="sp-article-meta-item"><Clock size={12} /> {date} at {time}</span>
+                              <span className={`sp-relative-badge${isOverdue ? " sp-relative-badge--overdue" : ""}`}>{relative}</span>
                             </div>
                           </div>
                           <div className="sp-article-actions">
@@ -464,7 +431,7 @@ const ScheduledPosts: React.FC = () => {
                               article={article}
                               onPublish={() => publishNow(article)}
                               onDelete={() => deleteArt(article)}
-                              onEdit={() => navigate("/admin/news/create")}
+                              onEdit={() => navigate(`/admin/create?edit=${article.id}`)}
                             />
                           </div>
                         </div>
@@ -483,14 +450,14 @@ const ScheduledPosts: React.FC = () => {
                 <span className="sp-panel-count">{filteredDrafts.length} draft{filteredDrafts.length !== 1 ? "s" : ""}</span>
               </div>
 
-              {filteredDrafts.length === 0 ? (
+              {loading ? (
+                <div className="sp-empty" style={{ color: "#94a3b8", fontSize: 14 }}>Loading…</div>
+              ) : filteredDrafts.length === 0 ? (
                 <div className="sp-empty">
                   <FileText size={40} strokeWidth={1.2} />
                   <p className="sp-empty-title">No drafts saved</p>
                   <p className="sp-empty-sub">Save a draft while creating an article to continue editing it later.</p>
-                  <button className="sp-btn sp-btn-primary" onClick={() => navigate("/admin/news/create")}>
-                    Create Article
-                  </button>
+                  <button className="sp-btn sp-btn-primary" onClick={() => navigate("/admin/create")}>Create Article</button>
                 </div>
               ) : (
                 <div className="sp-article-list">
@@ -499,9 +466,7 @@ const ScheduledPosts: React.FC = () => {
                       <div className="sp-article-color-bar sp-article-color-bar--draft" />
                       <div className="sp-article-main">
                         <div className="sp-article-top-row">
-                          <span className="sp-badge sp-badge--draft">
-                            <FileText size={11} /> Draft
-                          </span>
+                          <span className="sp-badge sp-badge--draft"><FileText size={11} /> Draft</span>
                           <span className="sp-article-cat" style={{ color: getCatColor(article.articleCategory) }}>
                             {article.articleCategory || article.category}
                           </span>
@@ -509,25 +474,20 @@ const ScheduledPosts: React.FC = () => {
                         <h3 className="sp-article-title">{article.title}</h3>
                         <div className="sp-article-meta-row">
                           <span className="sp-article-meta-item">
-                            <Eye size={12} /> {article.views === "-" ? "Not published" : `${article.views} views`}
+                            <Eye size={12} /> {article.views === "0" ? "Not published" : `${article.views} views`}
                           </span>
-                          <span className="sp-draft-age">{formatDraftAge(article)}</span>
+                          <span className="sp-draft-age">Saved draft</span>
                         </div>
                       </div>
                       <div className="sp-article-actions">
-                        {/* Publish draft button */}
-                        <button
-                          className="sp-publish-draft-btn"
-                          onClick={() => publishDraft(article)}
-                          title="Publish now"
-                        >
+                        <button className="sp-publish-draft-btn" onClick={() => publishDraft(article)} title="Publish now">
                           <Send size={14} />
                         </button>
                         <ArticleMenu
                           article={article}
                           onPublish={() => publishDraft(article)}
                           onDelete={() => deleteArt(article)}
-                          onEdit={() => navigate("/admin/news/create")}
+                          onEdit={() => navigate(`/admin/create?edit=${article.id}`)}
                         />
                       </div>
                     </div>
@@ -535,7 +495,6 @@ const ScheduledPosts: React.FC = () => {
                 </div>
               )}
 
-              {/* Draft info banner */}
               {filteredDrafts.length > 0 && (
                 <div className="sp-draft-info-banner">
                   <CheckCircle2 size={14} />
@@ -544,7 +503,6 @@ const ScheduledPosts: React.FC = () => {
               )}
             </div>
           )}
-
         </div>
       </div>
     </div>
