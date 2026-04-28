@@ -31,6 +31,7 @@ import Notifications from "./components/Admin/Notifications/Notifications";
 import TopicProfiles from "./components/Admin/TopicProfiles/TopicProfiles";
 import { NewsProvider } from "./components/Admin/NewsProvider/NewsProvider";
 import UserProfile from "./components/User/UserProfile/UserProfile";
+import FooterManagement from "./components/Admin/FooterManagement/FooterManagement";
 
 export default function App() {
   return (
@@ -80,6 +81,7 @@ export default function App() {
             <Route path="live" element={<LiveStoriesPage />} />
             <Route path="notification" element={<Notifications />} />
             <Route path="profile" element={<TopicProfiles />} />
+            <Route path="footer-management" element={<FooterManagement />} />
           </Route>
 
           {/* 404 */}
