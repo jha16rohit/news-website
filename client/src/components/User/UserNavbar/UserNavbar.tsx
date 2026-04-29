@@ -10,7 +10,6 @@ import SignIn from "./SignIn/SignIn";
 const UserNavbar: React.FC = () => {
   const [isSignInOpen, setIsSignInOpen] = useState(false);
   
-  // 👇 FIX 1: Added profilePic to the User State type so TypeScript allows it!
   const [user, setUser] = useState<{ name: string; initials: string; email: string; phone?: string; profilePic?: string | null } | null>(null);
   
   const [isProfileOpen, setIsProfileOpen] = useState(false);
@@ -71,8 +70,8 @@ const UserNavbar: React.FC = () => {
       }
     };
 
-    loadUser(); // Initial load
-    window.addEventListener("storage", loadUser); // Listen for cross-component updates
+    loadUser(); 
+    window.addEventListener("storage", loadUser); 
     
     return () => window.removeEventListener("storage", loadUser);
   }, []);
@@ -92,7 +91,7 @@ const UserNavbar: React.FC = () => {
       initials: calculatedInitials, 
       email: enteredEmail,
       phone: enteredPhone || "+91 00000 00000",
-      profilePic: null // Default to null on fresh login
+      profilePic: null 
     };
 
     setUser(newUser);
@@ -131,28 +130,23 @@ const UserNavbar: React.FC = () => {
     dropdownTimerRef.current = setTimeout(() => setOpenDropdown(null), 150);
   };
 
+  // 👇 FIX 1: Smoothly scrolls directly to the footer on the current page
   const handleSubscribeClick = () => {
-    if (location.pathname === "/") {
-      document.getElementById("newsletter-section")?.scrollIntoView({ behavior: "smooth" });
-    } else {
-      navigate("/");
-      setTimeout(() => {
-        document.getElementById("newsletter-section")?.scrollIntoView({ behavior: "smooth" });
-      }, 150);
+    const footerElement = document.querySelector('.site-footer') || document.querySelector('footer');
+    if (footerElement) {
+      footerElement.scrollIntoView({ behavior: "smooth" });
     }
   };
 
+  // 👇 Smoothly scrolls directly to the Hero section
   const handleHomeClick = (e: React.MouseEvent) => {
     if (location.pathname === "/") {
-      e.preventDefault();
-      const hero = document.getElementById("hero-section");
-      if (hero) {
-        hero.scrollIntoView({ behavior: "smooth" });
-      } else {
-        window.scrollTo({ top: 0, behavior: "smooth" });
-      }
-    } else {
-      window.scrollTo(0, 0);
+      e.preventDefault(); // Stop it from refreshing the page
+      window.scrollTo({ 
+        top: 0, 
+        left: 0, 
+        behavior: "smooth" 
+      });
     }
   };
 
@@ -199,13 +193,15 @@ const UserNavbar: React.FC = () => {
               onClick={() => setMobileMenuOpen(false)}
             />
 
+            {/* 👇 Attached handleHomeClick to the Logo 👇 */}
             <div className="logo">
-              <NavLink to="/">
+              <NavLink to="/" onClick={handleHomeClick}>
                 <img src={logo} alt="Local Newz Logo" className="navbar-logo-img" />
               </NavLink>
             </div>
 
             <nav className="nav-links">
+              {/* 👇 Attached handleHomeClick to the Home link 👇 */}
               <NavLink to="/" end onClick={handleHomeClick}>Home</NavLink>
 
               {featuredTopLevel.map(cat => {
@@ -251,6 +247,7 @@ const UserNavbar: React.FC = () => {
                 <X size={26} />
               </button>
 
+              {/* 👇 Attached handleHomeClick to the Mobile Home link 👇 */}
               <NavLink to="/" className="mobile-link" onClick={e => { setMobileMenuOpen(false); handleHomeClick(e); }}>Home</NavLink>
 
               {allTopLevel.map(cat => {
@@ -324,6 +321,7 @@ const UserNavbar: React.FC = () => {
               <span className="notification-dot" />
             </div>
 
+            {/* 👇 Calls handleSubscribeClick which targets the footer 👇 */}
             <button className="subscribe-btn" onClick={handleSubscribeClick}>Subscribe</button>
 
             {user ? (
@@ -333,7 +331,6 @@ const UserNavbar: React.FC = () => {
                   className={`nav-profile-btn ${isProfileOpen ? "active" : ""}`} 
                   onClick={() => setIsProfileOpen(!isProfileOpen)}
                 >
-                  {/* 👇 FIX 2: Now it checks for the profile image and renders it perfectly in the circle! 👇 */}
                   <div className="nav-avatar">
                     {user.profilePic ? (
                       <img src={user.profilePic} alt="Profile" style={{ width: '100%', height: '100%', borderRadius: '50%', objectFit: 'cover' }} />

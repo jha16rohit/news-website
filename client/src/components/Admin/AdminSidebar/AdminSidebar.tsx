@@ -2,12 +2,12 @@ import "./AdminSidebar.css";
 import type { ReactNode } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import Logo from "../../../assets/Logo.png";
-import { X,Newspaper } from "lucide-react";
+import { X, Newspaper } from "lucide-react";
 
 import {
   FaNewspaper, FaBolt, FaFire, FaStar, FaClock,
   FaTags, FaPhotoVideo, FaComments, FaChartBar,
-  FaCog, FaTachometerAlt,
+  FaCog, FaTachometerAlt, FaWindowMaximize // 👇 Added FaWindowMaximize for the Footer icon
 } from "react-icons/fa";
 import { MdWifiTethering, MdNotifications, MdFolder } from "react-icons/md";
 
@@ -64,6 +64,10 @@ const AdminSidebar: React.FC<AdminSidebarProps> = ({ open, onClose }) => {
           <SidebarItem icon={<FaPhotoVideo />} label="Media Library" active={isActive("/admin/medialibrary")} onClick={() => go("/admin/medialibrary")} />
           <SidebarItem icon={<FaChartBar />} label="Analytics" active={isActive("/admin/analytics")} onClick={() => go("/admin/analytics")} />
           <SidebarItem icon={<MdNotifications />} label="Notifications" badge="12" active={isActive("/admin/notification")} onClick={() => go("/admin/notification")} />
+          
+          {/* 👇 NEW: Footer Management Link 👇 */}
+          <SidebarItem icon={<FaWindowMaximize />} label="Footer Management" active={isActive("/admin/footer-management")} onClick={() => go("/admin/footer-management")} />
+          
           <SidebarItem icon={<FaCog />} label="Settings" active={isActive("/admin/setting")} onClick={() => go("/admin/setting")} />
         </nav>
 
