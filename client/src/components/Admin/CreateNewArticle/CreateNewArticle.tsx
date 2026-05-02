@@ -737,15 +737,17 @@ const CreateNewArticle: React.FC = () => {
         setSelectedType(API_TYPE_TO_UI[data.articleType] ?? "Standard Article");
         setHeadline(data.headline ?? "");
         setShortTitle(data.shortTitle ?? "");
-        setContent(data.content ?? "");
+       editorRef.current?.innerHTML ?? content
         setInitialHtml(data.content ?? "");
-        setTags(Array.isArray(data.tags) ? data.tags : []);
-        setLanguage((data.language ?? "english").toLowerCase());
+setTags(
+  Array.isArray(data.tags)
+    ? data.tags.filter((t: unknown): t is string => typeof t === "string")
+    : []
+);        setLanguage((data.language ?? "english").toLowerCase());
         setArticleLocation(data.location ?? "");
 
         // Set categoryId from the FK — data.categoryId is the UUID
-        if (data.categoryId) setCategoryId(data.categoryId);
-
+if (data.categoryId) setCategoryId(String(data.categoryId));
         if (data.articleType === "BREAKING") {
           setBreakingToggles({
             newsTicker:       Boolean(data.breakingNewsTicker),
@@ -765,8 +767,7 @@ const CreateNewArticle: React.FC = () => {
           setVideoDuration(secondsToDisplay(data.videoDuration));
           setVideoQuality(data.videoQuality ?? "1080p");
         }
-        if (data.featuredImage) setMediaPreview(data.featuredImage);
-        setImageCaption(data.imageCaption ?? "");
+setMediaPreview(typeof data.featuredImage === "string" ? data.featuredImage : null);        setImageCaption(data.imageCaption ?? "");
         setPhotoCredit(data.photoCredit ?? "");
         setMetaTitle(data.metaTitle ?? "");
         setMetaDesc(data.metaDescription ?? "");
@@ -782,8 +783,8 @@ const CreateNewArticle: React.FC = () => {
   }, [editId]);
 
   // ── Computed ───────────────────────────────────────────────────────────────
-  const plainText = editorRef.current?.innerText ?? content.replace(/<[^>]+>/g, " ");
-  const wordCount = plainText.trim() === "" ? 0 : plainText.trim().split(/\s+/).length;
+const safeContent = typeof content === "string" ? content : "";
+const plainText = editorRef.current?.innerText ?? safeContent.replace(/<[^>]+>/g, " ");  const wordCount = plainText.trim() === "" ? 0 : plainText.trim().split(/\s+/).length;
   const readTime  = Math.max(1, Math.ceil(wordCount / 200));
 
   const languageOptions = [
@@ -834,7 +835,7 @@ const CreateNewArticle: React.FC = () => {
     return {
       headline:   headline.trim(),
       shortTitle: shortTitle.trim() || undefined,
-      content:    editorRef.current?.innerHTML ?? content,
+content: editorRef.current?.innerHTML ?? (content || ""),
       categoryId,   // ← UUID sent to backend; controller uses resolveCategoryId
       language,
       location:    articleLocation || undefined,

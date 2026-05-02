@@ -52,19 +52,25 @@ const LiveStoriesPage: React.FC = () => {
     setLoading(true);
     try {
       const data = await fetchAllNews({ articleType: "LIVE", limit: 100 });
-      if (!data?.news) return;
+     if (!data?.news) {
+  setStories([]);
+  return;
+}
 
       const mapped: LiveStory[] = data.news.map((n: any) => {
-        let status: LiveStory["status"] = "live";
-        if (n.status === "DRAFT") status = "draft";
-        else if (n.status === "ENDED" || n.statusType === "ended") status = "ended";
-        else status = "live";
+      let status: LiveStory["status"] = "live";
+
+if (n.status === "DRAFT") {
+  status = "draft";
+} else if (n.status === "ENDED") {
+  status = "ended";
+}
 
         return {
           id:              n.id,
           title:           n.headline,
-          articleCategory: n.category || "",
-          status,
+articleCategory: n.category?.name || "",      
+    status,
           views:           String(n.views ?? 0),
           liveStartedAt:   n.publishedAt || null,
           liveUpdates:     (n.liveUpdates ?? []).map((u: any, i: number) => ({

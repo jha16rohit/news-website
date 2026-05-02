@@ -34,4 +34,5 @@ app.use("/api/news", newsRoutes); // 🔥 IMPORTANT
 app.use("/api/topic-profiles", topicProfileRoutes);
 app.use("/api/categories", categoryRoutes);
 app.use("/api/tags", tagsRoutes);
+
 export default app;

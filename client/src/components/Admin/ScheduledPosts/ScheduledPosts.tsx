@@ -127,7 +127,7 @@ const ScheduledPosts: React.FC = () => {
         id:              n.id,
         title:           n.headline,
         category:        n.articleType || "STANDARD",
-        articleCategory: n.category || "",
+articleCategory: n.category?.name || "",
         status:          n.status === "PUBLISHED" ? "Published" : n.status === "DRAFT" ? "Draft" : "Scheduled",
         scheduledFor:    n.scheduledAt || null,
         publishedAt:     n.publishedAt || null,
@@ -170,13 +170,13 @@ const ScheduledPosts: React.FC = () => {
     const base = selectedDay ? selectedDayArticles : scheduledArticles;
     if (!searchQuery.trim()) return base;
     const q = searchQuery.toLowerCase();
-    return base.filter(a => a.title.toLowerCase().includes(q) || a.articleCategory.toLowerCase().includes(q));
+    return base.filter(a => a.title.toLowerCase().includes(q) || (a.articleCategory || "").toLowerCase().includes(q));
   }, [selectedDayArticles, scheduledArticles, selectedDay, searchQuery]);
 
   const filteredDrafts = useMemo(() => {
     if (!searchQuery.trim()) return draftArticles;
     const q = searchQuery.toLowerCase();
-    return draftArticles.filter(a => a.title.toLowerCase().includes(q) || a.articleCategory.toLowerCase().includes(q));
+    return draftArticles.filter(a => a.title.toLowerCase().includes(q) ||(a.articleCategory || "").toLowerCase().includes(q));
   }, [draftArticles, searchQuery]);
 
   const daysInMonth = getDaysInMonth(calYear, calMonth);

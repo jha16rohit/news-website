@@ -78,6 +78,7 @@ export default function App() {
             <Route path="dashboard" element={<AdminDashboard />} />
             <Route path="news" element={<AllNews />} />
             <Route path="news/create" element={<CreateNewArticle />} />
+            <Route path="create" element={<CreateNewArticle />} />
             <Route path="breaking" element={<BreakingNews />} />
             <Route path="trending" element={<TrendingNews />} />
             <Route path="feature" element={<FeaturedContent />} />

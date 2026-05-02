@@ -137,7 +137,10 @@ const AllNews: React.FC = () => {
         search:      q || undefined,
         limit:       100,
       });
-      if (!data?.news) return;
+  if (!data?.news) {
+  setArticles([]);
+  return;
+}
 setArticles((data.news || []).map(mapNewsItem));
     } catch (err) {
       console.error("fetchAllNews failed:", err);
@@ -211,12 +214,12 @@ setArticles((data.news || []).map(mapNewsItem));
     switch (action) {
       case "edit":
         // ── FIX: correct route is /admin/create (not /admin/news/create) ──
-        navigate(`/admin/news/create?edit=${id}&type=${
-          item?.tagType === "breaking" ? "breaking"
-          : item?.tagType === "live"   ? "live"
-          : item?.category === "Video Story" ? "video"
-          : "standard"
-        }`);
+        navigate(`/admin/create?edit=${id}&type=${
+  item?.tagType === "breaking" ? "breaking"
+  : item?.tagType === "live"   ? "live"
+  : item?.category === "Video Story" ? "video"
+  : "standard"
+}`);
         break;
 
       case "view-live":
