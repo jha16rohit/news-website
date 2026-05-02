@@ -293,3 +293,338 @@
   .tags-overlay { align-items: flex-end; padding: 12px; }
   .tags-modal { border-radius: 14px 14px 0 0; }
 }
+/* ─────────────────────────────────────────────────────────────
+   TAGS.CSS ADDITIONS  — append these to your existing Tags.css
+   ───────────────────────────────────────────────────────────── */
+
+/* Loading spinner */
+@keyframes tags-spin { to { transform: rotate(360deg); } }
+.tags-spin { animation: tags-spin 0.8s linear infinite; }
+
+/* Loading state inline */
+.tags-loading {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  color: #94a3b8;
+  padding: 10px 0;
+}
+.tags-loading--center {
+  justify-content: center;
+  padding: 40px 0;
+}
+
+/* API error banner */
+.tags-api-error {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: #fff1f1;
+  border: 1px solid #fecaca;
+  color: #dc2626;
+  border-radius: 10px;
+  padding: 10px 14px;
+  font-size: 13px;
+  margin-bottom: 16px;
+}
+.tags-api-error button {
+  margin-left: auto;
+  background: none;
+  border: 1px solid #dc2626;
+  color: #dc2626;
+  border-radius: 6px;
+  padding: 2px 10px;
+  cursor: pointer;
+  font-size: 12px;
+}
+
+/* Left column stacks both trending sections */
+.tags-left-col {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+/* Internet trending section variant */
+.tags-popular--internet {
+  border-top: 1px solid #f1f5f9;
+  padding-top: 0;
+}
+
+/* Section badge pill */
+.tags-section-badge {
+  font-size: 10px;
+  background: #e2e8f0;
+  color: #64748b;
+  border-radius: 20px;
+  padding: 2px 8px;
+  font-weight: 600;
+  letter-spacing: 0.3px;
+}
+.tags-section-badge--purple {
+  background: #ede9fe;
+  color: #7c3aed;
+}
+
+/* Stat icon purple variant */
+.tags-stat-icon.bg-purple {
+  background: #ede9fe;
+  color: #7c3aed;
+}
+
+/* Suggestions hint text */
+.tags-suggestions-hint {
+  font-size: 11px;
+  color: #94a3b8;
+  margin: 0 0 8px 0;
+}
+
+/* Suggestion chip (clickable) */
+.tags-chip--suggestion {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  cursor: pointer;
+  background: #f8fafc;
+  border: 1px dashed #94a3b8;
+  color: #475569;
+  transition: background 0.15s, border-color 0.15s, color 0.15s;
+}
+.tags-chip--suggestion:hover {
+  background: #7c3aed;
+  border-color: #7c3aed;
+  color: #fff;
+}
+
+/* Modal preview name hint */
+.tags-modal-preview-name {
+  display: block;
+  font-size: 11px;
+  color: #64748b;
+  margin-top: 4px;
+}
+
+
+/* ─────────────────────────────────────────────────────────────
+   TAGS.CSS ADDITIONS  — append these to your existing Tags.css
+   ───────────────────────────────────────────────────────────── */
+
+/* Loading spinner */
+@keyframes tags-spin { to { transform: rotate(360deg); } }
+.tags-spin { animation: tags-spin 0.8s linear infinite; }
+
+/* Loading state inline */
+.tags-loading {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  color: #94a3b8;
+  padding: 10px 0;
+}
+.tags-loading--center {
+  justify-content: center;
+  padding: 40px 0;
+}
+
+/* API error banner */
+.tags-api-error {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: #fff1f1;
+  border: 1px solid #fecaca;
+  color: #dc2626;
+  border-radius: 10px;
+  padding: 10px 14px;
+  font-size: 13px;
+  margin-bottom: 16px;
+}
+.tags-api-error button {
+  margin-left: auto;
+  background: none;
+  border: 1px solid #dc2626;
+  color: #dc2626;
+  border-radius: 6px;
+  padding: 2px 10px;
+  cursor: pointer;
+  font-size: 12px;
+}
+
+/* Left column stacks both trending sections */
+.tags-left-col {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+/* Internet trending section variant */
+.tags-popular--internet {
+  border-top: 1px solid #f1f5f9;
+  padding-top: 0;
+}
+
+/* Section badge pill */
+.tags-section-badge {
+  font-size: 10px;
+  background: #e2e8f0;
+  color: #64748b;
+  border-radius: 20px;
+  padding: 2px 8px;
+  font-weight: 600;
+  letter-spacing: 0.3px;
+}
+.tags-section-badge--purple {
+  background: #ede9fe;
+  color: #7c3aed;
+}
+
+/* Stat icon purple variant */
+.tags-stat-icon.bg-purple {
+  background: #ede9fe;
+  color: #7c3aed;
+}
+
+/* Suggestions hint text */
+.tags-suggestions-hint {
+  font-size: 11px;
+  color: #94a3b8;
+  margin: 0 0 8px 0;
+}
+
+/* Suggestion chip (clickable) */
+.tags-chip--suggestion {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  cursor: pointer;
+  background: #f8fafc;
+  border: 1px dashed #94a3b8;
+  color: #475569;
+  transition: background 0.15s, border-color 0.15s, color 0.15s;
+}
+.tags-chip--suggestion:hover {
+  background: #7c3aed;
+  border-color: #7c3aed;
+  color: #fff;
+}
+
+/* Modal preview name hint */
+.tags-modal-preview-name {
+  display: block;
+  font-size: 11px;
+  color: #64748b;
+  margin-top: 4px;
+}
+
+/* ─────────────────────────────────────────────────────────────
+   CREATENEWARTCILE.CSS ADDITIONS — append to CreateNewArticle.css
+   ───────────────────────────────────────────────────────────── */
+
+/* Tag autocomplete dropdown */
+.cna-tag-dropdown {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0;
+  right: 0;
+  background: #fff;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.1);
+  z-index: 999;
+  max-height: 200px;
+  overflow-y: auto;
+  list-style: none;
+  margin: 0;
+  padding: 4px 0;
+}
+.cna-tag-dropdown-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 12px;
+  font-size: 13px;
+  color: #334155;
+  cursor: pointer;
+  transition: background 0.12s;
+}
+.cna-tag-dropdown-item:hover { background: #f1f5f9; }
+
+/* Internet trending suggestion chips */
+.cna-suggested-tag--internet {
+  background: #ede9fe;
+  color: #5b21b6;
+  border-color: #c4b5fd;
+}
+.cna-suggested-tag--internet:hover {
+  background: #7c3aed;
+  color: #fff;
+  border-color: #7c3aed;
+}
+
+/* Spin animation for Loader2 in CreateNewArticle */
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* ── Empty state for Trending Tags ─────────────────────────── */
+.tags-empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 32px 16px;
+  text-align: center;
+  gap: 8px;
+}
+.tags-empty-icon {
+  color: #cbd5e1;
+}
+.tags-empty-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: #64748b;
+  margin: 0;
+}
+.tags-empty-desc {
+  font-size: 12px;
+  color: #94a3b8;
+  margin: 0;
+  max-width: 220px;
+  line-height: 1.5;
+}
+
+/* ── API error banner ───────────────────────────────────────── */
+.tags-api-error {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: #fff1f1;
+  border: 1px solid #fecaca;
+  color: #dc2626;
+  border-radius: 10px;
+  padding: 10px 14px;
+  font-size: 13px;
+  margin-bottom: 16px;
+}
+.tags-api-error button {
+  margin-left: auto;
+  background: none;
+  border: 1px solid #dc2626;
+  color: #dc2626;
+  border-radius: 6px;
+  padding: 2px 10px;
+  cursor: pointer;
+  font-size: 12px;
+}
+
+/* ── Spinner ────────────────────────────────────────────────── */
+@keyframes tags-spin { to { transform: rotate(360deg); } }
+.tags-spin { animation: tags-spin 0.8s linear infinite; }
+
+/* ── Modal preview name ─────────────────────────────────────── */
+.tags-modal-preview-name {
+  display: block;
+  font-size: 11px;
+  color: #64748b;
+  margin-top: 4px;
+}

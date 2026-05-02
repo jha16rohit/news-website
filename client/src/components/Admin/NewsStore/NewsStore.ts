@@ -37,16 +37,19 @@ export interface Article {
 }
 
 export interface Category {
-  id:          number;
-  name:        string;
+  id: string;                 // ✅ FIXED
+  name: string;
   description: string;
-  articles:    string;
-  views:       string;
-  featured:    boolean;
-  enabled:     boolean;
-  color:       string;
-  parentId?:   number | null;
+  articles: string;
+  views: string;
+  featured: boolean;
+  enabled: boolean;
+  color: string;
+  parentId?: string | null;   // ✅ FIXED
   inShowcase?: boolean;
+  _count?: {
+    news: number;
+  };
 }
 
 export interface NewsStore {

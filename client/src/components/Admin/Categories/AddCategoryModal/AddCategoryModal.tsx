@@ -22,7 +22,7 @@ export default function AddCategoryModal({ isOpen, onClose, onAdd, categories }:
   const [color,       setColor]       = useState("#3b82f6");
   const [featured,    setFeatured]    = useState(false);
   const [enabled,     setEnabled]     = useState(true);
-  const [parentId,    setParentId]    = useState<number | null>(null);
+const [parentId, setParentId] = useState<string | null>(null);
   const [inShowcase, setInShowcase] = useState(false);
 
   useEffect(() => {
@@ -72,8 +72,7 @@ export default function AddCategoryModal({ isOpen, onClose, onAdd, categories }:
             <div className="add-select-wrap">
               <select
                 value={parentId ?? ""}
-                onChange={e => setParentId(e.target.value ? Number(e.target.value) : null)}
-                className="add-select"
+              onChange={e => setParentId(e.target.value || null)}                 className="add-select"
               >
                 <option value="">None (top-level)</option>
                 {parentOptions.map(p => (

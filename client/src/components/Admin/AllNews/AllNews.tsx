@@ -82,7 +82,7 @@ function mapNewsItem(n: any, idx: number): NewsItem {
     title:           n.headline,
     subtitle:        n.shortTitle || n.headline.slice(0, 50),
     category:        typeLabel[n.articleType] || "Standard Article",
-    articleCategory: n.category || "",
+articleCategory: n.category?.name || "",
     authorFirst:     n.author?.name || "Admin",
     authorLast:      "",
     status:          n.status === "PUBLISHED" ? "Published" : n.status === "DRAFT" ? "Draft" : "Scheduled",
@@ -138,7 +138,7 @@ const AllNews: React.FC = () => {
         limit:       100,
       });
       if (!data?.news) return;
-      setArticles(data.news.map(mapNewsItem));
+setArticles((data.news || []).map(mapNewsItem));
     } catch (err) {
       console.error("fetchAllNews failed:", err);
     }

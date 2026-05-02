@@ -4,8 +4,14 @@ import prisma from "../config/db";
 import slugify from "slugify";
 
 // ─── Helpers ───────────────────────────────────────────────────────────────────
-
-/** Build a unique slug — appends a short cuid suffix if slug is taken */
+function normalizeTagName(name: string): string {
+  return name
+    .trim()
+    .toLowerCase()
+    .split(" ")
+    .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+    .join(" ");
+}
 async function buildUniqueSlug(base: string, excludeId?: string): Promise<string> {
   const raw = slugify(base, { lower: true, strict: true });
   const existing = await prisma.news.findFirst({
@@ -16,30 +22,21 @@ async function buildUniqueSlug(base: string, excludeId?: string): Promise<string
   return `${raw}-${suffix}`;
 }
 
-/** Map UI string to Prisma enum */
 function toArticleTypeEnum(type?: string) {
   const map: Record<string, "STANDARD" | "BREAKING" | "LIVE" | "VIDEO"> = {
-    STANDARD: "STANDARD",
-    BREAKING: "BREAKING",
-    LIVE:     "LIVE",
-    VIDEO:    "VIDEO",
-    "Standard Article": "STANDARD",
-    "Breaking News":    "BREAKING",
-    "Live Updates":     "LIVE",
-    "Video Story":      "VIDEO",
+    STANDARD: "STANDARD", BREAKING: "BREAKING", LIVE: "LIVE", VIDEO: "VIDEO",
+    "Standard Article": "STANDARD", "Breaking News": "BREAKING",
+    "Live Updates": "LIVE", "Video Story": "VIDEO",
   };
   return map[type ?? ""] ?? "STANDARD";
 }
 
-/**
- * Parse videoDuration to an integer (seconds).
- * Accepts:
- *   - number  → used as-is
- *   - "845"   → 845
- *   - "14:05" → 14*60 + 5 = 845
- *   - "1:14:05" → 1*3600 + 14*60 + 5 = 4445
- *   - anything else / falsy → null
- */
+function normalisePriority(raw: unknown): string | null {
+  if (!raw) return null;
+  const u = String(raw).toUpperCase();
+  return ["CRITICAL", "HIGH", "MEDIUM"].includes(u) ? u : null;
+}
+
 function parseVideoDuration(raw: unknown): number | null {
   if (raw === null || raw === undefined || raw === "") return null;
   if (typeof raw === "number") return Number.isFinite(raw) ? Math.round(raw) : null;
@@ -52,105 +49,143 @@ function parseVideoDuration(raw: unknown): number | null {
   return null;
 }
 
-// ─── CREATE NEWS ───────────────────────────────────────────────────────────────
+/**
+ * Resolve categoryId from the request body.
+ * Accepts either:
+ *  - `categoryId`  — UUID sent directly from the new CreateNewArticle UI
+ *  - `category`    — legacy plain-string name (looks up by name, creates if missing)
+ */
+async function resolveCategoryId(body: any): Promise<string> {
+  // Prefer explicit UUID
+  if (body.categoryId?.trim()) return String(body.categoryId.trim());
+
+  // Fallback: look up by name
+  const name = String(body.category ?? "").trim();
+  if (!name) throw new Error("Category is required");
+
+  let cat = await prisma.category.findFirst({
+    where: { name: { equals: name, mode: "insensitive" } },
+  });
+
+  if (!cat) {
+    // Auto-create so old clients don't break
+    const slug = slugify(name, { lower: true, strict: true });
+    cat = await prisma.category.create({
+      data: { name, slug: `${slug}-${Math.random().toString(36).slice(2, 5)}` },
+    });
+  }
+
+  return cat.id;
+}
+
+// ─── CREATE ────────────────────────────────────────────────────────────────────
 export const createNews = async (req: AuthRequest, res: Response) => {
   try {
     const {
-      headline,
-      shortTitle,
-      content,
-      category,
-      language,
-      location,
-      tags,
-      articleType,
-      // Breaking extras
-      breakingNewsTicker,
-      breakingPushNotif,
-      breakingHomepageAlert,
-      // Live extras
-      liveUpdates,
-      // Video extras
-      videoUrl,
-      videoDuration,
-      videoQuality,
-      // Media
-      featuredImage,
-      imageCaption,
-      photoCredit,
-      // SEO
-      metaTitle,
-      metaDescription,
-      keywords,
-      focusKeywords,
-      canonicalUrl,
-      // Publishing
-      status,
-      publishAt,
+      headline, shortTitle, content, language, location, tags, articleType,
+      breakingNewsTicker, breakingPushNotif, breakingHomepageAlert,
+      priority, statusType, expiryTime,
+      liveUpdates, videoUrl, videoDuration, videoQuality,
+      featuredImage, imageCaption, photoCredit,
+      metaTitle, metaDescription, keywords, focusKeywords, canonicalUrl,
+      status, publishAt,
     } = req.body;
 
-    if (!headline?.trim()) {
-      return res.status(400).json({ message: "Headline is required." });
-    }
-    if (!category?.trim()) {
-      return res.status(400).json({ message: "Category is required." });
-    }
+    if (!headline?.trim()) return res.status(400).json({ message: "Headline is required." });
 
-    const slug = await buildUniqueSlug(headline);
+    let categoryId: string;
+    try { categoryId = await resolveCategoryId(req.body); }
+    catch (e: any) { return res.status(400).json({ message: e.message }); }
+
+    const slug     = await buildUniqueSlug(headline);
     const typeEnum = toArticleTypeEnum(articleType);
 
     let publishedAt: Date | null = null;
     let scheduledAt: Date | null = null;
-    if (status === "PUBLISHED") {
-      publishedAt = new Date();
-    } else if (status === "SCHEDULED" && publishAt) {
-      scheduledAt = new Date(publishAt);
-    }
+    if (status === "PUBLISHED")               publishedAt = new Date();
+    else if (status === "SCHEDULED" && publishAt) scheduledAt = new Date(publishAt);
+let tagConnections: string[] = [];
 
+if (Array.isArray(tags)) {
+  for (let tagName of tags) {
+
+    const normalized = tagName
+      .trim()
+      .toLowerCase()
+      .split(" ")
+      .map((w: string) => w.charAt(0).toUpperCase() + w.slice(1))
+      .join(" ");
+
+    const slug = slugify(normalized, { lower: true, strict: true });
+
+    let tag = await prisma.tag.findFirst({
+      where: { slug }
+    });
+
+    if (!tag) {
+  tag = await prisma.tag.create({
+    data: { 
+      name: normalized, 
+      slug,
+      usageCount: 1   // 🔥 NEW TAG
+    }
+  });
+} else {
+  await prisma.tag.update({
+    where: { id: tag.id },
+    data: {
+      usageCount: { increment: 1 } // 🔥 EXISTING TAG
+    }
+  });
+}
+
+    tagConnections.push(tag.id);
+  }
+}
     const news = await prisma.news.create({
       data: {
-        headline: headline.trim(),
+        headline:  headline.trim(),
         shortTitle: shortTitle?.trim() || null,
-        content: content || "",
-        category: category.trim(),
-        language: language || "English",
-        location: location?.trim() || null,
-        tags: Array.isArray(tags) ? tags : [],
-        articleType: typeEnum,
+        content:   content || "",
+        categoryId,
+        language:  language || "English",
+        location:  location?.trim() || null,
+tags: {
+  create: tagConnections.map(tagId => ({
+    tag: {
+      connect: { id: tagId }
+    }
+  }))
+},        articleType: typeEnum,
 
-        // Breaking
         breakingNewsTicker:    typeEnum === "BREAKING" ? Boolean(breakingNewsTicker)    : false,
         breakingPushNotif:     typeEnum === "BREAKING" ? Boolean(breakingPushNotif)     : false,
-        breakingHomepageAlert: typeEnum === "BREAKING" ? Boolean(breakingHomepageAlert) : false,
+        breakingHomepageAlert: typeEnum === "BREAKING" ? Boolean(breakingHomepageAlert) : false,      
 
-        // Live
         liveUpdates: typeEnum === "LIVE" && Array.isArray(liveUpdates) ? liveUpdates : undefined,
 
-        // Video
         videoUrl:      typeEnum === "VIDEO" ? (videoUrl?.trim() || null) : null,
         videoDuration: typeEnum === "VIDEO" ? parseVideoDuration(videoDuration) : null,
         videoQuality:  typeEnum === "VIDEO" ? (videoQuality || null) : null,
 
-        // Media
         featuredImage: featuredImage?.trim() || null,
-        imageCaption:  imageCaption?.trim() || null,
-        photoCredit:   photoCredit?.trim() || null,
+        imageCaption:  imageCaption?.trim()  || null,
+        photoCredit:   photoCredit?.trim()   || null,
 
-        // SEO
-        metaTitle:       metaTitle?.trim() || null,
+        metaTitle:       metaTitle?.trim()       || null,
         metaDescription: metaDescription?.trim() || null,
         slug,
         keywords:      Array.isArray(keywords) ? keywords : (keywords ? [keywords] : []),
         focusKeywords: focusKeywords?.trim() || null,
-        canonicalUrl:  canonicalUrl?.trim() || null,
+        canonicalUrl:  canonicalUrl?.trim()  || null,
 
-        // Publishing
         status:      status || "DRAFT",
         publishedAt,
         scheduledAt,
 
-        authorId: req.user?.id || "9f1c82a8-b8f9-4662-a4f9-6101130c7607",
+        authorId: req.user?.id || "8b4536fe-d2c4-4383-b025-a8c2c5b3ad6f",
       },
+      include: { category: { select: { id: true, name: true, color: true } } },
     });
 
     res.status(201).json({ success: true, news });
@@ -160,24 +195,36 @@ export const createNews = async (req: AuthRequest, res: Response) => {
   }
 };
 
-// ─── GET ALL NEWS ──────────────────────────────────────────────────────────────
+// ─── GET ALL ───────────────────────────────────────────────────────────────────
 export const getAllNews = async (req: Request, res: Response) => {
   try {
-    const { category, search, articleType, status, page, limit } = req.query;
+    const { category, categoryId, search, articleType, status, priority, page, limit } = req.query;
 
-    const pageNum  = Math.max(1, parseInt(String(page || "1")));
+    const pageNum  = Math.max(1, parseInt(String(page  || "1")));
     const limitNum = Math.min(100, Math.max(1, parseInt(String(limit || "20"))));
     const skip     = (pageNum - 1) * limitNum;
 
+    // Support filtering by categoryId (UUID) OR category name
+    let catIdFilter: string | undefined;
+    if (categoryId) {
+      catIdFilter = String(categoryId);
+    } else if (category) {
+      const cat = await prisma.category.findFirst({
+        where: { name: { equals: String(category), mode: "insensitive" } },
+      });
+      catIdFilter = cat?.id;
+    }
+
     const where: Record<string, unknown> = {
-      ...(category    && { category:    String(category) }),
+      ...(catIdFilter && { categoryId: catIdFilter }),
       ...(articleType && { articleType: String(articleType) }),
       ...(status      && { status:      String(status) }),
+      ...(priority && priority !== "All Priority" && { priority: normalisePriority(String(priority)) }),
       ...(search && {
         OR: [
-          { headline:  { contains: String(search), mode: "insensitive" } },
-          { content:   { contains: String(search), mode: "insensitive" } },
-          { tags:      { has: String(search) } },
+          { headline: { contains: String(search), mode: "insensitive" } },
+          { content:  { contains: String(search), mode: "insensitive" } },
+          { tags:     { has: String(search) } },
         ],
       }),
     };
@@ -185,7 +232,15 @@ export const getAllNews = async (req: Request, res: Response) => {
     const [news, total] = await Promise.all([
       prisma.news.findMany({
         where,
-        include: { author: { select: { id: true, name: true, email: true, role: true } } },
+        include: {
+          author:   { select: { id: true, name: true, email: true, role: true } },
+          category: { select: { id: true, name: true, color: true } },
+          tags: {
+    include: {
+      tag: true
+    }
+  },
+        },
         orderBy: { createdAt: "desc" },
         skip,
         take: limitNum,
@@ -200,14 +255,22 @@ export const getAllNews = async (req: Request, res: Response) => {
   }
 };
 
-// ─── GET SINGLE NEWS BY SLUG ───────────────────────────────────────────────────
+// ─── GET BY SLUG ───────────────────────────────────────────────────────────────
 export const getNewsBySlug = async (req: Request, res: Response) => {
   try {
-    const slug = Array.isArray(req.params.slug) ? req.params.slug[0] : req.params.slug;
+    const slug = String(req.params.slug);
 
     const news = await prisma.news.findUnique({
       where: { slug },
-      include: { author: { select: { id: true, name: true, role: true } } },
+      include: {
+        author:   { select: { id: true, name: true, role: true } },
+        category: { select: { id: true, name: true, color: true } },
+        tags: {
+    include: {
+      tag: true
+    }
+  },
+      },
     });
 
     if (!news) return res.status(404).json({ message: "News not found" });
@@ -221,14 +284,22 @@ export const getNewsBySlug = async (req: Request, res: Response) => {
   }
 };
 
-// ─── GET SINGLE NEWS BY ID ─────────────────────────────────────────────────────
+// ─── GET BY ID ─────────────────────────────────────────────────────────────────
 export const getNewsById = async (req: Request, res: Response) => {
   try {
-    const id = Array.isArray(req.params.id) ? req.params.id[0] : req.params.id;
+    const id = String(req.params.id);
 
     const news = await prisma.news.findUnique({
       where: { id },
-      include: { author: { select: { id: true, name: true, role: true } } },
+      include: {
+        author:   { select: { id: true, name: true, role: true } },
+        category: { select: { id: true, name: true, color: true } },
+        tags: {
+    include: {
+      tag: true
+    }
+  },
+      },
     });
 
     if (!news) return res.status(404).json({ message: "News not found" });
@@ -239,20 +310,18 @@ export const getNewsById = async (req: Request, res: Response) => {
   }
 };
 
-// ─── UPDATE NEWS ───────────────────────────────────────────────────────────────
+// ─── UPDATE ────────────────────────────────────────────────────────────────────
 export const updateNews = async (req: AuthRequest, res: Response) => {
   try {
-    const id = Array.isArray(req.params.id) ? req.params.id[0] : req.params.id;
-
+    const id       = String(req.params.id);
     const existing = await prisma.news.findUnique({ where: { id } });
     if (!existing) return res.status(404).json({ message: "News not found" });
 
     const {
-      headline, shortTitle, content, category, language, location, tags,
-      articleType,
+      headline, shortTitle, content, language, location, tags, articleType,
       breakingNewsTicker, breakingPushNotif, breakingHomepageAlert,
-      liveUpdates,
-      videoUrl, videoDuration, videoQuality,
+      priority, statusType, expiryTime,
+      liveUpdates, videoUrl, videoDuration, videoQuality,
       featuredImage, imageCaption, photoCredit,
       metaTitle, metaDescription, keywords, focusKeywords, canonicalUrl,
       status, publishAt,
@@ -260,73 +329,114 @@ export const updateNews = async (req: AuthRequest, res: Response) => {
 
     const typeEnum = articleType ? toArticleTypeEnum(articleType) : existing.articleType;
 
+    // Resolve new categoryId if provided
+    let categoryId = existing.categoryId;
+    if (req.body.categoryId || req.body.category) {
+      try { categoryId = await resolveCategoryId(req.body); } catch (_) {}
+    }
+
     let slug = existing.slug;
     if (headline && headline.trim() !== existing.headline) {
       slug = await buildUniqueSlug(headline.trim(), id);
     }
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const existingAny = existing as any;
     let publishedAt: Date | null = existing.publishedAt;
     let scheduledAt: Date | null = existingAny.scheduledAt ?? null;
+
     if (status === "PUBLISHED" && existing.status !== "PUBLISHED") {
-      publishedAt = new Date();
-      scheduledAt = null;
+      publishedAt = new Date(); scheduledAt = null;
     } else if (status === "SCHEDULED" && publishAt) {
-      scheduledAt = new Date(publishAt);
-      publishedAt = null;
+      scheduledAt = new Date(publishAt); publishedAt = null;
     } else if (status === "DRAFT") {
       scheduledAt = null;
     }
+let tagConnections: string[] = [];
+if (Array.isArray(tags)) {
+  for (let tagName of tags) {
 
+    const normalized = tagName
+      .trim()
+      .toLowerCase()
+      .split(" ")
+.map((w: string) => w.charAt(0).toUpperCase() + w.slice(1))
+      .join(" ");
+
+    const slug = slugify(normalized, { lower: true, strict: true });
+
+    let tag = await prisma.tag.findFirst({
+      where: { slug }
+    });
+
+    if (!tag) {
+      tag = await prisma.tag.create({
+        data: { name: normalized, slug }
+      });
+    }
+
+    tagConnections.push(tag.id);
+  }
+}
     const updated = await prisma.news.update({
       where: { id },
       data: {
-        ...(headline    !== undefined && { headline: headline.trim() }),
+        ...(headline    !== undefined && { headline:  headline.trim() }),
         ...(shortTitle  !== undefined && { shortTitle: shortTitle?.trim() || null }),
         ...(content     !== undefined && { content }),
-        ...(category    !== undefined && { category: category.trim() }),
+        categoryId,
         ...(language    !== undefined && { language }),
-        ...(location    !== undefined && { location: location?.trim() || null }),
-        ...(tags        !== undefined && { tags: Array.isArray(tags) ? tags : [] }),
+        ...(location    !== undefined && { location:  location?.trim() || null }),
+  ...(tags !== undefined && {
+  tags: {
+    deleteMany: {}, // remove old tags
+    create: tagConnections.map(tagId => ({
+      tag: {
+        connect: { id: tagId }
+      }
+    }))
+  }
+}),
         articleType: typeEnum,
         slug,
 
-        // Breaking
         ...(typeEnum === "BREAKING" && {
           breakingNewsTicker:    Boolean(breakingNewsTicker),
           breakingPushNotif:     Boolean(breakingPushNotif),
           breakingHomepageAlert: Boolean(breakingHomepageAlert),
         }),
+        ...(priority   !== undefined && { priority:   normalisePriority(priority) }),
+        ...(statusType !== undefined && { statusType }),
+        ...(expiryTime !== undefined && { expiryTime: expiryTime ? new Date(expiryTime) : null }),
 
-        // Live
         ...(typeEnum === "LIVE" && liveUpdates !== undefined && {
           liveUpdates: Array.isArray(liveUpdates) ? liveUpdates : undefined,
         }),
-
-        // Video — parse duration to Int
         ...(typeEnum === "VIDEO" && {
           videoUrl:      videoUrl?.trim() || null,
           videoDuration: parseVideoDuration(videoDuration),
           videoQuality:  videoQuality || null,
         }),
 
-        // Media
         ...(featuredImage !== undefined && { featuredImage: featuredImage?.trim() || null }),
         ...(imageCaption  !== undefined && { imageCaption:  imageCaption?.trim()  || null }),
         ...(photoCredit   !== undefined && { photoCredit:   photoCredit?.trim()   || null }),
-
-        // SEO
         ...(metaTitle       !== undefined && { metaTitle:       metaTitle?.trim()       || null }),
         ...(metaDescription !== undefined && { metaDescription: metaDescription?.trim() || null }),
-        ...(keywords        !== undefined && { keywords: Array.isArray(keywords) ? keywords : (keywords ? [keywords] : []) }),
+        ...(keywords        !== undefined && { keywords: Array.isArray(keywords) ? keywords : [] }),
         ...(focusKeywords   !== undefined && { focusKeywords: focusKeywords?.trim() || null }),
         ...(canonicalUrl    !== undefined && { canonicalUrl:  canonicalUrl?.trim()  || null }),
-
-        // Publishing
-        ...(status !== undefined && { status }),
+        ...(status          !== undefined && { status }),
         publishedAt,
         scheduledAt,
+      },
+      include: {
+        author:   { select: { id: true, name: true } },
+        category: { select: { id: true, name: true, color: true } },
+        tags: {
+    include: {
+      tag: true
+    }
+  },
       },
     });
 
@@ -337,11 +447,10 @@ export const updateNews = async (req: AuthRequest, res: Response) => {
   }
 };
 
-// ─── DELETE NEWS ───────────────────────────────────────────────────────────────
+// ─── DELETE ────────────────────────────────────────────────────────────────────
 export const deleteNews = async (req: AuthRequest, res: Response) => {
   try {
-    const id = Array.isArray(req.params.id) ? req.params.id[0] : req.params.id;
-
+    const id       = String(req.params.id);
     const existing = await prisma.news.findUnique({ where: { id } });
     if (!existing) return res.status(404).json({ message: "News not found" });
 
@@ -353,21 +462,42 @@ export const deleteNews = async (req: AuthRequest, res: Response) => {
   }
 };
 
-// ─── ADD LIVE UPDATE (append to existing live article) ─────────────────────────
+// ─── PAUSE / RESUME ────────────────────────────────────────────────────────────
+export const togglePauseBreaking = async (req: AuthRequest, res: Response) => {
+  try {
+    const id       = String(req.params.id);
+    const existing = await prisma.news.findUnique({ where: { id } });
+    if (!existing)                           return res.status(404).json({ message: "News not found" });
+    if (existing.articleType !== "BREAKING") return res.status(400).json({ message: "Not a breaking news article" });
+
+    const current    = (existing as any).statusType as string | null;
+    const newStatus  = current === "paused" ? "published" : "paused";
+
+    const updated = await prisma.news.update({
+      where: { id },
+      data:  { statusType: newStatus } as any,
+    });
+
+    res.json({ success: true, statusType: newStatus, updated });
+  } catch (error) {
+    console.error("togglePauseBreaking error:", error);
+    res.status(500).json({ message: "Error toggling pause state" });
+  }
+};
+
+// ─── LIVE UPDATE ───────────────────────────────────────────────────────────────
 export const addLiveUpdate = async (req: AuthRequest, res: Response) => {
   try {
-    const id   = Array.isArray(req.params.id) ? req.params.id[0] : req.params.id;
+    const id       = String(req.params.id);
     const { text } = req.body;
 
     if (!text?.trim()) return res.status(400).json({ message: "Update text is required" });
 
     const news = await prisma.news.findUnique({ where: { id } });
-    if (!news) return res.status(404).json({ message: "News not found" });
+    if (!news)                       return res.status(404).json({ message: "News not found" });
     if (news.articleType !== "LIVE") return res.status(400).json({ message: "Not a live article" });
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const newsAny = news as any;
-    const existing = Array.isArray(newsAny.liveUpdates) ? newsAny.liveUpdates as object[] : [];
+    const existing  = Array.isArray((news as any).liveUpdates) ? ((news as any).liveUpdates as object[]) : [];
     const newUpdate = {
       id:        Date.now(),
       time:      new Date().toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit" }),
@@ -377,7 +507,6 @@ export const addLiveUpdate = async (req: AuthRequest, res: Response) => {
 
     const updated = await prisma.news.update({
       where: { id },
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       data:  { liveUpdates: [...existing, newUpdate] } as any,
     });
 

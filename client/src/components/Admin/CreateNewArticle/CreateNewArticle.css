@@ -1040,3 +1040,51 @@
     to   { opacity: 1; transform: translateY(0); }
   }
 }
+
+/* ─────────────────────────────────────────────────────────────
+   CREATENEWARTCILE.CSS ADDITIONS — append to CreateNewArticle.css
+   ───────────────────────────────────────────────────────────── */
+
+/* Tag autocomplete dropdown */
+.cna-tag-dropdown {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0;
+  right: 0;
+  background: #fff;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.1);
+  z-index: 999;
+  max-height: 200px;
+  overflow-y: auto;
+  list-style: none;
+  margin: 0;
+  padding: 4px 0;
+}
+.cna-tag-dropdown-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 12px;
+  font-size: 13px;
+  color: #334155;
+  cursor: pointer;
+  transition: background 0.12s;
+}
+.cna-tag-dropdown-item:hover { background: #f1f5f9; }
+
+/* Internet trending suggestion chips */
+.cna-suggested-tag--internet {
+  background: #ede9fe;
+  color: #5b21b6;
+  border-color: #c4b5fd;
+}
+.cna-suggested-tag--internet:hover {
+  background: #7c3aed;
+  color: #fff;
+  border-color: #7c3aed;
+}
+
+/* Spin animation for Loader2 in CreateNewArticle */
+@keyframes spin { to { transform: rotate(360deg); } }

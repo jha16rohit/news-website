@@ -1,16 +1,21 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import "./Categories.css";
 import EditCategoryModal from "./EditCategoryModal/EditCategoryModal";
 import AddCategoryModal from "./AddCategoryModal/AddCategoryModal";
 import { Folder, FileText, Eye, Pencil, Trash2, CheckCircle, ChevronRight } from "lucide-react";
-import { useNews } from "../NewsStore/NewsStore";
+import {
+  getCategories,
+  createCategory,
+  updateCategory as updateCategoryApi,
+  deleteCategory as deleteCategoryApi,
+  toggleActive,
+} from "../../../api/category.api";
 import type { Category } from "../NewsStore/NewsStore";
 
 const FEATURED_LIMIT = 5;
 
 export default function Categories() {
-  const { categories, addCategory, updateCategory, deleteCategory } = useNews();
-
+  const [categories, setCategories] = useState<Category[]>([]);
   const [editingCategory,  setEditingCategory]  = useState<Category | null>(null);
   const [categoryToDelete, setCategoryToDelete] = useState<Category | null>(null);
   const [search,           setSearch]           = useState("");
@@ -20,6 +25,16 @@ export default function Categories() {
   const showToast = (msg: string) => {
     setToastMsg(msg);
     setTimeout(() => setToastMsg(""), 4000);
+  };
+
+  // ✅ FETCH DATA
+  useEffect(() => {
+    fetchCategories();
+  }, []);
+
+  const fetchCategories = async () => {
+    const data = await getCategories();
+    setCategories(data);
   };
 
   const getBreadcrumb = (cat: Category): string => {
@@ -32,52 +47,75 @@ export default function Categories() {
     getBreadcrumb(c).toLowerCase().includes(search.toLowerCase())
   );
 
-  // 👇 STABLE SORTING FIX 👇
   const sorted = [...filtered].sort((a, b) => {
     const aRoot = a.parentId ?? a.id;
     const bRoot = b.parentId ?? b.id;
     if (aRoot !== bRoot) return aRoot - bRoot;
     if (!a.parentId && b.parentId) return -1;
     if (a.parentId && !b.parentId) return 1;
-    
-    // If both are sub-categories of the same parent, sort them alphabetically to prevent jumping
     return a.name.localeCompare(b.name);
   });
 
-  const toggleCategory = (id: number) => {
-    const cat = categories.find(c => c.id === id);
-    if (!cat) return;
-    updateCategory(id, { enabled: !cat.enabled });
+  // ✅ FIXED TOGGLE
+  const toggleCategory = async (id: number) => {
+    await toggleActive(id.toString());
+    await fetchCategories();
   };
 
-  const executeDelete = () => {
+  // ✅ FIXED DELETE
+  const executeDelete = async () => {
     if (!categoryToDelete) return;
     const childCount = categories.filter(c => c.parentId === categoryToDelete.id).length;
-    deleteCategory(categoryToDelete.id);
+
+    await deleteCategoryApi(categoryToDelete.id.toString());
+
     showToast(`"${categoryToDelete.name}" deleted${childCount ? ` along with ${childCount} sub-categor${childCount > 1 ? "ies" : "y"}` : ""}.`);
     setCategoryToDelete(null);
+    await fetchCategories();
   };
 
-  const handleEdit = (updatedCat: Category) => {
+  // ✅ FIXED UPDATE
+  const handleEdit = async (updatedCat: Category) => {
     const otherFeatured = categories.filter(c => c.featured && c.id !== updatedCat.id).length;
+
     if (updatedCat.featured && otherFeatured >= FEATURED_LIMIT) {
       showToast("Limit reached: only 5 categories can be featured. Saved as unfeatured.");
-      updateCategory(updatedCat.id, { ...updatedCat, featured: false });
+      await updateCategoryApi(updatedCat.id.toString(), { ...updatedCat, featured: false });
     } else {
-      updateCategory(updatedCat.id, updatedCat);
-      showToast(`"${updatedCat.name}" updated.`);
+await updateCategoryApi(updatedCat.id.toString(), {
+  ...updatedCat,
+  active: updatedCat.enabled,
+  showcase: updatedCat.inShowcase,
+});      showToast(`"${updatedCat.name}" updated.`);
     }
+
+    await fetchCategories();
   };
 
-  const handleAdd = (newCat: Omit<Category, "id">) => {
+  // ✅ FIXED CREATE
+  const handleAdd = async (newCat: Omit<Category, "id">) => {
     const featuredCount = categories.filter(c => c.featured).length;
+
     if (newCat.featured && featuredCount >= FEATURED_LIMIT) {
       showToast("Limit reached: only 5 categories can be featured. Created as unfeatured.");
-      addCategory({ ...newCat, featured: false });
+
+      await createCategory({
+        ...newCat,
+        featured: false,
+        active: newCat.enabled,
+        showcase: newCat.inShowcase,
+      });
     } else {
-      addCategory(newCat);
+      await createCategory({
+        ...newCat,
+        active: newCat.enabled,
+        showcase: newCat.inShowcase,
+      });
+
       showToast(`"${newCat.name}" created.`);
     }
+
+    await fetchCategories();
   };
 
   const childCountOf = (id: number) => categories.filter(c => c.parentId === id).length;
@@ -149,10 +187,7 @@ export default function Categories() {
 
         <div className="cat-grid">
           {sorted.map(c => (
-            <div
-              key={c.id}
-              className={`cat-card${c.parentId ? " cat-card--child" : ""}`}
-            >
+            <div key={c.id} className={`cat-card${c.parentId ? " cat-card--child" : ""}`}>
               <div className="cat-drag">⋮⋮</div>
 
               {c.parentId && <div className="cat-child-indent"><ChevronRight size={14} /></div>}
@@ -181,33 +216,27 @@ export default function Categories() {
                 </div>
                 <p className="cat-desc">{c.description}</p>
                 <div className="cat-meta">
-                  <span>{c.articles} articles</span>
-                  <span>{c.views} views</span>
+                  <span>{c._count?.news || 0} articles</span>
+                  <span>{c.views || 0} views</span>
                 </div>
               </div>
 
               <div className="cat-actions">
                 <button
                   className={`cat-toggle ${c.enabled ? "on" : ""}`}
-                  // 👇 STOP PROPAGATION FIX 👇
                   onClick={(e) => {
-                    e.stopPropagation(); 
+                    e.stopPropagation();
                     toggleCategory(c.id);
                   }}
                 >
                   <span />
                 </button>
+
                 <div className="cat-icons">
-                  <button 
-                    className="cat-icon-btn" 
-                    onClick={(e) => { e.stopPropagation(); setEditingCategory(c); }}
-                  >
+                  <button className="cat-icon-btn" onClick={(e) => { e.stopPropagation(); setEditingCategory(c); }}>
                     <Pencil size={15} />
                   </button>
-                  <button 
-                    className="cat-icon-btn cat-icon-btn--delete" 
-                    onClick={(e) => { e.stopPropagation(); setCategoryToDelete(c); }}
-                  >
+                  <button className="cat-icon-btn cat-icon-btn--delete" onClick={(e) => { e.stopPropagation(); setCategoryToDelete(c); }}>
                     <Trash2 size={15} />
                   </button>
                 </div>

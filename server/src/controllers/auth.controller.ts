@@ -214,3 +214,34 @@ export const changePassword = async (
     res.status(500).json({ message: "Server error" });
   }
 };
+export const updateProfile = async (
+  req: Request & { user?: any },
+  res: Response
+) => {
+  try {
+    const { name, email, phone } = req.body;
+
+    if (!req.user) {
+      return res.status(401).json({ message: "Not authorized" });
+    }
+
+    const userId = req.user.id;
+
+    const updatedUser = await prisma.user.update({
+      where: { id: userId },
+      data: {
+        name,
+        email,
+        phone,
+      },
+    });
+
+    res.json({
+      message: "Profile updated successfully",
+      user: updatedUser,
+    });
+  } catch (error) {
+    console.error("UPDATE PROFILE ERROR:", error);
+    res.status(500).json({ message: "Server error" });
+  }
+};

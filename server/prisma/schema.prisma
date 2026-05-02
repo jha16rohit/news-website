@@ -3,8 +3,8 @@ generator client {
 }
 
 datasource db {
-  provider = "postgresql"
-  url      = env("DATABASE_URL")
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
   directUrl = env("DIRECT_URL")
 }
 
@@ -17,25 +17,32 @@ model User {
   role      String   @default("ADMIN")
   createdAt DateTime @default(now())
 
-  news      News[]
+  news News[]
 }
 
 model News {
-  id            String   @id @default(uuid())
-  headline      String
-  shortTitle    String?
-  content       String
-  category      String
-  language      String   @default("English")
-  location      String?
-  tags          String[]
+  id         String   @id @default(uuid())
+  headline   String
+  shortTitle String?
+  content    String
+  categoryId String
+  category   Category @relation("MainCategory", fields: [categoryId], references: [id])
 
-  articleType   ArticleType @default(STANDARD)
+  categories Category[] @relation("NewsCategories")
+  language   String     @default("English")
+  location   String?
+   tags      NewsTag[]
 
-  // Breaking news
-  breakingNewsTicker   Boolean @default(false)
-  breakingPushNotif    Boolean @default(false)
+  articleType ArticleType @default(STANDARD)
+
+  // 🔴 Breaking news controls
+  breakingNewsTicker    Boolean @default(false)
+  breakingPushNotif     Boolean @default(false)
   breakingHomepageAlert Boolean @default(false)
+
+  // 🆕 NEW FIELDS (IMPORTANT)
+  statusType String?   @default("published") // paused / published
+  expiryTime DateTime?
 
   // Live updates
   liveUpdates Json?
@@ -59,19 +66,86 @@ model News {
   canonicalUrl    String?
 
   // Publishing
-  status       Status   @default(DRAFT)
-  publishedAt  DateTime?
-  scheduledAt  DateTime?
+  status      Status    @default(DRAFT)
+  publishedAt DateTime?
+  scheduledAt DateTime?
 
   // Relations
   authorId String
-  author   User @relation(fields: [authorId], references: [id])
+  author   User   @relation(fields: [authorId], references: [id])
+
+  topicProfileId String?
+  topicProfile   TopicProfile? @relation(fields: [topicProfileId], references: [id])
 
   // Metrics
   views     Int      @default(0)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }
+
+model TopicProfile {
+  id          String   @id @default(uuid())
+  name        String
+  slug        String   @unique
+  caption     String?
+  description String
+  instagram   String?
+  facebook    String?
+  twitter     String?
+  imageUrl    String?
+  createdAt   DateTime @default(now())
+
+  // relation with News (optional but powerful)
+  news News[]
+}
+
+model Category {
+  id          String  @id @default(uuid())
+  name        String
+  slug        String  @unique
+  description String?
+  color       String?
+
+  // hierarchy
+  parentId String?
+  parent   Category?  @relation("CategoryToCategory", fields: [parentId], references: [id])
+  children Category[] @relation("CategoryToCategory")
+
+  // ✅ relations (ONLY THESE TWO)
+  news       News[] @relation("MainCategory") // main category
+  categories News[] @relation("NewsCategories") // many-to-many
+
+  // flags
+  featured Boolean @default(false)
+  showcase Boolean @default(false)
+  active   Boolean @default(true)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+model Tag {
+  id        String   @id @default(uuid())
+  name      String   @unique
+  usageCount  Int      @default(0) 
+  slug      String   @unique
+  createdAt DateTime @default(now())
+
+  articles  NewsTag[]
+
+  @@index([name])
+}
+
+model NewsTag {
+  id     String @id @default(uuid())
+  news   News   @relation(fields: [newsId], references: [id], onDelete: Cascade)
+  newsId String
+
+  tag    Tag    @relation(fields: [tagId], references: [id], onDelete: Cascade)
+  tagId  String
+
+  @@unique([newsId, tagId])
+}
+
 
 enum ArticleType {
   STANDARD
@@ -84,4 +158,10 @@ enum Status {
   DRAFT
   PUBLISHED
   SCHEDULED
+}
+
+enum Priority {
+  CRITICAL
+  HIGH
+  MEDIUM
 }

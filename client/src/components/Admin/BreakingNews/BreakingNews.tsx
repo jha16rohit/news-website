@@ -16,6 +16,7 @@ interface BreakingItem {
   author:   string;
   timeAgo:  string;
   status:   "live" | "scheduled" | "expired" | "paused";
+  priority: "Critical" | "High" | "Medium";
   category: string;
   views:    number;
 }
@@ -67,18 +68,22 @@ const BreakingNews: React.FC = () => {
     setLoading(true);
     try {
       const data = await fetchAllNews({ articleType: "BREAKING", limit: 100 });
-      if (!data?.news) return;
+      if (!data?.news) {
+  setItems([]);
+  return;
+}
 
-      const mapped: BreakingItem[] = data.news.map((n: any, idx: number) => ({
-        id:       n.id,
-        localId:  idx + 1,
-        headline: n.headline,
-        author:   n.author?.name || "Admin",
-        timeAgo:  toRelative(n.publishedAt || n.createdAt),
-        status:   deriveStatus(n.status, n.expiryTime, n.statusType),
-        category: n.category || "General",
-        views:    n.views ?? 0,
-      }));
+    const mapped = data.news.map((n: any, idx: number) => ({
+  id: n.id,
+  localId: idx + 1,
+  headline: n.headline,
+  author: n.author?.name || "Admin",
+  timeAgo: toRelative(n.publishedAt || n.createdAt),
+  status: deriveStatus(n.status, n.expiryTime, n.statusType),
+category: n.category?.name || "General",
+  views: n.views ?? 0,
+  priority: n.priority || "Medium",
+}));
 
       setItems(mapped);
     } catch (err) {
@@ -100,8 +105,10 @@ const BreakingNews: React.FC = () => {
   const filteredNews = items.filter(news => {
     const matchesSearch   = news.headline.toLowerCase().includes(searchQuery.toLowerCase());
     const matchesStatus   = statusFilter === "All Status" || news.status === statusFilter.toLowerCase();
-    const matchesPriority = priorityFilter === "All Priority";
-    return matchesSearch && matchesStatus && matchesPriority;
+const matchesPriority =
+  priorityFilter === "All Priority" ||
+  news.priority === priorityFilter;
+      return matchesSearch && matchesStatus && matchesPriority;
   });
 
   const totalPages  = Math.ceil(filteredNews.length / itemsPerPage);
@@ -131,17 +138,22 @@ const BreakingNews: React.FC = () => {
         navigate(`/admin/create?edit=${id}&type=breaking`);
         break;
 
-      case "pause": {
-        const isPaused = item?.status === "paused";
-        try {
-          await apiUpdateNews(id, { status: isPaused ? "PUBLISHED" : "PUBLISHED", statusType: isPaused ? "published" : "paused" } as any);
-        } catch (err) { console.error(err); }
-        setItems(prev => prev.map(i =>
-          i.id === id ? { ...i, status: isPaused ? "live" : "paused" } : i
-        ));
-        break;
-      }
+     case "pause": {
+  const isPaused = item?.status === "paused";
 
+  await apiUpdateNews(id, {
+    statusType: isPaused ? "published" : "paused",
+  } as any);
+
+  setItems(prev =>
+    prev.map(i =>
+      i.id === id
+        ? { ...i, status: isPaused ? "live" : "paused" }
+        : i
+    )
+  );
+  break;
+}
       case "delete":
         setDeleteModal(id);
         break;
