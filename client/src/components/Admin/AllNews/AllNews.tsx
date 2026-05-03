@@ -2,7 +2,7 @@ import React, { useState, useRef, useEffect } from "react";
 import "./AllNews.css";
 import { useNavigate } from "react-router-dom";
 import {
-  Search, Flame, Video, Radio, X,
+  Search, Flame,  Radio, X,
   Edit, ExternalLink, Trash2, Zap, MoreVertical, Pin, GripVertical,
 } from "lucide-react";
 import {
@@ -20,7 +20,7 @@ interface NewsItem {
   articleCategory: string;
   authorFirst:     string;
   authorLast:      string;
-  status:          "Published" | "Draft" | "Scheduled";
+  status:          "Published" | "Draft" | "Scheduled" | "Expired" | "Deleted";
   statusType:      string;
   published:       string;
   views:           string;
@@ -41,7 +41,6 @@ const articleTypes = [
   { key: "standard", label: "Standard Article" },
   { key: "breaking", label: "Breaking News",   icon: <Flame size={13} /> },
   { key: "live",     label: "Live Updates",    icon: <Radio size={13} /> },
-  { key: "video",    label: "Video Story",     icon: <Video size={13} /> },
 ];
 
 // ─── helpers ──────────────────────────────────────────────────────────────────
@@ -49,7 +48,7 @@ const typeLabel: Record<string, string> = {
   STANDARD: "Standard Article",
   BREAKING: "Breaking News",
   LIVE:     "Live Updates",
-  VIDEO:    "Video Story",
+
 };
 const tagTypeMap: Record<string, string> = {
   BREAKING: "breaking",
@@ -85,10 +84,19 @@ function mapNewsItem(n: any, idx: number): NewsItem {
 articleCategory: n.category?.name || "",
     authorFirst:     n.author?.name || "Admin",
     authorLast:      "",
-    status:          n.status === "PUBLISHED" ? "Published" : n.status === "DRAFT" ? "Draft" : "Scheduled",
+    status:          n.status === "PUBLISHED" ? "Published"
+                     : n.status === "DRAFT"      ? "Draft"
+                     : n.status === "SCHEDULED"  ? "Scheduled"
+                     : n.status === "EXPIRED"    ? "Expired"
+                     : n.status === "DELETED"    ? "Deleted"
+                     : "Draft",
     statusType:      n.status === "PUBLISHED"
                        ? (isLive && !isEnded ? "live-published" : "published")
-                       : n.status === "DRAFT" ? "draft" : "scheduled",
+                       : n.status === "DRAFT"      ? "draft"
+                       : n.status === "SCHEDULED"  ? "scheduled"
+                       : n.status === "EXPIRED"    ? "expired"
+                       : n.status === "DELETED"    ? "deleted"
+                       : "draft",
     published:       publishedLabel,
     views:           String(n.views ?? 0),
     publishedAt:     n.publishedAt || null,
@@ -128,7 +136,6 @@ const AllNews: React.FC = () => {
       standard: "STANDARD",
       breaking: "BREAKING",
       live:     "LIVE",
-      video:    "VIDEO",
       all:      undefined,
     };
     try {
@@ -217,7 +224,6 @@ setArticles((data.news || []).map(mapNewsItem));
         navigate(`/admin/create?edit=${id}&type=${
   item?.tagType === "breaking" ? "breaking"
   : item?.tagType === "live"   ? "live"
-  : item?.category === "Video Story" ? "video"
   : "standard"
 }`);
         break;
@@ -267,9 +273,13 @@ setArticles((data.news || []).map(mapNewsItem));
     }
   };
 
+  const [deleteModeChoice, setDeleteModeChoice] = useState<"instant" | "interval">("instant");
+
   const confirmDelete = async () => {
     if (!deleteModal) return;
-    try { await apiDeleteNews(deleteModal); } catch (err) { console.error("Delete failed:", err); }
+    try {
+      await apiDeleteNews(deleteModal, { deleteMode: deleteModeChoice, deleteIntervalDays: 14 });
+    } catch (err) { console.error("Delete failed:", err); }
     setArticles(prev => prev.filter(a => a.id !== deleteModal));
     setDeleteModal(null);
   };
@@ -536,7 +546,23 @@ setArticles((data.news || []).map(mapNewsItem));
           <div className="modal" onClick={e => e.stopPropagation()}>
             <div className="modal-icon"><Trash2 size={22} /></div>
             <h4>Delete Article?</h4>
-            <p>This action cannot be undone. The article will be permanently removed.</p>
+            <p style={{ marginBottom: 12 }}>Choose how to delete this article:</p>
+            <div style={{ display: "flex", flexDirection: "column", gap: 8, marginBottom: 16 }}>
+              <label style={{ display: "flex", alignItems: "flex-start", gap: 10, padding: "10px 12px", border: deleteModeChoice === "instant" ? "2px solid #dc2626" : "1px solid #e5e7eb", borderRadius: 8, cursor: "pointer", background: deleteModeChoice === "instant" ? "#fff1f1" : "#fafafa" }}>
+                <input type="radio" name="deleteMode" value="instant" checked={deleteModeChoice === "instant"} onChange={() => setDeleteModeChoice("instant")} style={{ marginTop: 2 }} />
+                <div>
+                  <div style={{ fontWeight: 600, fontSize: 13 }}>Instant Delete</div>
+                  <div style={{ fontSize: 12, color: "#6b7280" }}>Permanently removed right now.</div>
+                </div>
+              </label>
+              <label style={{ display: "flex", alignItems: "flex-start", gap: 10, padding: "10px 12px", border: deleteModeChoice === "interval" ? "2px solid #f59e0b" : "1px solid #e5e7eb", borderRadius: 8, cursor: "pointer", background: deleteModeChoice === "interval" ? "#fffbeb" : "#fafafa" }}>
+                <input type="radio" name="deleteMode" value="interval" checked={deleteModeChoice === "interval"} onChange={() => setDeleteModeChoice("interval")} style={{ marginTop: 2 }} />
+                <div>
+                  <div style={{ fontWeight: 600, fontSize: 13 }}>Delete After 14 Days</div>
+                  <div style={{ fontSize: 12, color: "#6b7280" }}>Hidden now, permanently purged in 14 days.</div>
+                </div>
+              </label>
+            </div>
             <div className="modal-actions">
               <button className="modal-cancel" onClick={() => setDeleteModal(null)}>Cancel</button>
               <button className="modal-confirm" onClick={confirmDelete}>Yes, Delete</button>

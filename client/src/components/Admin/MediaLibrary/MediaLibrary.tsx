@@ -11,48 +11,47 @@ import {
   Check,
   X,
   SlidersHorizontal,
+  AlertCircle,
+  Loader2,
 } from "lucide-react";
+import { fetchMediaLibrary, deleteMediaImage } from "../../../api/news";
 import "./MediaLibrary.css";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
-type ViewType   = "grid" | "list";
-type SortType   = "Newest" | "Oldest" | "Name A–Z" | "Name Z–A" | "Largest" | "Smallest";
+type ViewType = "grid" | "list";
+type SortType = "Newest" | "Oldest" | "Name A–Z" | "Name Z–A";
 
 interface MediaItem {
-  id:        number;
-  name:      string;
-  size:      string;
-  dimension: string;
-  used:      number;
-  time:      string;
-  src:       string;
+  newsId:    string;
+  url:       string;
+  headline:  string;
+  caption:   string | null;
+  credit:    string | null;
+  createdAt: string;
+  status:    string;
+  views:     number;
+  type:      "featured" | "content";
 }
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
-const SORT_OPTIONS: SortType[] = [
-  "Newest", "Oldest", "Name A–Z", "Name Z–A", "Largest", "Smallest",
-];
+const SORT_OPTIONS: SortType[] = ["Newest", "Oldest", "Name A–Z", "Name Z–A"];
 
+function timeAgo(dateStr: string): string {
+  const diff = Date.now() - new Date(dateStr).getTime();
+  const mins  = Math.floor(diff / 60_000);
+  const hours = Math.floor(diff / 3_600_000);
+  const days  = Math.floor(diff / 86_400_000);
+  if (mins  < 60)  return `${mins}m ago`;
+  if (hours < 24)  return `${hours}h ago`;
+  return `${days}d ago`;
+}
 
-const SIZE_MAP: Record<string, number> = {
-  "2.4 MB": 2.4,
-  "1.8 MB": 1.8,
-  "3.2 MB": 3.2,
-  "4.1 MB": 4.1,
-  "1.6 MB": 1.6,
-  "2.0 MB": 2.0,
-};
-
-const mediaData: MediaItem[] = [
-  { id: 1, name: "parliament-session.jpg",  size: "2.4 MB", dimension: "1920×1080", used: 3, time: "2h ago",  src: "https://images.unsplash.com/photo-1529107386315-e1a2ed48a620?w=800" },
-  { id: 2, name: "stock-market-chart.jpg",  size: "1.8 MB", dimension: "1920×1080", used: 5, time: "4h ago",  src: "https://images.unsplash.com/photo-1611974789855-9c2a0a7236a3?w=800" },
-  { id: 3, name: "cricket-stadium.jpg",     size: "3.2 MB", dimension: "2560×1440", used: 8, time: "1d ago",  src: "https://images.unsplash.com/photo-1461896836934-ffe607ba8211?w=800" },
-  { id: 4, name: "city-skyline-night.jpg",  size: "4.1 MB", dimension: "3840×2160", used: 2, time: "2d ago",  src: "https://images.unsplash.com/photo-1477959858617-67f85cf4f1df?w=800" },
-  { id: 5, name: "press-conference.jpg",    size: "1.6 MB", dimension: "1920×1080", used: 6, time: "3d ago",  src: "https://images.unsplash.com/photo-1540575467063-178a50c2df87?w=800" },
-  { id: 6, name: "economy-data.jpg",        size: "2.0 MB", dimension: "1920×1080", used: 4, time: "5d ago",  src: "https://images.unsplash.com/photo-1551288049-bebda4e38f71?w=800" },
-];
+function getFilename(url: string): string {
+  try { return decodeURIComponent(url.split("/").pop() || url); }
+  catch { return url; }
+}
 
 // ─── Component ────────────────────────────────────────────────────────────────
 
@@ -62,7 +61,32 @@ export default function MediaLibrary(): React.ReactElement {
   const [sort,     setSort]     = useState<SortType>("Newest");
   const [sortOpen, setSortOpen] = useState<boolean>(false);
 
+  const [items,   setItems]   = useState<MediaItem[]>([]);
+  const [loading, setLoading] = useState<boolean>(true);
+  const [error,   setError]   = useState<string | null>(null);
+  const [deleting, setDeleting] = useState<string | null>(null); // newsId being deleted
+
   const sortRef = useRef<HTMLDivElement | null>(null);
+
+  // ── Fetch from API ──────────────────────────────────────────────────────────
+  const loadMedia = async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      // fetchMediaLibrary uses apiClient which returns already-parsed JSON
+      const data = await fetchMediaLibrary({ limit: 100 });
+      // Handle both: parsed object directly, or a Response object
+      const parsed = data && typeof data.json === "function" ? await data.json() : data;
+      setItems(parsed?.items || []);
+    } catch (e: any) {
+      console.error("loadMedia error:", e);
+      setError("Failed to load media library.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => { loadMedia(); }, []);
 
   // Close sort dropdown on outside click
   useEffect(() => {
@@ -75,20 +99,54 @@ export default function MediaLibrary(): React.ReactElement {
     return () => document.removeEventListener("mousedown", handler);
   }, []);
 
-  // ── Derived data ────────────────────────────────────────────────────────────
+  // ── Delete handler ──────────────────────────────────────────────────────────
+  const handleDelete = async (newsId: string) => {
+    if (!window.confirm("Remove this image from the article?")) return;
+    setDeleting(newsId);
+    try {
+      const res  = await deleteMediaImage(newsId);
+      // deleteMediaImage uses apiClient which may return parsed JSON directly
+      const data = res && typeof res.json === "function" ? await res.json() : res;
+      if (data.success) {
+        setItems(prev => prev.filter(item => item.newsId !== newsId));
+      } else {
+        alert(data.message || "Failed to delete image.");
+      }
+    } catch {
+      alert("Failed to delete image.");
+    } finally {
+      setDeleting(null);
+    }
+  };
 
-  const filtered: MediaItem[] = mediaData
-    .filter((m) => m.name.toLowerCase().includes(search.toLowerCase()))
+  // ── Download handler ────────────────────────────────────────────────────────
+  const handleDownload = (url: string, filename: string) => {
+    const a = document.createElement("a");
+    a.href     = url;
+    a.download = filename;
+    a.target   = "_blank";
+    a.rel      = "noopener noreferrer";
+    a.click();
+  };
+
+  // ── Derived / filtered list ─────────────────────────────────────────────────
+  const filtered: MediaItem[] = items
+    .filter(m =>
+      m.headline.toLowerCase().includes(search.toLowerCase()) ||
+      getFilename(m.url).toLowerCase().includes(search.toLowerCase())
+    )
     .sort((a, b) => {
       switch (sort) {
-        case "Name A–Z": return a.name.localeCompare(b.name);
-        case "Name Z–A": return b.name.localeCompare(a.name);
-        case "Largest":  return SIZE_MAP[b.size] - SIZE_MAP[a.size];
-        case "Smallest": return SIZE_MAP[a.size] - SIZE_MAP[b.size];
-        case "Oldest":   return a.id - b.id;
-        default:         return b.id - a.id;
+        case "Name A–Z": return a.headline.localeCompare(b.headline);
+        case "Name Z–A": return b.headline.localeCompare(a.headline);
+        case "Oldest":   return new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
+        default:         return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
       }
     });
+
+  // ── Stats ───────────────────────────────────────────────────────────────────
+  const totalImages   = items.length;
+  const inPublished   = items.filter(i => i.status === "PUBLISHED").length;
 
   // ── Render ──────────────────────────────────────────────────────────────────
 
@@ -97,48 +155,29 @@ export default function MediaLibrary(): React.ReactElement {
 
       {/* ── TOPBAR ── */}
       <div className="ml-topbar">
-
-        {/* Left: title */}
         <div className="ml-topbar-left">
           <div className="ml-page-title">Media Library</div>
-          <div className="ml-page-sub">Manage your image assets</div>
+          <div className="ml-page-sub">Images from published articles</div>
         </div>
 
-        {/* Center: search */}
         <div className="ml-topbar-center">
           <div className="ml-search-wrap">
             <Search size={15} />
             <input
-              placeholder="Search images…"
+              placeholder="Search by headline or filename…"
               value={search}
               onChange={(e: React.ChangeEvent<HTMLInputElement>) => setSearch(e.target.value)}
             />
             {search && (
-              <X
-                size={14}
-                style={{ cursor: "pointer", color: "#C0C0C0" }}
-                onClick={() => setSearch("")}
-              />
+              <X size={14} style={{ cursor: "pointer", color: "#C0C0C0" }} onClick={() => setSearch("")} />
             )}
           </div>
         </div>
 
-        {/* Right: storage pill + upload */}
         <div className="ml-topbar-right">
-
-          {/* Storage progress pill */}
-          <div className="ml-storage-pill">
-            <span>Storage</span>
-            <HardDrive size={14} color="#E53935" />
-            <span className="ml-storage-pill-label">45.2 GB</span>
-            <div className="ml-storage-pill-bar">
-              <div className="ml-storage-pill-fill" />
-            </div>
-            <span className="ml-storage-pill-pct">62%</span>
-          </div>
-
-          
-
+          <button className="ml-refresh-btn" onClick={loadMedia} title="Refresh">
+            ↻ Refresh
+          </button>
         </div>
       </div>
 
@@ -150,128 +189,188 @@ export default function MediaLibrary(): React.ReactElement {
           <div className="ml-stat-card">
             <div className="ml-stat-icon red"><Image size={20} /></div>
             <div>
-              <div className="ml-stat-num">2,456</div>
+              <div className="ml-stat-num">{totalImages}</div>
               <div className="ml-stat-label">Total Images</div>
             </div>
           </div>
           <div className="ml-stat-card">
             <div className="ml-stat-icon gray"><HardDrive size={20} /></div>
             <div>
-              <div className="ml-stat-num">45.2 GB</div>
-              <div className="ml-stat-label">Storage Used</div>
+              <div className="ml-stat-num">{filtered.length}</div>
+              <div className="ml-stat-label">Shown</div>
             </div>
           </div>
           <div className="ml-stat-card">
             <div className="ml-stat-icon green"><Check size={20} /></div>
             <div>
-              <div className="ml-stat-num">312</div>
-              <div className="ml-stat-label">In Use</div>
+              <div className="ml-stat-num">{inPublished}</div>
+              <div className="ml-stat-label">In Published Articles</div>
             </div>
           </div>
         </div>
 
+        {/* Toolbar */}
         <div className="ml-toolbar">
+          <span className="ml-toolbar-title">
+            {filtered.length} image{filtered.length !== 1 ? "s" : ""}
+          </span>
 
-  <span className="ml-toolbar-title">
-    {filtered.length} image{filtered.length !== 1 ? "s" : ""}
-  </span>
-
-  {/* Sort dropdown */}
-  <div className="ml-sort-wrap" ref={sortRef}>
-    <button className="ml-sort-btn" onClick={() => setSortOpen((v) => !v)}>
-      <SlidersHorizontal size={13} /> {sort} <ChevronDown size={13} />
-    </button>
-    {sortOpen && (
-      <div className="ml-sort-menu">
-        {SORT_OPTIONS.map((s) => (
-          <div
-            key={s}
-            className={`ml-sort-item${sort === s ? " active" : ""}`}
-            onClick={() => { setSort(s); setSortOpen(false); }}
-          >
-            {sort === s && <Check size={13} />}
-            {s}
+          {/* Sort dropdown */}
+          <div className="ml-sort-wrap" ref={sortRef}>
+            <button className="ml-sort-btn" onClick={() => setSortOpen(v => !v)}>
+              <SlidersHorizontal size={13} /> {sort} <ChevronDown size={13} />
+            </button>
+            {sortOpen && (
+              <div className="ml-sort-menu">
+                {SORT_OPTIONS.map(s => (
+                  <div
+                    key={s}
+                    className={`ml-sort-item${sort === s ? " active" : ""}`}
+                    onClick={() => { setSort(s); setSortOpen(false); }}
+                  >
+                    {sort === s && <Check size={13} />}
+                    {s}
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
-        ))}
-      </div>
-    )}
-  </div>
 
-  {/* View toggle */}
-  <div className="ml-view-toggle">
-    <button
-      className={`ml-view-btn${view === "grid" ? " active" : ""}`}
-      onClick={() => setView("grid")}
-    >
-      <LayoutGrid size={14} />
-    </button>
-    <button
-      className={`ml-view-btn${view === "list" ? " active" : ""}`}
-      onClick={() => setView("list")}
-    >
-      <List size={14} />
-    </button>
-  </div>
+          {/* View toggle */}
+          <div className="ml-view-toggle">
+            <button className={`ml-view-btn${view === "grid" ? " active" : ""}`} onClick={() => setView("grid")}>
+              <LayoutGrid size={14} />
+            </button>
+            <button className={`ml-view-btn${view === "list" ? " active" : ""}`} onClick={() => setView("list")}>
+              <List size={14} />
+            </button>
+          </div>
+        </div>
 
-</div>
+        {/* Loading state */}
+        {loading && (
+          <div className="ml-empty">
+            <Loader2 size={36} className="ml-spinner" />
+            <p>Loading images…</p>
+          </div>
+        )}
+
+        {/* Error state */}
+        {!loading && error && (
+          <div className="ml-empty ml-empty--error">
+            <AlertCircle size={36} />
+            <p>{error}</p>
+            <button className="ml-retry-btn" onClick={loadMedia}>Retry</button>
+          </div>
+        )}
 
         {/* Empty state */}
-        {filtered.length === 0 && (
+        {!loading && !error && filtered.length === 0 && (
           <div className="ml-empty">
             <Image size={48} />
-            <p>No images match your search</p>
+            <p>{search ? "No images match your search" : "No images found. Upload images when creating articles."}</p>
           </div>
         )}
 
         {/* Grid view */}
-        {view === "grid" && filtered.length > 0 && (
+        {!loading && !error && view === "grid" && filtered.length > 0 && (
           <div className="ml-grid">
-            {filtered.map((item) => (
-              <div key={item.id} className="ml-card">
-                <div className="ml-card-img-wrap">
-                  <img src={item.src} alt={item.name} loading="lazy" />
-                  <div className="ml-card-badge">JPG</div>
-                  <div className="ml-card-overlay">
-                    <button className="ml-card-action"><Download size={15} /></button>
-                    <button className="ml-card-action danger"><Trash2 size={15} /></button>
+            {filtered.map((item, idx) => {
+              const filename = getFilename(item.url);
+              const isDeleting = deleting === item.newsId;
+              return (
+                <div key={`${item.newsId}-${idx}`} className={`ml-card${isDeleting ? " ml-card--deleting" : ""}`}>
+                  <div className="ml-card-img-wrap">
+                    <img
+                      src={item.url}
+                      alt={item.headline}
+                      loading="lazy"
+                      onError={e => { (e.target as HTMLImageElement).src = "https://placehold.co/400x225?text=No+Image"; }}
+                    />
+                    <div className="ml-card-badge">{item.type === "featured" ? "Featured" : "Content"}</div>
+                    <div className="ml-card-overlay">
+                      <button
+                        className="ml-card-action"
+                        title="Download"
+                        onClick={() => handleDownload(item.url, filename)}
+                      >
+                        <Download size={15} />
+                      </button>
+                      <button
+                        className="ml-card-action danger"
+                        title="Delete"
+                        disabled={isDeleting}
+                        onClick={() => handleDelete(item.newsId)}
+                      >
+                        {isDeleting ? <Loader2 size={15} className="ml-spinner" /> : <Trash2 size={15} />}
+                      </button>
+                    </div>
+                  </div>
+                  <div className="ml-card-info">
+                    <h4 title={item.headline}>{item.headline}</h4>
+                    <div className="ml-card-meta">
+                      <span className="ml-card-size" title={filename}>{filename.slice(0, 24)}{filename.length > 24 ? "…" : ""}</span>
+                      <span className="ml-card-used">{timeAgo(item.createdAt)}</span>
+                    </div>
                   </div>
                 </div>
-                <div className="ml-card-info">
-                  <h4>{item.name}</h4>
-                  <div className="ml-card-meta">
-                    <span className="ml-card-size">{item.dimension} · {item.size}</span>
-                    <span className="ml-card-used">{item.used}×</span>
-                  </div>
-                </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         )}
 
         {/* List view */}
-        {view === "list" && filtered.length > 0 && (
+        {!loading && !error && view === "list" && filtered.length > 0 && (
           <div className="ml-list">
             <div className="ml-list-header">
               <span></span>
-              <span>Name</span>
-              <span>Size</span>
-              <span>Dimension</span>
+              <span>Headline</span>
+              <span>Type</span>
+              <span>Status</span>
               <span>Uploaded</span>
               <span>Actions</span>
             </div>
-            {filtered.map((item) => (
-              <div key={item.id} className="ml-list-row">
-                <img className="ml-list-thumb" src={item.src} alt={item.name} loading="lazy" />
-                <div className="ml-list-name">{item.name}</div>
-                <div className="ml-list-size">{item.size}</div>
-                <div className="ml-list-dim">{item.dimension}</div>
-                <div className="ml-list-time">{item.time}</div>
-                <div className="ml-list-actions">
-                  <Download size={16} />
-                  <Trash2 size={16} className="del" />
+            {filtered.map((item, idx) => {
+              const filename   = getFilename(item.url);
+              const isDeleting = deleting === item.newsId;
+              return (
+                <div key={`${item.newsId}-${idx}`} className={`ml-list-row${isDeleting ? " ml-list-row--deleting" : ""}`}>
+                  <img
+                    className="ml-list-thumb"
+                    src={item.url}
+                    alt={item.headline}
+                    loading="lazy"
+                    onError={e => { (e.target as HTMLImageElement).src = "https://placehold.co/60x40?text=X"; }}
+                  />
+                  <div className="ml-list-name" title={item.headline}>{item.headline}</div>
+                  <div className="ml-list-size">{item.type === "featured" ? "Featured" : "Content"}</div>
+                  <div className="ml-list-dim">{item.status}</div>
+                  <div className="ml-list-time">{timeAgo(item.createdAt)}</div>
+                  <div className="ml-list-actions">
+                    <span title="Download">
+                      <Download
+                        size={16}
+                        style={{ cursor: "pointer" }}
+                        onClick={() => handleDownload(item.url, filename)}
+                      />
+                    </span>
+                    {isDeleting
+                      ? <Loader2 size={16} className="ml-spinner" />
+                      : (
+                        <span title="Delete">
+                          <Trash2
+                            size={16}
+                            className="del"
+                            style={{ cursor: "pointer" }}
+                            onClick={() => handleDelete(item.newsId)}
+                          />
+                        </span>
+                      )
+                    }
+                  </div>
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         )}
 

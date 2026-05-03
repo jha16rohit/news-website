@@ -2,6 +2,8 @@ import React, { useState, useEffect } from "react";
 import { NewsContext } from "../NewsStore/NewsStore";
 import type { Article, Category, NewsStore, LiveUpdate } from "../NewsStore/NewsStore";
 
+// ─── Seed Data ─────────────────────────────────────────────────────────────────
+
 const INITIAL_ARTICLES: Article[] = [
   {
     id: 1, title: "Parliament Session: Key Budget Amendments Passed...", subtitle: "Budget Amendments Passed",
@@ -97,16 +99,19 @@ const INITIAL_ARTICLES: Article[] = [
   },
 ];
 
+// ─── Category seed uses string IDs (UUIDs in production; placeholder strings here) ─
 const INITIAL_CATEGORIES: Category[] = [
-  { id: 1, name: "Politics",      description: "National and international political news",  articles: "1,245", views: "2.5M", featured: true,  enabled: true, color: "#dc2626", parentId: null },
-  { id: 2, name: "Business",      description: "Markets, economy, and corporate news",        articles: "987",   views: "1.9M", featured: true,  enabled: true, color: "#2563eb", parentId: null },
-  { id: 3, name: "Sports",        description: "Cricket, football, and all sports coverage",  articles: "1,567", views: "3.2M", featured: true,  enabled: true, color: "#16a34a", parentId: null },
-  { id: 4, name: "Entertainment", description: "Bollywood, Hollywood, and celebrity news",    articles: "2,134", views: "4.5M", featured: false, enabled: true, color: "#9333ea", parentId: null },
-  { id: 5, name: "Technology",    description: "Tech news, gadgets, and innovations",         articles: "1,024", views: "2.1M", featured: true,  enabled: true, color: "#0ea5e9", parentId: null },
+  { id: "cat-1", name: "Politics",      description: "National and international political news",  articles: "1,245", views: "2.5M", featured: true,  enabled: true, color: "#dc2626", parentId: null },
+  { id: "cat-2", name: "Business",      description: "Markets, economy, and corporate news",        articles: "987",   views: "1.9M", featured: true,  enabled: true, color: "#2563eb", parentId: null },
+  { id: "cat-3", name: "Sports",        description: "Cricket, football, and all sports coverage",  articles: "1,567", views: "3.2M", featured: true,  enabled: true, color: "#16a34a", parentId: null },
+  { id: "cat-4", name: "Entertainment", description: "Bollywood, Hollywood, and celebrity news",    articles: "2,134", views: "4.5M", featured: false, enabled: true, color: "#9333ea", parentId: null },
+  { id: "cat-5", name: "Technology",    description: "Tech news, gadgets, and innovations",         articles: "1,024", views: "2.1M", featured: true,  enabled: true, color: "#0ea5e9", parentId: null },
 ];
 
+// ─── LocalStorage persistence for categories ────────────────────────────────────
+
 const STORAGE_KEY    = "localNewzCategories";
-const SCHEMA_VERSION = "v2";
+const SCHEMA_VERSION = "v3";   // bumped from v2 → forces reset after id type change
 
 function loadCategories(): Category[] {
   try {
@@ -126,11 +131,18 @@ function saveCategories(cats: Category[]): void {
   } catch { /* quota exceeded or private-browsing */ }
 }
 
+// ─── Counters ──────────────────────────────────────────────────────────────────
+
 const PRIORITY_ORDER: Article["priority"][] = ["High", "Medium", "Normal"];
 
-let nextArticleId  = INITIAL_ARTICLES.length  + 1;
-let nextCategoryId = INITIAL_CATEGORIES.length + 1;
-let nextUpdateId   = 1000;
+let nextArticleId = INITIAL_ARTICLES.length + 1;
+let nextUpdateId  = 1000;
+
+function genCategoryId(): string {
+  return `cat-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
+}
+
+// ─── Provider ──────────────────────────────────────────────────────────────────
 
 export const NewsProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [articles,   setArticlesState]   = useState<Article[]>(INITIAL_ARTICLES);
@@ -138,52 +150,35 @@ export const NewsProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   useEffect(() => { saveCategories(categories); }, [categories]);
 
+  // ── Article mutations ──────────────────────────────────────────────────────
+
   const setArticles = (a: Article[]) => setArticlesState(a);
 
   const addArticle = (article: Omit<Article, "id">) =>
     setArticlesState(prev => [{ ...article, id: nextArticleId++ }, ...prev]);
 
   const updateArticle = (id: number, patch: Partial<Article>) =>
-    setArticlesState(prev => prev.map(a => a.id === id ? { ...a, ...patch } : a));
+    setArticlesState(prev => prev.map(a => (a.id === id ? { ...a, ...patch } : a)));
 
   const deleteArticle = (id: number) =>
     setArticlesState(prev => prev.filter(a => a.id !== id));
 
-  /** Convert any article to Breaking News mode — keeps ID, stats, history intact */
+  /** Convert any article to Breaking News mode */
   const convertToBreaking = (id: number) =>
     setArticlesState(prev => prev.map(a => {
       if (a.id !== id) return a;
       return {
         ...a,
-        category:   "Breaking News",
-        tag:        "Breaking",
-        tagType:    "breaking",
-        leftBorder: "breaking-left",
-        priority:   "High",
+        category:     "Breaking News",
+        tag:          "Breaking",
+        tagType:      "breaking",
+        leftBorder:   "breaking-left",
+        priority:     "High" as const,
         priorityType: "high",
-        channels:   a.channels?.length ? a.channels : ["web", "mobile"],
-        expiryTime: new Date(Date.now() + 6 * 60 * 60 * 1000).toISOString(),
-        // Clear live-specific fields if switching away from live
-        liveUpdates: a.tagType === "live" ? a.liveUpdates : a.liveUpdates,
+        channels:     a.channels?.length ? a.channels : ["web", "mobile"],
+        expiryTime:   new Date(Date.now() + 6 * 60 * 60 * 1000).toISOString(),
       };
     }));
-
-  /** Remove Breaking mode — converts back to Standard Article */
-  // const removeBreaking = (id: number) =>
-  //   setArticlesState(prev => prev.map(a => {
-  //     if (a.id !== id) return a;
-  //     return {
-  //       ...a,
-  //       category:    "Standard Article",
-  //       tag:         undefined,
-  //       tagType:     undefined,
-  //       leftBorder:  undefined,
-  //       priority:    "Normal",
-  //       priorityType: "normal",
-  //       channels:    undefined,
-  //       expiryTime:  undefined,
-  //     };
-  //   }));
 
   /** Convert any article to Live Updates mode */
   const convertToLive = (id: number) =>
@@ -191,22 +186,22 @@ export const NewsProvider: React.FC<{ children: React.ReactNode }> = ({ children
       if (a.id !== id) return a;
       return {
         ...a,
-        category:     "Live Updates",
-        tag:          "Live",
-        tagType:      "live",
-        leftBorder:   "live-left",
-        status:       "Published",
-        statusType:   "published",
-        published:    "Live",
+        category:      "Live Updates",
+        tag:           "Live",
+        tagType:       "live",
+        leftBorder:    "live-left",
+        status:        "Published",
+        statusType:    "published",
+        published:     "Live",
         liveStartedAt: new Date().toISOString(),
-        liveUpdates:  a.liveUpdates ?? [],
+        liveUpdates:   a.liveUpdates ?? [],
         // Clear breaking-specific fields
-        channels:    undefined,
-        expiryTime:  undefined,
+        channels:   undefined,
+        expiryTime: undefined,
       };
     }));
 
-  /** End a live story — moves to Ended/Past Live */
+  /** End a live story */
   const endLive = (id: number) =>
     setArticlesState(prev => prev.map(a => {
       if (a.id !== id) return a;
@@ -224,14 +219,14 @@ export const NewsProvider: React.FC<{ children: React.ReactNode }> = ({ children
       if (!ids.includes(a.id)) return a;
       return {
         ...a,
-        category:    "Breaking News",
-        tag:         "Breaking",
-        tagType:     "breaking",
-        leftBorder:  "breaking-left",
-        priority:    "High",
+        category:     "Breaking News",
+        tag:          "Breaking",
+        tagType:      "breaking",
+        leftBorder:   "breaking-left",
+        priority:     "High" as const,
         priorityType: "high",
-        channels:    a.channels?.length ? a.channels : ["web", "mobile"],
-        expiryTime:  new Date(Date.now() + 6 * 60 * 60 * 1000).toISOString(),
+        channels:     a.channels?.length ? a.channels : ["web", "mobile"],
+        expiryTime:   new Date(Date.now() + 6 * 60 * 60 * 1000).toISOString(),
       };
     }));
 
@@ -259,7 +254,7 @@ export const NewsProvider: React.FC<{ children: React.ReactNode }> = ({ children
       const isPaused = a.statusType === "paused";
       return {
         ...a,
-        status:     isPaused ? "Published" : "Published",
+        status:     "Published",
         statusType: isPaused ? "published" : "paused",
         published:  isPaused ? "Live" : "Paused",
       };
@@ -285,14 +280,18 @@ export const NewsProvider: React.FC<{ children: React.ReactNode }> = ({ children
       return { ...a, priority: next, priorityType: next.toLowerCase() };
     }));
 
+  // ── Category mutations ─────────────────────────────────────────────────────
+
   const addCategory = (category: Omit<Category, "id">) =>
-    setCategoriesState(prev => [...prev, { ...category, id: nextCategoryId++ }]);
+    setCategoriesState(prev => [...prev, { ...category, id: genCategoryId() }]);
 
-  const updateCategory = (id: number, patch: Partial<Category>) =>
-    setCategoriesState(prev => prev.map(c => c.id === id ? { ...c, ...patch } : c));
+  const updateCategory = (id: string, patch: Partial<Category>) =>
+    setCategoriesState(prev => prev.map(c => (c.id === id ? { ...c, ...patch } : c)));
 
-  const deleteCategory = (id: number) =>
+  const deleteCategory = (id: string) =>
     setCategoriesState(prev => prev.filter(c => c.id !== id && c.parentId !== id));
+
+  // ── Store ──────────────────────────────────────────────────────────────────
 
   const store: NewsStore = {
     articles, setArticles, addArticle, updateArticle, deleteArticle,

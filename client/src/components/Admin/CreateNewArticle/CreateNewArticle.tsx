@@ -3,7 +3,7 @@ import { useLocation, useNavigate } from "react-router-dom";
 import "./CreateNewArticle.css";
 import { createNews, updateNews, fetchNewsById } from "../../../api/news";
 import { getCategories } from "../../../api/category.api";
-
+import { createNewsWithMedia } from "../../../api/news";
 // Category type (mirrored from DB schema)
 interface Category {
   id: string | number;
@@ -685,7 +685,7 @@ const CreateNewArticle: React.FC = () => {
   const [liveInput,      setLiveInput]        = useState("");
   const [liveUpdates,    setLiveUpdates]      = useState<{ id: number; time: string; text: string }[]>([]);
   const [dragOver,       setDragOver]         = useState(false);
-  const [,               setMediaFile]        = useState<File | null>(null);
+const [mediaFile, setMediaFile] = useState<File | null>(null);
   const [mediaPreview,   setMediaPreview]     = useState<string | null>(null);
   const [imageCaption,   setImageCaption]     = useState("");
   const [photoCredit,    setPhotoCredit]      = useState("");
@@ -697,6 +697,8 @@ const CreateNewArticle: React.FC = () => {
   const [focusKeywords,  setFocusKeywords]    = useState("");
   const [showScheduleModal, setShowScheduleModal] = useState(false);
   const [showTopicModal,    setShowTopicModal]    = useState(false);
+  const [showDeleteModal,   setShowDeleteModal]   = useState(false);
+  const [deleteMode,        setDeleteMode]        = useState<"instant" | "interval">("interval");
   const [savedRange,        setSavedRange]        = useState<Range | null>(null);
   const [submitError,       setSubmitError]       = useState<string | null>(null);
   const [isSubmitting,      setIsSubmitting]      = useState(false);
@@ -827,13 +829,19 @@ const CreateNewArticle: React.FC = () => {
     "Standard Article": "STANDARD",
     "Breaking News":    "BREAKING",
     "Live Updates":     "LIVE",
-  }[selectedType] as any);
+  }[selectedType] as "STANDARD" | "BREAKING" | "LIVE");
 
-  const buildPayload = (status: "PUBLISHED" | "DRAFT" | "SCHEDULED", publishAt?: string) => {
+  const buildPayload = (
+    status: "PUBLISHED" | "DRAFT" | "SCHEDULED" | "EXPIRED" | "DELETED",
+    publishAt?: string,
+    deleteMode?: "instant" | "interval",
+    deleteIntervalDays?: number,
+  ) => {
     const apiType = toApiArticleType();
     return {
       headline:   headline.trim(),
       shortTitle: shortTitle.trim() || undefined,
+      excerpt:    summary.trim()    || undefined,
       content:    editorRef.current?.innerHTML ?? content,
       categoryId,
       language,
@@ -844,7 +852,6 @@ const CreateNewArticle: React.FC = () => {
       breakingPushNotif:     apiType === "BREAKING" ? breakingToggles.pushNotification : undefined,
       breakingHomepageAlert: apiType === "BREAKING" ? breakingToggles.homepageAlert    : undefined,
       liveUpdates: apiType === "LIVE" ? liveUpdates : undefined,
-      featuredImage: mediaPreview   || undefined,
       imageCaption:  imageCaption   || undefined,
       photoCredit:   photoCredit    || undefined,
       metaTitle:       metaTitle      || undefined,
@@ -854,6 +861,8 @@ const CreateNewArticle: React.FC = () => {
       keywords: focusKeywords ? focusKeywords.split(",").map(k => k.trim()).filter(Boolean) : [],
       status,
       publishAt,
+      deleteMode,
+      deleteIntervalDays,
     };
   };
 
@@ -869,44 +878,152 @@ const CreateNewArticle: React.FC = () => {
     return true;
   };
 
-  const handlePublish = async () => {
-    setSubmitError(null);
-    if (!validate()) return;
-    setIsSubmitting(true);
-    try {
-      if (isEdit && editId) await updateNews(editId, buildPayload("PUBLISHED"));
-      else                  await createNews(buildPayload("PUBLISHED"));
-      navigate(getRedirectPath());
-    } catch (err: any) {
-      setSubmitError(err?.message || "Failed to publish. Please try again.");
-    } finally { setIsSubmitting(false); }
-  };
+ const handlePublish = async () => {
+  setSubmitError(null);
+  if (!validate()) return;
+  setIsSubmitting(true);
 
-  const handleSaveDraft = async () => {
+  try {
+    const payload = buildPayload("PUBLISHED");
+
+    if (isEdit && editId) {
+      // ✅ EDIT FLOW (unchanged)
+      await updateNews(editId, payload);
+    } else {
+      // 🔥 CREATE FLOW WITH MEDIA SUPPORT
+      if (mediaFile) {
+        const formData = new FormData();
+
+        Object.entries(payload).forEach(([key, value]) => {
+          if (value === undefined || value === null) return;
+
+          if (Array.isArray(value)) {
+            value.forEach(v => formData.append(`${key}[]`, String(v)));
+          } else {
+            formData.append(key, String(value));
+          }
+        });
+
+        // ✅ IMAGE FILE
+        formData.append("image", mediaFile);
+
+        await createNewsWithMedia(formData);
+      } else {
+        // ✅ fallback (no image)
+        await createNews(payload);
+      }
+    }
+
+    navigate(getRedirectPath());
+  } catch (err: any) {
+    setSubmitError(err?.message || "Failed to publish. Please try again.");
+  } finally {
+    setIsSubmitting(false);
+  }
+};
+
+const handleSaveDraft = async () => {
+  setSubmitError(null);
+  if (!validate()) return;
+  setIsSubmitting(true);
+
+  try {
+    const payload = buildPayload("DRAFT");
+
+    if (isEdit && editId) {
+      // ✅ EDIT FLOW (unchanged)
+      await updateNews(editId, payload);
+    } else {
+      // 🔥 CREATE FLOW WITH MEDIA SUPPORT
+      if (mediaFile) {
+        const formData = new FormData();
+
+        Object.entries(payload).forEach(([key, value]) => {
+          if (value === undefined || value === null) return;
+
+          if (Array.isArray(value)) {
+            value.forEach(v => formData.append(`${key}[]`, String(v)));
+          } else {
+            formData.append(key, String(value));
+          }
+        });
+
+        // ✅ IMAGE FILE
+        formData.append("image", mediaFile);
+
+        await createNewsWithMedia(formData);
+      } else {
+        // ✅ fallback (no image)
+        await createNews(payload);
+      }
+    }
+
+    navigate("/admin/news");
+  } catch (err: any) {
+    setSubmitError(err?.message || "Failed to save draft. Please try again.");
+  } finally {
+    setIsSubmitting(false);
+  }
+};
+
+const handleScheduleConfirm = async (isoDatetime: string) => {
+  setSubmitError(null);
+  if (!validate()) { setShowScheduleModal(false); return; }
+  setIsSubmitting(true);
+
+  try {
+    const payload = buildPayload("SCHEDULED", isoDatetime);
+
+    if (isEdit && editId) {
+      // ✅ EDIT FLOW (unchanged)
+      await updateNews(editId, payload);
+    } else {
+      // 🔥 CREATE FLOW WITH MEDIA SUPPORT
+      if (mediaFile) {
+        const formData = new FormData();
+
+        Object.entries(payload).forEach(([key, value]) => {
+          if (value === undefined || value === null) return;
+
+          if (Array.isArray(value)) {
+            value.forEach(v => formData.append(`${key}[]`, String(v)));
+          } else {
+            formData.append(key, String(value));
+          }
+        });
+
+        // ✅ IMAGE FILE
+        formData.append("image", mediaFile);
+
+        await createNewsWithMedia(formData);
+      } else {
+        // ✅ fallback (no image)
+        await createNews(payload);
+      }
+    }
+
+    setShowScheduleModal(false);
+    navigate("/admin/schedule");
+  } catch (err: any) {
+    setSubmitError(err?.message || "Failed to schedule. Please try again.");
+    setShowScheduleModal(false);
+  } finally {
+    setIsSubmitting(false);
+  }
+};
+
+  const handleDelete = async (mode: "instant" | "interval") => {
     setSubmitError(null);
-    if (!validate()) return;
     setIsSubmitting(true);
     try {
-      if (isEdit && editId) await updateNews(editId, buildPayload("DRAFT"));
-      else                  await createNews(buildPayload("DRAFT"));
+      const payload = buildPayload("DELETED", undefined, mode, 14);
+      if (isEdit && editId) await updateNews(editId, payload as any);
+      else                  await createNews(payload as any);
+      setShowDeleteModal(false);
       navigate("/admin/news");
     } catch (err: any) {
-      setSubmitError(err?.message || "Failed to save draft. Please try again.");
-    } finally { setIsSubmitting(false); }
-  };
-
-  const handleScheduleConfirm = async (isoDatetime: string) => {
-    setSubmitError(null);
-    if (!validate()) { setShowScheduleModal(false); return; }
-    setIsSubmitting(true);
-    try {
-      if (isEdit && editId) await updateNews(editId, buildPayload("SCHEDULED", isoDatetime));
-      else                  await createNews(buildPayload("SCHEDULED", isoDatetime));
-      setShowScheduleModal(false);
-      navigate("/admin/schedule");
-    } catch (err: any) {
-      setSubmitError(err?.message || "Failed to schedule. Please try again.");
-      setShowScheduleModal(false);
+      setSubmitError(err?.message || "Failed to delete. Please try again.");
+      setShowDeleteModal(false);
     } finally { setIsSubmitting(false); }
   };
 
@@ -972,6 +1089,54 @@ const CreateNewArticle: React.FC = () => {
 
       {showScheduleModal && <ScheduleModal onClose={() => setShowScheduleModal(false)} onConfirm={handleScheduleConfirm} />}
       {showTopicModal    && <TopicLinkModal savedRange={savedRange} editorRef={editorRef} onClose={() => setShowTopicModal(false)} />}
+      {showDeleteModal && (
+        <div className="cna-modal-overlay" onClick={e => { if (e.target === e.currentTarget) setShowDeleteModal(false); }}>
+          <div className="cna-modal" role="dialog" aria-modal="true" style={{ maxWidth: 420 }}>
+            <div className="cna-modal-header">
+              <div className="cna-modal-title-wrap">
+                <div className="cna-modal-icon" style={{ background: "#fee2e2" }}><Trash2 size={20} color="#dc2626" /></div>
+                <div>
+                  <h2 className="cna-modal-title">Delete Article</h2>
+                  <p className="cna-modal-subtitle">Choose how to delete this article</p>
+                </div>
+              </div>
+              <button className="cna-modal-close" onClick={() => setShowDeleteModal(false)}><X size={18} /></button>
+            </div>
+            <div className="cna-modal-body" style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+              <button
+                className={`cna-delete-option${deleteMode === "instant" ? " cna-delete-option--active" : ""}`}
+                onClick={() => setDeleteMode("instant")}
+                style={{ display: "flex", alignItems: "flex-start", gap: 12, padding: "12px 16px", border: deleteMode === "instant" ? "2px solid #dc2626" : "1px solid #e5e7eb", borderRadius: 10, background: deleteMode === "instant" ? "#fff1f1" : "#fafafa", cursor: "pointer", textAlign: "left" }}>
+                <Trash2 size={18} color="#dc2626" style={{ marginTop: 2, flexShrink: 0 }} />
+                <div>
+                  <p style={{ fontWeight: 600, fontSize: 14, color: "#1a1a18", margin: 0 }}>Instant Delete</p>
+                  <p style={{ fontSize: 12, color: "#6b7280", margin: "2px 0 0" }}>Permanently removes the article immediately. This cannot be undone.</p>
+                </div>
+              </button>
+              <button
+                className={`cna-delete-option${deleteMode === "interval" ? " cna-delete-option--active" : ""}`}
+                onClick={() => setDeleteMode("interval")}
+                style={{ display: "flex", alignItems: "flex-start", gap: 12, padding: "12px 16px", border: deleteMode === "interval" ? "2px solid #f59e0b" : "1px solid #e5e7eb", borderRadius: 10, background: deleteMode === "interval" ? "#fffbeb" : "#fafafa", cursor: "pointer", textAlign: "left" }}>
+                <Clock size={18} color="#f59e0b" style={{ marginTop: 2, flexShrink: 0 }} />
+                <div>
+                  <p style={{ fontWeight: 600, fontSize: 14, color: "#1a1a18", margin: 0 }}>Delete After 14 Days</p>
+                  <p style={{ fontSize: 12, color: "#6b7280", margin: "2px 0 0" }}>Article is hidden immediately but stays in database for 14 days before being permanently purged.</p>
+                </div>
+              </button>
+            </div>
+            <div className="cna-modal-footer">
+              <button className="cna-btn cna-btn-outline" onClick={() => setShowDeleteModal(false)}>Cancel</button>
+              <button
+                className="cna-btn"
+                style={{ background: "#dc2626", color: "white" }}
+                disabled={isSubmitting}
+                onClick={() => handleDelete(deleteMode)}>
+                <Trash2 size={14} /> {isSubmitting ? "Deleting…" : "Confirm Delete"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       <div className="cna-body">
         <main className="cna-main">
@@ -1420,7 +1585,28 @@ const CreateNewArticle: React.FC = () => {
                   <p className="cna-status-info-desc">Publishes at chosen time</p>
                 </div>
               </div>
+              <div className="cna-status-info-item">
+                <span className="cna-status-dot" style={{ background: "#f59e0b" }} />
+                <div>
+                  <p className="cna-status-info-label">Expired</p>
+                  <p className="cna-status-info-desc">Article expired, no longer shown</p>
+                </div>
+              </div>
+              <div className="cna-status-info-item">
+                <span className="cna-status-dot" style={{ background: "#dc2626" }} />
+                <div>
+                  <p className="cna-status-info-label">Deleted</p>
+                  <p className="cna-status-info-desc">Instant or after 14 days</p>
+                </div>
+              </div>
             </div>
+            <button
+              className="cna-btn"
+              style={{ marginTop: 12, width: "100%", justifyContent: "center", background: "#fee2e2", color: "#dc2626", border: "1px solid #fecaca" }}
+              disabled={isSubmitting}
+              onClick={() => setShowDeleteModal(true)}>
+              <Trash2 size={14} /> Delete Article
+            </button>
           </div>
 
         </aside>

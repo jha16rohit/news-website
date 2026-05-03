@@ -1,9 +1,12 @@
-import { apiClient } from "./client";// your existing fetch wrapper
+import { apiClient } from "./client";
 
 export interface Tag {
-  id: string;
-  name: string;
-  slug: string;
+  id:         string;
+  name:       string;
+  slug:       string;
+  isTrending: boolean;
+  usageCount: number;
+  createdAt?: string;
   _count?: {
     articles: number;
   };
@@ -24,10 +27,19 @@ export const createTag = async (name: string): Promise<Tag> => {
   return res.tag;
 };
 
-// ─── TRENDING TAGS ────────────────────────────
+// ─── TRENDING TAGS (admin-set isTrending=true) ────────────────────────────────
 export const getTrendingTags = async (): Promise<Tag[]> => {
   const res = await apiClient("/api/tags/trending");
   return res;
+};
+
+// ─── SET TRENDING ─────────────────────────────
+export const setTagTrending = async (id: string, isTrending: boolean): Promise<Tag> => {
+  const res = await apiClient(`/api/tags/${id}/trending`, {
+    method: "PATCH",
+    body: JSON.stringify({ isTrending }),
+  });
+  return res.tag;
 };
 
 // ─── DELETE TAG ───────────────────────────────

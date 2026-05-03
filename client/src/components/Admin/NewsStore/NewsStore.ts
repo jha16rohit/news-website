@@ -1,82 +1,89 @@
+// NewsStore.ts  — full type definitions + context
+
 import { createContext, useContext } from "react";
 
-export type ArticleStatus   = "Published" | "Draft" | "Scheduled" | "Ended";
-export type ArticlePriority = "High" | "Medium" | "Normal";
-
+// ─── LiveUpdate ────────────────────────────────────────────────────────────────
 export interface LiveUpdate {
-  id:        number;
-  time:      string;   // e.g. "10:30 AM"
-  text:      string;
-  timestamp: string;   // ISO
+  id:         number;
+  time:       string;
+  text:       string;
+  timestamp?: string;
 }
 
+// ─── Article ───────────────────────────────────────────────────────────────────
 export interface Article {
-  id:              number;
-  title:           string;
-  subtitle:        string;
-  category:        string;          // article type: "Breaking News", "Standard Article" etc.
-  articleCategory: string;          // classification: "Sports", "Politics" etc.
-  authorFirst:     string;
-  authorLast:      string;
-  status:          ArticleStatus;
-  statusType:      string;
-  priority:        ArticlePriority;
-  priorityType:    string;
-  published:       string;
-  views:           string;
-  tag?:            string;
-  tagType?:        string;
-  leftBorder?:     string;
-  isTopStory:      boolean;
-  isPinned:        boolean;
-  // New scheduling fields
-  imageUrl?:       string; 
-  img?:            string;
-  scheduledFor?:   string | null;   // ISO datetime string, set when status = "Scheduled"
-  publishedAt?:    string | null;   // ISO datetime string, set when status = "Published"
+  id:             number;
+  title:          string;
+  subtitle?:      string;
+  category:       string;
+  articleCategory?: string;
+  authorFirst?:   string;
+  authorLast?:    string;
+  status:         string;
+  statusType:     string;
+  priority:       "High" | "Medium" | "Normal";
+  priorityType:   string;
+  published:      string;
+  views:          string;
+  tag?:           string;
+  tagType?:       string;
+  leftBorder?:    string;
+  isTopStory?:    boolean;
+  isPinned?:      boolean;
+
+  // Breaking-specific
+  channels?:      string[];
+  expiryTime?:    string;
+
+  // Live-specific
+  liveStartedAt?: string;
+  liveUpdates?:   LiveUpdate[];
 }
 
+// ─── Category ─────────────────────────────────────────────────────────────────
 export interface Category {
-  id: string;                 // ✅ FIXED
-  name: string;
-  description: string;
-  articles: string;
-  views: string;
-  featured: boolean;
-  enabled: boolean;
-  color: string;
-  parentId?: string | null;   // ✅ FIXED
+  id:          string;           // ← string (UUID), NOT number
+  name:        string;
+  description?: string;
+  articles?:   string;
+  views?:      string;
+  featured?:   boolean;
+  enabled?:    boolean;
+  color?:      string;
+  parentId?:   string | null;
   inShowcase?: boolean;
   _count?: {
     news: number;
   };
 }
 
+// ─── Store ────────────────────────────────────────────────────────────────────
 export interface NewsStore {
-  articles:           Article[];
-  setArticles:        (a: Article[]) => void;
-  addArticle:         (a: Omit<Article, "id">) => void;
-  updateArticle:      (id: number, patch: Partial<Article>) => void;
-  deleteArticle:      (id: number) => void;
-  convertToBreaking:  (id: number) => void;
-  convertToLive:      (id: number) => void;
-  endLive:            (id: number) => void;
-  promoteToBreaking:  (ids: number[]) => void;
-  addLiveUpdate:      (articleId: number, text: string) => void;
-  togglePause:        (id: number) => void;
-  increasePriority:   (id: number) => void;
-  decreasePriority:   (id: number) => void;
+  articles:         Article[];
+  setArticles:      (a: Article[]) => void;
+  addArticle:       (article: Omit<Article, "id">) => void;
+  updateArticle:    (id: number, patch: Partial<Article>) => void;
+  deleteArticle:    (id: number) => void;
+  convertToBreaking:(id: number) => void;
+  convertToLive:    (id: number) => void;
+  endLive:          (id: number) => void;
+  promoteToBreaking:(ids: number[]) => void;
+  addLiveUpdate:    (articleId: number, text: string) => void;
+  togglePause:      (id: number) => void;
+  increasePriority: (id: number) => void;
+  decreasePriority: (id: number) => void;
 
-  categories:     Category[];
-  addCategory:    (c: Omit<Category, "id">) => void;
-  updateCategory: (id: number, patch: Partial<Category>) => void;
-  deleteCategory: (id: number) => void;
+  categories:       Category[];
+  addCategory:      (category: Omit<Category, "id">) => void;
+  updateCategory:   (id: string, patch: Partial<Category>) => void;
+  deleteCategory:   (id: string) => void;
 }
 
+// ─── Context ──────────────────────────────────────────────────────────────────
 export const NewsContext = createContext<NewsStore | null>(null);
 
-export const useNews = (): NewsStore => {
+export function useNews(): NewsStore {
   const ctx = useContext(NewsContext);
-  if (!ctx) throw new Error("useNews must be inside NewsProvider");
+  if (!ctx) throw new Error("useNews must be used inside <NewsProvider>");
   return ctx;
-};
+}

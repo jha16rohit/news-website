@@ -17,6 +17,7 @@ import {
   getAllTags,
   createTag,
   deleteTag as deleteTagApi,
+  setTagTrending,
   type Tag as TagType,
 } from "../../../api/tags.api";
 
@@ -53,30 +54,6 @@ function normalizeTagName(raw: string): string {
     .split(" ")
     .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
     .join(" ");
-}
-
-// ─── Trending localStorage helpers ────────────────────────────────────────────
-const LS_KEY = "localNewzTrendingTags";
-
-interface TrendingTagEntry {
-  id: string;
-  label: string;
-  slug: string;
-  enabled: boolean;
-}
-
-function loadTrendingFromStorage(): TrendingTagEntry[] {
-  try {
-    const raw = localStorage.getItem(LS_KEY);
-    return raw ? JSON.parse(raw) : [];
-  } catch {
-    return [];
-  }
-}
-
-function saveTrendingToStorage(entries: TrendingTagEntry[]) {
-  localStorage.setItem(LS_KEY, JSON.stringify(entries));
-  window.dispatchEvent(new Event("localNewzTrendingTagsUpdate"));
 }
 
 // ─── AddTagModal ──────────────────────────────────────────────────────────────
@@ -213,11 +190,8 @@ export default function Tags() {
   const [deleting,      setDeleting]      = useState(false);
   const [apiError,      setApiError]      = useState<string | null>(null);
 
-  // Trending state: set of tag IDs currently marked as trending
-  const [trendingIds, setTrendingIds] = useState<Set<string>>(() => {
-    const stored = loadTrendingFromStorage();
-    return new Set(stored.filter((t) => t.enabled).map((t) => t.id));
-  });
+  // Trending state: set of tag IDs currently marked as trending (from DB isTrending field)
+  const [trendingIds, setTrendingIds] = useState<Set<string>>(new Set());
 
   // ── Load all tags from API ─────────────────────────────────────────────────
   const loadTags = useCallback(async () => {
@@ -233,7 +207,17 @@ export default function Tags() {
     }
   }, []);
 
-  useEffect(() => { loadTags(); }, [loadTags]);
+  useEffect(() => {
+    loadTags();
+  }, [loadTags]);
+
+  // Sync trendingIds from DB whenever allTags changes
+  useEffect(() => {
+    const fromDb = new Set(
+      allTags.filter((t) => (t as any).isTrending).map((t) => t.id)
+    );
+    setTrendingIds(fromDb);
+  }, [allTags]);
 
   // ── Derived ────────────────────────────────────────────────────────────────
   const existingNames = allTags.map((t) => t.name);
@@ -267,30 +251,27 @@ export default function Tags() {
   const totalTagged  = allTags.reduce((s, t) => s + (t._count?.articles ?? 0), 0);
   // const withArticles = allTags.filter((t) => (t._count?.articles ?? 0) > 0).length;
 
-  // ── Toggle trending ────────────────────────────────────────────────────────
-  const toggleTrending = useCallback((tag: TagType) => {
+  // ── Toggle trending via API ────────────────────────────────────────────────
+  const toggleTrending = useCallback(async (tag: TagType) => {
+    const isTrending = !trendingIds.has(tag.id);
+    // Optimistic update
     setTrendingIds((prev) => {
       const next = new Set(prev);
-      if (next.has(tag.id)) {
-        next.delete(tag.id);
-      } else {
-        next.add(tag.id);
-      }
-
-      // Persist to localStorage
-      const entries: TrendingTagEntry[] = allTags
-        .filter((t) => next.has(t.id))
-        .map((t) => ({
-          id: t.id,
-          label: t.name,
-          slug: toRawSlug(t.name),
-          enabled: true,
-        }));
-
-      saveTrendingToStorage(entries);
+      if (isTrending) next.add(tag.id); else next.delete(tag.id);
       return next;
     });
-  }, [allTags]);
+    try {
+      await setTagTrending(tag.id, isTrending);
+    } catch {
+      // Revert on failure
+      setTrendingIds((prev) => {
+        const next = new Set(prev);
+        if (isTrending) next.delete(tag.id); else next.add(tag.id);
+        return next;
+      });
+      setApiError("Failed to update trending status.");
+    }
+  }, [trendingIds]);
 
   // ── Handlers ───────────────────────────────────────────────────────────────
   const handleAdd = async (name: string) => {
@@ -304,14 +285,9 @@ export default function Tags() {
     setDeleting(true);
     try {
       await deleteTagApi(deleteTagItem.id);
-      // Also remove from trending if it was there
       setTrendingIds((prev) => {
         const next = new Set(prev);
         next.delete(deleteTagItem.id);
-        const entries: TrendingTagEntry[] = allTags
-          .filter((t) => t.id !== deleteTagItem.id && next.has(t.id))
-          .map((t) => ({ id: t.id, label: t.name, slug: toRawSlug(t.name), enabled: true }));
-        saveTrendingToStorage(entries);
         return next;
       });
       await loadTags();

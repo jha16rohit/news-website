@@ -24,6 +24,7 @@ model News {
   id         String   @id @default(uuid())
   headline   String
   shortTitle String?
+  excerpt    String?
   content    String
   categoryId String
   category   Category @relation("MainCategory", fields: [categoryId], references: [id])
@@ -31,33 +32,24 @@ model News {
   categories Category[] @relation("NewsCategories")
   language   String     @default("English")
   location   String?
-   tags      NewsTag[]
+  tags       NewsTag[]
 
   articleType ArticleType @default(STANDARD)
 
-  // 🔴 Breaking news controls
   breakingNewsTicker    Boolean @default(false)
   breakingPushNotif     Boolean @default(false)
   breakingHomepageAlert Boolean @default(false)
 
-  // 🆕 NEW FIELDS (IMPORTANT)
-  statusType String?   @default("published") // paused / published
+  statusType String?   @default("published")
   expiryTime DateTime?
+  priority   String?
 
-  // Live updates
   liveUpdates Json?
 
-  // Video
-  videoUrl      String?
-  videoDuration Int?
-  videoQuality  String?
-
-  // Media
   featuredImage String?
   imageCaption  String?
   photoCredit   String?
 
-  // SEO
   metaTitle       String?
   metaDescription String?
   slug            String   @unique
@@ -65,19 +57,19 @@ model News {
   focusKeywords   String?
   canonicalUrl    String?
 
-  // Publishing
   status      Status    @default(DRAFT)
   publishedAt DateTime?
   scheduledAt DateTime?
 
-  // Relations
+  deletedAt   DateTime?
+  deleteAfter DateTime?
+
   authorId String
   author   User   @relation(fields: [authorId], references: [id])
 
   topicProfileId String?
   topicProfile   TopicProfile? @relation(fields: [topicProfileId], references: [id])
 
-  // Metrics
   views     Int      @default(0)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -95,7 +87,6 @@ model TopicProfile {
   imageUrl    String?
   createdAt   DateTime @default(now())
 
-  // relation with News (optional but powerful)
   news News[]
 }
 
@@ -106,16 +97,13 @@ model Category {
   description String?
   color       String?
 
-  // hierarchy
   parentId String?
   parent   Category?  @relation("CategoryToCategory", fields: [parentId], references: [id])
   children Category[] @relation("CategoryToCategory")
 
-  // ✅ relations (ONLY THESE TWO)
-  news       News[] @relation("MainCategory") // main category
-  categories News[] @relation("NewsCategories") // many-to-many
+  news       News[] @relation("MainCategory")
+  categories News[] @relation("NewsCategories")
 
-  // flags
   featured Boolean @default(false)
   showcase Boolean @default(false)
   active   Boolean @default(true)
@@ -123,14 +111,16 @@ model Category {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }
-model Tag {
-  id        String   @id @default(uuid())
-  name      String   @unique
-  usageCount  Int      @default(0) 
-  slug      String   @unique
-  createdAt DateTime @default(now())
 
-  articles  NewsTag[]
+model Tag {
+  id         String   @id @default(uuid())
+  name       String   @unique
+  usageCount Int      @default(0)
+  slug       String   @unique
+  isTrending Boolean  @default(false)
+  createdAt  DateTime @default(now())
+
+  articles NewsTag[]
 
   @@index([name])
 }
@@ -146,18 +136,18 @@ model NewsTag {
   @@unique([newsId, tagId])
 }
 
-
 enum ArticleType {
   STANDARD
   BREAKING
   LIVE
-  VIDEO
 }
 
 enum Status {
   DRAFT
   PUBLISHED
   SCHEDULED
+  EXPIRED
+  DELETED
 }
 
 enum Priority {

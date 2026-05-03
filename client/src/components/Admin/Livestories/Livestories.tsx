@@ -20,6 +20,7 @@ interface LiveStory {
   liveStartedAt?:  string | null;
   liveUpdates:     LiveUpdate[];
   published:       string;
+  endedAt?:        string | null;   // ISO string of when it was ended
 }
 
 // ─── helpers ──────────────────────────────────────────────────────────────────
@@ -32,19 +33,66 @@ function timeSince(isoStr?: string | null): string {
   return `${hrs} hr${hrs !== 1 ? "s" : ""} ago`;
 }
 
+function formatDate(iso?: string | null): string {
+  if (!iso) return "—";
+  return new Date(iso).toLocaleDateString("en-IN", { dateStyle: "medium" });
+}
+
+/**
+ * Map a raw news record from the API to a LiveStory.
+ *
+ * Status resolution logic:
+ *  - statusType === "ended"   → "ended"   (our custom ended-live marker)
+ *  - DB status === "DRAFT"    → "draft"
+ *  - Everything else that is LIVE articleType → "live"
+ *
+ * We use `statusType` to persist the "ended" state because the DB Status
+ * enum has no ENDED value. `statusType` is a free-text String? field so
+ * we can store any value there safely.
+ */
+function mapStory(n: any): LiveStory {
+  let status: LiveStory["status"] = "live";
+
+  if (n.statusType === "ended") {
+    status = "ended";
+  } else if (n.status === "DRAFT") {
+    status = "draft";
+  }
+
+  return {
+    id:              n.id,
+    title:           n.headline,
+    articleCategory: n.category?.name || "",
+    status,
+    views:           String(n.views ?? 0),
+    liveStartedAt:   n.publishedAt || null,
+    endedAt:         n.statusType === "ended" ? (n.updatedAt || null) : null,
+    liveUpdates:     (n.liveUpdates ?? []).map((u: any, i: number) => ({
+      id:        i + 1,
+      time:      u.time || new Date(u.timestamp || Date.now()).toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit" }),
+      text:      u.text,
+      timestamp: u.timestamp || new Date().toISOString(),
+    })),
+    published: n.statusType === "ended"
+      ? formatDate(n.updatedAt || n.publishedAt)
+      : "Live",
+  };
+}
+
 let nextUpdateId = 1000;
 
 // ─── Component ────────────────────────────────────────────────────────────────
 const LiveStoriesPage: React.FC = () => {
   const navigate = useNavigate();
 
-  const [stories, setStories]             = useState<LiveStory[]>([]);
-  const [loading, setLoading]             = useState(true);
-  const [openMenuId, setOpenMenuId]       = useState<string | null>(null);
-  const [addUpdateId, setAddUpdateId]     = useState<string | null>(null);
-  const [updateInput, setUpdateInput]     = useState("");
-  const [search, setSearch]               = useState("");
-  const [deleteModal, setDeleteModal]     = useState<string | null>(null);
+  const [stories, setStories]         = useState<LiveStory[]>([]);
+  const [loading, setLoading]         = useState(true);
+  const [openMenuId, setOpenMenuId]   = useState<string | null>(null);
+  const [addUpdateId, setAddUpdateId] = useState<string | null>(null);
+  const [updateInput, setUpdateInput] = useState("");
+  const [search, setSearch]           = useState("");
+  const [deleteModal, setDeleteModal] = useState<string | null>(null);
+  const [endingId, setEndingId]       = useState<string | null>(null);   // loading state for End Live
   const updateInputRef = useRef<HTMLInputElement>(null);
 
   // ── Fetch live stories ────────────────────────────────────────────────────
@@ -52,40 +100,8 @@ const LiveStoriesPage: React.FC = () => {
     setLoading(true);
     try {
       const data = await fetchAllNews({ articleType: "LIVE", limit: 100 });
-     if (!data?.news) {
-  setStories([]);
-  return;
-}
-
-      const mapped: LiveStory[] = data.news.map((n: any) => {
-      let status: LiveStory["status"] = "live";
-
-if (n.status === "DRAFT") {
-  status = "draft";
-} else if (n.status === "ENDED") {
-  status = "ended";
-}
-
-        return {
-          id:              n.id,
-          title:           n.headline,
-articleCategory: n.category?.name || "",      
-    status,
-          views:           String(n.views ?? 0),
-          liveStartedAt:   n.publishedAt || null,
-          liveUpdates:     (n.liveUpdates ?? []).map((u: any, i: number) => ({
-            id:        i + 1,
-            time:      u.time || new Date(u.timestamp || Date.now()).toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit" }),
-            text:      u.text,
-            timestamp: u.timestamp || new Date().toISOString(),
-          })),
-          published: n.status === "ENDED"
-            ? new Date(n.updatedAt || n.publishedAt || Date.now()).toLocaleDateString("en-IN", { dateStyle: "medium" })
-            : "Live",
-        };
-      });
-
-      setStories(mapped);
+      if (!data?.news) { setStories([]); return; }
+      setStories(data.news.map(mapStory));
     } catch (err) {
       console.error("Failed to fetch live stories:", err);
     } finally {
@@ -110,6 +126,7 @@ articleCategory: n.category?.name || "",
   const totalUpdates = stories.reduce((s, a) => s + (a.liveUpdates?.length ?? 0), 0);
 
   // ── Actions ───────────────────────────────────────────────────────────────
+
   const handleAddUpdate = async (storyId: string) => {
     if (!updateInput.trim()) return;
     const now = new Date();
@@ -125,7 +142,6 @@ articleCategory: n.category?.name || "",
     ));
     setUpdateInput("");
     setAddUpdateId(null);
-    // Persist to backend
     try {
       const story = stories.find(s => s.id === storyId);
       if (story) {
@@ -136,21 +152,58 @@ articleCategory: n.category?.name || "",
     } catch (err) { console.error("Failed to add update:", err); }
   };
 
+  /**
+   * End Live:
+   *  - Optimistically move the card to "Past Live" immediately.
+   *  - Persist to backend: status stays PUBLISHED (so it's not hidden by
+   *    getAllNews filters), but statusType = "ended" marks it as ended.
+   *    This survives page reloads and the story stays in Past Live until
+   *    the admin explicitly deletes it.
+   */
   const handleEndLive = async (storyId: string) => {
+    const now = new Date();
+    // Optimistic — move to Past Live immediately
     setStories(prev => prev.map(s =>
-      s.id === storyId ? { ...s, status: "ended", published: new Date().toLocaleDateString("en-IN", { dateStyle: "medium" }) } : s
+      s.id === storyId
+        ? {
+            ...s,
+            status:    "ended",
+            endedAt:   now.toISOString(),
+            published: formatDate(now.toISOString()),
+          }
+        : s
     ));
+    setEndingId(storyId);
     try {
-      await apiUpdateNews(storyId, { status: "ENDED" } as any);
-    } catch (err) { console.error("Failed to end live:", err); }
+      await apiUpdateNews(storyId, {
+        // Keep status PUBLISHED so getAllNews doesn't filter it out.
+        // statusType = "ended" is our persistent marker.
+        status:     "PUBLISHED",
+        statusType: "ended",
+      } as any);
+    } catch (err) {
+      console.error("Failed to end live:", err);
+      // Revert on failure
+      setStories(prev => prev.map(s =>
+        s.id === storyId ? { ...s, status: "live", endedAt: null, published: "Live" } : s
+      ));
+    } finally {
+      setEndingId(null);
+    }
   };
 
   const handleGoLive = async (storyId: string) => {
     setStories(prev => prev.map(s =>
-      s.id === storyId ? { ...s, status: "live", liveStartedAt: new Date().toISOString(), published: "Live" } : s
+      s.id === storyId
+        ? { ...s, status: "live", liveStartedAt: new Date().toISOString(), published: "Live" }
+        : s
     ));
     try {
-      await apiUpdateNews(storyId, { status: "PUBLISHED", articleType: "LIVE" } as any);
+      await apiUpdateNews(storyId, {
+        status:      "PUBLISHED",
+        statusType:  "published",
+        articleType: "LIVE",
+      } as any);
     } catch (err) { console.error("Failed to go live:", err); }
   };
 
@@ -178,7 +231,6 @@ articleCategory: n.category?.name || "",
           </div>
           <p className="ls-subtitle">Manage real-time live coverage and event updates</p>
         </div>
-        
       </div>
 
       {/* Stats */}
@@ -317,11 +369,16 @@ articleCategory: n.category?.name || "",
                   </svg>
                   Add Update
                 </button>
-                <button className="ls-btn-end-live" onClick={() => handleEndLive(story.id)}>
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                    <circle cx="12" cy="12" r="10" /><line x1="4.93" y1="4.93" x2="19.07" y2="19.07" />
-                  </svg>
-                  End Live
+                <button
+                  className="ls-btn-end-live"
+                  onClick={() => handleEndLive(story.id)}
+                  disabled={endingId === story.id}
+                >
+                  {endingId === story.id
+                    ? <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ animation: "spin 1s linear infinite" }}><circle cx="12" cy="12" r="9" strokeDasharray="28 56" /></svg>
+                    : <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="10" /><line x1="4.93" y1="4.93" x2="19.07" y2="19.07" /></svg>
+                  }
+                  {endingId === story.id ? "Ending…" : "End Live"}
                 </button>
                 <div className="ls-more-wrap">
                   <button className="ls-btn-more" onClick={() => toggleMenu(story.id)}>···</button>
@@ -403,11 +460,16 @@ articleCategory: n.category?.name || "",
           <span className="ls-badge ls-badge--count">{filteredEnded.length}</span>
         </div>
         <div className="ls-stories-list">
-          {filteredEnded.length === 0 && (
-            <div style={{ padding: "24px", textAlign: "center", color: "#999", fontSize: "13px" }}>No ended live stories yet</div>
+          {loading && (
+            <div style={{ padding: "24px", textAlign: "center", color: "#999", fontSize: "13px" }}>Loading…</div>
+          )}
+          {!loading && filteredEnded.length === 0 && (
+            <div style={{ padding: "24px", textAlign: "center", color: "#999", fontSize: "13px" }}>
+              No ended live stories yet — ended stories will appear here permanently until deleted
+            </div>
           )}
           {filteredEnded.map(story => (
-            <div className="ls-story-card" key={story.id}>
+            <div className="ls-story-card ls-story-card--ended" key={story.id}>
               <div className="ls-story-main">
                 <div className="ls-story-tags">
                   <span className="ls-tag ls-tag--ended">ENDED</span>
@@ -415,27 +477,50 @@ articleCategory: n.category?.name || "",
                 </div>
                 <h3 className="ls-story-title">{story.title}</h3>
                 <div className="ls-story-meta">
-                  <span className="ls-meta-item">{story.published}</span>
-                  <span className="ls-meta-item">{story.liveUpdates?.length ?? 0} updates</span>
-                  <span className="ls-meta-item">{story.views} views</span>
+                  <span className="ls-meta-item">
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                      <rect x="3" y="4" width="18" height="18" rx="2" /><line x1="16" y1="2" x2="16" y2="6" />
+                      <line x1="8" y1="2" x2="8" y2="6" /><line x1="3" y1="10" x2="21" y2="10" />
+                    </svg>
+                    Ended: {story.published}
+                  </span>
+                  <span className="ls-meta-item">
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                      <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
+                    </svg>
+                    {story.liveUpdates?.length ?? 0} updates
+                  </span>
+                  <span className="ls-meta-item">
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                      <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" /><circle cx="12" cy="12" r="3" />
+                    </svg>
+                    {story.views} views
+                  </span>
                 </div>
               </div>
               <div className="ls-story-actions" onClick={e => e.stopPropagation()}>
-                <button className="ls-btn-icon-ghost">
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                    <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" /><circle cx="12" cy="12" r="3" />
-                  </svg>
-                </button>
                 <div className="ls-more-wrap">
                   <button className="ls-btn-more" onClick={() => toggleMenu(story.id)}>···</button>
                   {openMenuId === story.id && (
                     <div className="ls-dropdown">
-                      <button className="ls-dropdown-item ls-dropdown-item--danger" onClick={() => { setDeleteModal(story.id); setOpenMenuId(null); }}>
+                      <button
+                        className="ls-dropdown-item"
+                        onClick={() => { navigate(`/admin/create?edit=${story.id}&type=live`); setOpenMenuId(null); }}
+                      >
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                          <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" /><circle cx="12" cy="12" r="3" />
+                        </svg>
+                        View Story
+                      </button>
+                      <button
+                        className="ls-dropdown-item ls-dropdown-item--danger"
+                        onClick={() => { setDeleteModal(story.id); setOpenMenuId(null); }}
+                      >
                         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                           <polyline points="3 6 5 6 21 6" /><path d="M19 6l-1 14H6L5 6" />
                           <path d="M10 11v6M14 11v6" /><path d="M9 6V4h6v2" />
                         </svg>
-                        Delete
+                        Delete Permanently
                       </button>
                     </div>
                   )}
@@ -456,7 +541,7 @@ articleCategory: n.category?.name || "",
               </svg>
             </div>
             <h4>Delete Story?</h4>
-            <p>This action cannot be undone. All updates will be lost.</p>
+            <p>This action cannot be undone. The story and all its updates will be permanently removed.</p>
             <div className="ls-modal-actions">
               <button className="ls-modal-cancel" onClick={() => setDeleteModal(null)}>Cancel</button>
               <button className="ls-modal-confirm" onClick={handleDelete}>Yes, Delete</button>

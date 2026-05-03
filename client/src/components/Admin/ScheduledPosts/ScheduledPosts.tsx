@@ -119,23 +119,24 @@ const ScheduledPosts: React.FC = () => {
   const loadData = useCallback(async () => {
     setLoading(true);
     try {
-      const scheduledData = await fetchAllNews({ limit: 100 }).catch(() => null);
-
-      const allNews = scheduledData?.news ?? [];
+      const [scheduledData, draftData] = await Promise.all([
+        fetchAllNews({ status: "SCHEDULED", limit: 100 }).catch(() => null),
+        fetchAllNews({ status: "DRAFT",     limit: 100 }).catch(() => null),
+      ]);
 
       const mapArticle = (n: any): RemoteArticle => ({
         id:              n.id,
         title:           n.headline,
         category:        n.articleType || "STANDARD",
-articleCategory: n.category?.name || "",
+        articleCategory: n.category?.name || "",
         status:          n.status === "PUBLISHED" ? "Published" : n.status === "DRAFT" ? "Draft" : "Scheduled",
         scheduledFor:    n.scheduledAt || null,
         publishedAt:     n.publishedAt || null,
         views:           String(n.views ?? 0),
       });
 
-      setScheduledArticles(allNews.filter((n: any) => n.status === "SCHEDULED").map(mapArticle));
-      setDraftArticles(allNews.filter((n: any) => n.status === "DRAFT").map(mapArticle));
+      setScheduledArticles((scheduledData?.news ?? []).map(mapArticle));
+      setDraftArticles((draftData?.news ?? []).map(mapArticle));
     } catch (err) {
       console.error("Failed to fetch scheduled/draft posts:", err);
     } finally {

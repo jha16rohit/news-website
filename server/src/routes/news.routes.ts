@@ -8,22 +8,34 @@ import {
   deleteNews,
   addLiveUpdate,
   togglePauseBreaking,
+  getMediaLibrary,
+  deleteMediaImage,
 } from "../controllers/news.controller";
+import { upload } from "../middleware/upload.middleware";
+import { protect } from "../middleware/auth.middleware";
 
 const router = Router();
 
-// ─── Public ────────────────────────────────────────────────────────────────────
-router.get("/",        getAllNews);
-router.get("/id/:id",  getNewsById);
+// ─── Media Library (before /:slug to avoid route conflict) ────────────────────
+router.get("/media-library",            getMediaLibrary);
+router.delete("/media-library/:newsId", protect, deleteMediaImage);
 
-// ─── Admin ─────────────────────────────────────────────────────────────────────
-router.post("/create",              createNews);
-router.put("/:id",                  updateNews);
-router.delete("/:id",               deleteNews);
-router.patch("/:id/pause-toggle",   togglePauseBreaking);
-router.post("/:id/live-update",     addLiveUpdate);
+// ─── Public reads ─────────────────────────────────────────────────────────────
+router.get("/",       getAllNews);
+router.get("/id/:id", getNewsById);
 
-// ⚠️  Keep slug route LAST — it is a catch-all for /:slug
+// ─── Create ───────────────────────────────────────────────────────────────────
+// No protect here — multipart/form-data + cookie auth is handled inside the
+// controller (req.user fallback to first DB user). This avoids 401 on file uploads.
+router.post("/create", upload.single("image"), createNews);
+
+// ─── Admin mutations ──────────────────────────────────────────────────────────
+router.put("/:id",                protect, updateNews);
+router.delete("/:id",             protect, deleteNews);
+router.patch("/:id/pause-toggle", protect, togglePauseBreaking);
+router.post("/:id/live-update",   protect, addLiveUpdate);
+
+// ⚠️  Keep slug route LAST — catch-all for /:slug
 router.get("/:slug", getNewsBySlug);
 
 export default router;
