@@ -1,6 +1,5 @@
-import React, { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
-import { ArrowRight, Clock, Bookmark } from "lucide-react";
+import { ArrowRight, Clock } from "lucide-react";
 import { useNews } from "../../Admin/NewsStore/NewsStore";
 import "./CategoryShowcase.css";
 
@@ -23,44 +22,8 @@ const slugOf = (text: string) => text ? text.toLowerCase().replace(/\s+/g, "-") 
 const LAYOUT_STYLES = ["hero-sidebar", "grid-3", "hero-reversed", "grid-4", "split-sidebar"];
 
 const CategoryShowcase: React.FC = () => {
-  // 1. Initialize state from localStorage
-  const [savedArticles, setSavedArticles] = useState<number[]>(() => {
-    const saved = localStorage.getItem("localNewzSavedArticles");
-    return saved ? JSON.parse(saved) : [];
-  });
 
-  // 👇 NEW: Listen for saves happening in other components so this stays synced perfectly!
-  useEffect(() => {
-    const syncSavedArticles = () => {
-      const saved = localStorage.getItem("localNewzSavedArticles");
-      setSavedArticles(saved ? JSON.parse(saved) : []);
-    };
-    
-    window.addEventListener("localNewzSavedUpdate", syncSavedArticles);
-    return () => window.removeEventListener("localNewzSavedUpdate", syncSavedArticles);
-  }, []);
 
-  // 2. The universal toggle function
-  const toggleSave = (e: React.MouseEvent, id: number) => {
-    e.preventDefault(); // Stop links from firing
-    
-    let currentSaved = JSON.parse(localStorage.getItem("localNewzSavedArticles") || "[]");
-    
-    if (currentSaved.includes(id)) {
-      currentSaved = currentSaved.filter((savedId: number) => savedId !== id);
-    } else {
-      currentSaved.push(id);
-    }
-    
-    // Save to browser
-    localStorage.setItem("localNewzSavedArticles", JSON.stringify(currentSaved));
-    // Update local button color
-    setSavedArticles(currentSaved);
-    
-    // Broadcast the change so the Profile page instantly updates!
-    window.dispatchEvent(new Event("localNewzSavedUpdate"));
-  };
-  
   const { categories, articles } = useNews() || {};
   const safeCategories = categories || [];
   const safeArticles = articles || [];
@@ -110,9 +73,7 @@ const CategoryShowcase: React.FC = () => {
                 <>
                   <div className="cs-hero-col">
                     <Link to={`/article/${displayArticles[0].id}`} className="cs-dark-card">
-                      <button className="category-save-btn" onClick={(e) => toggleSave(e, displayArticles[0].id)} aria-label="Save article">
-                        <Bookmark size={20} fill={savedArticles.includes(displayArticles[0].id) ? "#e60000" : "none"} color={savedArticles.includes(displayArticles[0].id) ? "#e60000" : "#ffffff"} />
-                      </button>
+                      
                       <div className="cs-img-wrap">
                         <img src={displayArticles[0].img} alt="" />
                       </div>
@@ -127,9 +88,7 @@ const CategoryShowcase: React.FC = () => {
                   <div className="cs-sidebar-col">
                     {displayArticles.slice(1, 5).map((article, i) => (
                       <Link to={`/article/${article.id}`} key={article.id || i} className="cs-list-item">
-                        <button className="category-save-btn" onClick={(e) => toggleSave(e, article.id)} aria-label="Save article">
-                          <Bookmark size={18} fill={savedArticles.includes(article.id) ? "#e60000" : "none"} color={savedArticles.includes(article.id) ? "#e60000" : "#ffffff"} />
-                        </button>
+                        
                         <img src={article.img} alt="" className="cs-list-img" />
                         <div className="cs-list-content">
                           <span className="cs-list-cat">{article.category}</span>
@@ -146,9 +105,7 @@ const CategoryShowcase: React.FC = () => {
               {layout === "grid-3" && (
                 displayArticles.slice(0, 6).map((article, i) => (
                   <Link to={`/article/${article.id}`} key={article.id || i} className="cs-dark-card">
-                    <button className="category-save-btn" onClick={(e) => toggleSave(e, article.id)} aria-label="Save article">
-                      <Bookmark size={20} fill={savedArticles.includes(article.id) ? "#e60000" : "none"} color={savedArticles.includes(article.id) ? "#e60000" : "#ffffff"} />
-                    </button>
+                    
                     <div className="cs-img-wrap">
                       <img src={article.img} alt="" />
                     </div>
@@ -168,9 +125,7 @@ const CategoryShowcase: React.FC = () => {
                   <div className="cs-sidebar-col cs-sidebar-reversed">
                     {displayArticles.slice(1, 5).map((article, i) => (
                       <Link to={`/article/${article.id}`} key={article.id || i} className="cs-list-item">
-                        <button className="category-save-btn" onClick={(e) => toggleSave(e, article.id)} aria-label="Save article">
-                          <Bookmark size={18} fill={savedArticles.includes(article.id) ? "#e60000" : "none"} color={savedArticles.includes(article.id) ? "#e60000" : "#ffffff"} />
-                        </button>
+                        
                         <img src={article.img} alt="" className="cs-list-img" />
                         <div className="cs-list-content">
                           <span className="cs-list-cat">{article.category}</span>
@@ -182,9 +137,7 @@ const CategoryShowcase: React.FC = () => {
                   </div>
                   <div className="cs-hero-col cs-hero-reversed">
                     <Link to={`/article/${displayArticles[0].id}`} className="cs-dark-card">
-                      <button className="category-save-btn" onClick={(e) => toggleSave(e, displayArticles[0].id)} aria-label="Save article">
-                        <Bookmark size={20} fill={savedArticles.includes(displayArticles[0].id) ? "#e60000" : "none"} color={savedArticles.includes(displayArticles[0].id) ? "#e60000" : "#ffffff"} />
-                      </button>
+                      
                       <div className="cs-img-wrap">
                         <img src={displayArticles[0].img} alt="" />
                       </div>
@@ -203,9 +156,7 @@ const CategoryShowcase: React.FC = () => {
               {layout === "grid-4" && (
                 displayArticles.slice(0, 8).map((article, i) => (
                   <Link to={`/article/${article.id}`} key={article.id || i} className="cs-dark-card">
-                    <button className="category-save-btn" onClick={(e) => toggleSave(e, article.id)} aria-label="Save article">
-                      <Bookmark size={20} fill={savedArticles.includes(article.id) ? "#e60000" : "none"} color={savedArticles.includes(article.id) ? "#e60000" : "#ffffff"} />
-                    </button>
+                    
                     <div className="cs-img-wrap">
                       <img src={article.img} alt="" />
                     </div>
@@ -224,9 +175,7 @@ const CategoryShowcase: React.FC = () => {
                 <>
                   <div className="cs-split-col">
                     <Link to={`/article/${displayArticles[0].id}`} className="cs-dark-card">
-                      <button className="category-save-btn" onClick={(e) => toggleSave(e, displayArticles[0].id)} aria-label="Save article">
-                        <Bookmark size={20} fill={savedArticles.includes(displayArticles[0].id) ? "#e60000" : "none"} color={savedArticles.includes(displayArticles[0].id) ? "#e60000" : "#ffffff"} />
-                      </button>
+                     
                       <div className="cs-img-wrap">
                         <img src={displayArticles[0].img} alt="" />
                       </div>
@@ -241,9 +190,7 @@ const CategoryShowcase: React.FC = () => {
                   <div className="cs-sidebar-col">
                     {displayArticles.slice(2, 6).map((article, i) => (
                       <Link to={`/article/${article.id}`} key={article.id || i} className="cs-list-item">
-                        <button className="category-save-btn" onClick={(e) => toggleSave(e, article.id)} aria-label="Save article">
-                          <Bookmark size={18} fill={savedArticles.includes(article.id) ? "#e60000" : "none"} color={savedArticles.includes(article.id) ? "#e60000" : "#ffffff"} />
-                        </button>
+                       
                         <img src={article.img} alt="" className="cs-list-img" />
                         <div className="cs-list-content">
                           <span className="cs-list-cat">{article.category}</span>

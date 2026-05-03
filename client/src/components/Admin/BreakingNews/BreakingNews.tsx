@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback } from "react";
 import "./BreakingNews.css";
 import { useNavigate } from "react-router-dom";
 import {
-  Zap, RefreshCw, Plus, Clock, Eye, TrendingUp, Search, ChevronDown,
+  Zap, Clock, Eye, TrendingUp, Search, ChevronDown,
   ExternalLink, MoreHorizontal, ChevronLeft, ChevronRight,
   Radio, Edit, Pause, Trash2, Play,
 } from "lucide-react";
@@ -10,27 +10,25 @@ import { fetchAllNews, deleteNews as apiDeleteNews, updateNews as apiUpdateNews 
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 interface BreakingItem {
-  id:       string;   // backend UUID
-  localId:  number;   // for UI key
+  id:       string;
+  localId:  number;
   headline: string;
   author:   string;
   timeAgo:  string;
   status:   "live" | "scheduled" | "expired" | "paused";
-  priority: "Critical" | "High" | "Medium";
   category: string;
   views:    number;
 }
 
-const statusOptions   = ["All Status", "Live", "Scheduled", "Expired", "Paused"];
-const priorityOptions = ["All Priority", "Critical", "High", "Medium"];
+const statusOptions = ["All Status", "Live", "Scheduled", "Expired", "Paused"];
 
 // ─── helpers ──────────────────────────────────────────────────────────────────
 function toRelative(isoStr?: string | null): string {
   if (!isoStr) return "—";
   const diff = Date.now() - new Date(isoStr).getTime();
-  if (diff < 60_000)         return "Just now";
-  if (diff < 3_600_000)      return `${Math.floor(diff / 60_000)}m ago`;
-  if (diff < 86_400_000)     return `${Math.floor(diff / 3_600_000)}h ago`;
+  if (diff < 60_000)     return "Just now";
+  if (diff < 3_600_000)  return `${Math.floor(diff / 60_000)}m ago`;
+  if (diff < 86_400_000) return `${Math.floor(diff / 3_600_000)}h ago`;
   return new Date(isoStr).toLocaleDateString("en-IN", { dateStyle: "medium" });
 }
 
@@ -53,37 +51,34 @@ const BreakingNews: React.FC = () => {
   const [loading, setLoading]         = useState(true);
   const [currentPage, setCurrentPage] = useState(1);
   const [searchQuery, setSearchQuery] = useState("");
-  const [statusFilter, setStatusFilter]     = useState("All Status");
-  const [priorityFilter, setPriorityFilter] = useState("All Priority");
-  const [selectedItems, setSelectedItems]   = useState<string[]>([]);
-  const [isStatusOpen, setIsStatusOpen]     = useState(false);
-  const [isPriorityOpen, setIsPriorityOpen] = useState(false);
-  const [openMenuId, setOpenMenuId]         = useState<string | null>(null);
-  const [deleteModal, setDeleteModal]       = useState<string | null>(null);
+  const [statusFilter, setStatusFilter]   = useState("All Status");
+  const [selectedItems, setSelectedItems] = useState<string[]>([]);
+  const [isStatusOpen, setIsStatusOpen]   = useState(false);
+  const [openMenuId, setOpenMenuId]       = useState<string | null>(null);
+  const [deleteModal, setDeleteModal]     = useState<string | null>(null);
 
   const itemsPerPage = 7;
 
-  // ── Fetch breaking news from backend ──────────────────────────────────────
+  // ── Fetch ──────────────────────────────────────────────────────────────────
   const loadData = useCallback(async () => {
     setLoading(true);
     try {
       const data = await fetchAllNews({ articleType: "BREAKING", limit: 100 });
       if (!data?.news) {
-  setItems([]);
-  return;
-}
+        setItems([]);
+        return;
+      }
 
-    const mapped = data.news.map((n: any, idx: number) => ({
-  id: n.id,
-  localId: idx + 1,
-  headline: n.headline,
-  author: n.author?.name || "Admin",
-  timeAgo: toRelative(n.publishedAt || n.createdAt),
-  status: deriveStatus(n.status, n.expiryTime, n.statusType),
-category: n.category?.name || "General",
-  views: n.views ?? 0,
-  priority: n.priority || "Medium",
-}));
+      const mapped = data.news.map((n: any, idx: number) => ({
+        id:       n.id,
+        localId:  idx + 1,
+        headline: n.headline,
+        author:   n.author?.name || "Admin",
+        timeAgo:  toRelative(n.publishedAt || n.createdAt),
+        status:   deriveStatus(n.status, n.expiryTime, n.statusType),
+        category: n.category?.name || "General",
+        views:    n.views ?? 0,
+      }));
 
       setItems(mapped);
     } catch (err) {
@@ -95,20 +90,17 @@ category: n.category?.name || "General",
 
   useEffect(() => { loadData(); }, [loadData]);
 
-  // ── Stats ─────────────────────────────────────────────────────────────────
+  // ── Stats ──────────────────────────────────────────────────────────────────
   const liveCount      = items.filter(n => n.status === "live").length;
   const scheduledCount = items.filter(n => n.status === "scheduled").length;
   const totalViews     = items.reduce((sum, n) => sum + n.views, 0);
   const avgEngagement  = "+24%";
 
-  // ── Filtering ─────────────────────────────────────────────────────────────
+  // ── Filtering ──────────────────────────────────────────────────────────────
   const filteredNews = items.filter(news => {
-    const matchesSearch   = news.headline.toLowerCase().includes(searchQuery.toLowerCase());
-    const matchesStatus   = statusFilter === "All Status" || news.status === statusFilter.toLowerCase();
-const matchesPriority =
-  priorityFilter === "All Priority" ||
-  news.priority === priorityFilter;
-      return matchesSearch && matchesStatus && matchesPriority;
+    const matchesSearch = news.headline.toLowerCase().includes(searchQuery.toLowerCase());
+    const matchesStatus = statusFilter === "All Status" || news.status === statusFilter.toLowerCase();
+    return matchesSearch && matchesStatus;
   });
 
   const totalPages  = Math.ceil(filteredNews.length / itemsPerPage);
@@ -127,33 +119,25 @@ const matchesPriority =
     }
   };
 
-  // ── Actions ───────────────────────────────────────────────────────────────
+  // ── Actions ────────────────────────────────────────────────────────────────
   const handleMenuAction = async (action: string, id: string) => {
     setOpenMenuId(null);
     const item = items.find(i => i.id === id);
 
     switch (action) {
       case "edit":
-        // find localId for URL
         navigate(`/admin/create?edit=${id}&type=breaking`);
         break;
 
-     case "pause": {
-  const isPaused = item?.status === "paused";
+      case "pause": {
+        const isPaused = item?.status === "paused";
+        await apiUpdateNews(id, { statusType: isPaused ? "published" : "paused" } as any);
+        setItems(prev =>
+          prev.map(i => i.id === id ? { ...i, status: isPaused ? "live" : "paused" } : i)
+        );
+        break;
+      }
 
-  await apiUpdateNews(id, {
-    statusType: isPaused ? "published" : "paused",
-  } as any);
-
-  setItems(prev =>
-    prev.map(i =>
-      i.id === id
-        ? { ...i, status: isPaused ? "live" : "paused" }
-        : i
-    )
-  );
-  break;
-}
       case "delete":
         setDeleteModal(id);
         break;
@@ -175,11 +159,11 @@ const matchesPriority =
   const handleSelectItem = (id: string) =>
     setSelectedItems(prev => prev.includes(id) ? prev.filter(i => i !== id) : [...prev, id]);
 
-  // ── Render ────────────────────────────────────────────────────────────────
+  // ── Render ─────────────────────────────────────────────────────────────────
   return (
     <div
       className="bn-container"
-      onClick={() => { setOpenMenuId(null); setIsStatusOpen(false); setIsPriorityOpen(false); }}
+      onClick={() => { setOpenMenuId(null); setIsStatusOpen(false); }}
     >
       {/* HEADER */}
       <div className="bn-header">
@@ -189,14 +173,6 @@ const matchesPriority =
             <h1 className="bn-title">Breaking News</h1>
             <p className="bn-subtitle">Manage live breaking news and urgent updates</p>
           </div>
-        </div>
-        <div className="bn-header-actions">
-          <button className="bn-btn-refresh" onClick={loadData} disabled={loading}>
-            <RefreshCw size={18} className={loading ? "spin" : ""} /> Refresh
-          </button>
-          <button className="bn-btn-new" onClick={() => navigate("/admin/create?type=breaking")}>
-            <Plus size={18} /> New Breaking News
-          </button>
         </div>
       </div>
 
@@ -267,7 +243,10 @@ const matchesPriority =
         </div>
         <div className="bn-filters">
           <div className="bn-filter-dropdown-custom">
-            <div className="bn-filter-selected" onClick={() => { setIsStatusOpen(!isStatusOpen); setIsPriorityOpen(false); }}>
+            <div
+              className="bn-filter-selected"
+              onClick={() => setIsStatusOpen(!isStatusOpen)}
+            >
               {statusFilter} <ChevronDown size={16} />
             </div>
             {isStatusOpen && (
@@ -277,24 +256,6 @@ const matchesPriority =
                     key={opt}
                     className={`bn-filter-item ${statusFilter === opt ? "active" : ""}`}
                     onClick={() => { setStatusFilter(opt); setIsStatusOpen(false); setCurrentPage(1); }}
-                  >
-                    {opt}
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-          <div className="bn-filter-dropdown-custom">
-            <div className="bn-filter-selected" onClick={() => { setIsPriorityOpen(!isPriorityOpen); setIsStatusOpen(false); }}>
-              {priorityFilter} <ChevronDown size={16} />
-            </div>
-            {isPriorityOpen && (
-              <div className="bn-filter-menu">
-                {priorityOptions.map(opt => (
-                  <div
-                    key={opt}
-                    className={`bn-filter-item ${priorityFilter === opt ? "active" : ""}`}
-                    onClick={() => { setPriorityFilter(opt); setIsPriorityOpen(false); setCurrentPage(1); }}
                   >
                     {opt}
                   </div>

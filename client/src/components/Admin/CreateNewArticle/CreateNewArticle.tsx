@@ -21,22 +21,20 @@ import {
   Bold, Italic, Underline, Heading1, Heading2, List, ListOrdered,
   Quote, AlignLeft, AlignCenter, AlignRight, Link,
   Upload, Globe, Clock, Rocket, Zap, Radio,
-  FileText, Tag, MapPin, User, Trash2, Search, Video, X, CalendarClock,
+  FileText, Tag, MapPin, User, Trash2, Search, X, CalendarClock,
   Plus, TrendingUp,
 } from "lucide-react";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
-type ArticleType = "Standard Article" | "Breaking News" | "Live Updates" | "Video Story";
+type ArticleType = "Standard Article" | "Breaking News" | "Live Updates";
 
 const ARTICLE_TYPES: { label: ArticleType; icon: React.ReactNode }[] = [
   { label: "Standard Article", icon: <FileText size={15} /> },
   { label: "Breaking News",    icon: <Zap size={15} />      },
   { label: "Live Updates",     icon: <Radio size={15} />    },
-  { label: "Video Story",      icon: <Video size={15} />    },
 ];
 
 // ─── Tag helpers ──────────────────────────────────────────────────────────────
-/** Title-case normalize: "budget 2025" → "Budget 2025" */
 function normalizeTag(raw: string): string {
   return raw
     .trim()
@@ -46,11 +44,21 @@ function normalizeTag(raw: string): string {
     .join(" ");
 }
 
+// ─── Slug helper ──────────────────────────────────────────────────────────────
+function generateSlug(text: string): string {
+  return text
+    .toLowerCase()
+    .replace(/[^a-z0-9\s-]/g, "")
+    .trim()
+    .replace(/\s+/g, "-")
+    .replace(/-+/g, "-")
+    .slice(0, 80);
+}
+
 // ─── Type param → UI label ────────────────────────────────────────────────────
 const TYPE_PARAM_MAP: Record<string, ArticleType> = {
   breaking: "Breaking News",
   live:     "Live Updates",
-  video:    "Video Story",
   standard: "Standard Article",
 };
 
@@ -59,16 +67,7 @@ const API_TYPE_TO_UI: Record<string, ArticleType> = {
   STANDARD: "Standard Article",
   BREAKING: "Breaking News",
   LIVE:     "Live Updates",
-  VIDEO:    "Video Story",
 };
-
-// ─── helpers ──────────────────────────────────────────────────────────────────
-function secondsToDisplay(secs: number | null | undefined): string {
-  if (!secs) return "00:00";
-  const m = Math.floor(secs / 60);
-  const s = secs % 60;
-  return `${String(m).padStart(2, "0")}:${String(s).padStart(2, "0")}`;
-}
 
 // ─── Topic Profile ────────────────────────────────────────────────────────────
 interface TopicProfile {
@@ -76,7 +75,6 @@ interface TopicProfile {
   description: string; imageUrl?: string;
 }
 
-/** Fetch topic profiles from the DB via API instead of localStorage */
 async function fetchTopicProfiles(): Promise<TopicProfile[]> {
   try {
     const res = await fetch("http://localhost:5001/api/topic-profiles", { credentials: "include" });
@@ -645,7 +643,7 @@ const CreateNewArticle: React.FC = () => {
   const isEdit    = Boolean(editId);
   const typeParam = params.get("type") ?? "";
 
-  // ── DB categories (replaces STATIC_CATEGORIES entirely) ────────────────────
+  // ── DB categories ──────────────────────────────────────────────────────────
   const [dbCategories,     setDbCategories]     = useState<Category[]>([]);
   const [categoriesLoaded, setCategoriesLoaded] = useState(false);
 
@@ -658,37 +656,34 @@ const CreateNewArticle: React.FC = () => {
       .catch(() => setCategoriesLoaded(true));
   }, []);
 
-  // Build option list: show parent name, indent children as "Parent / Child"
- const categoryOptions = dbCategories
-  .filter(c => c.enabled !== false)
-  .map(c => ({
-    value: String(c.id), // ✅ FIX HERE
-    label: c.parentId
-      ? `${dbCategories.find(p => p.id === c.parentId)?.name ?? "…"} / ${c.name}`
-      : c.name,
-  }))
-  .sort((a, b) => a.label.localeCompare(b.label));
+  const categoryOptions = dbCategories
+    .filter(c => c.enabled !== false)
+    .map(c => ({
+      value: String(c.id),
+      label: c.parentId
+        ? `${dbCategories.find(p => p.id === c.parentId)?.name ?? "…"} / ${c.name}`
+        : c.name,
+    }))
+    .sort((a, b) => a.label.localeCompare(b.label));
+
   // ── Article state ──────────────────────────────────────────────────────────
   const [loadingArticle, setLoadingArticle]   = useState(isEdit);
   const [selectedType,   setSelectedType]     = useState<ArticleType>(TYPE_PARAM_MAP[typeParam] ?? "Standard Article");
   const [headline,       setHeadline]         = useState("");
   const [shortTitle,     setShortTitle]       = useState("");
+  const [summary,        setSummary]          = useState("");
   const [content,        setContent]          = useState("");
   const [initialHtml,    setInitialHtml]      = useState("");
   const [tags,           setTags]             = useState<string[]>([]);
   const [tagInput,       setTagInput]         = useState("");
-  // categoryId is the UUID of the selected Category (sent to backend)
   const [categoryId,     setCategoryId]       = useState("");
-  const [language,       setLanguage]         = useState("english");
+  const [language,       setLanguage]         = useState("hindi");
   const [articleLocation, setArticleLocation] = useState("");
   const [breakingToggles, setBreakingToggles] = useState({
     newsTicker: true, pushNotification: true, homepageAlert: true,
   });
   const [liveInput,      setLiveInput]        = useState("");
   const [liveUpdates,    setLiveUpdates]      = useState<{ id: number; time: string; text: string }[]>([]);
-  const [videoUrl,       setVideoUrl]         = useState("");
-  const [videoDuration,  setVideoDuration]    = useState("00:00");
-  const [videoQuality,   setVideoQuality]     = useState("1080p");
   const [dragOver,       setDragOver]         = useState(false);
   const [,               setMediaFile]        = useState<File | null>(null);
   const [mediaPreview,   setMediaPreview]     = useState<string | null>(null);
@@ -698,6 +693,7 @@ const CreateNewArticle: React.FC = () => {
   const [metaTitle,      setMetaTitle]        = useState("");
   const [metaDesc,       setMetaDesc]         = useState("");
   const [urlSlug,        setUrlSlug]          = useState("");
+  const [slugManuallyEdited, setSlugManuallyEdited] = useState(false);
   const [focusKeywords,  setFocusKeywords]    = useState("");
   const [showScheduleModal, setShowScheduleModal] = useState(false);
   const [showTopicModal,    setShowTopicModal]    = useState(false);
@@ -707,16 +703,13 @@ const CreateNewArticle: React.FC = () => {
 
   const editorRef    = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const videoFileRef = useRef<HTMLInputElement>(null);
 
+  // ── DB tags ────────────────────────────────────────────────────────────────
+  const [dbTags,          setDbTags]          = useState<TagType[]>([]);
+  const [trendingDbTags,  setTrendingDbTags]  = useState<TagType[]>([]);
+  const [tagDropdown,     setTagDropdown]     = useState<string[]>([]);
+  const [tagDropdownOpen, setTagDropdownOpen] = useState(false);
 
-  // ── DB tags for autocomplete + suggestions ─────────────────────────────────
-  const [dbTags,             setDbTags]             = useState<TagType[]>([]);
-  const [trendingDbTags,     setTrendingDbTags]     = useState<TagType[]>([]);
- const [tagDropdown,        setTagDropdown]        = useState<string[]>([]);
-  const [tagDropdownOpen,    setTagDropdownOpen]    = useState(false);
-
-  // Load DB tags once
   useEffect(() => {
     Promise.all([getAllTags(), getTrendingTags()])
       .then(([all, trending]) => {
@@ -726,7 +719,12 @@ const CreateNewArticle: React.FC = () => {
       .catch(() => {});
   }, []);
 
-
+  // ── Auto-slug ──────────────────────────────────────────────────────────────
+  useEffect(() => {
+    if (slugManuallyEdited) return;
+    const source = headline.trim() || shortTitle.trim();
+    setUrlSlug(generateSlug(source));
+  }, [headline, shortTitle, slugManuallyEdited]);
 
   // ── Load article for edit mode ─────────────────────────────────────────────
   useEffect(() => {
@@ -737,17 +735,17 @@ const CreateNewArticle: React.FC = () => {
         setSelectedType(API_TYPE_TO_UI[data.articleType] ?? "Standard Article");
         setHeadline(data.headline ?? "");
         setShortTitle(data.shortTitle ?? "");
-       editorRef.current?.innerHTML ?? content
         setInitialHtml(data.content ?? "");
-setTags(
-  Array.isArray(data.tags)
-    ? data.tags.filter((t: unknown): t is string => typeof t === "string")
-    : []
-);        setLanguage((data.language ?? "english").toLowerCase());
+        setTags(
+          Array.isArray(data.tags)
+            ? data.tags.filter((t: unknown): t is string => typeof t === "string")
+            : []
+        );
+        setLanguage((data.language ?? "english").toLowerCase());
         setArticleLocation(data.location ?? "");
 
-        // Set categoryId from the FK — data.categoryId is the UUID
-if (data.categoryId) setCategoryId(String(data.categoryId));
+        if (data.categoryId) setCategoryId(data.categoryId);
+
         if (data.articleType === "BREAKING") {
           setBreakingToggles({
             newsTicker:       Boolean(data.breakingNewsTicker),
@@ -762,17 +760,18 @@ if (data.categoryId) setCategoryId(String(data.categoryId));
             text: u.text ?? "",
           })));
         }
-        if (data.articleType === "VIDEO") {
-          setVideoUrl(data.videoUrl ?? "");
-          setVideoDuration(secondsToDisplay(data.videoDuration));
-          setVideoQuality(data.videoQuality ?? "1080p");
-        }
-setMediaPreview(typeof data.featuredImage === "string" ? data.featuredImage : null);        setImageCaption(data.imageCaption ?? "");
+
+        setMediaPreview(typeof data.featuredImage === "string" ? data.featuredImage : null);
+        setImageCaption(data.imageCaption ?? "");
         setPhotoCredit(data.photoCredit ?? "");
         setMetaTitle(data.metaTitle ?? "");
         setMetaDesc(data.metaDescription ?? "");
         setFocusKeywords(data.focusKeywords ?? "");
-        if (data.slug) setUrlSlug(data.slug);
+
+        if (data.slug) {
+          setUrlSlug(data.slug);
+          setSlugManuallyEdited(true);
+        }
       })
       .catch(err => {
         console.error("Failed to load article:", err);
@@ -783,12 +782,13 @@ setMediaPreview(typeof data.featuredImage === "string" ? data.featuredImage : nu
   }, [editId]);
 
   // ── Computed ───────────────────────────────────────────────────────────────
-const safeContent = typeof content === "string" ? content : "";
-const plainText = editorRef.current?.innerText ?? safeContent.replace(/<[^>]+>/g, " ");  const wordCount = plainText.trim() === "" ? 0 : plainText.trim().split(/\s+/).length;
+  const safeContent = typeof content === "string" ? content : "";
+  const plainText = editorRef.current?.innerText ?? safeContent.replace(/<[^>]+>/g, " ");
+  const wordCount = plainText.trim() === "" ? 0 : plainText.trim().split(/\s+/).length;
   const readTime  = Math.max(1, Math.ceil(wordCount / 200));
 
   const languageOptions = [
-    { label: "English", value: "english" }, { label: "Hindi",   value: "hindi"   },
+     { label: "Hindi",   value: "hindi"   },{ label: "English", value: "english" },
     { label: "Bengali", value: "bengali" }, { label: "Tamil",   value: "tamil"   },
   ];
 
@@ -823,11 +823,10 @@ const plainText = editorRef.current?.innerText ?? safeContent.replace(/<[^>]+>/g
     applyRichFormat(action, editorRef);
   };
 
-  const toApiArticleType = (): "STANDARD" | "BREAKING" | "LIVE" | "VIDEO" => ({
+  const toApiArticleType = (): "STANDARD" | "BREAKING" | "LIVE" => ({
     "Standard Article": "STANDARD",
     "Breaking News":    "BREAKING",
     "Live Updates":     "LIVE",
-    "Video Story":      "VIDEO",
   }[selectedType] as any);
 
   const buildPayload = (status: "PUBLISHED" | "DRAFT" | "SCHEDULED", publishAt?: string) => {
@@ -835,8 +834,8 @@ const plainText = editorRef.current?.innerText ?? safeContent.replace(/<[^>]+>/g
     return {
       headline:   headline.trim(),
       shortTitle: shortTitle.trim() || undefined,
-content: editorRef.current?.innerHTML ?? (content || ""),
-      categoryId,   // ← UUID sent to backend; controller uses resolveCategoryId
+      content:    editorRef.current?.innerHTML ?? content,
+      categoryId,
       language,
       location:    articleLocation || undefined,
       tags,
@@ -844,10 +843,7 @@ content: editorRef.current?.innerHTML ?? (content || ""),
       breakingNewsTicker:    apiType === "BREAKING" ? breakingToggles.newsTicker       : undefined,
       breakingPushNotif:     apiType === "BREAKING" ? breakingToggles.pushNotification : undefined,
       breakingHomepageAlert: apiType === "BREAKING" ? breakingToggles.homepageAlert    : undefined,
-      liveUpdates: apiType === "LIVE"  ? liveUpdates  : undefined,
-      videoUrl:      apiType === "VIDEO" ? videoUrl      || undefined : undefined,
-      videoDuration: apiType === "VIDEO" ? videoDuration || undefined : undefined,
-      videoQuality:  apiType === "VIDEO" ? videoQuality  || undefined : undefined,
+      liveUpdates: apiType === "LIVE" ? liveUpdates : undefined,
       featuredImage: mediaPreview   || undefined,
       imageCaption:  imageCaption   || undefined,
       photoCredit:   photoCredit    || undefined,
@@ -1047,50 +1043,6 @@ content: editorRef.current?.innerHTML ?? (content || ""),
             </section>
           )}
 
-          {/* Video options */}
-          {selectedType === "Video Story" && (
-            <section className="cna-section cna-type-panel cna-type-panel--video">
-              <div className="cna-type-panel-header">
-                <Video size={18} />
-                <h3 className="cna-type-panel-title" style={{ marginLeft: 8 }}>Video Content</h3>
-              </div>
-              <div className="cna-dropzone cna-video-dropzone" onClick={() => videoFileRef.current?.click()}>
-                <div className="cna-dropzone-inner">
-                  <div className="cna-dropzone-icon-wrap"><Video size={22} strokeWidth={1.5} /></div>
-                  <p className="cna-dropzone-title">Upload Video</p>
-                  <p className="cna-dropzone-sub">MP4, WebM up to 500MB</p>
-                  <button className="cna-btn cna-btn-secondary cna-dropzone-btn"
-                    onClick={e => { e.stopPropagation(); videoFileRef.current?.click(); }}>
-                    Choose File
-                  </button>
-                </div>
-                <input ref={videoFileRef} type="file" accept="video/mp4,video/webm" style={{ display: "none" }} />
-              </div>
-              <p className="cna-video-or">or</p>
-              <div className="cna-field-group">
-                <label className="cna-field-label">Video URL (YouTube, Vimeo)</label>
-                <input className="cna-input" placeholder="https://youtube.com/watch?v=..."
-                  value={videoUrl} onChange={e => setVideoUrl(e.target.value)} />
-              </div>
-              <div className="cna-seo-row">
-                <div className="cna-field-group">
-                  <label className="cna-field-label">Duration</label>
-                  <input className="cna-input" placeholder="00:00"
-                    value={videoDuration} onChange={e => setVideoDuration(e.target.value)} />
-                </div>
-                <div className="cna-field-group">
-                  <label className="cna-field-label">Video Quality</label>
-                  <CustomSelect value={videoQuality} onChange={setVideoQuality} options={[
-                    { label: "4K Ultra HD", value: "4k"    },
-                    { label: "1080p Full HD", value: "1080p" },
-                    { label: "720p HD",     value: "720p"  },
-                    { label: "480p SD",     value: "480p"  },
-                  ]} />
-                </div>
-              </div>
-            </section>
-          )}
-
           {/* Headline */}
           <section className="cna-section">
             <label className="cna-field-label">Main Headline <span className="cna-required">*</span></label>
@@ -1103,11 +1055,26 @@ content: editorRef.current?.innerHTML ?? (content || ""),
 
           {/* Short title */}
           <section className="cna-section">
-            <label className="cna-field-label">Short Title (Mobile)</label>
+            <label className="cna-field-label">Short Title</label>
             <input className="cna-input" placeholder="Shorter version for mobile devices..."
               value={shortTitle} maxLength={50}
               onChange={e => setShortTitle(e.target.value)} />
             <p className="cna-hint">{shortTitle.length}/50 characters</p>
+          </section>
+
+          {/* Summary / Excerpt */}
+          <section className="cna-section">
+            <label className="cna-field-label">Excerpt</label>
+            <textarea
+              className="cna-input"
+              placeholder="Write a short summary of the article..."
+              value={summary}
+              maxLength={160}
+              onChange={(e) => setSummary(e.target.value)}
+            />
+            <p className="cna-hint">
+              {summary.length}/160 characters • This will appear below the headline
+            </p>
           </section>
 
           {/* Rich editor */}
@@ -1201,13 +1168,42 @@ content: editorRef.current?.innerHTML ?? (content || ""),
                 </div>
                 <div className="cna-seo-row">
                   <div className="cna-field-group cna-seo-slug-group">
-                    <label className="cna-field-label">URL Slug</label>
+                    <label className="cna-field-label cna-slug-label">
+                      URL Slug
+                      {slugManuallyEdited ? (
+                        <span className="cna-slug-badge cna-slug-badge--custom">Custom</span>
+                      ) : (
+                        <span className="cna-slug-badge cna-slug-badge--auto">Auto</span>
+                      )}
+                    </label>
                     <div className="cna-slug-input-wrap">
                       <span className="cna-slug-prefix">/news/</span>
-                      <input className="cna-input cna-slug-input" placeholder="article-url-slug"
+                      <input
+                        className="cna-input cna-slug-input"
+                        placeholder="article-url-slug"
                         value={urlSlug}
-                        onChange={e => setUrlSlug(e.target.value.toLowerCase().replace(/\s+/g, "-"))} />
+                        onChange={e => {
+                          const val = e.target.value.toLowerCase().replace(/\s+/g, "-");
+                          setUrlSlug(val);
+                          setSlugManuallyEdited(val.length > 0);
+                        }}
+                      />
                     </div>
+                    {slugManuallyEdited && (
+                      <p className="cna-hint" style={{ marginTop: 4 }}>
+                        Auto-generation paused.{" "}
+                        <button
+                          type="button"
+                          className="cna-slug-reset-btn"
+                          onClick={() => {
+                            setSlugManuallyEdited(false);
+                            setUrlSlug(generateSlug(headline.trim() || shortTitle.trim()));
+                          }}
+                        >
+                          Reset to auto
+                        </button>
+                      </p>
+                    )}
                   </div>
                   <div className="cna-field-group cna-seo-kw-group">
                     <label className="cna-field-label">Focus Keywords</label>
@@ -1237,7 +1233,7 @@ content: editorRef.current?.innerHTML ?? (content || ""),
         {/* ── Sidebar ─────────────────────────────────────────────────────── */}
         <aside className="cna-sidebar">
 
-          {/* Author (static display) */}
+          {/* Author */}
           <div className="cna-card">
             <div className="cna-card-header">
               <User size={15} className="cna-card-icon-svg" />
@@ -1297,8 +1293,7 @@ content: editorRef.current?.innerHTML ?? (content || ""),
               <Tag size={15} className="cna-card-icon-svg" />
               <h2 className="cna-card-title">Tags</h2>
             </div>
-</div>
-            {/* Applied tags */}
+
             {tags.length > 0 && (
               <div className="cna-tags">
                 {tags.map(tag => (
@@ -1311,7 +1306,6 @@ content: editorRef.current?.innerHTML ?? (content || ""),
               </div>
             )}
 
-            {/* Input with DB autocomplete */}
             <div className="cna-tag-input-wrap" style={{ position: "relative" }}>
               <div className="cna-tag-input-row">
                 <input
@@ -1325,10 +1319,7 @@ content: editorRef.current?.innerHTML ?? (content || ""),
                     if (val.trim().length > 0) {
                       const q = val.toLowerCase();
                       const matches = dbTags
-                        .filter(t =>
-                          t.name.toLowerCase().includes(q) &&
-                          !tags.includes(t.name)
-                        )
+                        .filter(t => t.name.toLowerCase().includes(q) && !tags.includes(t.name))
                         .map(t => t.name)
                         .slice(0, 6);
                       setTagDropdown(matches);
@@ -1363,12 +1354,10 @@ content: editorRef.current?.innerHTML ?? (content || ""),
                 }}><Tag size={14} /></button>
               </div>
 
-              {/* Autocomplete dropdown */}
               {tagDropdownOpen && tagDropdown.length > 0 && (
                 <ul className="cna-tag-dropdown">
                   {tagDropdown.map(name => (
-                    <li key={name}
-                      className="cna-tag-dropdown-item"
+                    <li key={name} className="cna-tag-dropdown-item"
                       onMouseDown={() => {
                         if (!tags.includes(name)) setTags([...tags, name]);
                         setTagInput("");
@@ -1381,7 +1370,6 @@ content: editorRef.current?.innerHTML ?? (content || ""),
               )}
             </div>
 
-            {/* Trending from your DB */}
             {trendingDbTags.length > 0 && (
               <div className="cna-suggested-tags">
                 <p className="cna-hint" style={{ display: "flex", alignItems: "center", gap: 4 }}>
@@ -1402,8 +1390,8 @@ content: editorRef.current?.innerHTML ?? (content || ""),
                 </div>
               </div>
             )}
+          </div>
 
-      
           {/* Publishing */}
           <div className="cna-card cna-card--status-info">
             <div className="cna-card-header">

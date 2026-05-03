@@ -5,7 +5,7 @@ import Logo from "../../../assets/Logo.png";
 import { X, Newspaper } from "lucide-react";
 
 import {
-  FaNewspaper, FaBolt, FaFire, FaStar, FaClock,
+  FaNewspaper, FaBolt, FaFire, FaClock,
   FaTags, FaPhotoVideo, FaComments, FaChartBar,
   FaCog, FaTachometerAlt, FaWindowMaximize // 👇 Added FaWindowMaximize for the Footer icon
 } from "react-icons/fa";
@@ -56,9 +56,7 @@ const AdminSidebar: React.FC<AdminSidebarProps> = ({ open, onClose }) => {
           <SidebarItem icon={<FaBolt />} label="Breaking News" badge="3" danger active={isActive("/admin/breaking")} onClick={() => go("/admin/breaking")} />
           <SidebarItem icon={<MdWifiTethering />} label="Live News" badge="3" danger active={isActive("/admin/live")} onClick={() => go("/admin/live")} />
           <SidebarItem icon={<FaComments />} label="Comments" badge="24" active={isActive("/admin/comments")} onClick={() => go("/admin/comments")} />
-          <SidebarItem icon={<FaFire />} label="Trending" active={isActive("/admin/trending")} onClick={() => go("/admin/trending")} />
-          <SidebarItem icon={<FaStar />} label="Featured" active={isActive("/admin/feature")} onClick={() => go("/admin/feature")} />
-          <SidebarItem icon={<FaClock />} label="Scheduled" badge="12" active={isActive("/admin/schedule")} onClick={() => go("/admin/schedule")} />
+          <SidebarItem icon={<FaFire />} label="Trending" active={isActive("/admin/trending")} onClick={() => go("/admin/trending")} />          <SidebarItem icon={<FaClock />} label="Scheduled" badge="12" active={isActive("/admin/schedule")} onClick={() => go("/admin/schedule")} />
           <SidebarItem icon={<MdFolder />} label="Categories" active={isActive("/admin/categories")} onClick={() => go("/admin/categories")} />
           <SidebarItem icon={<FaTags />} label="Tags" active={isActive("/admin/tags")} onClick={() => go("/admin/tags")} />
           <SidebarItem icon={<FaPhotoVideo />} label="Media Library" active={isActive("/admin/medialibrary")} onClick={() => go("/admin/medialibrary")} />
@@ -66,7 +64,10 @@ const AdminSidebar: React.FC<AdminSidebarProps> = ({ open, onClose }) => {
           <SidebarItem icon={<MdNotifications />} label="Notifications" badge="12" active={isActive("/admin/notification")} onClick={() => go("/admin/notification")} />
           
           {/* 👇 NEW: Footer Management Link 👇 */}
-          <SidebarItem icon={<FaWindowMaximize />} label="Footer Management" active={isActive("/admin/footer-management")} onClick={() => go("/admin/footer-management")} />
+          <SidebarItem icon={<FaWindowMaximize />} label="Footer Manager" active={isActive("/admin/footer-management")} onClick={() => go("/admin/footer-management")} />
+          <SidebarItem icon={<FaWindowMaximize />} label="Advertisement Manager" active={isActive("/admin/advertisement-manager")} onClick={() => go("/admin/advertisement-manager")} />
+          <SidebarItem icon={<FaWindowMaximize />} label="About Manager" active={isActive("/admin/about-manager")} onClick={() => go("/admin/about-manager")} />
+          <SidebarItem icon={<FaWindowMaximize />} label="Contact Manager" active={isActive("/admin/contact-manager")} onClick={() => go("/admin/contact-manager")} />
           
           <SidebarItem icon={<FaCog />} label="Settings" active={isActive("/admin/setting")} onClick={() => go("/admin/setting")} />
         </nav>

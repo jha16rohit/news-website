@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { Link } from "react-router-dom";
-import { Clock, Eye, Home, ChevronRight, ArrowRight, Bookmark } from "lucide-react"; // 👇 Added Bookmark
+import { Clock, Eye, Home, ChevronRight, ArrowRight } from "lucide-react";
 import { useNews } from "../../Admin/NewsStore/NewsStore";
 import type { Category } from "../../Admin/NewsStore/NewsStore";
 import UserNavbar from "../UserNavbar/UserNavbar";
@@ -8,7 +8,7 @@ import Advertisement from "../Advertisment/Advertisment";
 import UserFooter from "../UserFooter/UserFooter";
 import "./SubCategoryTemplate.css";
 
-// ─── Static placeholder data (Same as before for testing) ───
+// ─── Static placeholder data ───
 const STATIC_ARTICLES = [
   { id: 1001, title: "Champions League Final: Historic Night", subtitle: "An electrifying finale saw two European giants battle.", category: "News", published: "2 hours ago", views: "34.2K", img: "https://images.unsplash.com/photo-1508098682722-e99c43a406b2?w=900&q=80" },
   { id: 1002, title: "Slam Dunk Contest Sets Record", subtitle: "The annual contest drew the highest ratings in a decade.", category: "News", published: "3 hours ago", views: "18.1K", img: "https://images.unsplash.com/photo-1546519638-68e109498ffc?w=600&q=80" },
@@ -30,18 +30,6 @@ const LOAD_MORE_COUNT = 4;
 export default function SubCategoryTemplate({ category, parentCategory, color }: SubCategoryProps) {
   const { articles: storeArticles } = useNews();
   const [visible, setVisible] = useState(INITIAL_VISIBLE);
-
-  // 👇 NEW: State and toggle function for saving articles
-  const [savedArticles, setSavedArticles] = useState<number[]>([]);
-
-  const toggleSave = (e: React.MouseEvent, id: number) => {
-    e.preventDefault(); // Prevents the <Link> from triggering when clicking the save button
-    if (savedArticles.includes(id)) {
-      setSavedArticles(savedArticles.filter(savedId => savedId !== id));
-    } else {
-      setSavedArticles([...savedArticles, id]);
-    }
-  };
 
   // Filter articles
   const storeFiltered = storeArticles.filter((a) => a.category.toLowerCase() === category.name.toLowerCase());
@@ -99,19 +87,6 @@ export default function SubCategoryTemplate({ category, parentCategory, color }:
                   <div className="sct-card-imgwrap">
                     <img src={a.img} alt={a.title} className="sct-card-img" />
                     <span className="sct-badge" style={{ backgroundColor: color }}>{a.category}</span>
-                    
-                    {/* 👇 NEW: Properly connected Save Button 👇 */}
-                    <button 
-                      className="sct-save-btn" 
-                      onClick={(e) => toggleSave(e, a.id)}
-                      aria-label="Save article"
-                    >
-                      <Bookmark 
-                        size={16} 
-                        fill={savedArticles.includes(a.id) ? color : "none"} 
-                        color={savedArticles.includes(a.id) ? color : "#ffffff"} 
-                      />
-                    </button>
                   </div>
                   <div className="sct-card-body">
                     <h3 className="sct-card-title">{a.title}</h3>
@@ -146,7 +121,7 @@ export default function SubCategoryTemplate({ category, parentCategory, color }:
           </div>
         </section>
 
-        <Advertisement />
+        <Advertisement page={category.name.toLowerCase().replace(/\s+/g, "-")}/>
         <UserFooter />
       </div>
     </>

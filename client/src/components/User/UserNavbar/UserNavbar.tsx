@@ -301,7 +301,7 @@ const UserNavbar: React.FC = () => {
               <div className="dropdown-divider" />
               <NavLink to="/about" className="mobile-link" onClick={() => setMobileMenuOpen(false)}>About Us</NavLink>
               <NavLink to="/contact" className="mobile-link" onClick={() => setMobileMenuOpen(false)}>Contact Us</NavLink>
-              <NavLink to="/privacy-policy" className="mobile-link" onClick={() => setMobileMenuOpen(false)}>Privacy Policy</NavLink>
+              <NavLink to="/" className="mobile-link" onClick={() => setMobileMenuOpen(false)}>Advertise With Us</NavLink>
             </div>
           </div>
 

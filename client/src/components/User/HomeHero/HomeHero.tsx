@@ -1,46 +1,9 @@
-import React, { useState, useEffect } from "react";
-import { Clock, Eye, Bookmark } from "lucide-react"; 
+import { Clock, Eye} from "lucide-react"; 
 import { Link } from "react-router-dom";
 import "./HomeHero.css";
 
 const HeroSection: React.FC = () => {
   // 1. Initialize state from localStorage
-  const [savedArticles, setSavedArticles] = useState<number[]>(() => {
-    const saved = localStorage.getItem("localNewzSavedArticles");
-    return saved ? JSON.parse(saved) : [];
-  });
-
-  // 👇 Listen for saves happening in other components so the homepage stays synced!
-  useEffect(() => {
-    const syncSavedArticles = () => {
-      const saved = localStorage.getItem("localNewzSavedArticles");
-      setSavedArticles(saved ? JSON.parse(saved) : []);
-    };
-    
-    window.addEventListener("localNewzSavedUpdate", syncSavedArticles);
-    return () => window.removeEventListener("localNewzSavedUpdate", syncSavedArticles);
-  }, []);
-
-  // 2. The universal toggle function
-  const toggleSave = (e: React.MouseEvent, id: number) => {
-    e.preventDefault(); // Stop links from firing
-    
-    let currentSaved = JSON.parse(localStorage.getItem("localNewzSavedArticles") || "[]");
-    
-    if (currentSaved.includes(id)) {
-      currentSaved = currentSaved.filter((savedId: number) => savedId !== id);
-    } else {
-      currentSaved.push(id);
-    }
-    
-    // Save to browser
-    localStorage.setItem("localNewzSavedArticles", JSON.stringify(currentSaved));
-    // Update local button color
-    setSavedArticles(currentSaved);
-    
-    // Broadcast the change so the Profile page instantly updates!
-    window.dispatchEvent(new Event("localNewzSavedUpdate"));
-  };
 
   const trendingArticles = [
     {
@@ -99,19 +62,6 @@ const HeroSection: React.FC = () => {
                 <span><Clock size={16} /> 2 hours ago</span>
                 <span><Eye size={16} /> 24,500 views</span>
               </div>
-              
-              {/* 👇 FIX: Changed 999 to 1 to match the article ID! 👇 */}
-              <button 
-                className="save-btn featured-save-btn" 
-                onClick={(e) => toggleSave(e, 1)}
-                aria-label="Save featured article"
-              >
-                <Bookmark 
-                  size={24} 
-                  fill={savedArticles.includes(1) ? "#e60000" : "none"} 
-                  color={savedArticles.includes(1) ? "#e60000" : "#ffffff"} 
-                />
-              </button>
             </div>
           </Link>
 
@@ -134,17 +84,6 @@ const HeroSection: React.FC = () => {
                     {/* Header Row: Category on left, Save Icon on right */}
                     <div className="trending-info-header">
                       <span className="trending-category">{article.category}</span>
-                      <button 
-                        className="save-btn" 
-                        onClick={(e) => toggleSave(e, article.id)}
-                        aria-label="Save article"
-                      >
-                        <Bookmark 
-                          size={18} 
-                          fill={savedArticles.includes(article.id) ? "#e60000" : "none"} 
-                          color={savedArticles.includes(article.id) ? "#e60000" : "#94a3b8"} 
-                        />
-                      </button>
                     </div>
 
                     <h3 className="trending-title">{article.title}</h3>

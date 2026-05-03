@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from "react";
 import { useParams, Link } from "react-router-dom";
 import { 
-  Calendar, Clock, User, Share2, Facebook, Instagram, Bookmark, 
+  Calendar, Clock, User, Share2, Facebook, Instagram,
   Bold, Italic, Underline, Smile, AtSign, ThumbsUp, ThumbsDown, 
   MessageSquare, MoreHorizontal, ChevronDown, Flag, Copy
 } from "lucide-react";
@@ -16,7 +16,7 @@ interface CommentType {
   id: number;
   author: string;
   avatar: string;
-  profilePic?: string | null; // 👇 Added to store the uploaded image
+  profilePic?: string | null;
   time: string;
   text: string;
   likes: number;
@@ -27,9 +27,9 @@ interface CommentType {
 }
 
 const ALL_MOCK_ARTICLES = [
-  { id: 1, category: "Politics", title: "Parliament Passes Historic Budget Bill: What It Means For India's Economy", img: "https://images.unsplash.com/photo-1504711434969-e33886168f5c?w=1200&q=80" },
-  { id: 2, category: "Sports", title: "India Clinches Historic Test Series Win Against Australia 3-1", img: "https://images.unsplash.com/photo-1540747913346-19e32dc3e97e?w=1200&q=80" },
-  { id: 3, category: "Business", title: "Sensex Surges 800 Points as FIIs Pour Record Capital Into Indian Markets", img: "https://images.unsplash.com/photo-1611974789855-9c2a0a7236a3?w=1200&q=80" },
+  { id: 1, category: "Politics", title: "Parliament Passes Historic Budget Bill: What It Means For India's Economy", subtitle: "Finance Minister outlines sweeping reforms across healthcare, education, and infrastructure in a landmark parliamentary session.", img: "https://images.unsplash.com/photo-1504711434969-e33886168f5c?w=1200&q=80" },
+  { id: 2, category: "Sports", title: "India Clinches Historic Test Series Win Against Australia 3-1", subtitle: "A breathtaking final day in Sydney seals India's most celebrated overseas Test victory in decades.", img: "https://images.unsplash.com/photo-1540747913346-19e32dc3e97e?w=1200&q=80" },
+  { id: 3, category: "Business", title: "Sensex Surges 800 Points as FIIs Pour Record Capital Into Indian Markets", subtitle: "Foreign institutional investors drive the biggest single-day rally of the year amid optimism around policy reforms.", img: "https://images.unsplash.com/photo-1611974789855-9c2a0a7236a3?w=1200&q=80" },
 ];
 
 const INITIAL_COMMENTS: CommentType[] = [
@@ -80,12 +80,6 @@ const ArticleDetail: React.FC = () => {
   const { articleId } = useParams();
   const { articles: storeArticles } = useNews() || { articles: [] };
 
-  const [savedArticles, setSavedArticles] = useState<number[]>(() => {
-    const saved = localStorage.getItem("localNewzSavedArticles");
-    return saved ? JSON.parse(saved) : [];
-  });
-
-  // 👇 Fetches the logged-in user's details (Name and Profile Pic) from LocalStorage!
   const [currentUser, setCurrentUser] = useState<{name: string, initials: string, profilePic: string | null} | null>(null);
 
   const [comments, setComments] = useState<CommentType[]>(INITIAL_COMMENTS);
@@ -99,18 +93,11 @@ const ArticleDetail: React.FC = () => {
   const replyInputRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    // Load User Profile Data
     const savedUser = localStorage.getItem("localNewzUser");
     if (savedUser) {
       setCurrentUser(JSON.parse(savedUser));
     }
 
-    const syncSavedArticles = () => {
-      const saved = localStorage.getItem("localNewzSavedArticles");
-      setSavedArticles(saved ? JSON.parse(saved) : []);
-    };
-    window.addEventListener("localNewzSavedUpdate", syncSavedArticles);
-    
     const handleClickOutside = (e: MouseEvent) => {
       const target = e.target as HTMLElement;
       if (!target.closest('.cmt-toolbar') && !target.closest('.cmt-menu-wrap')) {
@@ -122,23 +109,9 @@ const ArticleDetail: React.FC = () => {
     document.addEventListener("mousedown", handleClickOutside);
     
     return () => {
-      window.removeEventListener("localNewzSavedUpdate", syncSavedArticles);
       document.removeEventListener("mousedown", handleClickOutside);
     };
   }, []);
-
-  const toggleSave = (e: React.MouseEvent, id: number) => {
-    e.preventDefault(); 
-    let currentSaved = JSON.parse(localStorage.getItem("localNewzSavedArticles") || "[]");
-    if (currentSaved.includes(id)) {
-      currentSaved = currentSaved.filter((savedId: number) => savedId !== id);
-    } else {
-      currentSaved.push(id);
-    }
-    localStorage.setItem("localNewzSavedArticles", JSON.stringify(currentSaved));
-    setSavedArticles(currentSaved);
-    window.dispatchEvent(new Event("localNewzSavedUpdate"));
-  };
 
   const handleShare = (platform: 'fb' | 'tw' | 'ig' | 'native') => {
     const url = encodeURIComponent(window.location.href);
@@ -155,9 +128,8 @@ const ArticleDetail: React.FC = () => {
     }
   };
 
-  // 👇 TRUE WYSIWYG FORMATTING LOGIC
   const executeCommand = (e: React.MouseEvent, command: string) => {
-    e.preventDefault(); // Prevents the button click from stealing focus!
+    e.preventDefault();
     document.execCommand(command, false);
   };
 
@@ -200,7 +172,7 @@ const ArticleDetail: React.FC = () => {
       id: Date.now(), 
       author: currentUser?.name || "Reader", 
       avatar: currentUser?.initials || "RE", 
-      profilePic: currentUser?.profilePic || null, // 👇 Attaches uploaded profile picture!
+      profilePic: currentUser?.profilePic || null,
       time: "Just now",
       text: htmlContent, 
       likes: 0, 
@@ -244,6 +216,7 @@ const ArticleDetail: React.FC = () => {
 
   const defaultMockArticle = {
     title: "Parliament Passes Historic Budget Bill: What It Means For India's Economy",
+    subtitle: "Finance Minister outlines sweeping reforms across healthcare, education, and infrastructure in a landmark parliamentary session.",
     category: "Politics", author: "Aditi Sharma", date: "March 2, 2026", readTime: "5 min read",
     imageUrl: "https://images.unsplash.com/photo-1523995462485-3d171b5c8fa9?auto=format&fit=crop&q=80&w=1200",
     isLive: true, 
@@ -263,17 +236,20 @@ The bill, which saw weeks of intense debate, was finally approved with a signifi
   const mockArticle = ALL_MOCK_ARTICLES.find(a => a.id === Number(articleId));
 
   const article = realArticle ? {
-    id: realArticle.id, title: realArticle.title, category: realArticle.category || "News",
+    id: realArticle.id, title: realArticle.title,
+    subtitle: (realArticle as any).subtitle || "Stay informed with the latest updates and in-depth coverage from our editorial team.",
+    category: realArticle.category || "News",
     author: (realArticle as any).author || "Local Newz Team", date: (realArticle as any).publishedAt || "Recently",
     readTime: "4 min read", imageUrl: (realArticle as any).imageUrl || (realArticle as any).img || defaultMockArticle.imageUrl,
     isLive: false, liveUpdates: [], content: (realArticle as any).content || defaultMockArticle.content
   } : mockArticle ? {
-    ...defaultMockArticle, id: mockArticle.id, title: mockArticle.title, category: mockArticle.category, imageUrl: mockArticle.img, isLive: mockArticle.id === 1 
+    ...defaultMockArticle, id: mockArticle.id, title: mockArticle.title,
+    subtitle: mockArticle.subtitle,
+    category: mockArticle.category, imageUrl: mockArticle.img, isLive: mockArticle.id === 1 
   } : {
     ...defaultMockArticle, id: articleId ? parseInt(articleId) : 1001,
   };
 
-  const isSaved = savedArticles.includes(article.id);
   const displayCategory = article.category.charAt(0).toUpperCase() + article.category.slice(1).toLowerCase();
 
   return (
@@ -293,7 +269,12 @@ The bill, which saw weeks of intense debate, was finally approved with a signifi
           </div>
 
           <span className="ad-category-badge">{article.category}</span>
+          
+          {/* ── MAIN HEADLINE ── */}
           <h1 className="ad-headline">{article.title}</h1>
+
+          {/* ── SUBHEADING (NEW) ── */}
+          <p className="ad-subheadline">{article.subtitle}</p>
 
           <div className="ad-meta-row">
             <div className="ad-meta-left">
@@ -307,11 +288,6 @@ The bill, which saw weeks of intense debate, was finally approved with a signifi
               <button className="ad-share-btn fb" onClick={() => handleShare('fb')}><Facebook size={14} /></button>
               <button className="ad-share-btn ig" onClick={() => handleShare('ig')}><Instagram size={14} /></button>
               <button className="ad-share-btn tw" onClick={() => handleShare('tw')}><FaXTwitter size={14} /></button>
-              <div className="ad-meta-divider"></div>
-              <button className={`ad-save-btn ${isSaved ? 'saved' : ''}`} onClick={(e) => toggleSave(e, article.id)}>
-                <Bookmark size={14} fill={isSaved ? "#0f172a" : "none"} color="#0f172a" />
-                <span>{isSaved ? "Saved" : "Save"}</span>
-              </button>
             </div>
           </div>
 
@@ -327,7 +303,7 @@ The bill, which saw weeks of intense debate, was finally approved with a signifi
           </div>
 
           <div style={{ margin: "50px 0" }}>
-            <Advertisement />
+            <Advertisement page={article.category?.toLowerCase() || "all"}/>
           </div>
 
           <div className="comments-section">
@@ -380,7 +356,6 @@ The bill, which saw weeks of intense debate, was finally approved with a signifi
                 <div key={comment.id} className="cmt-thread">
                   
                   <div className="cmt-item">
-                    {/* 👇 DISPLAYS THE UPLOADED AVATAR IF AVAILABLE 👇 */}
                     <div className="cmt-avatar">
                       {comment.profilePic ? (
                         <img src={comment.profilePic} alt={comment.author} style={{width: '100%', height: '100%', borderRadius: '50%', objectFit: 'cover'}} />
@@ -443,7 +418,6 @@ The bill, which saw weeks of intense debate, was finally approved with a signifi
                       {comment.replies.map((reply) => (
                         <div key={reply.id} className="cmt-item">
                           
-                          {/* 👇 DISPLAYS THE UPLOADED AVATAR IF AVAILABLE 👇 */}
                           <div className="cmt-avatar cmt-avatar-small">
                             {reply.profilePic ? (
                               <img src={reply.profilePic} alt={reply.author} style={{width: '100%', height: '100%', borderRadius: '50%', objectFit: 'cover'}} />

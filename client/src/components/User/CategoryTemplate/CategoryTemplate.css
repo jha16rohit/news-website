@@ -601,3 +601,52 @@
   background-color: rgba(0, 0, 0, 0.04); /* Very subtle light-gray hover effect */
   transform: scale(1.1);
 }
+
+/* ============================================================
+   PASTE THESE RULES INTO YOUR CategoryTemplate.css
+   They override the ct-news-layout section specifically.
+   Find the existing .ct-news-layout block and REPLACE it
+   with the rules below (everything from .ct-news-layout
+   down through .ct-news-sidebar).
+============================================================ */
+
+/* Latest News section wrapper */
+.ct-news-layout {
+  display: flex;
+  flex-direction: row;          /* left → right */
+  align-items: flex-start;
+  gap: 32px;
+}
+
+/* ── LEFT: the article grid takes all remaining space ── */
+.ct-news-main {
+  flex: 1;
+  min-width: 0;                 /* prevents flex blowout */
+  order: 1;                     /* explicitly first = LEFT */
+}
+
+/* ── RIGHT: weather + calendar sidebar ── */
+.ct-news-sidebar {
+  width: 300px;
+  flex-shrink: 0;
+  order: 2;                     /* explicitly second = RIGHT */
+  position: sticky;
+  top: 24px;
+}
+
+/* ── Responsive: stack vertically on smaller screens ── */
+@media (max-width: 1024px) {
+  .ct-news-layout {
+    flex-direction: column;
+  }
+
+  .ct-news-sidebar {
+    width: 100%;
+    position: static;
+    order: 2;                   /* sidebar still comes after grid */
+  }
+
+  .ct-news-main {
+    order: 1;
+  }
+}

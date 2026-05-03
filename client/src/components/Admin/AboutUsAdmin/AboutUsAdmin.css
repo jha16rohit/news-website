@@ -1,0 +1,373 @@
+@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700&family=DM+Sans:wght@400;500;600&display=swap');
+
+/* ──────────────────────────────────────────────
+   ABOUT US ADMIN — Design System
+   Brand: Deep Navy #0b1423 + Red #e60000
+────────────────────────────────────────────── */
+
+.au-admin {
+  font-family: 'DM Sans', sans-serif;
+  background: #f0f2f7;
+  min-height: 100vh;
+  padding: 24px 24px 60px;
+  color: #1a1f2e;
+  position: relative;
+}
+
+/* ── Header ── */
+.au-admin-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 20px;
+  flex-wrap: wrap;
+}
+
+.au-admin-title {
+  font-family: 'Playfair Display', serif;
+  font-size: clamp(20px, 2.5vw, 26px);
+  font-weight: 700;
+  color: #0b1423;
+  margin: 0 0 3px;
+}
+
+.au-admin-sub {
+  font-size: 13px;
+  color: #64748b;
+  margin: 0;
+}
+
+/* ── Save Button ── */
+.au-save-btn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: #0b1423;
+  color: #fff;
+  border: none;
+  padding: 10px 20px;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  font-family: 'DM Sans', sans-serif;
+  transition: all 0.25s;
+  white-space: nowrap;
+}
+
+.au-save-btn:hover { background: #1c2b44; }
+.au-save-btn.saved { background: #16a34a; }
+
+/* ── Tabs ── */
+.au-tabs {
+  display: flex;
+  gap: 5px;
+  background: #ffffff;
+  padding: 5px;
+  border-radius: 10px;
+  border: 1px solid #e2e8f0;
+  margin-bottom: 20px;
+  flex-wrap: wrap;
+}
+
+.au-tab {
+  padding: 9px 18px;
+  border: none;
+  background: transparent;
+  border-radius: 7px;
+  font-size: 13px;
+  font-weight: 600;
+  color: #64748b;
+  cursor: pointer;
+  font-family: 'DM Sans', sans-serif;
+  transition: all 0.2s;
+  white-space: nowrap;
+}
+
+.au-tab:hover { color: #0b1423; background: #f1f5f9; }
+.au-tab.active { background: #0b1423; color: #ffffff; }
+
+/* ── Panel ── */
+.au-panel {
+  background: #ffffff;
+  border-radius: 12px;
+  border: 1px solid #e2e8f0;
+  overflow: hidden;
+  box-shadow: 0 4px 20px rgba(11,20,35,0.06);
+}
+
+.au-section {
+  padding: 24px;
+}
+
+.au-section-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  margin-bottom: 20px;
+  flex-wrap: wrap;
+}
+
+.au-section-header h2 {
+  font-family: 'Playfair Display', serif;
+  font-size: 18px;
+  font-weight: 700;
+  color: #0b1423;
+  margin: 0;
+}
+
+.au-divider {
+  height: 1px;
+  background: #e2e8f0;
+  margin: 24px 0;
+}
+
+/* ── Fields ── */
+.au-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-bottom: 14px;
+}
+
+.au-field label {
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.6px;
+  color: #64748b;
+}
+
+.au-field input,
+.au-field textarea {
+  background: #f8fafc;
+  border: 1.5px solid #e2e8f0;
+  border-radius: 8px;
+  padding: 10px 13px;
+  font-size: 13px;
+  font-family: 'DM Sans', sans-serif;
+  color: #1a1f2e;
+  transition: border-color 0.2s, box-shadow 0.2s;
+  resize: vertical;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.au-field input:focus,
+.au-field textarea:focus {
+  outline: none;
+  border-color: #e60000;
+  box-shadow: 0 0 0 3px rgba(230,0,0,0.08);
+  background: #fff;
+}
+
+.au-field-sm input { width: auto; }
+.au-field-grow { flex: 1; min-width: 0; }
+
+/* ── Grid ── */
+.au-grid-2 {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+
+/* ── Toggle ── */
+.au-toggle {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+}
+
+.au-toggle input { display: none; }
+
+.au-toggle-track {
+  width: 40px;
+  height: 22px;
+  background: #cbd5e1;
+  border-radius: 11px;
+  position: relative;
+  transition: background 0.25s;
+  flex-shrink: 0;
+}
+
+.au-toggle-track::after {
+  content: '';
+  position: absolute;
+  width: 16px;
+  height: 16px;
+  background: white;
+  border-radius: 50%;
+  top: 3px;
+  left: 3px;
+  transition: transform 0.25s;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.15);
+}
+
+.au-toggle input:checked + .au-toggle-track { background: #e60000; }
+.au-toggle input:checked + .au-toggle-track::after { transform: translateX(18px); }
+
+.au-toggle-label {
+  font-size: 12px;
+  font-weight: 600;
+  color: #64748b;
+  white-space: nowrap;
+}
+
+.au-toggle-sm .au-toggle-track { width: 34px; height: 18px; }
+.au-toggle-sm .au-toggle-track::after { width: 12px; height: 12px; }
+.au-toggle-sm input:checked + .au-toggle-track::after { transform: translateX(16px); }
+
+/* ── Add Button ── */
+.au-add-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: #fff;
+  border: 1.5px solid #e60000;
+  color: #e60000;
+  padding: 7px 14px;
+  border-radius: 7px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  font-family: 'DM Sans', sans-serif;
+  transition: all 0.2s;
+}
+.au-add-btn:hover { background: #e60000; color: #fff; }
+
+/* ── Delete Button ── */
+.au-del-btn {
+  background: #fff5f5;
+  border: 1px solid #fecaca;
+  color: #dc2626;
+  width: 30px;
+  height: 30px;
+  border-radius: 6px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s;
+  flex-shrink: 0;
+}
+.au-del-btn:hover { background: #dc2626; color: #fff; }
+
+/* ── Dimmed ── */
+.dimmed { opacity: 0.42; }
+
+/* ── Preview Image ── */
+.au-preview-img {
+  position: relative;
+  border-radius: 10px;
+  overflow: hidden;
+  height: 180px;
+  margin-top: 6px;
+}
+.au-preview-img img { width: 100%; height: 100%; object-fit: cover; }
+.au-preview-label {
+  position: absolute;
+  bottom: 8px;
+  left: 8px;
+  background: rgba(0,0,0,0.6);
+  color: #fff;
+  font-size: 11px;
+  padding: 3px 8px;
+  border-radius: 4px;
+  font-weight: 600;
+}
+
+/* ── Values Cards Grid ── */
+.au-cards-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 16px;
+  margin-top: 4px;
+}
+
+.au-value-card {
+  background: #f8fafc;
+  border: 1.5px solid #e2e8f0;
+  border-radius: 10px;
+  padding: 16px;
+  transition: border-color 0.2s;
+}
+
+.au-value-card:hover { border-color: #e60000; }
+
+.au-card-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 10px;
+}
+
+/* ── Stats List ── */
+.au-stats-list { display: flex; flex-direction: column; gap: 12px; }
+
+.au-stat-row {
+  display: flex;
+  align-items: flex-end;
+  gap: 14px;
+  background: #f8fafc;
+  border: 1.5px solid #e2e8f0;
+  border-radius: 10px;
+  padding: 14px;
+  flex-wrap: wrap;
+}
+
+.au-row-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding-bottom: 2px;
+  flex-shrink: 0;
+}
+
+/* ── Float Save ── */
+.au-float-save {
+  position: fixed;
+  bottom: 24px;
+  right: 24px;
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  background: #0b1423;
+  color: #fff;
+  border: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 6px 20px rgba(11,20,35,0.28);
+  transition: all 0.25s;
+  z-index: 100;
+}
+.au-float-save:hover { background: #1c2b44; transform: translateY(-2px); }
+.au-float-save.saved { background: #16a34a; }
+
+/* ── RESPONSIVE ── */
+@media (max-width: 1024px) {
+  .au-admin { padding: 20px 18px 60px; }
+  .au-grid-2 { grid-template-columns: 1fr; }
+}
+
+@media (max-width: 768px) {
+  .au-admin { padding: 16px 14px 60px; }
+  .au-tabs { gap: 4px; }
+  .au-tab { padding: 8px 12px; font-size: 12px; }
+  .au-section { padding: 18px 16px; }
+  .au-section-header { flex-direction: column; align-items: flex-start; gap: 10px; }
+  .au-stat-row { flex-direction: column; }
+  .au-cards-grid { grid-template-columns: 1fr; }
+}
+
+@media (max-width: 480px) {
+  .au-admin-header { flex-direction: column; }
+  .au-save-btn { width: 100%; justify-content: center; }
+  .au-tabs { overflow-x: auto; flex-wrap: nowrap; padding: 5px; }
+  .au-tab { flex-shrink: 0; }
+  .au-section { padding: 16px 13px; }
+}

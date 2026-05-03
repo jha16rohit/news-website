@@ -191,30 +191,6 @@
 
 
 
-/* 👇 NEW: Styles for the Save Button over the image 👇 */
-.latest-save-btn {
-  position: absolute;
-  top: 15px;
-  right: 15px;
-  background-color: rgba(0, 0, 0, 0.4); /* Dark translucent background so white icon pops */
-  border: none;
-  border-radius: 50%;
-  padding: 8px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  transition: all 0.2s ease;
-  backdrop-filter: blur(4px);
-  z-index: 10;
-}
-
-.latest-save-btn:hover {
-  background-color: rgba(0, 0, 0, 0.7);
-  transform: scale(1.1);
-}
-
-
 /* ===== RESPONSIVE ===== */
 @media (max-width: 1024px) {
   .news-grid {

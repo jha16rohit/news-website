@@ -75,11 +75,22 @@
   font-weight: 800;
   line-height: 1.2;
   color: #0f172a;
-  margin: 0 0 20px 0;
+  margin: 0 0 14px 0;
   letter-spacing: -0.5px;
 }
 
-/* --- META ROW (Author, Share, Save) --- */
+/* ── SUBHEADING (NEW) ── */
+.ad-subheadline {
+  font-size: 18px;
+  font-weight: 400;
+  line-height: 1.6;
+  color: #475569;
+  margin: 0 0 24px 0;
+  border-left: 4px solid #e60000;
+  padding-left: 16px;
+}
+
+/* --- META ROW (Author, Share) --- */
 .ad-meta-row {
   display: flex;
   justify-content: space-between;
@@ -119,11 +130,6 @@
   gap: 6px;
 }
 
-.share-text-btn {
-  background: none; border: none; cursor: pointer; padding: 0;
-  display: flex; align-items: center; gap: 6px; font-weight: 600; color: #334155;
-}
-
 .ad-share-btn {
   width: 28px;
   height: 28px;
@@ -141,31 +147,6 @@
 .ad-share-btn.fb { background-color: #1877F2; }
 .ad-share-btn.ig { background-color: #E4405F; }
 .ad-share-btn.tw { background-color: #000000; }
-
-.ad-meta-divider {
-  width: 1px;
-  height: 20px;
-  background-color: #cbd5e1;
-  margin: 0 5px;
-}
-
-.ad-save-btn {
-  background: #ffffff;
-  border: 1px solid #cbd5e1;
-  border-radius: 20px;
-  padding: 6px 14px;
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  font-size: 13px;
-  font-weight: 600;
-  color: #0f172a;
-  cursor: pointer;
-  transition: all 0.2s ease;
-}
-
-.ad-save-btn:hover { background-color: #f8fafc; border-color: #94a3b8; }
-.ad-save-btn.saved { background-color: #fff1f2; border-color: #e60000; color: #e60000; }
 
 /* --- CONTENT & IMAGE --- */
 .ad-hero-image {
@@ -236,13 +217,8 @@
 .ad-related-info span { font-size: 11px; color: #64748b; }
 
 /* ==================================================
-   COMMENTS SECTION UI (Match Design exactly)
+   COMMENTS SECTION
 ================================================== */
-.ad-comments-wrapper {
-  max-width: 800px;
-  width: 100%;
-}
-
 .cmt-input-box {
   background-color: #f8fafc;
   border-radius: 8px;
@@ -262,20 +238,6 @@
   color: #334155;
   outline: none;
 }
-.cmt-textarea::placeholder { color: #94a3b8; }
-
-.cmt-toolbar {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-top: 10px;
-}
-
-.cmt-tools-left {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-}
 
 /* Simulates a true placeholder for contentEditable */
 .cmt-textarea[contenteditable]:empty::before {
@@ -285,6 +247,19 @@
   display: block;
 }
 
+.cmt-toolbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 10px;
+  position: relative;
+}
+
+.cmt-tools-left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
 
 .cmt-tools-left button {
   background: none; border: none; color: #64748b; cursor: pointer; padding: 4px;
@@ -346,10 +321,6 @@
 .cmt-replies-container::before { content: ''; position: absolute; top: -16px; left: -2px; width: 16px; height: 32px; border-bottom: 2px solid #e2e8f0; border-left: 2px solid #e2e8f0; border-bottom-left-radius: 12px; }
 
 /* --- FORMATTING POPUPS --- */
-.cmt-toolbar {
-  position: relative;
-}
-
 .cmt-popup-menu {
   position: absolute;
   bottom: calc(100% + 10px);
@@ -391,4 +362,5 @@
   .ad-container { flex-direction: column; }
   .ad-sidebar { width: 100%; position: static; }
   .ad-headline { font-size: 32px; }
+  .ad-subheadline { font-size: 16px; }
 }

@@ -248,7 +248,7 @@
   color: white;
   border: none;
   padding: 8px 18px; /* Pill shape padding */
-  border-radius: 25px; /* Fully rounded edges */
+  border-radius: 6px; /* Fully rounded edges */
   font-size: 14px;
   font-weight: 700;
   cursor: pointer;
@@ -258,7 +258,6 @@
 
 .nav-signin-btn:hover {
   background-color: #cc0000;
-  transform: translateY(-2px);
 }
 
 /* Ensure the icon inside the button is white */

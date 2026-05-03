@@ -1,13 +1,25 @@
 import React, { useState, useEffect } from "react";
-import { Link } from "react-router-dom"; // 👇 Imported Link for proper routing
+import { Link } from "react-router-dom";
 import { Mail, ChevronRight, TrendingUp, Youtube } from "lucide-react";
 import { FaXTwitter, FaFacebookF, FaInstagram, FaWhatsapp } from 'react-icons/fa6';
-import logo from "../../../assets/Logo.png"; 
+import logo from "../../../assets/Logo.png";
 import "./UserFooter.css";
 
-// 👇 Imported your news store to grab the live categories!
-import { useNews } from "../../Admin/NewsStore/NewsStore"; 
+import { useNews } from "../../Admin/NewsStore/NewsStore";
 
+// ─────────────────────────────────────────────
+// Types
+// ─────────────────────────────────────────────
+interface TrendingTag {
+  id: string;
+  label: string;
+  slug: string;
+  enabled: boolean;
+}
+
+// ─────────────────────────────────────────────
+// Defaults
+// ─────────────────────────────────────────────
 const DEFAULT_FOOTER_DATA = {
   sectionTitle: "STAY UPDATED",
   descriptionText: "Get the latest headlines and in-depth stories delivered to your inbox.",
@@ -17,60 +29,98 @@ const DEFAULT_FOOTER_DATA = {
   ]
 };
 
+const DEFAULT_TRENDING_TAGS: TrendingTag[] = [
+  { id: "1", label: "Budget 2026", slug: "budget2026", enabled: true },
+  { id: "2", label: "India News", slug: "indianews", enabled: true },
+  { id: "3", label: "IPL 2026", slug: "ipl2026", enabled: true },
+  { id: "4", label: "Tech Update", slug: "techupdate", enabled: true },
+  { id: "5", label: "Stock Market", slug: "stockmarket", enabled: true },
+  { id: "6", label: "Web Stories", slug: "webstories", enabled: true },
+  { id: "7", label: "Global News", slug: "globalnews", enabled: true },
+];
+
+// ─────────────────────────────────────────────
+// Component
+// ─────────────────────────────────────────────
 const Footer: React.FC = () => {
   const [footerData, setFooterData] = useState<any>(DEFAULT_FOOTER_DATA);
-  
-  // 👇 Grab categories from your store
+  const [trendingTags, setTrendingTags] = useState<TrendingTag[]>(DEFAULT_TRENDING_TAGS);
+
   const { categories } = useNews() || { categories: [] };
 
+  // Load footer settings
   useEffect(() => {
     const loadFooterData = () => {
       try {
         const data = localStorage.getItem("localNewzFooterData");
-        if (data) {
-          setFooterData(JSON.parse(data));
-        } else {
-          setFooterData(DEFAULT_FOOTER_DATA);
-        }
+        if (data) setFooterData(JSON.parse(data));
+        else setFooterData(DEFAULT_FOOTER_DATA);
       } catch (error) {
         console.error("Failed to load footer data:", error);
       }
     };
+    loadFooterData();
 
-    loadFooterData(); 
-    
-    const handleStorageChange = (e: StorageEvent) => {
+    const onStorage = (e: StorageEvent) => {
       if (e.key === "localNewzFooterData") loadFooterData();
     };
-    window.addEventListener("storage", handleStorageChange);
-    
-    const handleLocalUpdate = () => loadFooterData();
-    window.addEventListener("localNewzFooterUpdate", handleLocalUpdate);
-
+    const onCustom = () => loadFooterData();
+    window.addEventListener("storage", onStorage);
+    window.addEventListener("localNewzFooterUpdate", onCustom);
     return () => {
-      window.removeEventListener("storage", handleStorageChange);
-      window.removeEventListener("localNewzFooterUpdate", handleLocalUpdate);
+      window.removeEventListener("storage", onStorage);
+      window.removeEventListener("localNewzFooterUpdate", onCustom);
+    };
+  }, []);
+
+  // Load trending tags (same source as TrendingNews page)
+  useEffect(() => {
+    const loadTags = () => {
+      try {
+        const raw = localStorage.getItem("localNewzTrendingTags");
+        if (raw) {
+          const parsed: TrendingTag[] = JSON.parse(raw);
+          const enabled = parsed.filter((t) => t.enabled);
+          if (enabled.length > 0) setTrendingTags(enabled);
+        }
+      } catch (e) {
+        console.error("Failed to load trending tags:", e);
+      }
+    };
+    loadTags();
+
+    const onStorage = (e: StorageEvent) => {
+      if (e.key === "localNewzTrendingTags") loadTags();
+    };
+    const onCustom = () => loadTags();
+    window.addEventListener("storage", onStorage);
+    window.addEventListener("localNewzTrendingTagsUpdate", onCustom);
+    return () => {
+      window.removeEventListener("storage", onStorage);
+      window.removeEventListener("localNewzTrendingTagsUpdate", onCustom);
     };
   }, []);
 
   const activeImage = footerData?.images?.find((img: any) => img.isActive)?.url;
 
-  // 👇 Dynamic Category Logic (Matches Navbar's Top-Level Featured Categories)
+  // Dynamic categories (same logic as navbar)
   const slugOf = (name: string) => name.toLowerCase().replace(/\s+/g, "-");
-  
-  // Filter for top-level featured categories (or just top-level if none are featured), limit to 6 so it doesn't break the layout
-  const featuredCategories = categories.filter(c => !c.parentId && c.enabled && c.featured);
-  const displayCategories = (featuredCategories.length > 0 ? featuredCategories : categories.filter(c => !c.parentId && c.enabled)).slice(0, 6);
+  const featuredCategories = categories.filter((c: any) => !c.parentId && c.enabled && c.featured);
+  const displayCategories = (
+    featuredCategories.length > 0
+      ? featuredCategories
+      : categories.filter((c: any) => !c.parentId && c.enabled)
+  ).slice(0, 6);
 
   return (
-    <footer 
+    <footer
       className={`site-footer ${activeImage ? 'has-bg-image' : 'solid-bg'}`}
       style={activeImage ? { backgroundImage: `url(${activeImage})` } : {}}
     >
       <div className="footer-overlay">
         <div className="footer-container">
-          
-          {/* ================= TOP BANNER ================= */}
+
+          {/* ── SUBSCRIBE BANNER ── */}
           <div className="footer-subscribe-banner">
             <div className="fsb-left">
               <div className="fsb-title-wrap">
@@ -80,7 +130,7 @@ const Footer: React.FC = () => {
               <div className="fsb-divider"></div>
               <span className="fsb-desc">{footerData.descriptionText}</span>
             </div>
-            
+
             <div className="fsb-right">
               <div className="fsb-input-group">
                 <input type="email" placeholder="Enter your email" />
@@ -90,10 +140,10 @@ const Footer: React.FC = () => {
             </div>
           </div>
 
-          {/* ================= MAIN GRID ================= */}
+          {/* ── MAIN GRID ── */}
           <div className="footer-main-grid">
-            
-            {/* BRAND */}
+
+            {/* Brand */}
             <div className="f-col f-brand-col">
               <div className="f-logo">
                 <Link to="/">
@@ -101,68 +151,71 @@ const Footer: React.FC = () => {
                 </Link>
               </div>
               <p className="f-trusted-text">{footerData.trustedText}</p>
-              
+
               <div className="f-socials">
                 <span className="f-social-title">Follow Us</span>
                 <div className="f-social-icons">
-                  <a href="#" className="s-icon fb"><FaFacebookF size={16} /></a>
-                  <a href="#" className="s-icon tw"><FaXTwitter size={16} /></a>
-                  <a href="#" className="s-icon yt"><Youtube size={16} /></a>
-                  <a href="#" className="s-icon ig"><FaInstagram size={16} /></a>
-                  <a href="#" className="s-icon wa"><FaWhatsapp size={16} /></a>
+                  <a href="#" className="s-icon fb" aria-label="Facebook"><FaFacebookF size={15} /></a>
+                  <a href="#" className="s-icon tw" aria-label="X / Twitter"><FaXTwitter size={15} /></a>
+                  <a href="#" className="s-icon yt" aria-label="YouTube"><Youtube size={15} /></a>
+                  <a href="#" className="s-icon ig" aria-label="Instagram"><FaInstagram size={15} /></a>
+                  <a href="#" className="s-icon wa" aria-label="WhatsApp"><FaWhatsapp size={15} /></a>
                 </div>
               </div>
             </div>
 
-            {/* DYNAMIC CATEGORIES */}
+            {/* Dynamic Categories */}
             <div className="f-col">
               <h3 className="f-heading">CATEGORIES</h3>
               <ul className="f-links">
-                <li><Link to="/"><ChevronRight size={14} className="f-arrow" /> Home</Link></li>
-                
-                {/* 👇 Now maps directly from your Admin Store! 👇 */}
-                {displayCategories.map(cat => (
+                <li>
+                  <Link to="/">
+                    <ChevronRight size={14} className="f-arrow" /> Home
+                  </Link>
+                </li>
+                {displayCategories.map((cat: any) => (
                   <li key={cat.id}>
                     <Link to={`/category/${slugOf(cat.name)}`}>
                       <ChevronRight size={14} className="f-arrow" /> {cat.name}
                     </Link>
                   </li>
                 ))}
-                
               </ul>
             </div>
 
-            {/* QUICK LINKS */}
+            {/* Quick Links */}
             <div className="f-col">
               <h3 className="f-heading">QUICK LINKS</h3>
               <ul className="f-links">
                 <li><Link to="/about"><ChevronRight size={14} className="f-arrow" /> About Us</Link></li>
                 <li><Link to="/contact"><ChevronRight size={14} className="f-arrow" /> Contact Us</Link></li>
                 <li><Link to="/advertise"><ChevronRight size={14} className="f-arrow" /> Advertise With Us</Link></li>
-                <li><Link to="/privacy-policy"><ChevronRight size={14} className="f-arrow" /> Privacy Policy</Link></li>
-                <li><Link to="/terms"><ChevronRight size={14} className="f-arrow" /> Terms & Conditions</Link></li>
               </ul>
             </div>
 
-            {/* TRENDING TOPICS */}
+            {/* Dynamic Trending Topics — driven by admin */}
             <div className="f-col">
               <h3 className="f-heading">TRENDING TOPICS</h3>
               <div className="f-trending-grid">
-                <Link to="/topic" className="f-trending-tag">#Budget2026 <TrendingUp size={14} /></Link>
-                <Link to="/topic" className="f-trending-tag">#IndiaNews <TrendingUp size={14} /></Link>
-                <Link to="/topic" className="f-trending-tag">#IPL2026 <TrendingUp size={14} /></Link>
-                <Link to="/topic" className="f-trending-tag">#TechUpdate <TrendingUp size={14} /></Link>
-                <Link to="/topic" className="f-trending-tag">#StockMarket <TrendingUp size={14} /></Link>
-                <Link to="/topic" className="f-trending-tag">#WebStories <TrendingUp size={14} /></Link>
-                <Link to="/topic" className="f-trending-tag">#GlobalNews <TrendingUp size={14} /></Link>
+                {trendingTags.map((tag) => (
+                  <Link
+                    key={tag.id}
+                    to={`/trending?tag=${tag.slug}`}
+                    className="f-trending-tag"
+                  >
+                    <span>#{tag.label}</span>
+                    <TrendingUp size={13} />
+                  </Link>
+                ))}
               </div>
             </div>
 
           </div>
 
+          {/* ── BOTTOM BAR ── */}
           <div className="footer-bottom-bar">
             <p>
-              © Copyright-2026, All Rights Reserved | Local Newz | <span className="heart">❤️</span> WebWala Studio
+              &copy; Copyright-2026, All Rights Reserved | Local Newz | WebWala Studio
             </p>
           </div>
 

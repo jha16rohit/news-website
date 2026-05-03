@@ -1,48 +1,12 @@
-import React, { useState, useEffect } from "react"; // 👇 FIX: Added useEffect here!
-import { Clock, Eye, Bookmark } from "lucide-react"; 
+import React, { useState } from "react"; // 👇 FIX: Added useEffect here!
+import { Clock, Eye } from "lucide-react"; 
 import { Link } from "react-router-dom";
 import "./LatestNews.css";
 
 const LatestNews: React.FC = () => {
   const [showAll, setShowAll] = useState(false);
 
-  // 1. Initialize state from localStorage
-  const [savedArticles, setSavedArticles] = useState<number[]>(() => {
-    const saved = localStorage.getItem("localNewzSavedArticles");
-    return saved ? JSON.parse(saved) : [];
-  });
 
-  // 👇 FIX: Listen for saves happening in other components so the homepage stays synced!
-  useEffect(() => {
-    const syncSavedArticles = () => {
-      const saved = localStorage.getItem("localNewzSavedArticles");
-      setSavedArticles(saved ? JSON.parse(saved) : []);
-    };
-    
-    window.addEventListener("localNewzSavedUpdate", syncSavedArticles);
-    return () => window.removeEventListener("localNewzSavedUpdate", syncSavedArticles);
-  }, []);
-
-  // 2. The universal toggle function
-  const toggleSave = (e: React.MouseEvent, id: number) => {
-    e.preventDefault(); // Stop links from firing
-    
-    let currentSaved = JSON.parse(localStorage.getItem("localNewzSavedArticles") || "[]");
-    
-    if (currentSaved.includes(id)) {
-      currentSaved = currentSaved.filter((savedId: number) => savedId !== id);
-    } else {
-      currentSaved.push(id);
-    }
-    
-    // Save to browser
-    localStorage.setItem("localNewzSavedArticles", JSON.stringify(currentSaved));
-    // Update local button color
-    setSavedArticles(currentSaved);
-    
-    // Broadcast the change so the Profile page instantly updates!
-    window.dispatchEvent(new Event("localNewzSavedUpdate"));
-  };
 
   // Data matching your mockups perfectly
   const newsData = [
@@ -152,19 +116,6 @@ const LatestNews: React.FC = () => {
             >
               <div className="news-img-wrapper">
                 <img src={article.imgUrl} alt={article.title} className="news-img" />
-                
-                {/* 👇 Properly connected Save Button 👇 */}
-                <button 
-                  className="latest-save-btn" 
-                  onClick={(e) => toggleSave(e, article.id)}
-                  aria-label="Save article"
-                >
-                  <Bookmark 
-                    size={20} 
-                    fill={savedArticles.includes(article.id) ? "#e60000" : "none"} 
-                    color={savedArticles.includes(article.id) ? "#e60000" : "#ffffff"} 
-                  />
-                </button>
               </div>
               
               <div className="news-content">

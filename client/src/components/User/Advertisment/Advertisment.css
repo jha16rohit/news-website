@@ -1,59 +1,99 @@
-/* ===== AD SECTION WRAPPER ===== */
+/* ============================================================
+   ADVERTISEMENT COMPONENT
+   Safe for ANY image size — tall, wide, square, tiny.
+   Uses fixed-height wrapper + object-fit: contain to prevent
+   layout breaks regardless of what the admin uploads.
+   ============================================================ */
+
 .advertisement-section {
   width: 100%;
-  padding: 20px 0 30px;
-  background-color: #ffffff;
-  display: flex;
-  justify-content: center;
+  padding: 16px 0;
+  background: transparent;
 }
 
 .advertisement-container {
-  width: 95%;
-  max-width: 1000px; /* Ads usually don't stretch the full 1400px */
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 16px;
   display: flex;
   flex-direction: column;
   align-items: center;
+  gap: 6px;
 }
 
-/* ===== AD LABEL ===== */
 .ad-label {
-  font-size: 11px;
-  color: #94a3b8;
-  text-transform: uppercase;
-  letter-spacing: 1px;
-  margin-bottom: 6px;
+  font-size: 10px;
   font-weight: 600;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  color: #94a3b8;
+  text-align: center;
+  display: block;
 }
 
-/* ===== AD IMAGE ===== */
 .ad-image-wrapper {
-  width: 100%;
-  border-radius: 8px;
-  overflow: hidden;
   display: block;
-  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.05);
-  border: 1px solid #e2e8f0;
-  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  width: 100%;
+  max-width: 960px;
+
+  /*
+    FIXED HEIGHT = layout can never be broken by a tall image.
+    The admin may upload any image — a 1:1 square, a tall vertical,
+    a wide banner, or something tiny. None of them will overflow or
+    push page content around.
+  */
+  height: 120px;
+  overflow: hidden;
+  border-radius: 10px;
+
+  /* Subtle container styling */
+  background: #f8f9fb;
+  border: 1px solid #f0f0f0;
+
+  /* Makes the hover effect apply to the whole slot */
+  transition: box-shadow 0.2s, transform 0.18s;
+  cursor: pointer;
 }
 
 .ad-image-wrapper:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 6px 15px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.12);
+  transform: translateY(-1px);
 }
 
 .ad-image {
   width: 100%;
-  max-height: 150px; /* Keeps it as a sleek banner */
-  object-fit: cover;
+  height: 100%;
+
+  /*
+    object-fit: contain = entire image is always visible, never cropped.
+    If the image is narrower/shorter than the slot, it letterboxes.
+    Switch to "cover" if you want the image to always fill (may crop).
+  */
+  object-fit: contain;
+  object-position: center;
+
   display: block;
+  transition: opacity 0.2s;
 }
 
-/* ===== RESPONSIVE ===== */
+.ad-image-wrapper:hover .ad-image {
+  opacity: 0.92;
+}
+
+/* ── Responsive ── */
 @media (max-width: 768px) {
-  .advertisement-section {
-    padding: 15px 0;
+  .ad-image-wrapper {
+    height: 90px;
+    border-radius: 8px;
   }
-  .ad-image {
-    max-height: 100px; /* Smaller on mobile */
+}
+
+@media (max-width: 480px) {
+  .ad-image-wrapper {
+    height: 72px;
+    border-radius: 6px;
+  }
+  .advertisement-section {
+    padding: 10px 0;
   }
 }

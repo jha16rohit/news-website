@@ -10,6 +10,7 @@ import {
   Check,
   AlertTriangle,
   Loader2,
+  Flame,
 } from "lucide-react";
 import "./Tags.css";
 import {
@@ -30,6 +31,13 @@ function toSlug(name: string) {
   );
 }
 
+function toRawSlug(name: string) {
+  return name
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "")
+    .replace(/^-|-$/g, "");
+}
+
 function formatDate(iso: string) {
   return new Date(iso).toLocaleDateString("en-IN", {
     day: "2-digit",
@@ -38,7 +46,6 @@ function formatDate(iso: string) {
   });
 }
 
-/** Title-case: "budget 2025" → "Budget 2025" */
 function normalizeTagName(raw: string): string {
   return raw
     .trim()
@@ -46,6 +53,30 @@ function normalizeTagName(raw: string): string {
     .split(" ")
     .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
     .join(" ");
+}
+
+// ─── Trending localStorage helpers ────────────────────────────────────────────
+const LS_KEY = "localNewzTrendingTags";
+
+interface TrendingTagEntry {
+  id: string;
+  label: string;
+  slug: string;
+  enabled: boolean;
+}
+
+function loadTrendingFromStorage(): TrendingTagEntry[] {
+  try {
+    const raw = localStorage.getItem(LS_KEY);
+    return raw ? JSON.parse(raw) : [];
+  } catch {
+    return [];
+  }
+}
+
+function saveTrendingToStorage(entries: TrendingTagEntry[]) {
+  localStorage.setItem(LS_KEY, JSON.stringify(entries));
+  window.dispatchEvent(new Event("localNewzTrendingTagsUpdate"));
 }
 
 // ─── AddTagModal ──────────────────────────────────────────────────────────────
@@ -182,6 +213,12 @@ export default function Tags() {
   const [deleting,      setDeleting]      = useState(false);
   const [apiError,      setApiError]      = useState<string | null>(null);
 
+  // Trending state: set of tag IDs currently marked as trending
+  const [trendingIds, setTrendingIds] = useState<Set<string>>(() => {
+    const stored = loadTrendingFromStorage();
+    return new Set(stored.filter((t) => t.enabled).map((t) => t.id));
+  });
+
   // ── Load all tags from API ─────────────────────────────────────────────────
   const loadTags = useCallback(async () => {
     setLoading(true);
@@ -202,13 +239,19 @@ export default function Tags() {
   const existingNames = allTags.map((t) => t.name);
 
   // Trending = only tags used in at least 1 article, sorted by usage desc
-  const trendingTags = useMemo(
+  const trendingTagsByUsage = useMemo(
     () =>
       allTags
         .filter((t) => (t._count?.articles ?? 0) > 0)
         .sort((a, b) => (b._count?.articles ?? 0) - (a._count?.articles ?? 0))
         .slice(0, 12),
     [allTags]
+  );
+
+  // Admin-marked trending tags
+  const adminTrendingTags = useMemo(
+    () => allTags.filter((t) => trendingIds.has(t.id)),
+    [allTags, trendingIds]
   );
 
   const filtered = useMemo(
@@ -222,7 +265,32 @@ export default function Tags() {
   );
 
   const totalTagged  = allTags.reduce((s, t) => s + (t._count?.articles ?? 0), 0);
-  const withArticles = allTags.filter((t) => (t._count?.articles ?? 0) > 0).length;
+  // const withArticles = allTags.filter((t) => (t._count?.articles ?? 0) > 0).length;
+
+  // ── Toggle trending ────────────────────────────────────────────────────────
+  const toggleTrending = useCallback((tag: TagType) => {
+    setTrendingIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(tag.id)) {
+        next.delete(tag.id);
+      } else {
+        next.add(tag.id);
+      }
+
+      // Persist to localStorage
+      const entries: TrendingTagEntry[] = allTags
+        .filter((t) => next.has(t.id))
+        .map((t) => ({
+          id: t.id,
+          label: t.name,
+          slug: toRawSlug(t.name),
+          enabled: true,
+        }));
+
+      saveTrendingToStorage(entries);
+      return next;
+    });
+  }, [allTags]);
 
   // ── Handlers ───────────────────────────────────────────────────────────────
   const handleAdd = async (name: string) => {
@@ -236,6 +304,16 @@ export default function Tags() {
     setDeleting(true);
     try {
       await deleteTagApi(deleteTagItem.id);
+      // Also remove from trending if it was there
+      setTrendingIds((prev) => {
+        const next = new Set(prev);
+        next.delete(deleteTagItem.id);
+        const entries: TrendingTagEntry[] = allTags
+          .filter((t) => t.id !== deleteTagItem.id && next.has(t.id))
+          .map((t) => ({ id: t.id, label: t.name, slug: toRawSlug(t.name), enabled: true }));
+        saveTrendingToStorage(entries);
+        return next;
+      });
       await loadTags();
       setDeleteTagItem(null);
     } catch {
@@ -254,7 +332,7 @@ export default function Tags() {
         <div className="tags-header">
           <div>
             <h1 className="tags-title">Tags</h1>
-            <p className="tags-subtitle">Manage tags for better content discovery</p>
+            <p className="tags-subtitle">Manage tags and set which appear as trending on the site</p>
           </div>
           <button className="tags-add-btn" onClick={() => setShowAdd(true)}>
             <Plus size={16} />
@@ -281,8 +359,15 @@ export default function Tags() {
           <div className="tags-stat-card">
             <div className="tags-stat-icon bg-blue"><TrendingUp size={20} /></div>
             <div>
-              <div className="tags-stat-value">{loading ? "—" : trendingTags.length}</div>
-              <div className="tags-stat-label">Trending Tags</div>
+              <div className="tags-stat-value">{loading ? "—" : trendingTagsByUsage.length}</div>
+              <div className="tags-stat-label">Trending by Usage</div>
+            </div>
+          </div>
+          <div className="tags-stat-card">
+            <div className="tags-stat-icon bg-orange"><Flame size={20} /></div>
+            <div>
+              <div className="tags-stat-value">{loading ? "—" : adminTrendingTags.length}</div>
+              <div className="tags-stat-label">Admin Trending</div>
             </div>
           </div>
           <div className="tags-stat-card">
@@ -292,51 +377,93 @@ export default function Tags() {
               <div className="tags-stat-label">Tagged Articles</div>
             </div>
           </div>
-          <div className="tags-stat-card">
-            <div className="tags-stat-icon bg-gray"><Tag size={20} /></div>
-            <div>
-              <div className="tags-stat-value">{loading ? "—" : withArticles}</div>
-              <div className="tags-stat-label">Active Tags</div>
-            </div>
-          </div>
         </div>
 
         {/* CONTENT GRID */}
         <div className="tags-grid">
 
-          {/* LEFT — TRENDING TAGS */}
-          <div className="tags-popular">
-            <div className="tags-section-header">
-              <TrendingUp size={18} />
-              <h2>Trending Tags</h2>
+          {/* LEFT — PANELS */}
+          <div className="tags-left-col">
+
+            {/* Admin Trending Panel */}
+            <div className="tags-popular">
+              <div className="tags-section-header">
+                <Flame size={17} color="#e60000" />
+                <h2>Admin Trending Tags</h2>
+                <span className="tags-section-badge tags-section-badge--red">
+                  Shown on site
+                </span>
+              </div>
+              <p className="tags-panel-hint">
+                These tags appear in the Trending News page filter and the Footer. Toggle the flame icon on any tag row to add or remove.
+              </p>
+
+              {loading ? (
+                <div className="tags-loading">
+                  <Loader2 size={16} className="tags-spin" /> Loading…
+                </div>
+              ) : adminTrendingTags.length === 0 ? (
+                <div className="tags-empty-state">
+                  <Flame size={28} className="tags-empty-icon" />
+                  <p className="tags-empty-title">No trending tags set</p>
+                  <p className="tags-empty-desc">
+                    Click the flame icon on any tag in the list to mark it as trending.
+                  </p>
+                </div>
+              ) : (
+                <div className="tags-chip-wrap">
+                  {adminTrendingTags.map((t) => (
+                    <span key={t.id} className="tags-chip tags-chip--trending">
+                      <Flame size={11} />
+                      {t.name}
+                      <button
+                        className="tags-chip-remove"
+                        title="Remove from trending"
+                        onClick={() => toggleTrending(t)}
+                      >
+                        <X size={11} />
+                      </button>
+                    </span>
+                  ))}
+                </div>
+              )}
             </div>
 
-            {loading ? (
-              <div className="tags-loading">
-                <Loader2 size={18} className="tags-spin" /> Loading…
+            {/* Trending by Usage Panel */}
+            <div className="tags-popular">
+              <div className="tags-section-header">
+                <TrendingUp size={17} />
+                <h2>Trending by Usage</h2>
+                <span className="tags-section-badge">Auto</span>
               </div>
-            ) : trendingTags.length === 0 ? (
-              <div className="tags-empty-state">
-                <TrendingUp size={32} className="tags-empty-icon" />
-                <p className="tags-empty-title">No trending tags yet</p>
-                <p className="tags-empty-desc">
-                  Tags appear here once they are used in published articles.
-                </p>
-              </div>
-            ) : (
-              <div className="tags-chip-wrap">
-                {trendingTags.map((t) => (
-                  <span
-                    key={t.id}
-                    className="tags-chip"
-                    title={`${t._count?.articles} article${(t._count?.articles ?? 0) !== 1 ? "s" : ""}`}
-                  >
-                    {t.name}
-                    <span className="tags-chip-count"> ({t._count?.articles})</span>
-                  </span>
-                ))}
-              </div>
-            )}
+
+              {loading ? (
+                <div className="tags-loading">
+                  <Loader2 size={16} className="tags-spin" /> Loading…
+                </div>
+              ) : trendingTagsByUsage.length === 0 ? (
+                <div className="tags-empty-state">
+                  <TrendingUp size={28} className="tags-empty-icon" />
+                  <p className="tags-empty-title">No trending tags yet</p>
+                  <p className="tags-empty-desc">
+                    Tags appear here once they are used in published articles.
+                  </p>
+                </div>
+              ) : (
+                <div className="tags-chip-wrap">
+                  {trendingTagsByUsage.map((t) => (
+                    <span
+                      key={t.id}
+                      className="tags-chip"
+                      title={`${t._count?.articles} article${(t._count?.articles ?? 0) !== 1 ? "s" : ""}`}
+                    >
+                      {t.name}
+                      <span className="tags-chip-count"> ({t._count?.articles})</span>
+                    </span>
+                  ))}
+                </div>
+              )}
+            </div>
           </div>
 
           {/* RIGHT — ALL TAGS TABLE */}
@@ -362,6 +489,15 @@ export default function Tags() {
               </div>
             </div>
 
+            {/* Column labels */}
+            <div className="tags-list-header">
+              <span>Tag</span>
+              <span className="tags-list-header__right">Articles</span>
+              <span className="tags-list-header__date">Created</span>
+              <span className="tags-list-header__trending">Trending</span>
+              <span></span>
+            </div>
+
             <div className="tags-list">
               {loading ? (
                 <div className="tags-loading tags-loading--center">
@@ -374,37 +510,62 @@ export default function Tags() {
                     : "No tags yet — click Add Tag to create one."}
                 </div>
               ) : (
-                filtered.map((t) => (
-                  <div key={t.id} className="tags-row">
-                    <div className="tags-row-left">
-                      <div className="tags-icon-box"><Tag size={16} /></div>
-                      <div>
-                        <div className="tags-name">{t.name}</div>
-                        <div className="tags-slug">{toSlug(t.name)}</div>
+                filtered.map((t) => {
+                  const isTrending = trendingIds.has(t.id);
+                  return (
+                    <div key={t.id} className={`tags-row ${isTrending ? "tags-row--trending" : ""}`}>
+                      <div className="tags-row-left">
+                        <div className="tags-icon-box"><Tag size={16} /></div>
+                        <div>
+                          <div className="tags-name">
+                            {t.name}
+                            {isTrending && (
+                              <span className="tags-trending-badge">
+                                <Flame size={10} /> Trending
+                              </span>
+                            )}
+                          </div>
+                          <div className="tags-slug">{toSlug(t.name)}</div>
+                        </div>
                       </div>
-                    </div>
-                    <div className="tags-row-right">
-                      <div className="tags-count">
-                        <div className="count">{t._count?.articles ?? 0}</div>
-                        <div className="label">Articles</div>
-                      </div>
-                      <div className="tags-date">
-                        {(t as unknown as { createdAt?: string }).createdAt
-                          ? formatDate((t as unknown as { createdAt: string }).createdAt)
-                          : "—"}
-                      </div>
-                      <div className="tags-actions">
+
+                      <div className="tags-row-right">
+                        <div className="tags-count">
+                          <div className="count">{t._count?.articles ?? 0}</div>
+                          <div className="label">Articles</div>
+                        </div>
+
+                        <div className="tags-date">
+                          {(t as unknown as { createdAt?: string }).createdAt
+                            ? formatDate((t as unknown as { createdAt: string }).createdAt)
+                            : "—"}
+                        </div>
+
+                        {/* Trending toggle */}
                         <button
-                          className="icon-btn delete"
-                          title="Delete tag"
-                          onClick={() => setDeleteTagItem(t)}
+                          className={`tags-trending-toggle ${isTrending ? "tags-trending-toggle--active" : ""}`}
+                          title={isTrending ? "Remove from trending" : "Mark as trending"}
+                          onClick={() => toggleTrending(t)}
                         >
-                          <Trash2 size={14} />
+                          <Flame size={15} />
+                          <span className="tags-trending-toggle-label">
+                            {isTrending ? "Trending" : "Set Trending"}
+                          </span>
                         </button>
+
+                        <div className="tags-actions">
+                          <button
+                            className="icon-btn delete"
+                            title="Delete tag"
+                            onClick={() => setDeleteTagItem(t)}
+                          >
+                            <Trash2 size={14} />
+                          </button>
+                        </div>
                       </div>
                     </div>
-                  </div>
-                ))
+                  );
+                })
               )}
             </div>
           </div>

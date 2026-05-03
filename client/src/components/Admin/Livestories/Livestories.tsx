@@ -178,17 +178,7 @@ articleCategory: n.category?.name || "",
           </div>
           <p className="ls-subtitle">Manage real-time live coverage and event updates</p>
         </div>
-        <div className="ls-header-actions">
-          <button className="ls-btn-refresh" onClick={loadData} disabled={loading}>
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <polyline points="1 4 1 10 7 10" /><path d="M3.51 15a9 9 0 1 0 .49-3.51" />
-            </svg>
-            Refresh
-          </button>
-          <button className="ls-btn-new" onClick={() => navigate("/admin/create?type=live")}>
-            <span>+</span> New Live Story
-          </button>
-        </div>
+        
       </div>
 
       {/* Stats */}
