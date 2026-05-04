@@ -34,6 +34,7 @@ import AdvertisementManager from "./components/Admin/AdvertisementManager/Advert
 import ProtectedRoute from "./routes/protectedroutes";
 import AboutUsAdmin from "./components/Admin/AboutUsAdmin/AboutUsAdmin";
 import ContactUsAdmin from "./components/Admin/ContactUsAdmin/ContactUsAdmin";
+import TagPage from "./components/User/TagPage/TagPage";
 
 export default function App() {
   return (
@@ -52,7 +53,8 @@ export default function App() {
             <Route path="/profile" element={<UserProfile />} />
             <Route path="/advertise" element={<AdvertiseWithUs />} /> 
             <Route path="/about" element={<AboutUs />} />
-<Route path="/contact" element={<ContactUs />} />
+            <Route path="/contact" element={<ContactUs />} />
+            <Route path="/tag/:tagSlug" element={<TagPage />} />
           </Route>
 
           <Route path="/category/:slug" element={<CategoryTemplate />} />

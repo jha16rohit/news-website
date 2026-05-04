@@ -340,6 +340,87 @@
   color: inherit !important;
 }
 
+/* ========================================= */
+/* ===== TRENDING TAGS SCROLL BAR ===== */
+/* ========================================= */
+.trending-tags-container {
+  display: flex;
+  align-items: center;
+  position: relative;
+  width: 100%;
+  margin-bottom: 10px;
+}
+
+.tags-scroll-wrapper {
+  display: flex;
+  gap: 12px;
+  overflow-x: auto;
+  scroll-behavior: smooth;
+  padding: 5px 0; /* Space for hover shadow */
+  margin: 0 10px; /* Buffer from buttons */
+  -ms-overflow-style: none;  /* IE and Edge */
+  scrollbar-width: none;  /* Firefox */
+}
+
+/* Hide scrollbar for Chrome, Safari and Opera */
+.tags-scroll-wrapper::-webkit-scrollbar {
+  display: none;
+}
+
+.tag-pill {
+  white-space: nowrap;
+  padding: 8px 18px;
+  background-color: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 25px; /* Pill shape */
+  color: #0f172a;
+  font-size: 14px;
+  font-weight: 700;
+  transition: all 0.2s ease;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.02);
+}
+
+.tag-pill:hover {
+  background-color: #f1f5f9;
+  border-color: #cbd5e1;
+  transform: translateY(-1px);
+}
+
+.tag-scroll-btn {
+  background: white;
+  border: 1px solid #e2e8f0;
+  border-radius: 50%;
+  width: 36px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #64748b;
+  cursor: pointer;
+  box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+  z-index: 10;
+  flex-shrink: 0;
+  transition: all 0.2s ease;
+}
+
+.tag-scroll-btn:hover {
+  background: #f8fafc;
+  color: #0f172a;
+  box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+}
+
+/* Responsive fix for mobile to let users just swipe instead of needing arrows */
+@media (max-width: 768px) {
+  .tag-scroll-btn {
+    display: none;
+  }
+  .tags-scroll-wrapper {
+    margin: 0;
+    padding-left: 5px;
+    padding-right: 5px;
+  }
+}
+
 /* ===== RESPONSIVE DESIGN ===== */
 @media (max-width: 1024px) {
   .hero-top-row,

@@ -202,6 +202,13 @@ const SignIn: React.FC<SignInProps> = ({ onClose, onSuccess }) => {
                 <input type="password" placeholder="Create a strong password" />
               </div>
             </div>
+            <div className="form-group">
+              <label>Confirm Password</label>
+              <div className="input-wrapper">
+                <Lock size={18} className="input-icon" />
+                <input type="password" placeholder="Confirm your password" />
+              </div>
+            </div>
             <button type="submit" className="signin-submit-btn">Create account</button>
           </form>
         )}

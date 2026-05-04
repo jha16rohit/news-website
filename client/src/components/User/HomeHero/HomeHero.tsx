@@ -1,9 +1,18 @@
-import { Clock, Eye} from "lucide-react"; 
+import React, { useRef } from "react";
+import { Clock, Eye, ChevronLeft, ChevronRight } from "lucide-react"; 
 import { Link } from "react-router-dom";
 import "./HomeHero.css";
 
 const HeroSection: React.FC = () => {
-  // 1. Initialize state from localStorage
+  // Reference for the scrolling tags container
+  const tagsScrollRef = useRef<HTMLDivElement>(null);
+
+  // Mock data for the trending tags
+  const trendingTags = [
+    "Budget 2026", "Election Results", "IPL Live", "Stock Market", 
+    "Tech Trends", "Local News", "Global Affairs", "Health & Wellness", 
+    "Startups", "Bollywood Updates", "Space Missions", "AI Revolution"
+  ];
 
   const trendingArticles = [
     {
@@ -36,10 +45,44 @@ const HeroSection: React.FC = () => {
     },
   ];
 
+  // Function to smoothly scroll the tags horizontally
+  const scrollTags = (direction: 'left' | 'right') => {
+    if (tagsScrollRef.current) {
+      const scrollAmount = 250;
+      tagsScrollRef.current.scrollBy({ 
+        left: direction === 'left' ? -scrollAmount : scrollAmount, 
+        behavior: 'smooth' 
+      });
+    }
+  };
+
   return (
-    <section className="hero-section">
+    <section className="hero-section" id="hero-section">
       <div className="hero-container">
         
+        {/* ================= TRENDING TAGS TOP BAR ================= */}
+        <div className="trending-tags-container">
+          <button className="tag-scroll-btn left" onClick={() => scrollTags('left')}>
+            <ChevronLeft size={20} />
+          </button>
+          
+          <div className="tags-scroll-wrapper" ref={tagsScrollRef}>
+            {trendingTags.map((tag, index) => {
+              // Formats "Budget 2026" to "budget-2026"
+              const slug = tag.toLowerCase().replace(/\s+/g, '-'); 
+              return (
+                <Link to={`/tag/${slug}`} key={index} className="tag-pill text-decoration-none">
+                  {tag}
+                </Link>
+              );
+            })}
+          </div>
+
+          <button className="tag-scroll-btn right" onClick={() => scrollTags('right')}>
+            <ChevronRight size={20} />
+          </button>
+        </div>
+
         {/* ================= TOP ROW ================= */}
         <div className="hero-top-row">
           
@@ -81,7 +124,7 @@ const HeroSection: React.FC = () => {
                   <img src={article.imgUrl} alt={article.title} className="trending-img" />
                   <div className="trending-info">
                     
-                    {/* Header Row: Category on left, Save Icon on right */}
+                    {/* Header Row: Category on left */}
                     <div className="trending-info-header">
                       <span className="trending-category">{article.category}</span>
                     </div>

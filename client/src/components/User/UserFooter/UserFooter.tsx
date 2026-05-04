@@ -8,18 +8,19 @@ import "./UserFooter.css";
 import { useNews } from "../../Admin/NewsStore/NewsStore";
 
 // ─────────────────────────────────────────────
-// Types
+// Dummy Data (Matches Hero & Tag Pages)
 // ─────────────────────────────────────────────
-interface TrendingTag {
-  id: string;
-  label: string;
-  slug: string;
-  enabled: boolean;
-}
+const MOCK_TAGS = [
+  { id: "1", name: "Budget 2026", slug: "budget-2026" },
+  { id: "2", name: "Election Results", slug: "election-results" },
+  { id: "3", name: "IPL Live", slug: "ipl-live" },
+  { id: "4", name: "Stock Market", slug: "stock-market" },
+  { id: "5", name: "Tech Trends", slug: "tech-trends" },
+  { id: "6", name: "Local News", slug: "local-news" },
+  { id: "7", name: "Global Affairs", slug: "global-affairs" },
+  { id: "8", name: "Health & Wellness", slug: "health-wellness" },
+];
 
-// ─────────────────────────────────────────────
-// Defaults
-// ─────────────────────────────────────────────
 const DEFAULT_FOOTER_DATA = {
   sectionTitle: "STAY UPDATED",
   descriptionText: "Get the latest headlines and in-depth stories delivered to your inbox.",
@@ -29,26 +30,14 @@ const DEFAULT_FOOTER_DATA = {
   ]
 };
 
-const DEFAULT_TRENDING_TAGS: TrendingTag[] = [
-  { id: "1", label: "Budget 2026", slug: "budget2026", enabled: true },
-  { id: "2", label: "India News", slug: "indianews", enabled: true },
-  { id: "3", label: "IPL 2026", slug: "ipl2026", enabled: true },
-  { id: "4", label: "Tech Update", slug: "techupdate", enabled: true },
-  { id: "5", label: "Stock Market", slug: "stockmarket", enabled: true },
-  { id: "6", label: "Web Stories", slug: "webstories", enabled: true },
-  { id: "7", label: "Global News", slug: "globalnews", enabled: true },
-];
-
 // ─────────────────────────────────────────────
 // Component
 // ─────────────────────────────────────────────
 const Footer: React.FC = () => {
   const [footerData, setFooterData] = useState<any>(DEFAULT_FOOTER_DATA);
-  const [trendingTags, setTrendingTags] = useState<TrendingTag[]>(DEFAULT_TRENDING_TAGS);
-
   const { categories } = useNews() || { categories: [] };
 
-  // Load footer settings
+  // Load footer settings from LocalStorage
   useEffect(() => {
     const loadFooterData = () => {
       try {
@@ -67,37 +56,10 @@ const Footer: React.FC = () => {
     const onCustom = () => loadFooterData();
     window.addEventListener("storage", onStorage);
     window.addEventListener("localNewzFooterUpdate", onCustom);
+    
     return () => {
       window.removeEventListener("storage", onStorage);
       window.removeEventListener("localNewzFooterUpdate", onCustom);
-    };
-  }, []);
-
-  // Load trending tags (same source as TrendingNews page)
-  useEffect(() => {
-    const loadTags = () => {
-      try {
-        const raw = localStorage.getItem("localNewzTrendingTags");
-        if (raw) {
-          const parsed: TrendingTag[] = JSON.parse(raw);
-          const enabled = parsed.filter((t) => t.enabled);
-          if (enabled.length > 0) setTrendingTags(enabled);
-        }
-      } catch (e) {
-        console.error("Failed to load trending tags:", e);
-      }
-    };
-    loadTags();
-
-    const onStorage = (e: StorageEvent) => {
-      if (e.key === "localNewzTrendingTags") loadTags();
-    };
-    const onCustom = () => loadTags();
-    window.addEventListener("storage", onStorage);
-    window.addEventListener("localNewzTrendingTagsUpdate", onCustom);
-    return () => {
-      window.removeEventListener("storage", onStorage);
-      window.removeEventListener("localNewzTrendingTagsUpdate", onCustom);
     };
   }, []);
 
@@ -193,17 +155,17 @@ const Footer: React.FC = () => {
               </ul>
             </div>
 
-            {/* Dynamic Trending Topics — driven by admin */}
+            {/* Dummy Trending Topics */}
             <div className="f-col">
               <h3 className="f-heading">TRENDING TOPICS</h3>
               <div className="f-trending-grid">
-                {trendingTags.map((tag) => (
+                {MOCK_TAGS.map((tag) => (
                   <Link
                     key={tag.id}
-                    to={`/trending?tag=${tag.slug}`}
+                    to={`/tag/${tag.slug}`}
                     className="f-trending-tag"
                   >
-                    <span>#{tag.label}</span>
+                    <span>#{tag.name}</span>
                     <TrendingUp size={13} />
                   </Link>
                 ))}
