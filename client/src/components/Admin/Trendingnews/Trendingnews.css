@@ -580,3 +580,136 @@
     gap: 12px;
   }
 }
+/* ═══════════════════════════════════════════════════════
+   ADD THESE TO THE BOTTOM OF YOUR Trendingnews.css
+   ═══════════════════════════════════════════════════════ */
+
+/* Tag filter count badge next to "Filter by Tag" label */
+.tn-tag-filter-count {
+  background: #f0f0f0;
+  color: #666;
+  font-size: 11px;
+  font-weight: 600;
+  padding: 2px 7px;
+  border-radius: 20px;
+  margin-left: 6px;
+}
+
+/* Loading / empty state inside filter bar */
+.tn-tag-loading,
+.tn-tag-empty {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 12.5px;
+  color: #aaa;
+  padding: 4px 0;
+}
+
+/* Article count pill inside each tag button */
+.tn-tag-pill {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.08);
+  color: inherit;
+  font-size: 10px;
+  font-weight: 700;
+  min-width: 18px;
+  height: 16px;
+  border-radius: 10px;
+  padding: 0 4px;
+  margin-left: 4px;
+  line-height: 1;
+}
+.tn-tag-btn--active .tn-tag-pill {
+  background: rgba(255, 255, 255, 0.28);
+  color: #fff;
+}
+
+/* Admin-trending (hot) tag button */
+.tn-tag-btn--hot {
+  border-color: #e60000 !important;
+  color: #e60000;
+}
+.tn-tag-btn--hot:not(.tn-tag-btn--active):hover {
+  background: #fff5f5;
+}
+.tn-tag-btn--active.tn-tag-btn--hot {
+  background: #e60000;
+  color: #fff;
+}
+
+/* Flame icon inside tag button */
+.tn-tag-flame {
+  color: #e60000;
+  margin-right: 2px;
+  flex-shrink: 0;
+}
+.tn-tag-btn--active .tn-tag-flame {
+  color: #fff;
+}
+
+/* Active tag pill inside an article row */
+.tn-tag--active {
+  background: #e60000 !important;
+  color: #fff !important;
+  border-color: #e60000 !important;
+}
+
+/* Loading state for the article list */
+.tn-loading-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  padding: 60px 20px;
+  color: #aaa;
+  font-size: 14px;
+}
+
+/* Spin animation for Loader2 icon */
+.tn-spin {
+  animation: tn-spin 0.8s linear infinite;
+}
+@keyframes tn-spin {
+  from { transform: rotate(0deg); }
+  to   { transform: rotate(360deg); }
+}
+
+/* Error banner */
+.tn-error-banner {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: #fff0f0;
+  border: 1px solid #fcc;
+  color: #c0392b;
+  border-radius: 8px;
+  padding: 10px 14px;
+  font-size: 13px;
+  margin-bottom: 16px;
+}
+.tn-error-banner button {
+  margin-left: auto;
+  background: #e60000;
+  color: #fff;
+  border: none;
+  border-radius: 6px;
+  padding: 4px 12px;
+  font-size: 12px;
+  cursor: pointer;
+}
+
+/* Image placeholder when no featuredImage */
+.tn-article__img-placeholder {
+  width: 100%;
+  height: 100%;
+  background: #f0f0f0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #ccc;
+  border-radius: 8px;
+}

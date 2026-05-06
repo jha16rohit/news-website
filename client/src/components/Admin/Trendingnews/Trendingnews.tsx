@@ -1,222 +1,176 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import {
-  TrendingUp,
-  Eye,
-  Share2,
-  MessageSquare,
-  Clock,
-  ArrowUp,
-  ArrowDown,
-  Tag,
-  BarChart2,
-  ChevronDown,
-  Check,
-  Flame,
+  TrendingUp, Eye, Share2, MessageSquare, Clock,
+  ArrowUp, ArrowDown, Tag, BarChart2, ChevronDown,
+  Check, Flame, Loader2, AlertCircle,
 } from "lucide-react";
 import "./Trendingnews.css";
+import { getTrendingTags, type Tag as TagType } from "../../../api/tags.api";
+import { fetchAllNews, type StatusEnum } from "../../../api/news";
 
 // ─────────────────────────────────────────────
 // Types
 // ─────────────────────────────────────────────
-interface TrendingTag {
-  id: string;
-  label: string;
-  slug: string;
-  enabled: boolean;
+interface ArticleTag {
+  id: string; name: string; slug: string;
+}
+
+interface FilterTag extends ArticleTag {
+  articleCount:    number;   // articles using this tag
+  isAdminTrending: boolean;  // admin-pinned via Tags panel
 }
 
 interface Article {
-  id: number;
-  title: string;
-  tags: string[]; // array of tag slugs
-  trend: string;
-  views: string;
-  shares: string;
-  comments: number;
-  score: number;
-  growth: number;
-  positive: boolean;
-  img: string;
+  id: string; title: string; tags: ArticleTag[];
+  trend: string; views: number; shares: string; comments: number;
+  score: number; growth: number; positive: boolean;
+  img: string | null; publishedAt: string | null;
 }
 
-// ─────────────────────────────────────────────
-// Static fallback data — replace with your NewsStore
-// ─────────────────────────────────────────────
-const FALLBACK_TAGS: TrendingTag[] = [
-  { id: "1", label: "Budget 2026", slug: "budget2026", enabled: true },
-  { id: "2", label: "India News", slug: "indianews", enabled: true },
-  { id: "3", label: "IPL 2026", slug: "ipl2026", enabled: true },
-  { id: "4", label: "Tech Update", slug: "techupdate", enabled: true },
-  { id: "5", label: "Stock Market", slug: "stockmarket", enabled: true },
-  { id: "6", label: "Web Stories", slug: "webstories", enabled: true },
-  { id: "7", label: "Global News", slug: "globalnews", enabled: true },
-];
-
-const FALLBACK_ARTICLES: Article[] = [
-  {
-    id: 1,
-    title: "Major Policy Reform Announced: What It Means for Citizens",
-    tags: ["budget2026", "indianews"],
-    trend: "4h 23m on trend",
-    views: "245.8K",
-    shares: "12.4K",
-    comments: 892,
-    score: 98,
-    growth: 15,
-    positive: true,
-    img: "https://images.unsplash.com/photo-1529107386315-e1a2ed48a620?w=160&h=100&fit=crop",
-  },
-  {
-    id: 2,
-    title: "Stock Market Hits Record High Amid Economic Optimism",
-    tags: ["stockmarket", "budget2026"],
-    trend: "2h 45m on trend",
-    views: "189.4K",
-    shares: "8.9K",
-    comments: 456,
-    score: 94,
-    growth: 8,
-    positive: true,
-    img: "https://images.unsplash.com/photo-1611974789855-9c2a0a7236a3?w=160&h=100&fit=crop",
-  },
-  {
-    id: 3,
-    title: "Championship Finals: Dramatic Last-Minute Victory",
-    tags: ["ipl2026"],
-    trend: "6h 12m on trend",
-    views: "156.9K",
-    shares: "15.7K",
-    comments: 1245,
-    score: 91,
-    growth: 3,
-    positive: false,
-    img: "https://images.unsplash.com/photo-1461896836934-ffe607ba8211?w=160&h=100&fit=crop",
-  },
-  {
-    id: 4,
-    title: "Breakthrough in Renewable Energy Could Transform Power Grids",
-    tags: ["globalnews", "techupdate"],
-    trend: "1h 58m on trend",
-    views: "134.2K",
-    shares: "6.1K",
-    comments: 318,
-    score: 88,
-    growth: 22,
-    positive: true,
-    img: "https://images.unsplash.com/photo-1466611653911-95081537e5b7?w=160&h=100&fit=crop",
-  },
-  {
-    id: 5,
-    title: "Tech Giant Unveils Next-Generation AI Assistant Platform",
-    tags: ["techupdate", "webstories"],
-    trend: "3h 10m on trend",
-    views: "118.7K",
-    shares: "9.3K",
-    comments: 724,
-    score: 85,
-    growth: 11,
-    positive: true,
-    img: "https://images.unsplash.com/photo-1677442135703-1787eea5ce01?w=160&h=100&fit=crop",
-  },
-  {
-    id: 6,
-    title: "India's Economy Grows Faster Than Expected This Quarter",
-    tags: ["indianews", "stockmarket"],
-    trend: "5h 01m on trend",
-    views: "97.3K",
-    shares: "4.2K",
-    comments: 211,
-    score: 82,
-    growth: 6,
-    positive: true,
-    img: "https://images.unsplash.com/photo-1524492412937-b28074a47d70?w=160&h=100&fit=crop",
-  },
-  {
-    id: 7,
-    title: "Global Summit Addresses Climate Change Commitments",
-    tags: ["globalnews"],
-    trend: "7h 30m on trend",
-    views: "88.1K",
-    shares: "3.7K",
-    comments: 145,
-    score: 79,
-    growth: 4,
-    positive: true,
-    img: "https://images.unsplash.com/photo-1504711434969-e33886168f5c?w=160&h=100&fit=crop",
-  },
-];
-
 const TIME_RANGES = ["Last Hour", "Last 6 Hours", "Last 24 Hours", "Last 7 Days"];
+
+// ── Helpers ────────────────────────────────────────────────────────────────────
+function formatNum(n: number): string {
+  if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(1)}M`;
+  if (n >= 1_000)     return `${(n / 1_000).toFixed(1)}K`;
+  return String(n);
+}
+
+function timeSince(iso: string | null): string {
+  if (!iso) return "—";
+  const diffMs  = Date.now() - new Date(iso).getTime();
+  const diffMin = Math.floor(diffMs / 60_000);
+  if (diffMin < 60) return `${diffMin}m on trend`;
+  const diffHr = Math.floor(diffMin / 60);
+  if (diffHr < 24)  return `${diffHr}h ${diffMin % 60}m on trend`;
+  return `${Math.floor(diffHr / 24)}d on trend`;
+}
+
+function calcScore(views: number, maxViews: number): number {
+  if (maxViews === 0) return 0;
+  return Math.round((views / maxViews) * 100);
+}
 
 // ─────────────────────────────────────────────
 // Component
 // ─────────────────────────────────────────────
 export default function TrendingNews() {
-  const [trendingTags, setTrendingTags] = useState<TrendingTag[]>(FALLBACK_TAGS);
-  const [activeTagSlug, setActiveTagSlug] = useState<string>("all");
-  const [timeRange, setTimeRange] = useState("Last 24 Hours");
-  const [dropdownOpen, setDropdownOpen] = useState(false);
+  const [adminTrendingSlugs, setAdminTrendingSlugs] = useState<Set<string>>(new Set());
+  const [articles,           setArticles]           = useState<Article[]>([]);
+  const [loading,            setLoading]            = useState(true);
+  const [error,              setError]              = useState<string | null>(null);
+  const [activeTagSlug,      setActiveTagSlug]      = useState<string>("all");
+  const [timeRange,          setTimeRange]          = useState("Last 24 Hours");
+  const [dropdownOpen,       setDropdownOpen]       = useState(false);
 
-  // Load trending tags from localStorage (set by admin panel)
-  useEffect(() => {
-    const loadTags = () => {
-      try {
-        const raw = localStorage.getItem("localNewzTrendingTags");
-        if (raw) {
-          const parsed: TrendingTag[] = JSON.parse(raw);
-          const enabled = parsed.filter((t) => t.enabled);
-          if (enabled.length > 0) setTrendingTags(enabled);
-        }
-      } catch (e) {
-        console.error("Failed to load trending tags:", e);
-      }
-    };
-
-    loadTags();
-
-    const onStorage = (e: StorageEvent) => {
-      if (e.key === "localNewzTrendingTags") loadTags();
-    };
-    const onCustom = () => loadTags();
-
-    window.addEventListener("storage", onStorage);
-    window.addEventListener("localNewzTrendingTagsUpdate", onCustom);
-    return () => {
-      window.removeEventListener("storage", onStorage);
-      window.removeEventListener("localNewzTrendingTagsUpdate", onCustom);
-    };
+  // ── Load admin-pinned trending tags (just for flame badge) ─────────────────
+  const loadTrendingTags = useCallback(async () => {
+    try {
+      const tags: TagType[] = await getTrendingTags();
+      setAdminTrendingSlugs(new Set(tags.map((t) => t.slug)));
+    } catch (e) {
+      console.error("Failed to load trending tags:", e);
+    }
   }, []);
 
-  // Filter articles by active tag
-  const filteredArticles =
+  // ── Load all published news ────────────────────────────────────────────────
+  const loadArticles = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const res = await fetchAllNews({ status: "PUBLISHED" as StatusEnum, limit: 100 });
+
+      // Backend returns { news: [...], total, page, pages }
+      const raw: any[] = Array.isArray(res)
+        ? res
+        : (res?.news ?? res?.articles ?? res?.data ?? []);
+
+      if (!Array.isArray(raw)) { setArticles([]); return; }
+
+      const maxViews = Math.max(...raw.map((a: any) => a.views ?? 0), 1);
+
+      const mapped: Article[] = raw.map((a: any, i: number) => ({
+        id:    a.id,
+        title: a.headline || a.title || "Untitled",
+        // Normalize tag shape — backend may return NewsTag[] with nested tag object
+        tags: (a.tags ?? []).reduce((acc: ArticleTag[], nt: any) => {
+          const id   = nt.tag?.id   ?? nt.id   ?? "";
+          const name = nt.tag?.name ?? nt.name ?? "";
+          const slug = nt.tag?.slug ?? nt.slug ?? "";
+          if (id && name && slug) acc.push({ id, name, slug });
+          return acc;
+        }, []),
+        trend:       timeSince(a.publishedAt ?? a.createdAt),
+        views:       a.views ?? 0,
+        shares:      "—",
+        comments:    0,
+        score:       calcScore(a.views ?? 0, maxViews),
+        growth:      Math.max(1, Math.round(((50 - i) / 50) * 25)),
+        positive:    i < raw.length * 0.75,
+        img:         a.featuredImage ?? null,
+        publishedAt: a.publishedAt  ?? a.createdAt ?? null,
+      }));
+
+      mapped.sort((a, b) => b.views - a.views);
+      setArticles(mapped);
+    } catch (e: any) {
+      console.error("Failed to load news:", e);
+      setError("Could not load articles. Please try again.");
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    loadTrendingTags();
+    loadArticles();
+  }, [loadTrendingTags, loadArticles]);
+
+  // ── Derive filter tags from ALL articles (not just admin-pinned) ───────────
+  // Count usage per tag, then: admin-trending first → sort by article count desc
+  const filterTags = useMemo((): FilterTag[] => {
+    const map = new Map<string, FilterTag>();
+
+    for (const article of articles) {
+      for (const tag of article.tags) {
+        if (!tag.slug) continue;
+        const existing = map.get(tag.slug);
+        if (existing) {
+          existing.articleCount += 1;
+        } else {
+          map.set(tag.slug, {
+            ...tag,
+            articleCount:    1,
+            isAdminTrending: adminTrendingSlugs.has(tag.slug),
+          });
+        }
+      }
+    }
+
+    return Array.from(map.values()).sort((a, b) => {
+      if (a.isAdminTrending && !b.isAdminTrending) return -1;
+      if (!a.isAdminTrending && b.isAdminTrending)  return 1;
+      return b.articleCount - a.articleCount;
+    });
+  }, [articles, adminTrendingSlugs]);
+
+  // ── Filtered articles ──────────────────────────────────────────────────────
+  const filteredArticles = useMemo(() =>
     activeTagSlug === "all"
-      ? FALLBACK_ARTICLES
-      : FALLBACK_ARTICLES.filter((a) => a.tags.includes(activeTagSlug));
+      ? articles
+      : articles.filter((a) => a.tags.some((t) => t.slug === activeTagSlug)),
+    [articles, activeTagSlug]
+  );
 
-  // Stats derived from filtered list
-  const totalViews = filteredArticles.reduce((acc, a) => {
-    const num = parseFloat(a.views.replace("K", "")) * 1000;
-    return acc + num;
-  }, 0);
+  // ── Stats ──────────────────────────────────────────────────────────────────
+  const totalViews = filteredArticles.reduce((acc, a) => acc + a.views, 0);
+  const avgGrowth  = filteredArticles.length > 0
+    ? Math.round(filteredArticles.reduce((acc, a) => acc + a.growth, 0) / filteredArticles.length)
+    : 0;
 
-  const formatViews = (n: number) => {
-    if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(1)}M`;
-    if (n >= 1_000) return `${(n / 1_000).toFixed(1)}K`;
-    return String(n);
-  };
-
-  const totalShares = filteredArticles.reduce((acc, a) => {
-    const num = parseFloat(a.shares.replace("K", "")) * 1000;
-    return acc + num;
-  }, 0);
-
-  const avgGrowth =
-    filteredArticles.length > 0
-      ? Math.round(
-          filteredArticles.reduce((acc, a) => acc + a.growth, 0) /
-            filteredArticles.length
-        )
-      : 0;
+  const activeTagLabel = activeTagSlug === "all"
+    ? null
+    : filterTags.find((t) => t.slug === activeTagSlug)?.name ?? activeTagSlug;
 
   return (
     <div className="tn-root">
@@ -225,14 +179,10 @@ export default function TrendingNews() {
         {/* ── HEADER ── */}
         <header className="tn-header">
           <div className="tn-header__left">
-            <div className="tn-header__icon">
-              <TrendingUp size={22} />
-            </div>
+            <div className="tn-header__icon"><TrendingUp size={22} /></div>
             <div>
               <h1 className="tn-title">Trending News</h1>
-              <p className="tn-subtitle">
-                Real-time trending articles based on engagement metrics
-              </p>
+              <p className="tn-subtitle">Real-time trending articles based on engagement metrics</p>
             </div>
           </div>
 
@@ -245,24 +195,16 @@ export default function TrendingNews() {
             >
               <Clock size={14} />
               {timeRange}
-              <ChevronDown
-                size={14}
-                className={`tn-chevron ${dropdownOpen ? "tn-chevron--open" : ""}`}
-              />
+              <ChevronDown size={14} className={`tn-chevron ${dropdownOpen ? "tn-chevron--open" : ""}`} />
             </button>
 
             {dropdownOpen && (
               <ul className="tn-dropdown-menu" role="listbox">
                 {TIME_RANGES.map((t) => (
                   <li
-                    key={t}
-                    role="option"
-                    aria-selected={timeRange === t}
+                    key={t} role="option" aria-selected={timeRange === t}
                     className={`tn-dropdown-item ${timeRange === t ? "tn-dropdown-item--active" : ""}`}
-                    onClick={() => {
-                      setTimeRange(t);
-                      setDropdownOpen(false);
-                    }}
+                    onClick={() => { setTimeRange(t); setDropdownOpen(false); }}
                   >
                     {timeRange === t && <Check size={12} />}
                     {t}
@@ -273,52 +215,44 @@ export default function TrendingNews() {
           </div>
         </header>
 
+        {/* ── ERROR BANNER ── */}
+        {error && (
+          <div className="tn-error-banner">
+            <AlertCircle size={16} /><span>{error}</span>
+            <button onClick={loadArticles}>Retry</button>
+          </div>
+        )}
+
         {/* ── STAT CARDS ── */}
         <div className="tn-stats">
-          <div className="tn-stat-card">
-            <div className="tn-stat-card__icon tn-stat-card__icon--orange">
-              <Flame size={18} />
+          {[
+            { icon: <Flame size={18} />,    cls: "orange", val: loading ? null : filteredArticles.length, label: "Trending Now"  },
+            { icon: <Eye size={18} />,      cls: "blue",   val: loading ? null : formatNum(totalViews),   label: "Total Views"  },
+            { icon: <Share2 size={18} />,   cls: "green",  val: "—",                                      label: "Total Shares" },
+            { icon: <BarChart2 size={18} />,cls: "purple", val: loading ? null : `+${avgGrowth}%`,        label: "Avg. Growth"  },
+          ].map(({ icon, cls, val, label }) => (
+            <div className="tn-stat-card" key={label}>
+              <div className={`tn-stat-card__icon tn-stat-card__icon--${cls}`}>{icon}</div>
+              <div>
+                <div className="tn-stat-value">
+                  {val === null ? <Loader2 size={16} className="tn-spin" /> : val}
+                </div>
+                <div className="tn-stat-label">{label}</div>
+              </div>
             </div>
-            <div>
-              <div className="tn-stat-value">{filteredArticles.length}</div>
-              <div className="tn-stat-label">Trending Now</div>
-            </div>
-          </div>
-          <div className="tn-stat-card">
-            <div className="tn-stat-card__icon tn-stat-card__icon--blue">
-              <Eye size={18} />
-            </div>
-            <div>
-              <div className="tn-stat-value">{formatViews(totalViews)}</div>
-              <div className="tn-stat-label">Total Views</div>
-            </div>
-          </div>
-          <div className="tn-stat-card">
-            <div className="tn-stat-card__icon tn-stat-card__icon--green">
-              <Share2 size={18} />
-            </div>
-            <div>
-              <div className="tn-stat-value">{formatViews(totalShares)}</div>
-              <div className="tn-stat-label">Total Shares</div>
-            </div>
-          </div>
-          <div className="tn-stat-card">
-            <div className="tn-stat-card__icon tn-stat-card__icon--purple">
-              <BarChart2 size={18} />
-            </div>
-            <div>
-              <div className="tn-stat-value">+{avgGrowth}%</div>
-              <div className="tn-stat-label">Avg. Growth</div>
-            </div>
-          </div>
+          ))}
         </div>
 
-        {/* ── TRENDING TAG FILTERS ── */}
+        {/* ── TAG FILTER BAR ── */}
         <div className="tn-tag-filter-wrap">
           <div className="tn-tag-filter-label">
             <Tag size={14} />
             <span>Filter by Tag</span>
+            {!loading && filterTags.length > 0 && (
+              <span className="tn-tag-filter-count">{filterTags.length} tags</span>
+            )}
           </div>
+
           <div className="tn-tag-filters">
             <button
               className={`tn-tag-btn ${activeTagSlug === "all" ? "tn-tag-btn--active" : ""}`}
@@ -326,15 +260,29 @@ export default function TrendingNews() {
             >
               All Topics
             </button>
-            {trendingTags.map((tag) => (
-              <button
-                key={tag.id}
-                className={`tn-tag-btn ${activeTagSlug === tag.slug ? "tn-tag-btn--active" : ""}`}
-                onClick={() => setActiveTagSlug(tag.slug)}
-              >
-                #{tag.label}
-              </button>
-            ))}
+
+            {loading ? (
+              <span className="tn-tag-loading"><Loader2 size={13} className="tn-spin" /> Loading tags…</span>
+            ) : filterTags.length === 0 ? (
+              <span className="tn-tag-empty">No tags in published articles</span>
+            ) : (
+              filterTags.map((tag) => (
+                <button
+                  key={tag.slug}
+                  title={`${tag.articleCount} article${tag.articleCount !== 1 ? "s" : ""}`}
+                  className={[
+                    "tn-tag-btn",
+                    activeTagSlug === tag.slug  ? "tn-tag-btn--active" : "",
+                    tag.isAdminTrending         ? "tn-tag-btn--hot"    : "",
+                  ].join(" ")}
+                  onClick={() => setActiveTagSlug(tag.slug)}
+                >
+                  {tag.isAdminTrending && <Flame size={11} className="tn-tag-flame" />}
+                  #{tag.name}
+                  <span className="tn-tag-pill">{tag.articleCount}</span>
+                </button>
+              ))
+            )}
           </div>
         </div>
 
@@ -343,62 +291,57 @@ export default function TrendingNews() {
           <div className="tn-articles__header">
             <TrendingUp size={18} strokeWidth={2.5} color="#e60000" />
             <h2 className="tn-articles__title">
-              {activeTagSlug === "all"
-                ? "Top Trending Articles"
-                : `Trending: #${trendingTags.find((t) => t.slug === activeTagSlug)?.label ?? activeTagSlug}`}
+              {activeTagSlug === "all" ? "Top Trending Articles" : `Trending: #${activeTagLabel}`}
             </h2>
             <span className="tn-articles__count">{filteredArticles.length} articles</span>
           </div>
 
-          {filteredArticles.length === 0 ? (
+          {loading ? (
+            <div className="tn-loading-state">
+              <Loader2 size={32} className="tn-spin" />
+              <p>Loading trending articles…</p>
+            </div>
+          ) : filteredArticles.length === 0 ? (
             <div className="tn-empty">
               <TrendingUp size={36} />
-              <p>No articles found for this tag yet.</p>
+              <p>{activeTagSlug === "all" ? "No published articles found." : `No articles found for #${activeTagLabel}.`}</p>
             </div>
           ) : (
             <div className="tn-article-list">
               {filteredArticles.map((a, i) => (
-                <article
-                  className="tn-article"
-                  key={a.id}
-                  style={{ animationDelay: `${i * 0.06}s` }}
-                >
-                  {/* Rank */}
-                  <div className="tn-article__rank">
-                    <span>{i + 1}</span>
-                  </div>
+                <article className="tn-article" key={a.id} style={{ animationDelay: `${i * 0.06}s` }}>
+                  <div className="tn-article__rank"><span>{i + 1}</span></div>
 
-                  {/* Image */}
                   <div className="tn-article__img-wrap">
-                    <img src={a.img} alt={a.title} className="tn-article__img" />
+                    {a.img ? (
+                      <img src={a.img} alt={a.title} className="tn-article__img" />
+                    ) : (
+                      <div className="tn-article__img-placeholder"><TrendingUp size={20} /></div>
+                    )}
                   </div>
 
-                  {/* Body */}
                   <div className="tn-article__body">
                     <h3 className="tn-article__title">{a.title}</h3>
                     <div className="tn-article__meta">
                       <div className="tn-article__tags">
-                        {a.tags.slice(0, 2).map((slug) => {
-                          const tagObj = trendingTags.find((t) => t.slug === slug);
-                          return tagObj ? (
-                            <span key={slug} className="tn-tag">
-                              #{tagObj.label}
-                            </span>
-                          ) : null;
-                        })}
+                        {a.tags.slice(0, 3).map((tag) => (
+                          <span
+                            key={tag.id}
+                            className={`tn-tag ${activeTagSlug === tag.slug ? "tn-tag--active" : ""}`}
+                            onClick={() => setActiveTagSlug(tag.slug)}
+                          >
+                            #{tag.name}
+                          </span>
+                        ))}
                       </div>
-                      <span className="tn-article__time">
-                        <Clock size={11} />
-                        {a.trend}
-                      </span>
+                      <span className="tn-article__time"><Clock size={11} />{a.trend}</span>
                     </div>
                   </div>
 
-                  {/* Stats */}
                   <div className="tn-article__stats">
                     <div className="tn-article__stat">
                       <Eye size={13} />
-                      <span className="tn-article__stat-value">{a.views}</span>
+                      <span className="tn-article__stat-value">{formatNum(a.views)}</span>
                       <span className="tn-article__stat-label">Views</span>
                     </div>
                     <div className="tn-article__stat">
@@ -413,14 +356,10 @@ export default function TrendingNews() {
                     </div>
                   </div>
 
-                  {/* Score + Growth */}
                   <div className="tn-article__right">
                     <div className="tn-score-bar">
                       <div className="tn-score-bar__track">
-                        <div
-                          className="tn-score-bar__fill"
-                          style={{ width: `${a.score}%` }}
-                        />
+                        <div className="tn-score-bar__fill" style={{ width: `${a.score}%` }} />
                       </div>
                       <span className="tn-score-bar__num">{a.score}</span>
                     </div>
