@@ -7,6 +7,7 @@ import topicProfileRoutes from "./routes/topicProfile.routes";
 import categoryRoutes from "./routes/category.routes";
 import tagsRoutes from "./routes/tags.routes";
 import { startScheduler } from "./scheduler";
+import path from "path";
 const app = express();
 
 // ✅ 1. CORS
@@ -36,5 +37,6 @@ app.use("/api/news", newsRoutes); // 🔥 IMPORTANT
 app.use("/api/topic-profiles", topicProfileRoutes);
 app.use("/api/categories", categoryRoutes);
 app.use("/api/tags", tagsRoutes);
-app.use("/uploads", express.static("uploads"));
+app.use("/uploads",express.static(path.join(process.cwd(), "uploads")));
+
 export default app;

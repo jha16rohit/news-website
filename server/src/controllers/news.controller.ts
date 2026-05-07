@@ -3,8 +3,14 @@ import { AuthRequest } from "../middleware/auth.middleware";
 import prisma from "../config/db";
 import { extractImagesFromContent } from "../utils/extractImages";
 import slugify from "slugify";
-import fs from "fs";
-import path from "path";
+import { createClient } from "@supabase/supabase-js";
+
+// ─── Supabase (for deleting images from storage) ──────────────────────────────
+const supabase = createClient(
+  process.env.SUPABASE_URL!,
+  process.env.SUPABASE_SERVICE_KEY!
+);
+const BUCKET = "news-images";
 
 // ─── Helpers ───────────────────────────────────────────────────────────────────
 function normalizeTagName(name: string): string {
@@ -134,7 +140,6 @@ export const createNews = async (req: AuthRequest, res: Response) => {
     }
 
     // ── Tags ──────────────────────────────────────────────────────────────────
-    // Handle both tags[] (FormData array) and tags (JSON array / comma string)
     let rawTags: string[] = [];
     if (Array.isArray(req.body["tags[]"])) {
       rawTags = req.body["tags[]"];
@@ -147,19 +152,18 @@ export const createNews = async (req: AuthRequest, res: Response) => {
     }
     const tagConnections = rawTags.length ? await upsertTags(rawTags) : [];
 
-    // ── FIX: Build imageUrl from uploaded file — NEVER from blob: URLs ────────
-    // If a file was uploaded via multer, use that path.
-    // Otherwise fall back to featuredImage only if it's a real http/https URL.
+    // ── Image URL ─────────────────────────────────────────────────────────────
+    // uploadToSupabase middleware sets req.uploadedImageUrl with the Supabase
+    // public URL. Fall back to a plain https URL from the body if provided.
+    // Never store blob: URLs.
     let imageUrl: string | null = null;
-    if (req.file) {
-      // Use the SERVER_URL env var if set, otherwise default to localhost:5001
-      const baseUrl = process.env.SERVER_URL || "http://localhost:5001";
-      imageUrl = `${baseUrl}/uploads/${req.file.filename}`;
+    if ((req as any).uploadedImageUrl) {
+      imageUrl = (req as any).uploadedImageUrl;
     } else if (featuredImage?.trim() && !featuredImage.startsWith("blob:")) {
       imageUrl = featuredImage.trim();
     }
 
-    // ── Handle keywords from FormData (keywords[] or keywords) ───────────────
+    // ── Keywords ──────────────────────────────────────────────────────────────
     let resolvedKeywords: string[] = [];
     if (Array.isArray(req.body["keywords[]"])) {
       resolvedKeywords = req.body["keywords[]"];
@@ -171,7 +175,7 @@ export const createNews = async (req: AuthRequest, res: Response) => {
       resolvedKeywords = keywords.split(",").map((k: string) => k.trim()).filter(Boolean);
     }
 
-    // ── Resolve authorId before DB call ─────────────────────────────────────
+    // ── Author ────────────────────────────────────────────────────────────────
     let resolvedAuthorId: string;
     if (req.user?.id) {
       resolvedAuthorId = req.user.id;
@@ -486,7 +490,7 @@ export const deleteNews = async (req: AuthRequest, res: Response) => {
   }
 };
 
-// ─── PURGE EXPIRED DELETED ARTICLES (called by cron job) ──────────────────────
+// ─── PURGE EXPIRED DELETED ARTICLES ───────────────────────────────────────────
 export const purgeDeletedNews = async (req: Request, res: Response) => {
   try {
     const result = await prisma.news.deleteMany({
@@ -573,19 +577,18 @@ export const getMediaLibrary = async (req: Request, res: Response) => {
             { featuredImage: { not: null } },
             { content: { contains: "<img" } },
           ],
-          // Only show articles that have a real stored image URL (not blob)
           NOT: { featuredImage: { startsWith: "blob:" } },
         },
         select: {
-          id:           true,
-          headline:     true,
+          id:            true,
+          headline:      true,
           featuredImage: true,
-          content:      true,
-          imageCaption: true,
-          photoCredit:  true,
-          createdAt:    true,
-          status:       true,
-          views:        true,
+          content:       true,
+          imageCaption:  true,
+          photoCredit:   true,
+          createdAt:     true,
+          status:        true,
+          views:         true,
         },
         orderBy: { createdAt: "desc" },
         skip,
@@ -602,7 +605,6 @@ export const getMediaLibrary = async (req: Request, res: Response) => {
       }),
     ]);
 
-    // Expand each article into one row per image (featured + content images)
     const formatted = items.flatMap(item => {
       const contentImages = extractImagesFromContent(item.content || "");
 
@@ -637,12 +639,7 @@ export const getMediaLibrary = async (req: Request, res: Response) => {
       ];
     });
 
-    res.json({
-      items: formatted,
-      total,
-      page:  pageNum,
-      limit: limitNum,
-    });
+    res.json({ items: formatted, total, page: pageNum, limit: limitNum });
   } catch (error) {
     console.error("getMediaLibrary error:", error);
     res.status(500).json({ message: "Error fetching media library" });
@@ -650,7 +647,7 @@ export const getMediaLibrary = async (req: Request, res: Response) => {
 };
 
 // ─── DELETE MEDIA IMAGE ────────────────────────────────────────────────────────
-// Clears the featuredImage field from a news article and deletes the file on disk
+// Removes featuredImage from DB and deletes the file from Supabase Storage
 export const deleteMediaImage = async (req: AuthRequest, res: Response) => {
   try {
     const newsId = String(req.params.newsId);
@@ -660,26 +657,25 @@ export const deleteMediaImage = async (req: AuthRequest, res: Response) => {
 
     const imageUrl = article.featuredImage;
 
-    // Remove from DB
+    // ── Remove from DB first ─────────────────────────────────────────────────
     await prisma.news.update({
       where: { id: newsId },
-      data:  { featuredImage: null },
+      data:  { featuredImage: null, imageCaption: null, photoCredit: null },
     });
 
-    // Try to delete the file from disk if it's a local upload
+    // ── Delete from Supabase Storage ─────────────────────────────────────────
+    // Public URL pattern:
+    // https://<project>.supabase.co/storage/v1/object/public/news-images/filename.jpg
     if (imageUrl) {
       try {
-        // Extract filename from URL like http://localhost:5001/uploads/filename.jpg
-        const filename = imageUrl.split("/uploads/").pop();
+        const filename = imageUrl.split(`/${BUCKET}/`).pop();
         if (filename) {
-          const filePath = path.join(process.cwd(), "uploads", filename);
-          if (fs.existsSync(filePath)) {
-            fs.unlinkSync(filePath);
-          }
+          const { error } = await supabase.storage.from(BUCKET).remove([filename]);
+          if (error) console.warn("Supabase storage delete warning:", error.message);
         }
-      } catch (fsErr) {
-        // Non-fatal — file may already be gone or on a CDN
-        console.warn("Could not delete file from disk:", fsErr);
+      } catch (storageErr) {
+        // Non-fatal — DB is already cleaned up
+        console.warn("Could not delete file from Supabase Storage:", storageErr);
       }
     }
 

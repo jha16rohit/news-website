@@ -11,12 +11,12 @@ import {
   getMediaLibrary,
   deleteMediaImage,
 } from "../controllers/news.controller";
-import { upload } from "../middleware/upload.middleware";
-import { protect } from "../middleware/auth.middleware";
+import { uploadToSupabase } from "../middleware/upload.middleware"; // ← replaces upload.single("image")
+import { protect }          from "../middleware/auth.middleware";
 
 const router = Router();
 
-// ─── Media Library (before /:slug to avoid route conflict) ────────────────────
+// ─── Media Library ────────────────────────────────────────────────────────────
 router.get("/media-library",            getMediaLibrary);
 router.delete("/media-library/:newsId", protect, deleteMediaImage);
 
@@ -25,9 +25,9 @@ router.get("/",       getAllNews);
 router.get("/id/:id", getNewsById);
 
 // ─── Create ───────────────────────────────────────────────────────────────────
-// No protect here — multipart/form-data + cookie auth is handled inside the
-// controller (req.user fallback to first DB user). This avoids 401 on file uploads.
-router.post("/create", upload.single("image"), createNews);
+// uploadToSupabase is an array [multerMiddleware, supabaseUploadMiddleware]
+// Express spreads arrays automatically when passed as route handlers.
+router.post("/create", uploadToSupabase, createNews);
 
 // ─── Admin mutations ──────────────────────────────────────────────────────────
 router.put("/:id",                protect, updateNews);
