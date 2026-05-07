@@ -179,15 +179,15 @@
    OTP METHOD CARDS
 ================================ */
 .otp-method-row {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
+  display: flex;
+  justify-content: center;
   gap: 10px;
   margin-bottom: 4px;
 }
 
 .otp-method-card {
   display: flex;
-  flex-direction: column;
+  
   align-items: center;
   gap: 6px;
   padding: 14px 10px;

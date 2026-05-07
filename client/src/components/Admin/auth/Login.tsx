@@ -1,6 +1,6 @@
 import "./Login.css";
 import { FaUser, FaEye, FaEyeSlash, FaGlobeAsia } from "react-icons/fa";
-import { Mail, Phone, ArrowLeft } from "lucide-react";
+import { Mail, ArrowLeft } from "lucide-react";
 import { useState, useRef, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useNavigate } from "react-router-dom";
@@ -270,15 +270,9 @@ const Login: React.FC = () => {
                 onClick={() => { setOtpMethod("email"); setContactValue(""); clearMsg(); }}
               >
                 <Mail size={22} className="otp-method-icon" />
-                <span>Via Email</span>
+                <span>Click For Email</span>
               </button>
-              <button
-                className={`otp-method-card ${otpMethod === "phone" ? "otp-method-card--active" : ""}`}
-                onClick={() => { setOtpMethod("phone"); setContactValue(""); clearMsg(); }}
-              >
-                <Phone size={22} className="otp-method-icon" />
-                <span>Via Phone</span>
-              </button>
+              
             </div>
 
             {otpMethod && (

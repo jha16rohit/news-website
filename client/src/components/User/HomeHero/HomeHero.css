@@ -1,6 +1,6 @@
 /* ===== HERO SECTION WRAPPER ===== */
 .hero-section {
-  padding: 40px 0;
+  padding: 15px 0px 40px 0;
   width: 100%;
   background-color: #f8f9fa; 
 }
@@ -11,7 +11,7 @@
   margin: auto;
   display: flex;
   flex-direction: column; /* Changed to column to stack the rows */
-  gap: 30px;
+  gap: 5px;
 }
 
 /* ===== TOP ROW ===== */

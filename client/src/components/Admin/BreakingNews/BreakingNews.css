@@ -363,7 +363,7 @@
   background: white;
   border: 1px solid #e5e7eb;
   border-radius: 12px;
-  overflow: hidden;
+  overflow: visible;
   margin-bottom: 20px;
 }
 
@@ -916,9 +916,7 @@
     transform: translateY(0);
   }
 }
-.bn-table-container {
-  overflow: visible;
-}
+
 .bn-table {
   overflow: visible;
 }
