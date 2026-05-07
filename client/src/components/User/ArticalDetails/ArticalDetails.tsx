@@ -214,6 +214,16 @@ const ArticleDetail: React.FC = () => {
     setOpenMenuId(openMenuId === id ? null : id);
   };
 
+// 👇 Updated, much more reliable scroll function 👇
+  const scrollToMainLiveUpdates = () => {
+    const section = document.getElementById("main-detailed-live-updates");
+    if (section) {
+      // 'block: "center"' scrolls it perfectly into the middle of the screen, 
+      // ensuring your top navbar doesn't block it!
+      section.scrollIntoView({ behavior: "smooth", block: "center" });
+    }
+  };
+
   const defaultMockArticle = {
     title: "Parliament Passes Historic Budget Bill: What It Means For India's Economy",
     subtitle: "Finance Minister outlines sweeping reforms across healthcare, education, and infrastructure in a landmark parliamentary session.",
@@ -221,9 +231,9 @@ const ArticleDetail: React.FC = () => {
     imageUrl: "https://images.unsplash.com/photo-1523995462485-3d171b5c8fa9?auto=format&fit=crop&q=80&w=1200",
     isLive: true, 
     liveUpdates: [
-      { time: "12:45 PM", text: "PM addresses the nation on education reform passage" },
-      { time: "12:30 PM", text: "Opposition parties react to the bill — mixed responses" },
-      { time: "12:15 PM", text: "Bill passed with 356 votes in favor, 98 against" }
+      { time: "12:45 PM", text: "PM addresses the nation on education reform passage. He highlighted that the new budget allocation will double the reach of rural development programs." },
+      { time: "12:30 PM", text: "Opposition parties react to the bill — mixed responses observed across the parliamentary floor as leaders review the newly proposed tax slabs." },
+      { time: "12:15 PM", text: "Bill passed with 356 votes in favor, 98 against. A historic moment for the current administration." }
     ],
     content: `In a landmark session, the Indian Parliament has passed the most ambitious budget bill in recent history, promising sweeping reforms across healthcare, education, and infrastructure sectors. 
 
@@ -273,7 +283,7 @@ The bill, which saw weeks of intense debate, was finally approved with a signifi
           {/* ── MAIN HEADLINE ── */}
           <h1 className="ad-headline">{article.title}</h1>
 
-          {/* ── SUBHEADING (NEW) ── */}
+          {/* ── SUBHEADING ── */}
           <p className="ad-subheadline">{article.subtitle}</p>
 
           <div className="ad-meta-row">
@@ -306,6 +316,30 @@ The bill, which saw weeks of intense debate, was finally approved with a signifi
             <Advertisement page={article.category?.toLowerCase() || "all"}/>
           </div>
 
+          {/* 👇 DETAILED LIVE UPDATES SECTION (MAIN BODY) - ADDED ID HERE 👇 */}
+          {article.isLive && (
+            <div className="ad-main-live-section" id="main-detailed-live-updates">
+              <div className="ad-main-live-header">
+                <span className="ad-main-live-dot"></span>
+                <h2>LIVE UPDATES</h2>
+              </div>
+              
+              <div className="ad-main-live-timeline">
+                {article.liveUpdates.map((update, index) => (
+                  <div key={index} className="ad-main-live-item">
+                    <div className="ad-main-live-time">
+                      <Clock size={16} />
+                      {update.time}
+                    </div>
+                    <div className="ad-main-live-content">
+                      <p>{update.text}</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
           <div className="comments-section">
             
             <div className="cmt-input-box">
@@ -333,15 +367,6 @@ The bill, which saw weeks of intense debate, was finally approved with a signifi
                     ))}
                   </div>
                 )}
-
-                <div className="cmt-tools-left">
-                  <button onMouseDown={(e) => executeCommand(e, 'bold')}><Bold size={15} style={{ pointerEvents: 'none' }} /></button>
-                  <button onMouseDown={(e) => executeCommand(e, 'italic')}><Italic size={15} style={{ pointerEvents: 'none' }} /></button>
-                  <button onMouseDown={(e) => executeCommand(e, 'underline')}><Underline size={15} style={{ pointerEvents: 'none' }} /></button>
-                  <div className="cmt-divider"></div>
-                  <button onMouseDown={(e) => { e.preventDefault(); setShowEmojiPicker(!showEmojiPicker); setShowMentionPicker(false); }}><Smile size={15} style={{ pointerEvents: 'none' }} /></button>
-                  <button onMouseDown={(e) => { e.preventDefault(); setShowMentionPicker(!showMentionPicker); setShowEmojiPicker(false); }}><AtSign size={15} style={{ pointerEvents: 'none' }} /></button>
-                </div>
                 <button className="cmt-submit" onClick={handleCommentSubmit}>Submit</button>
               </div>
             </div>
@@ -471,6 +496,8 @@ The bill, which saw weeks of intense debate, was finally approved with a signifi
         </main>
 
         <aside className="ad-sidebar">
+          
+          {/* 👇 SIDEBAR COMPACT LIVE UPDATES WIDGET 👇 */}
           {article.isLive && (
             <div className="ad-sidebar-widget ad-live-widget">
               <div className="ad-live-header">
@@ -480,16 +507,25 @@ The bill, which saw weeks of intense debate, was finally approved with a signifi
               <div className="ad-widget-divider"></div>
               <div className="ad-live-list">
                 {article.liveUpdates.map((update, index) => (
-                  <div key={index} className="ad-live-item">
+                  <div 
+                    key={index} 
+                    className="ad-live-item" 
+                    onClick={scrollToMainLiveUpdates} 
+                    style={{ cursor: "pointer" }}
+                    title="Click to view detailed updates"
+                  >
                     <span className="ad-live-time">{update.time}</span>
-                    <p className="ad-live-text">{update.text}</p>
+                    {/* 👇 Truncates the text after 55 characters and adds "..." 👇 */}
+                    <p className="ad-live-text">
+                      {update.text.length > 55 ? update.text.substring(0, 40) + "..." : update.text}
+                    </p>
                   </div>
                 ))}
               </div>
             </div>
           )}
 
-          <div className="ad-sidebar-widget">
+          <div className="ad-sidebar-widget ad-sticky-widget">
             <h3 className="ad-widget-title" style={{ color: '#0f172a' }}>Related News</h3>
             <div className="ad-widget-divider"></div>
             <div className="ad-related-item">
