@@ -22,11 +22,19 @@
   min-width: 0;
 }
 
+/* --- SIDEBAR WIDGETS --- */
 .ad-sidebar {
   width: 320px;
   flex-shrink: 0;
+  /* 👇 We remove sticky from here, and make it stretch to the bottom 👇 */
+  align-self: stretch; 
+}
+
+/* 👇 The new magic class for your Related News 👇 */
+.ad-sticky-widget {
   position: sticky;
-  top: 30px;
+  top: 120px; /* Gives it breathing room below your top navbar! */
+  z-index: 10;
 }
 
 /* --- TOP META & BREADCRUMBS --- */
@@ -217,6 +225,92 @@
 .ad-related-info span { font-size: 11px; color: #64748b; }
 
 /* ==================================================
+   MAIN COLUMN LIVE TIMELINE
+================================================== */
+.ad-main-live-section {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  padding: 32px;
+  margin-bottom: 50px;
+  box-shadow: 0 4px 15px rgba(0,0,0,0.02);
+}
+
+.ad-main-live-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 30px;
+  padding-bottom: 20px;
+  border-bottom: 1px solid #f1f5f9;
+}
+
+.ad-main-live-header h2 {
+  font-family: 'Inter', sans-serif;
+  font-size: 22px;
+  font-weight: 800;
+  color: #0f172a;
+  margin: 0;
+  letter-spacing: 0.5px;
+}
+
+.ad-main-live-dot {
+  width: 14px;
+  height: 14px;
+  background-color: #e60000;
+  border-radius: 50%;
+  animation: ad-pulse 2s infinite;
+}
+
+.ad-main-live-timeline {
+  position: relative;
+  margin-left: 8px;
+  padding-left: 32px;
+  border-left: 2px solid #e2e8f0;
+  display: flex;
+  flex-direction: column;
+  gap: 32px;
+}
+
+.ad-main-live-item {
+  position: relative;
+}
+
+/* This creates the circle on the timeline track */
+.ad-main-live-item::before {
+  content: '';
+  position: absolute;
+  left: -39px; /* Aligns dot perfectly with the vertical border */
+  top: 4px;
+  width: 12px;
+  height: 12px;
+  background: #ffffff;
+  border: 3px solid #e60000;
+  border-radius: 50%;
+  box-shadow: 0 0 0 4px #ffffff;
+}
+
+.ad-main-live-time {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: #e60000;
+  font-weight: 800;
+  font-size: 14px;
+  margin-bottom: 10px;
+  font-family: 'Inter', sans-serif;
+}
+
+.ad-main-live-content p {
+  margin: 0;
+  font-size: 16px;
+  color: #334155;
+  line-height: 1.6;
+  font-weight: 500;
+  font-family: 'Inter', sans-serif;
+}
+
+/* ==================================================
    COMMENTS SECTION
 ================================================== */
 .cmt-input-box {
@@ -255,24 +349,9 @@
   position: relative;
 }
 
-.cmt-tools-left {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-}
-
-.cmt-tools-left button {
-  background: none; border: none; color: #64748b; cursor: pointer; padding: 4px;
-}
-.cmt-tools-left button:hover { color: #0f172a; }
-
-.cmt-divider {
-  width: 1px; height: 16px; background-color: #cbd5e1; margin: 0 4px;
-}
-
 .cmt-submit {
   background-color: #e60000; color: white; border: none; padding: 8px 24px;
-  border-radius: 20px; font-size: 13px; font-weight: 600; cursor: pointer;
+  border-radius: 20px; font-size: 13px; font-weight: 600; cursor: pointer; margin-left: 85%;
 }
 .cmt-submit:hover { background-color: #cc0000; }
 

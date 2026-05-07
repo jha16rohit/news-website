@@ -117,30 +117,6 @@ const TagPage: React.FC = () => {
       
       {/* MAIN LAYOUT CONTAINER */}
       <div className="tp-main-container">
-        
-        {/* ================= TRENDING TAGS TOP BAR ================= */}
-        <div className="trending-tags-container">
-          <button className="tag-scroll-btn left" onClick={() => scrollTags('left')}>
-            <ChevronLeft size={20} />
-          </button>
-          
-          <div className="tags-scroll-wrapper" ref={tagsScrollRef}>
-            {MOCK_TAGS.map((tag) => (
-              <Link 
-                to={`/tag/${tag.slug}`} 
-                key={tag.id} 
-                className={`tag-pill text-decoration-none ${tag.slug === currentTagSlug ? 'active' : ''}`}
-              >
-                {tag.name}
-              </Link>
-            ))}
-          </div>
-
-          <button className="tag-scroll-btn right" onClick={() => scrollTags('right')}>
-            <ChevronRight size={20} />
-          </button>
-        </div>
-
         {/* Header Section */}
         <div className="tp-page-header">
           <h1 className="tp-page-title">{displayTag}</h1>
