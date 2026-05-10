@@ -4,7 +4,7 @@ import { useNavigate } from "react-router-dom";
 import {
   Zap, Clock, Eye, TrendingUp, Search, ChevronDown,
   ExternalLink, MoreHorizontal, ChevronLeft, ChevronRight,
-  Radio, Edit, Pause, Trash2, Play,
+  Radio, Edit, Trash2, XCircle,
 } from "lucide-react";
 import { fetchAllNews, deleteNews as apiDeleteNews, updateNews as apiUpdateNews } from "../../../api/news";
 
@@ -15,12 +15,12 @@ interface BreakingItem {
   headline: string;
   author:   string;
   timeAgo:  string;
-  status:   "live" | "scheduled" | "expired" | "paused";
+  status:   "live" | "scheduled" | "expired";
   category: string;
   views:    number;
 }
 
-const statusOptions = ["All Status", "Live", "Scheduled", "Expired", "Paused"];
+const statusOptions = ["All Status", "Live", "Scheduled", "Expired"];
 
 // ─── helpers ──────────────────────────────────────────────────────────────────
 function toRelative(isoStr?: string | null): string {
@@ -35,9 +35,7 @@ function toRelative(isoStr?: string | null): string {
 function deriveStatus(
   apiStatus: string,
   expiryTime?: string | null,
-  statusType?: string,
 ): BreakingItem["status"] {
-  if (statusType === "paused") return "paused";
   if (apiStatus === "SCHEDULED") return "scheduled";
   if (expiryTime && new Date(expiryTime) < new Date()) return "expired";
   return "live";
@@ -47,15 +45,15 @@ function deriveStatus(
 const BreakingNews: React.FC = () => {
   const navigate = useNavigate();
 
-  const [items, setItems]             = useState<BreakingItem[]>([]);
-  const [loading, setLoading]         = useState(true);
+  const [items, setItems]           = useState<BreakingItem[]>([]);
+  const [loading, setLoading]       = useState(true);
   const [currentPage, setCurrentPage] = useState(1);
   const [searchQuery, setSearchQuery] = useState("");
-  const [statusFilter, setStatusFilter]   = useState("All Status");
-  const [selectedItems, setSelectedItems] = useState<string[]>([]);
-  const [isStatusOpen, setIsStatusOpen]   = useState(false);
-  const [openMenuId, setOpenMenuId]       = useState<string | null>(null);
-  const [deleteModal, setDeleteModal]     = useState<string | null>(null);
+  const [statusFilter, setStatusFilter] = useState("All Status");
+  const [isStatusOpen, setIsStatusOpen] = useState(false);
+  const [openMenuId, setOpenMenuId]     = useState<string | null>(null);
+  const [deleteModal, setDeleteModal]   = useState<string | null>(null);
+  const [removeModal, setRemoveModal]   = useState<string | null>(null);
 
   const itemsPerPage = 7;
 
@@ -64,10 +62,7 @@ const BreakingNews: React.FC = () => {
     setLoading(true);
     try {
       const data = await fetchAllNews({ articleType: "BREAKING", limit: 100 });
-      if (!data?.news) {
-        setItems([]);
-        return;
-      }
+      if (!data?.news) { setItems([]); return; }
 
       const mapped = data.news.map((n: any, idx: number) => ({
         id:       n.id,
@@ -75,7 +70,7 @@ const BreakingNews: React.FC = () => {
         headline: n.headline,
         author:   n.author?.name || "Admin",
         timeAgo:  toRelative(n.publishedAt || n.createdAt),
-        status:   deriveStatus(n.status, n.expiryTime, n.statusType),
+        status:   deriveStatus(n.status, n.expiryTime),
         category: n.category?.name || "General",
         views:    n.views ?? 0,
       }));
@@ -114,33 +109,36 @@ const BreakingNews: React.FC = () => {
       case "live":      return "bn-status-live";
       case "scheduled": return "bn-status-scheduled";
       case "expired":   return "bn-status-expired";
-      case "paused":    return "bn-status-paused";
       default:          return "";
     }
   };
 
   // ── Actions ────────────────────────────────────────────────────────────────
-  const handleMenuAction = async (action: string, id: string) => {
+  const handleMenuAction = (action: string, id: string) => {
     setOpenMenuId(null);
-    const item = items.find(i => i.id === id);
-
     switch (action) {
       case "edit":
         navigate(`/admin/create?edit=${id}&type=breaking`);
         break;
-
-      case "pause": {
-        const isPaused = item?.status === "paused";
-        await apiUpdateNews(id, { statusType: isPaused ? "published" : "paused" } as any);
-        setItems(prev =>
-          prev.map(i => i.id === id ? { ...i, status: isPaused ? "live" : "paused" } : i)
-        );
+      case "remove":
+        setRemoveModal(id);
         break;
-      }
-
       case "delete":
         setDeleteModal(id);
         break;
+    }
+  };
+
+  // Remove breaking status — converts article to standard published
+  const confirmRemove = async () => {
+    if (!removeModal) return;
+    try {
+      await apiUpdateNews(removeModal, { articleType: "STANDARD", statusType: "published" } as any);
+      setItems(prev => prev.filter(i => i.id !== removeModal));
+    } catch (err) {
+      console.error("Remove breaking failed:", err);
+    } finally {
+      setRemoveModal(null);
     }
   };
 
@@ -155,9 +153,6 @@ const BreakingNews: React.FC = () => {
       setDeleteModal(null);
     }
   };
-
-  const handleSelectItem = (id: string) =>
-    setSelectedItems(prev => prev.includes(id) ? prev.filter(i => i !== id) : [...prev, id]);
 
   // ── Render ─────────────────────────────────────────────────────────────────
   return (
@@ -203,7 +198,7 @@ const BreakingNews: React.FC = () => {
       {/* CURRENTLY LIVE */}
       <div className="bn-live-section">
         <div className="bn-live-header">
-          <div className="bn-live-indicator"></div>
+          <div className="bn-live-indicator" />
           <h2>Currently Live</h2>
         </div>
         <div className="bn-live-list">
@@ -243,10 +238,7 @@ const BreakingNews: React.FC = () => {
         </div>
         <div className="bn-filters">
           <div className="bn-filter-dropdown-custom">
-            <div
-              className="bn-filter-selected"
-              onClick={() => setIsStatusOpen(!isStatusOpen)}
-            >
+            <div className="bn-filter-selected" onClick={() => setIsStatusOpen(!isStatusOpen)}>
               {statusFilter} <ChevronDown size={16} />
             </div>
             {isStatusOpen && (
@@ -271,7 +263,6 @@ const BreakingNews: React.FC = () => {
         <table className="bn-table">
           <thead>
             <tr>
-              <th className="bn-th-checkbox"><input type="checkbox" /></th>
               <th className="bn-th-headline">Headline</th>
               <th className="bn-th-status">Status</th>
               <th className="bn-th-category">Category</th>
@@ -282,20 +273,13 @@ const BreakingNews: React.FC = () => {
           <tbody>
             {loading && (
               <tr>
-                <td colSpan={6} style={{ textAlign: "center", padding: "40px", color: "#94a3b8", fontSize: "14px" }}>
+                <td colSpan={5} style={{ textAlign: "center", padding: "40px", color: "#94a3b8", fontSize: "14px" }}>
                   Loading…
                 </td>
               </tr>
             )}
             {!loading && currentNews.map(news => (
               <tr key={news.id} className="bn-table-row">
-                <td className="bn-td-checkbox">
-                  <input
-                    type="checkbox"
-                    checked={selectedItems.includes(news.id)}
-                    onChange={() => handleSelectItem(news.id)}
-                  />
-                </td>
                 <td className="bn-td-headline">
                   <div className="bn-headline-content">
                     <div className="bn-headline-title">{news.headline}</div>
@@ -304,9 +288,8 @@ const BreakingNews: React.FC = () => {
                 </td>
                 <td className="bn-td-status">
                   <span className={`bn-badge ${getStatusClass(news.status)}`}>
-                    {news.status === "live"      && <div className="bn-status-dot"></div>}
+                    {news.status === "live"      && <div className="bn-status-dot" />}
                     {news.status === "scheduled" && <Clock size={12} />}
-                    {news.status === "paused"    && "⏸"}
                     {news.status}
                   </span>
                 </td>
@@ -325,9 +308,8 @@ const BreakingNews: React.FC = () => {
                         <button onClick={() => handleMenuAction("edit", news.id)}>
                           <Edit size={16} /> Edit
                         </button>
-                        <button onClick={() => handleMenuAction("pause", news.id)}>
-                          {news.status === "paused" ? <Play size={16} /> : <Pause size={16} />}
-                          {news.status === "paused" ? "Resume" : "Pause"}
+                        <button onClick={() => handleMenuAction("remove", news.id)}>
+                          <XCircle size={16} /> Remove Breaking
                         </button>
                         <div className="bn-menu-divider" />
                         <button className="bn-delete" onClick={() => handleMenuAction("delete", news.id)}>
@@ -341,7 +323,7 @@ const BreakingNews: React.FC = () => {
             ))}
             {!loading && currentNews.length === 0 && (
               <tr>
-                <td colSpan={6} style={{ textAlign: "center", padding: "40px", color: "#94a3b8", fontSize: "14px" }}>
+                <td colSpan={5} style={{ textAlign: "center", padding: "40px", color: "#94a3b8", fontSize: "14px" }}>
                   No breaking news found
                 </td>
               </tr>
@@ -386,11 +368,30 @@ const BreakingNews: React.FC = () => {
         </div>
       )}
 
+      {/* REMOVE BREAKING MODAL */}
+      {removeModal !== null && (
+        <div className="modal-overlay" onClick={() => setRemoveModal(null)}>
+          <div className="modal" onClick={e => e.stopPropagation()}>
+            <div className="modal-icon modal-icon--warning">
+              <XCircle size={22} />
+            </div>
+            <h4>Remove Breaking Status?</h4>
+            <p>This article will no longer appear as Breaking News. It will remain published as a standard article.</p>
+            <div className="modal-actions">
+              <button className="modal-cancel" onClick={() => setRemoveModal(null)}>Cancel</button>
+              <button className="modal-confirm modal-confirm--warning" onClick={confirmRemove}>Yes, Remove</button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* DELETE MODAL */}
       {deleteModal !== null && (
         <div className="modal-overlay" onClick={() => setDeleteModal(null)}>
           <div className="modal" onClick={e => e.stopPropagation()}>
-            <div className="modal-icon"><Trash2 size={22} /></div>
+            <div className="modal-icon">
+              <Trash2 size={22} />
+            </div>
             <h4>Delete Article?</h4>
             <p>This action cannot be undone. The article will be permanently removed.</p>
             <div className="modal-actions">

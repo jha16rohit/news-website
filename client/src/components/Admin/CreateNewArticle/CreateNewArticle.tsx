@@ -420,13 +420,13 @@ const LocationSearch: React.FC<{ value: string; onChange: (v: string) => void }>
   );
 };
 
-const Toggle: React.FC<{ on: boolean; onClick: () => void; label: string; dark?: boolean }> = ({ on, onClick, label, dark }) => (
-  <button
-    className={`cna-toggle${dark ? " cna-toggle--dark" : ""}${on ? " cna-toggle--on" : ""}`}
-    onClick={onClick} aria-label={label}>
-    <span className="cna-toggle-knob" />
-  </button>
-);
+// const Toggle: React.FC<{ on: boolean; onClick: () => void; label: string; dark?: boolean }> = ({ on, onClick, label, dark }) => (
+//   <button
+//     className={`cna-toggle${dark ? " cna-toggle--dark" : ""}${on ? " cna-toggle--on" : ""}`}
+//     onClick={onClick} aria-label={label}>
+//     <span className="cna-toggle-knob" />
+//   </button>
+// );
 
 // ─── Schedule Modal ───────────────────────────────────────────────────────────
 interface ScheduleModalProps { onClose: () => void; onConfirm: (datetime: string) => void; }
@@ -682,7 +682,7 @@ const CreateNewArticle: React.FC = () => {
   const [breakingToggles, setBreakingToggles] = useState({
     newsTicker: true, pushNotification: true, homepageAlert: true,
   });
-  const [liveInput,      setLiveInput]        = useState("");
+  // const [liveInput,      setLiveInput]        = useState("");
   const [liveUpdates,    setLiveUpdates]      = useState<{ id: number; time: string; text: string }[]>([]);
   const [dragOver,       setDragOver]         = useState(false);
 const [mediaFile, setMediaFile] = useState<File | null>(null);
@@ -795,12 +795,12 @@ const [mediaFile, setMediaFile] = useState<File | null>(null);
   ];
 
   // ── Handlers ───────────────────────────────────────────────────────────────
-  const addLiveUpdateLocal = () => {
-    if (!liveInput.trim()) return;
-    const time = new Date().toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit" });
-    setLiveUpdates(p => [...p, { id: Date.now(), time, text: liveInput.trim() }]);
-    setLiveInput("");
-  };
+  // const addLiveUpdateLocal = () => {
+  //   if (!liveInput.trim()) return;
+  //   const time = new Date().toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit" });
+  //   setLiveUpdates(p => [...p, { id: Date.now(), time, text: liveInput.trim() }]);
+  //   setLiveInput("");
+  // };
 
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -1155,58 +1155,10 @@ const handleScheduleConfirm = async (isoDatetime: string) => {
             </div>
           </section>
 
-          {/* Breaking options */}
-          {selectedType === "Breaking News" && (
-            <section className="cna-section cna-type-panel cna-type-panel--breaking">
-              <div className="cna-type-panel-header">
-                <div className="cna-type-panel-icon cna-type-panel-icon--breaking"><Zap size={18} /></div>
-                <div>
-                  <h3 className="cna-type-panel-title cna-type-panel-title--breaking">Breaking News Mode</h3>
-                  <p className="cna-type-panel-desc">This article will be published immediately and shown in the breaking news ticker.</p>
-                </div>
-              </div>
-              <div className="cna-type-panel-toggles">
-                {(["newsTicker","pushNotification","homepageAlert"] as const).map(key => (
-                  <label key={key} className="cna-inline-toggle">
-                    <Toggle on={breakingToggles[key]}
-                      onClick={() => setBreakingToggles(p => ({ ...p, [key]: !p[key] }))}
-                      label={key} dark />
-                    <span className="cna-inline-toggle-label">
-                      {key === "newsTicker" ? "News Ticker" : key === "pushNotification" ? "Push Notification" : "Homepage Alert"}
-                    </span>
-                  </label>
-                ))}
-              </div>
-            </section>
-          )}
+       
+         
 
-          {/* Live options */}
-          {selectedType === "Live Updates" && (
-            <section className="cna-section cna-type-panel cna-type-panel--live">
-              <div className="cna-type-panel-header">
-                <span className="cna-live-dot" />
-                <h3 className="cna-type-panel-title cna-type-panel-title--breaking">Live Updates Feed</h3>
-              </div>
-              <div className="cna-live-input-row">
-                <input className="cna-input" placeholder="Add a new update..." value={liveInput}
-                  onChange={e => setLiveInput(e.target.value)}
-                  onKeyDown={e => e.key === "Enter" && addLiveUpdateLocal()} />
-                <button className="cna-btn cna-btn-live" onClick={addLiveUpdateLocal}>+ Add Update</button>
-              </div>
-              <div className="cna-live-feed">
-                {liveUpdates.map(u => (
-                  <div key={u.id} className="cna-live-item">
-                    <span className="cna-live-time">{u.time}</span>
-                    <span className="cna-live-text">{u.text}</span>
-                    <button className="cna-live-delete"
-                      onClick={() => setLiveUpdates(p => p.filter(x => x.id !== u.id))}>
-                      <Trash2 size={14} />
-                    </button>
-                  </div>
-                ))}
-              </div>
-            </section>
-          )}
+          
 
           {/* Headline */}
           <section className="cna-section">
