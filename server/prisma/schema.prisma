@@ -130,10 +130,24 @@ model NewsTag {
   news   News   @relation(fields: [newsId], references: [id], onDelete: Cascade)
   newsId String
 
-  tag    Tag    @relation(fields: [tagId], references: [id], onDelete: Cascade)
-  tagId  String
+  tag   Tag    @relation(fields: [tagId], references: [id], onDelete: Cascade)
+  tagId String
 
   @@unique([newsId, tagId])
+}
+
+model FooterSettings {
+  id String @id @default("singleton")
+
+  sectionTitle String @default("STAY UPDATED")
+
+  descriptionText String @default("Get the latest headlines, breaking news, and exclusive updates delivered straight to your inbox.")
+
+  trustedText String @default("Your trusted source for accurate and timely news coverage around the clock.")
+
+  images Json @default("[]")
+
+  updatedAt DateTime @updatedAt
 }
 
 enum ArticleType {

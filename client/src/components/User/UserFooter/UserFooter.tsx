@@ -1,82 +1,89 @@
 import React, { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { Mail, ChevronRight, TrendingUp, Youtube } from "lucide-react";
-import { FaXTwitter, FaFacebookF, FaInstagram, FaWhatsapp } from 'react-icons/fa6';
+import { FaXTwitter, FaFacebookF, FaInstagram, FaWhatsapp } from "react-icons/fa6";
 import logo from "../../../assets/Logo.png";
 import "./UserFooter.css";
 
 import { useNews } from "../../Admin/NewsStore/NewsStore";
+import { getFooterSettings } from "../../../api/user/userfooter"; // ← adjust path if needed
+import type { FooterSettingsData } from "../../../api/user/userfooter";
 
-// ─────────────────────────────────────────────
-// Dummy Data (Matches Hero & Tag Pages)
-// ─────────────────────────────────────────────
+// ─── Static trending tags ─────────────────────────────────────────────────────
 const MOCK_TAGS = [
-  { id: "1", name: "Budget 2026", slug: "budget-2026" },
-  { id: "2", name: "Election Results", slug: "election-results" },
-  { id: "3", name: "IPL Live", slug: "ipl-live" },
-  { id: "4", name: "Stock Market", slug: "stock-market" },
-  { id: "5", name: "Tech Trends", slug: "tech-trends" },
-  { id: "6", name: "Local News", slug: "local-news" },
-  { id: "7", name: "Global Affairs", slug: "global-affairs" },
-  { id: "8", name: "Health & Wellness", slug: "health-wellness" },
+  { id: "1", name: "Budget 2026",      slug: "budget-2026"      },
+  { id: "2", name: "Election Results", slug: "election-results"  },
+  { id: "3", name: "IPL Live",         slug: "ipl-live"          },
+  { id: "4", name: "Stock Market",     slug: "stock-market"      },
+  { id: "5", name: "Tech Trends",      slug: "tech-trends"       },
+  { id: "6", name: "Local News",       slug: "local-news"        },
+  { id: "7", name: "Global Affairs",   slug: "global-affairs"    },
+  { id: "8", name: "Health & Wellness",slug: "health-wellness"   },
 ];
 
-const DEFAULT_FOOTER_DATA = {
-  sectionTitle: "STAY UPDATED",
+// ─── Fallback shown before DB responds ───────────────────────────────────────
+const DEFAULT_FOOTER_DATA: FooterSettingsData = {
+  id:              "singleton",
+  sectionTitle:    "STAY UPDATED",
   descriptionText: "Get the latest headlines and in-depth stories delivered to your inbox.",
-  trustedText: "Your trusted source for real-time news and in-depth stories from India and around the world.",
-  images: [
-    { isActive: true, url: "https://images.unsplash.com/photo-1600093463592-8e36ae95ef56?auto=format&fit=crop&q=80&w=1920" }
-  ]
+  trustedText:     "Your trusted source for real-time news and in-depth stories from India and around the world.",
+  images:          [
+    {
+      id:         "1",
+      url:        "https://images.unsplash.com/photo-1600093463592-8e36ae95ef56?auto=format&fit=crop&q=80&w=1920",
+      name:       "chhath_background.jpg",
+      resolution: "1920 x 1080",
+      isActive:   true,
+    },
+  ],
+  updatedAt: null,
 };
 
-// ─────────────────────────────────────────────
-// Component
-// ─────────────────────────────────────────────
+// ─── Component ────────────────────────────────────────────────────────────────
 const Footer: React.FC = () => {
-  const [footerData, setFooterData] = useState<any>(DEFAULT_FOOTER_DATA);
+  const [footerData, setFooterData] = useState<FooterSettingsData>(DEFAULT_FOOTER_DATA);
   const { categories } = useNews() || { categories: [] };
 
-  // Load footer settings from LocalStorage
+  // ── Fetch from DB on mount ──────────────────────────────────────────────────
   useEffect(() => {
-    const loadFooterData = () => {
+    const loadFromDB = async () => {
       try {
-        const data = localStorage.getItem("localNewzFooterData");
-        if (data) setFooterData(JSON.parse(data));
-        else setFooterData(DEFAULT_FOOTER_DATA);
-      } catch (error) {
-        console.error("Failed to load footer data:", error);
+        const data = await getFooterSettings();
+        // If DB returned empty images array, keep the default background
+        if (Array.isArray(data.images) && data.images.length === 0) {
+          setFooterData({ ...data, images: [] });
+        } else {
+          setFooterData(data);
+        }
+      } catch (err) {
+        console.error("Footer: could not load settings from DB, using defaults.", err);
+        // Keep DEFAULT_FOOTER_DATA — no visible error to the user
       }
     };
-    loadFooterData();
 
-    const onStorage = (e: StorageEvent) => {
-      if (e.key === "localNewzFooterData") loadFooterData();
-    };
-    const onCustom = () => loadFooterData();
-    window.addEventListener("storage", onStorage);
-    window.addEventListener("localNewzFooterUpdate", onCustom);
-    
-    return () => {
-      window.removeEventListener("storage", onStorage);
-      window.removeEventListener("localNewzFooterUpdate", onCustom);
-    };
+    loadFromDB();
+
+    // Re-fetch when admin saves (same-tab live update via window event)
+    const onAdminSave = () => loadFromDB();
+    window.addEventListener("localNewzFooterUpdate", onAdminSave);
+    return () => window.removeEventListener("localNewzFooterUpdate", onAdminSave);
   }, []);
 
-  const activeImage = footerData?.images?.find((img: any) => img.isActive)?.url;
+  const activeImage = footerData.images.find((img) => img.isActive)?.url ?? null;
 
-  // Dynamic categories (same logic as navbar)
+  // ── Dynamic categories (same logic as navbar) ───────────────────────────────
   const slugOf = (name: string) => name.toLowerCase().replace(/\s+/g, "-");
-  const featuredCategories = categories.filter((c: any) => !c.parentId && c.enabled && c.featured);
-  const displayCategories = (
+  const featuredCategories  = categories.filter((c: any) => !c.parentId && c.enabled && c.featured);
+  const displayCategories   = (
     featuredCategories.length > 0
       ? featuredCategories
       : categories.filter((c: any) => !c.parentId && c.enabled)
   ).slice(0, 6);
 
+  // ─── Render ─────────────────────────────────────────────────────────────────
   return (
     <footer
-      className={`site-footer ${activeImage ? 'has-bg-image' : 'solid-bg'}`}
+      className={`site-footer ${activeImage ? "has-bg-image" : "solid-bg"}`}
       style={activeImage ? { backgroundImage: `url(${activeImage})` } : {}}
     >
       <div className="footer-overlay">
@@ -155,16 +162,12 @@ const Footer: React.FC = () => {
               </ul>
             </div>
 
-            {/* Dummy Trending Topics */}
+            {/* Trending Topics */}
             <div className="f-col">
               <h3 className="f-heading">TRENDING TOPICS</h3>
               <div className="f-trending-grid">
                 {MOCK_TAGS.map((tag) => (
-                  <Link
-                    key={tag.id}
-                    to={`/tag/${tag.slug}`}
-                    className="f-trending-tag"
-                  >
+                  <Link key={tag.id} to={`/tag/${tag.slug}`} className="f-trending-tag">
                     <span>#{tag.name}</span>
                     <TrendingUp size={13} />
                   </Link>
@@ -176,9 +179,7 @@ const Footer: React.FC = () => {
 
           {/* ── BOTTOM BAR ── */}
           <div className="footer-bottom-bar">
-            <p>
-              &copy; Copyright-2026, All Rights Reserved | Local Newz | WebWala Studio
-            </p>
+            <p>&copy; Copyright-2026, All Rights Reserved | Local Newz | WebWala Studio</p>
           </div>
 
         </div>
