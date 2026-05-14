@@ -2,6 +2,7 @@ import React, { useState, useMemo, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import "./ScheduledPosts.css";
 import { fetchAllNews, deleteNews as apiDeleteNews, updateNews as apiUpdateNews } from "../../../api/news";
+import { useNewsEvent, useNewsSubscription } from "../../../context/newscontext";
 import {
   CalendarClock, FileText, Clock, ChevronLeft, ChevronRight,
   Trash2, Edit3, Eye, Send, MoreHorizontal, Search,
@@ -95,6 +96,10 @@ const ArticleMenu: React.FC<{
 /* ─── Main Component ─── */
 const ScheduledPosts: React.FC = () => {
   const navigate = useNavigate();
+  const { dispatch } = useNewsEvent();
+
+  // Re-fetch whenever another page changes a news item
+  useNewsSubscription(() => { loadData(); });
 
   const [scheduledArticles, setScheduledArticles] = useState<RemoteArticle[]>([]);
   const [draftArticles, setDraftArticles]         = useState<RemoteArticle[]>([]);
@@ -200,6 +205,7 @@ const ScheduledPosts: React.FC = () => {
       try {
         await apiUpdateNews(article.id, { status: "PUBLISHED" } as any);
         setScheduledArticles(prev => prev.filter(a => a.id !== article.id));
+        dispatch({ type: "STATUS_CHANGED", id: article.id, changes: { status: "PUBLISHED" } });
       } catch (err) { console.error(err); }
       setConfirmAction(null);
     });
@@ -211,6 +217,7 @@ const ScheduledPosts: React.FC = () => {
         await apiDeleteNews(article.id);
         setScheduledArticles(prev => prev.filter(a => a.id !== article.id));
         setDraftArticles(prev => prev.filter(a => a.id !== article.id));
+        dispatch({ type: "DELETED", id: article.id });
       } catch (err) { console.error(err); }
       setConfirmAction(null);
     });
@@ -221,6 +228,7 @@ const ScheduledPosts: React.FC = () => {
       try {
         await apiUpdateNews(article.id, { status: "PUBLISHED" } as any);
         setDraftArticles(prev => prev.filter(a => a.id !== article.id));
+        dispatch({ type: "STATUS_CHANGED", id: article.id, changes: { status: "PUBLISHED" } });
       } catch (err) { console.error(err); }
       setConfirmAction(null);
     });

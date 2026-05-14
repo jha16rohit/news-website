@@ -1,295 +1,282 @@
-import React, { useState, useEffect } from "react";
+/**
+ * NewsProvider.tsx
+ *
+ * Replaces the old local-state provider.
+ * Now wraps NewsProvider from NewsContext (the real API-backed event bus)
+ * AND provides a thin backwards-compatible NewsStore shim so any component
+ * still calling useNews() doesn't crash — it just reads from the real API.
+ *
+ * Migration path:
+ *   - New pages: import { useNewsEvent, useNewsSubscription } from "NewsContext"
+ *   - Old pages still on useNews(): they will work via the shim but should be
+ *     migrated over time to use the API directly.
+ */
+
+import React, { useState, useEffect, useCallback } from "react";
 import { NewsContext } from "../NewsStore/NewsStore";
-import type { Article, Category, NewsStore, LiveUpdate } from "../NewsStore/NewsStore";
+import type { Article, Category, NewsStore } from "../NewsStore/NewsStore";
+import { NewsProvider as EventBusProvider } from "../../../context/newscontext";
+import {
+  fetchAllNews,
+  updateNews as apiUpdateNews,
+  deleteNews as apiDeleteNews,
+  appendLiveUpdate as apiAppendLiveUpdate,
+} from "../../../api/news";
+import {
+  getCategories,
+  createCategory as apiCreateCategory,
+  updateCategory as apiUpdateCategory,
+  deleteCategory as apiDeleteCategory,
+} from "../../../api/category.api";
 
-// ─── Seed Data ─────────────────────────────────────────────────────────────────
+// ─── Map API news → Article shape ─────────────────────────────────────────────
+function mapApiToArticle(n: any, idx: number): Article {
+  const isBreaking = n.articleType === "BREAKING";
+  const isLive     = n.articleType === "LIVE";
 
-const INITIAL_ARTICLES: Article[] = [
-  {
-    id: 1, title: "Parliament Session: Key Budget Amendments Passed...", subtitle: "Budget Amendments Passed",
-    category: "Breaking News", articleCategory: "Politics",
-    authorFirst: "Priya", authorLast: "Sharma",
-    status: "Published", statusType: "published", priority: "High", priorityType: "high",
-    published: "15 min ago", views: "145K", tag: "Breaking", tagType: "breaking",
-    leftBorder: "breaking-left", isTopStory: true, isPinned: true,
-    channels: ["web", "mobile", "ticker"],
-    expiryTime: new Date(Date.now() + 4 * 60 * 60 * 1000).toISOString(),
-  },
-  {
-    id: 2, title: "Stock Markets Hit Record High: Sensex Crosses 85,000...", subtitle: "Sensex Crosses 85K",
-    category: "Standard Article", articleCategory: "Business",
-    authorFirst: "Rahul", authorLast: "Verma",
-    status: "Published", statusType: "published", priority: "High", priorityType: "high",
-    published: "42 min ago", views: "89K", isTopStory: false, isPinned: false,
-  },
-  {
-    id: 3, title: "Opinion: Why India's Digital Infrastructure Needs a Rethink", subtitle: "Digital Infrastructure Opinion",
-    category: "Standard Article", articleCategory: "Technology",
-    authorFirst: "Dr. Amit", authorLast: "Kumar",
-    status: "Draft", statusType: "draft", priority: "Normal", priorityType: "normal",
-    published: "-", views: "-", isTopStory: false, isPinned: false,
-  },
-  {
-    id: 4, title: "Weather Alert: IMD Issues Orange Warning for Multiple States", subtitle: "Weather Orange Alert",
-    category: "Standard Article", articleCategory: "Politics",
-    authorFirst: "Meera", authorLast: "Singh",
-    status: "Scheduled", statusType: "scheduled", priority: "Medium", priorityType: "medium",
-    published: "2:00 PM", views: "-", isTopStory: false, isPinned: false,
-  },
-  {
-    id: 5, title: "Sports: India vs Australia Test Match Day 3 – Live Updates", subtitle: "Ind vs Aus Live",
-    category: "Live Updates", articleCategory: "Sports",
-    authorFirst: "Vikram", authorLast: "Patel",
-    status: "Published", statusType: "published", priority: "High", priorityType: "high",
-    published: "Live", views: "234K", tag: "Live", tagType: "live",
-    leftBorder: "live-left", isTopStory: false, isPinned: false,
-    liveStartedAt: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(),
-    liveUpdates: [
-      { id: 1, time: "2:00 PM", text: "Match begins. India batting first.", timestamp: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString() },
-      { id: 2, time: "3:30 PM", text: "Virat Kohli hits a brilliant half-century!", timestamp: new Date(Date.now() - 90 * 60 * 1000).toISOString() },
-      { id: 3, time: "4:15 PM", text: "India 180/3 at 35 overs.", timestamp: new Date(Date.now() - 45 * 60 * 1000).toISOString() },
-    ],
-  },
-  {
-    id: 6, title: "Entertainment: Bollywood's Biggest Film of the Year Breaks Records", subtitle: "Bollywood Box Office Record",
-    category: "Standard Article", articleCategory: "Entertainment",
-    authorFirst: "Karan", authorLast: "Mehta",
-    status: "Published", statusType: "published", priority: "Normal", priorityType: "normal",
-    published: "3 hrs ago", views: "78K", isTopStory: false, isPinned: false,
-  },
-  {
-    id: 7, title: "Video Story: Inside India's New High-Speed Rail Project", subtitle: "Infrastructure Video Report",
-    category: "Video Story", articleCategory: "Politics",
-    authorFirst: "Ankit", authorLast: "Jain",
-    status: "Published", statusType: "published", priority: "Medium", priorityType: "medium",
-    published: "5 hrs ago", views: "61K", isTopStory: false, isPinned: false,
-  },
-  {
-    id: 8, title: "Breaking: Supreme Court Delivers Landmark Verdict Today", subtitle: "Historic Court Decision",
-    category: "Breaking News", articleCategory: "Politics",
-    authorFirst: "Suresh", authorLast: "Iyer",
-    status: "Published", statusType: "published", priority: "High", priorityType: "high",
-    published: "5 min ago", views: "198K", tag: "Breaking", tagType: "breaking",
-    leftBorder: "breaking-left", isTopStory: false, isPinned: false,
-    channels: ["web", "mobile"],
-    expiryTime: new Date(Date.now() + 6 * 60 * 60 * 1000).toISOString(),
-  },
-  {
-    id: 9, title: "Union Budget 2025 Parliament Session – Live Coverage", subtitle: "Budget Parliament Live",
-    category: "Live Updates", articleCategory: "Politics",
-    authorFirst: "Nisha", authorLast: "Reddy",
-    status: "Published", statusType: "published", priority: "High", priorityType: "high",
-    published: "Live", views: "189K", tag: "Live", tagType: "live",
-    leftBorder: "live-left", isTopStory: false, isPinned: false,
-    liveStartedAt: new Date(Date.now() - 3 * 60 * 60 * 1000).toISOString(),
-    liveUpdates: [
-      { id: 1, time: "11:00 AM", text: "Session begins. Finance Minister takes the floor.", timestamp: new Date(Date.now() - 3 * 60 * 60 * 1000).toISOString() },
-      { id: 2, time: "12:30 PM", text: "Major infrastructure allocation announced.", timestamp: new Date(Date.now() - 90 * 60 * 1000).toISOString() },
-    ],
-  },
-  {
-    id: 10, title: "Election Night Results – State Assembly 2025", subtitle: "State Assembly Results",
-    category: "Live Updates", articleCategory: "Politics",
-    authorFirst: "Aditya", authorLast: "Ghosh",
-    status: "Ended", statusType: "ended", priority: "High", priorityType: "high",
-    published: "Feb 14, 2025", views: "1240K", tag: "Live", tagType: "live",
-    leftBorder: "live-left", isTopStory: false, isPinned: false,
-    liveStartedAt: new Date("2025-02-14T08:00:00").toISOString(),
-    liveUpdates: [],
-  },
-];
-
-// ─── Category seed uses string IDs (UUIDs in production; placeholder strings here) ─
-const INITIAL_CATEGORIES: Category[] = [
-  { id: "cat-1", name: "Politics",      description: "National and international political news",  articles: "1,245", views: "2.5M", featured: true,  enabled: true, color: "#dc2626", parentId: null },
-  { id: "cat-2", name: "Business",      description: "Markets, economy, and corporate news",        articles: "987",   views: "1.9M", featured: true,  enabled: true, color: "#2563eb", parentId: null },
-  { id: "cat-3", name: "Sports",        description: "Cricket, football, and all sports coverage",  articles: "1,567", views: "3.2M", featured: true,  enabled: true, color: "#16a34a", parentId: null },
-  { id: "cat-4", name: "Entertainment", description: "Bollywood, Hollywood, and celebrity news",    articles: "2,134", views: "4.5M", featured: false, enabled: true, color: "#9333ea", parentId: null },
-  { id: "cat-5", name: "Technology",    description: "Tech news, gadgets, and innovations",         articles: "1,024", views: "2.1M", featured: true,  enabled: true, color: "#0ea5e9", parentId: null },
-];
-
-// ─── LocalStorage persistence for categories ────────────────────────────────────
-
-const STORAGE_KEY    = "localNewzCategories";
-const SCHEMA_VERSION = "v3";   // bumped from v2 → forces reset after id type change
-
-function loadCategories(): Category[] {
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    if (!raw) return INITIAL_CATEGORIES;
-    const parsed = JSON.parse(raw);
-    if (parsed.__version !== SCHEMA_VERSION) return INITIAL_CATEGORIES;
-    return parsed.data as Category[];
-  } catch {
-    return INITIAL_CATEGORIES;
-  }
-}
-
-function saveCategories(cats: Category[]): void {
-  try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify({ __version: SCHEMA_VERSION, data: cats }));
-  } catch { /* quota exceeded or private-browsing */ }
-}
-
-// ─── Counters ──────────────────────────────────────────────────────────────────
-
-const PRIORITY_ORDER: Article["priority"][] = ["High", "Medium", "Normal"];
-
-let nextArticleId = INITIAL_ARTICLES.length + 1;
-let nextUpdateId  = 1000;
-
-function genCategoryId(): string {
-  return `cat-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
+  return {
+    id:              idx + 1,          // local numeric ID for legacy consumers
+    _dbId:           n.id,             // real UUID — used for all API calls
+    title:           n.headline,
+    subtitle:        n.shortTitle || n.headline.slice(0, 50),
+    category:        isBreaking ? "Breaking News" : isLive ? "Live Updates" : "Standard Article",
+    articleCategory: n.category?.name || "",
+    authorFirst:     n.author?.name || "Admin",
+    authorLast:      "",
+    status:          n.status === "PUBLISHED" ? "Published"
+                     : n.status === "DRAFT"     ? "Draft"
+                     : n.status === "SCHEDULED" ? "Scheduled"
+                     : n.status === "EXPIRED"   ? "Expired"
+                     : n.status === "DELETED"   ? "Deleted"
+                     : "Draft",
+    statusType:      n.status === "PUBLISHED"
+                       ? (isLive && n.statusType !== "ended" ? "live-published" : "published")
+                       : n.status === "DRAFT"      ? "draft"
+                       : n.status === "SCHEDULED"  ? "scheduled"
+                       : n.status === "EXPIRED"    ? "expired"
+                       : n.status === "DELETED"    ? "deleted"
+                       : "draft",
+    priority:        isBreaking ? "High" : "Normal",
+    priorityType:    isBreaking ? "high" : "normal",
+    published:       n.publishedAt
+                       ? isLive && n.statusType !== "ended"
+                         ? "Live"
+                         : new Date(n.publishedAt).toLocaleDateString("en-IN")
+                       : "-",
+    views:           String(n.views ?? 0),
+    tag:             isBreaking ? "Breaking" : isLive && n.statusType !== "ended" ? "Live" : undefined,
+    tagType:         isBreaking ? "breaking" : isLive ? "live" : undefined,
+    leftBorder:      isBreaking ? "breaking-left" : isLive ? "live-left" : undefined,
+    isPinned:        false,
+    isTopStory:      false,
+    liveUpdates:     (n.liveUpdates ?? []).map((u: any, i: number) => ({
+      id:        u.id ?? (i + 1),
+      time:      u.time || "",
+      text:      u.text || "",
+      timestamp: u.timestamp,
+    })),
+    liveStartedAt:   isLive ? n.publishedAt : undefined,
+    channels:        isBreaking ? ["web", "mobile"] : undefined,
+    expiryTime:      n.expiryTime || undefined,
+  } as Article & { _dbId: string };
 }
 
 // ─── Provider ──────────────────────────────────────────────────────────────────
-
 export const NewsProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [articles,   setArticlesState]   = useState<Article[]>(INITIAL_ARTICLES);
-  const [categories, setCategoriesState] = useState<Category[]>(loadCategories);
+  const [articles,   setArticlesState]   = useState<Article[]>([]);
+  const [categories, setCategoriesState] = useState<Category[]>([]);
 
-  useEffect(() => { saveCategories(categories); }, [categories]);
+  // ── Keep a UUID→localId map so mutations can find the real DB id ──────────
+  const dbIdMap = React.useRef<Map<number, string>>(new Map());
 
-  // ── Article mutations ──────────────────────────────────────────────────────
+  const getDbId = (localId: number): string | undefined => dbIdMap.current.get(localId);
+
+  // ── Fetch all news from real API ──────────────────────────────────────────
+  const loadArticles = useCallback(async () => {
+    try {
+      const data = await fetchAllNews({ limit: 100 });
+      if (!data?.news) return;
+      const mapped = data.news.map(mapApiToArticle);
+      // Rebuild the UUID map
+      dbIdMap.current.clear();
+      data.news.forEach((n: any, i: number) => dbIdMap.current.set(i + 1, n.id));
+      setArticlesState(mapped);
+    } catch (err) {
+      console.error("NewsProvider: failed to load articles", err);
+    }
+  }, []);
+
+  // ── Fetch categories ──────────────────────────────────────────────────────
+  const loadCategories = useCallback(async () => {
+    try {
+const data = await getCategories();     
+setCategoriesState(data.categories || data || []);
+    } catch {
+      // categories API may not exist yet — silently ignore
+    }
+  }, []);
+
+  useEffect(() => {
+    loadArticles();
+    loadCategories();
+  }, [loadArticles, loadCategories]);
+
+  // ── Article mutations — all hit the real API then reload ──────────────────
 
   const setArticles = (a: Article[]) => setArticlesState(a);
 
-  const addArticle = (article: Omit<Article, "id">) =>
-    setArticlesState(prev => [{ ...article, id: nextArticleId++ }, ...prev]);
-
-  const updateArticle = (id: number, patch: Partial<Article>) =>
-    setArticlesState(prev => prev.map(a => (a.id === id ? { ...a, ...patch } : a)));
-
-  const deleteArticle = (id: number) =>
-    setArticlesState(prev => prev.filter(a => a.id !== id));
-
-  /** Convert any article to Breaking News mode */
-  const convertToBreaking = (id: number) =>
-    setArticlesState(prev => prev.map(a => {
-      if (a.id !== id) return a;
-      return {
-        ...a,
-        category:     "Breaking News",
-        tag:          "Breaking",
-        tagType:      "breaking",
-        leftBorder:   "breaking-left",
-        priority:     "High" as const,
-        priorityType: "high",
-        channels:     a.channels?.length ? a.channels : ["web", "mobile"],
-        expiryTime:   new Date(Date.now() + 6 * 60 * 60 * 1000).toISOString(),
-      };
-    }));
-
-  /** Convert any article to Live Updates mode */
-  const convertToLive = (id: number) =>
-    setArticlesState(prev => prev.map(a => {
-      if (a.id !== id) return a;
-      return {
-        ...a,
-        category:      "Live Updates",
-        tag:           "Live",
-        tagType:       "live",
-        leftBorder:    "live-left",
-        status:        "Published",
-        statusType:    "published",
-        published:     "Live",
-        liveStartedAt: new Date().toISOString(),
-        liveUpdates:   a.liveUpdates ?? [],
-        // Clear breaking-specific fields
-        channels:   undefined,
-        expiryTime: undefined,
-      };
-    }));
-
-  /** End a live story */
-  const endLive = (id: number) =>
-    setArticlesState(prev => prev.map(a => {
-      if (a.id !== id) return a;
-      return {
-        ...a,
-        status:     "Ended",
-        statusType: "ended",
-        published:  new Date().toLocaleDateString("en-IN", { dateStyle: "medium" }),
-      };
-    }));
-
-  /** Promote multiple articles to breaking at once */
-  const promoteToBreaking = (ids: number[]) =>
-    setArticlesState(prev => prev.map(a => {
-      if (!ids.includes(a.id)) return a;
-      return {
-        ...a,
-        category:     "Breaking News",
-        tag:          "Breaking",
-        tagType:      "breaking",
-        leftBorder:   "breaking-left",
-        priority:     "High" as const,
-        priorityType: "high",
-        channels:     a.channels?.length ? a.channels : ["web", "mobile"],
-        expiryTime:   new Date(Date.now() + 6 * 60 * 60 * 1000).toISOString(),
-      };
-    }));
-
-  /** Add a live update entry to a live article */
-  const addLiveUpdate = (articleId: number, text: string) => {
-    if (!text.trim()) return;
-    const now = new Date();
-    const update: LiveUpdate = {
-      id:        nextUpdateId++,
-      time:      now.toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit" }),
-      text:      text.trim(),
-      timestamp: now.toISOString(),
-    };
-    setArticlesState(prev => prev.map(a =>
-      a.id === articleId
-        ? { ...a, liveUpdates: [update, ...(a.liveUpdates ?? [])] }
-        : a
-    ));
+  const addArticle = (_article: Omit<Article, "id">) => {
+    // Creating articles goes through CreateNewArticle page directly.
+    // This is a no-op shim — new articles appear after next loadArticles().
+    loadArticles();
   };
 
-  /** Toggle paused status for a breaking article */
-  const togglePause = (id: number) =>
-    setArticlesState(prev => prev.map(a => {
-      if (a.id !== id) return a;
-      const isPaused = a.statusType === "paused";
-      return {
-        ...a,
-        status:     "Published",
-        statusType: isPaused ? "published" : "paused",
-        published:  isPaused ? "Live" : "Paused",
-      };
-    }));
+  const updateArticle = async (id: number, patch: Partial<Article>) => {
+    const dbId = getDbId(id);
+    if (!dbId) return;
+    // Optimistic local update
+    setArticlesState(prev => prev.map(a => a.id === id ? { ...a, ...patch } : a));
+    try {
+      // Map local patch fields to API payload fields
+      const payload: Record<string, unknown> = {};
+      if (patch.status)     payload.status     = patch.status.toUpperCase();
+      if (patch.statusType) payload.statusType = patch.statusType;
+      if (patch.category === "Breaking News") payload.articleType = "BREAKING";
+      if (patch.category === "Live Updates")  payload.articleType = "LIVE";
+      if (patch.category === "Standard Article") payload.articleType = "STANDARD";
+      await apiUpdateNews(dbId, payload as any);
+      await loadArticles();
+    } catch (err) {
+      console.error("updateArticle failed:", err);
+      await loadArticles(); // reload to restore correct state
+    }
+  };
 
-  /** Increase article priority one step */
+  const deleteArticle = async (id: number) => {
+    const dbId = getDbId(id);
+    if (!dbId) return;
+    setArticlesState(prev => prev.filter(a => a.id !== id));
+    try {
+      await apiDeleteNews(dbId);
+    } catch (err) {
+      console.error("deleteArticle failed:", err);
+      await loadArticles();
+    }
+  };
+
+  const convertToBreaking = async (id: number) => {
+    const dbId = getDbId(id);
+    if (!dbId) return;
+    setArticlesState(prev => prev.map(a => a.id !== id ? a : {
+      ...a, category: "Breaking News", tag: "Breaking", tagType: "breaking",
+      leftBorder: "breaking-left", priority: "High" as const, priorityType: "high",
+    }));
+    try {
+      await apiUpdateNews(dbId, { articleType: "BREAKING", status: "PUBLISHED" } as any);
+      await loadArticles();
+    } catch (err) { console.error(err); await loadArticles(); }
+  };
+
+  const convertToLive = async (id: number) => {
+    const dbId = getDbId(id);
+    if (!dbId) return;
+    setArticlesState(prev => prev.map(a => a.id !== id ? a : {
+      ...a, category: "Live Updates", tag: "Live", tagType: "live",
+      leftBorder: "live-left", status: "Published", statusType: "published",
+      published: "Live", liveStartedAt: new Date().toISOString(),
+    }));
+    try {
+      await apiUpdateNews(dbId, { articleType: "LIVE", status: "PUBLISHED" } as any);
+      await loadArticles();
+    } catch (err) { console.error(err); await loadArticles(); }
+  };
+
+  const endLive = async (id: number) => {
+    const dbId = getDbId(id);
+    if (!dbId) return;
+    setArticlesState(prev => prev.map(a => a.id !== id ? a : {
+      ...a, status: "Ended", statusType: "ended",
+      published: new Date().toLocaleDateString("en-IN", { dateStyle: "medium" }),
+    }));
+    try {
+      await apiUpdateNews(dbId, { status: "PUBLISHED", statusType: "ended" } as any);
+      await loadArticles();
+    } catch (err) { console.error(err); await loadArticles(); }
+  };
+
+  const promoteToBreaking = async (ids: number[]) => {
+    for (const id of ids) await convertToBreaking(id);
+  };
+
+  const addLiveUpdate = async (articleId: number, text: string) => {
+    if (!text.trim()) return;
+    const dbId = getDbId(articleId);
+    if (!dbId) return;
+    try {
+      await apiAppendLiveUpdate(dbId, { text: text.trim() });
+      await loadArticles();
+    } catch (err) { console.error("addLiveUpdate failed:", err); }
+  };
+
+  const togglePause = async (id: number) => {
+    const dbId = getDbId(id);
+    if (!dbId) return;
+    const article = articles.find(a => a.id === id);
+    const isPaused = article?.statusType === "paused";
+    setArticlesState(prev => prev.map(a => a.id !== id ? a : {
+      ...a, statusType: isPaused ? "published" : "paused",
+    }));
+    try {
+      await apiUpdateNews(dbId, { statusType: isPaused ? "published" : "paused" } as any);
+    } catch (err) { console.error(err); await loadArticles(); }
+  };
+
+  // Priority is a local-only UI concept not stored in DB as High/Medium/Normal text
   const increasePriority = (id: number) =>
     setArticlesState(prev => prev.map(a => {
       if (a.id !== id) return a;
-      const idx = PRIORITY_ORDER.indexOf(a.priority);
+      const order: Article["priority"][] = ["High", "Medium", "Normal"];
+      const idx = order.indexOf(a.priority);
       if (idx <= 0) return a;
-      const next = PRIORITY_ORDER[idx - 1];
+      const next = order[idx - 1];
       return { ...a, priority: next, priorityType: next.toLowerCase() };
     }));
 
-  /** Decrease article priority one step */
   const decreasePriority = (id: number) =>
     setArticlesState(prev => prev.map(a => {
       if (a.id !== id) return a;
-      const idx = PRIORITY_ORDER.indexOf(a.priority);
-      if (idx >= PRIORITY_ORDER.length - 1) return a;
-      const next = PRIORITY_ORDER[idx + 1];
+      const order: Article["priority"][] = ["High", "Medium", "Normal"];
+      const idx = order.indexOf(a.priority);
+      if (idx >= order.length - 1) return a;
+      const next = order[idx + 1];
       return { ...a, priority: next, priorityType: next.toLowerCase() };
     }));
 
   // ── Category mutations ─────────────────────────────────────────────────────
 
-  const addCategory = (category: Omit<Category, "id">) =>
-    setCategoriesState(prev => [...prev, { ...category, id: genCategoryId() }]);
+  const addCategory = async (category: Omit<Category, "id">) => {
+    try {
+      await apiCreateCategory(category);
+      await loadCategories();
+    } catch {
+      // fallback: add locally with temp id
+      setCategoriesState(prev => [...prev, { ...category, id: `temp-${Date.now()}` }]);
+    }
+  };
 
-  const updateCategory = (id: string, patch: Partial<Category>) =>
-    setCategoriesState(prev => prev.map(c => (c.id === id ? { ...c, ...patch } : c)));
+  const updateCategory = async (id: string, patch: Partial<Category>) => {
+    setCategoriesState(prev => prev.map(c => c.id === id ? { ...c, ...patch } : c));
+    try {
+      await apiUpdateCategory(id, patch);
+    } catch (err) { console.error(err); await loadCategories(); }
+  };
 
-  const deleteCategory = (id: string) =>
+  const deleteCategory = async (id: string) => {
     setCategoriesState(prev => prev.filter(c => c.id !== id && c.parentId !== id));
+    try {
+      await apiDeleteCategory(id);
+    } catch (err) { console.error(err); await loadCategories(); }
+  };
 
   // ── Store ──────────────────────────────────────────────────────────────────
 
@@ -300,5 +287,12 @@ export const NewsProvider: React.FC<{ children: React.ReactNode }> = ({ children
     categories, addCategory, updateCategory, deleteCategory,
   };
 
-  return <NewsContext.Provider value={store}>{children}</NewsContext.Provider>;
+  // Wrap with EventBusProvider so all pages can use useNewsEvent() too
+  return (
+    <EventBusProvider>
+      <NewsContext.Provider value={store}>
+        {children}
+      </NewsContext.Provider>
+    </EventBusProvider>
+  );
 };

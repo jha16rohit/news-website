@@ -153,9 +153,6 @@ export const createNews = async (req: AuthRequest, res: Response) => {
     const tagConnections = rawTags.length ? await upsertTags(rawTags) : [];
 
     // ── Image URL ─────────────────────────────────────────────────────────────
-    // uploadToSupabase middleware sets req.uploadedImageUrl with the Supabase
-    // public URL. Fall back to a plain https URL from the body if provided.
-    // Never store blob: URLs.
     let imageUrl: string | null = null;
     if ((req as any).uploadedImageUrl) {
       imageUrl = (req as any).uploadedImageUrl;
@@ -530,31 +527,97 @@ export const togglePauseBreaking = async (req: AuthRequest, res: Response) => {
 };
 
 // ─── LIVE UPDATE ───────────────────────────────────────────────────────────────
+// Accepts a rich update object from the "Add Live Update" panel.
+// Shape stored in DB (liveUpdates Json[]):
+//   { id, time, timestamp, text?, title?, imageUrl?, imageCaption?, imageCredit?,
+//     tweetUrl?, poll?, sourceUrl?, sourceLabel?, tags?, isHighlight?, isBreaking? }
 export const addLiveUpdate = async (req: AuthRequest, res: Response) => {
   try {
-    const id       = String(req.params.id);
-    const { text } = req.body;
+    const id = String(req.params.id);
 
-    if (!text?.trim()) return res.status(400).json({ message: "Update text is required" });
-
+    // ── Validate article ─────────────────────────────────────────────────────
     const news = await prisma.news.findUnique({ where: { id } });
     if (!news)                       return res.status(404).json({ message: "News not found" });
     if (news.articleType !== "LIVE") return res.status(400).json({ message: "Not a live article" });
 
-    const existing  = Array.isArray((news as any).liveUpdates) ? ((news as any).liveUpdates as object[]) : [];
-    const newUpdate = {
+    // ── Extract all rich fields from request body ────────────────────────────
+    const {
+      text,
+      title,
+      imageUrl,
+      imageCaption,
+      imageCredit,
+      tweetUrl,
+      poll,
+      sourceUrl,
+      sourceLabel,
+      tags,
+      isHighlight,
+      isBreaking,
+    } = req.body;
+
+    // At least one meaningful field must be present
+    const hasContent =
+      text?.trim() ||
+      title?.trim() ||
+      imageUrl?.trim() ||
+      tweetUrl?.trim() ||
+      sourceUrl?.trim() ||
+      (poll && poll.question?.trim()) ||
+      (Array.isArray(tags) && tags.length > 0);
+
+    if (!hasContent) {
+      return res.status(400).json({ message: "Update must have at least one field (text, title, image, tweet, poll, source, or tags)." });
+    }
+
+    // ── Build the new update object ──────────────────────────────────────────
+    const now = new Date();
+    const newUpdate: Record<string, unknown> = {
       id:        Date.now(),
-      time:      new Date().toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit" }),
-      text:      text.trim(),
-      timestamp: new Date().toISOString(),
+      time:      now.toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit" }),
+      timestamp: now.toISOString(),
+      // Optional rich fields — only include if truthy
+      ...(text?.trim()         && { text:         text.trim() }),
+      ...(title?.trim()        && { title:        title.trim() }),
+      ...(imageUrl?.trim() && !imageUrl.startsWith("blob:")
+                               && { imageUrl:     imageUrl.trim() }),
+      ...(imageCaption?.trim() && { imageCaption: imageCaption.trim() }),
+      ...(imageCredit?.trim()  && { imageCredit:  imageCredit.trim() }),
+      ...(tweetUrl?.trim()     && { tweetUrl:     tweetUrl.trim() }),
+      ...(sourceUrl?.trim()    && { sourceUrl:    sourceUrl.trim() }),
+      ...(sourceLabel?.trim()  && { sourceLabel:  sourceLabel.trim() }),
+      ...(Array.isArray(tags) && tags.length > 0 && { tags }),
+      ...(isHighlight !== undefined && { isHighlight: Boolean(isHighlight) }),
+      ...(isBreaking  !== undefined && { isBreaking:  Boolean(isBreaking)  }),
+      // Validate poll structure before storing
+      ...(poll &&
+          typeof poll.question === "string" &&
+          poll.question.trim() &&
+          Array.isArray(poll.options) &&
+          poll.options.length >= 2 && {
+            poll: {
+              question: poll.question.trim(),
+              options: poll.options
+                .filter((o: any) => o && (o.label || o).toString().trim())
+                .map((o: any) => ({
+                  label: typeof o === "string" ? o : o.label,
+                  votes: typeof o === "object" ? (o.votes ?? 0) : 0,
+                })),
+            },
+          }),
     };
+
+    // ── Prepend to existing updates (newest first) ───────────────────────────
+    const existing = Array.isArray((news as any).liveUpdates)
+      ? ((news as any).liveUpdates as object[])
+      : [];
 
     const updated = await prisma.news.update({
       where: { id },
-      data:  { liveUpdates: [...existing, newUpdate] } as any,
+      data:  { liveUpdates: [newUpdate, ...existing] } as any,
     });
 
-    res.json({ success: true, updated });
+    res.json({ success: true, update: newUpdate, news: updated });
   } catch (error) {
     console.error("addLiveUpdate error:", error);
     res.status(500).json({ message: "Error adding live update" });
@@ -664,8 +727,6 @@ export const deleteMediaImage = async (req: AuthRequest, res: Response) => {
     });
 
     // ── Delete from Supabase Storage ─────────────────────────────────────────
-    // Public URL pattern:
-    // https://<project>.supabase.co/storage/v1/object/public/news-images/filename.jpg
     if (imageUrl) {
       try {
         const filename = imageUrl.split(`/${BUCKET}/`).pop();
@@ -674,7 +735,6 @@ export const deleteMediaImage = async (req: AuthRequest, res: Response) => {
           if (error) console.warn("Supabase storage delete warning:", error.message);
         }
       } catch (storageErr) {
-        // Non-fatal — DB is already cleaned up
         console.warn("Could not delete file from Supabase Storage:", storageErr);
       }
     }

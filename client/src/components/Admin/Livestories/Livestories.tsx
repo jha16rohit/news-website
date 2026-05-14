@@ -1,8 +1,14 @@
 import React, { useState, useRef, useEffect, useCallback } from "react";
 import "./Livestories.css";
 import { useNavigate } from "react-router-dom";
-import { fetchAllNews, deleteNews as apiDeleteNews, updateNews as apiUpdateNews } from "../../../api/news";
-import { Link, Search, X } from "lucide-react";
+import {
+  fetchAllNews,
+  deleteNews      as apiDeleteNews,
+  updateNews      as apiUpdateNews,
+  appendLiveUpdate as apiAppendLiveUpdate,
+} from "../../../api/news";
+import { useNewsEvent, useNewsSubscription } from "../../../context/newscontext";
+
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 interface LiveUpdate {
@@ -60,10 +66,6 @@ async function fetchTopicProfiles(): Promise<TopicProfile[]> {
   }
 }
 
-function saveSelection(): Range | null {
-  const sel = window.getSelection();
-  return sel && sel.rangeCount > 0 ? sel.getRangeAt(0).cloneRange() : null;
-}
 function restoreSelection(range: Range | null) {
   if (!range) return;
   const sel = window.getSelection();
@@ -99,7 +101,7 @@ function mapStory(n: any): LiveStory {
     liveStartedAt:   n.publishedAt || null,
     endedAt:         n.statusType === "ended" ? (n.updatedAt || null) : null,
     liveUpdates:     (n.liveUpdates ?? []).map((u: any, i: number) => ({
-      id:           i + 1,
+      id:           u.id ?? (i + 1),
       time:         u.time || new Date(u.timestamp || Date.now()).toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit" }),
       text:         u.text,
       timestamp:    u.timestamp || new Date().toISOString(),
@@ -469,7 +471,7 @@ const AddUpdatePanel: React.FC<AddUpdatePanelProps> = ({ storyId, editingUpdate,
 
   const [title,          setTitle]          = useState(editingUpdate?.title ?? "");
   const [text,           setText]           = useState(editingUpdate?.text ?? "");
-  const [imageFile,      setImageFile]      = useState<File | null>(null);
+  const [_imageFile,     setImageFile]      = useState<File | null>(null);
   const [imagePreview,   setImagePreview]   = useState<string>(editingUpdate?.imageUrl ?? "");
   const [imageCaption,   setImageCaption]   = useState(editingUpdate?.imageCaption ?? "");
   const [imageCredit,    setImageCredit]    = useState(editingUpdate?.imageCredit ?? "");
@@ -491,10 +493,10 @@ const AddUpdatePanel: React.FC<AddUpdatePanelProps> = ({ storyId, editingUpdate,
 
   // Populate contenteditable with existing text when editing
   useEffect(() => {
-    if (isEditing && editorRef.current && editingUpdate?.text) {
-      editorRef.current.innerHTML = editingUpdate.text;
+    if (isEditing && editorRef.current) {
+      editorRef.current.innerHTML = editingUpdate?.text ?? "";
     }
-  }, []);
+  }, [editingUpdate?.text, isEditing]);
 
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const f = e.target.files?.[0];
@@ -1050,6 +1052,7 @@ const StoryDetailPanel: React.FC<StoryDetailPanelProps> = ({
       {/* Edit Update panel */}
       {editingUpdate && (
         <AddUpdatePanel
+          key={editingUpdate.id}
           storyId={story.id}
           editingUpdate={editingUpdate}
           onPost={(sid, upd) => { onEditUpdate(sid, upd); setEditingUpdate(null); }}
@@ -1078,6 +1081,10 @@ const StoryDetailPanel: React.FC<StoryDetailPanelProps> = ({
 // ─── Component ────────────────────────────────────────────────────────────────
 const LiveStoriesPage: React.FC = () => {
   const navigate = useNavigate();
+  const { dispatch } = useNewsEvent();
+
+  // Re-fetch whenever another page changes a news item
+  useNewsSubscription(() => { loadData(); });
 
   const [stories,          setStories]          = useState<LiveStory[]>([]);
   const [loading,          setLoading]           = useState(true);
@@ -1124,9 +1131,13 @@ const LiveStoriesPage: React.FC = () => {
   const totalUpdates  = stories.reduce((s, a) => s + (a.liveUpdates?.length ?? 0), 0);
 
   // ── Add update (from main page or from detail panel) ──
+  // Uses the dedicated POST /:id/live-update endpoint which accepts the full
+  // rich payload (title, imageUrl, poll, tweetUrl, sourceUrl, tags, etc.) and
+  // persists it to the DB's liveUpdates JSON array.
   const handleAddUpdate = async (storyId: string, partialUpdate: Partial<LiveUpdate>) => {
     const now = new Date();
-    const newUpdate: LiveUpdate = {
+    // Optimistic local update so the UI feels instant
+    const optimistic: LiveUpdate = {
       id:        nextUpdateId++,
       time:      now.toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit" }),
       text:      partialUpdate.text || "",
@@ -1135,62 +1146,95 @@ const LiveStoriesPage: React.FC = () => {
     };
     setStories(prev =>
       prev.map(s =>
-        s.id === storyId ? { ...s, liveUpdates: [newUpdate, ...s.liveUpdates] } : s
+        s.id === storyId ? { ...s, liveUpdates: [optimistic, ...s.liveUpdates] } : s
       )
     );
     setAddUpdateId(null);
     try {
-      const story = stories.find(s => s.id === storyId);
-      if (story) {
-        await apiUpdateNews(storyId, { liveUpdates: [newUpdate, ...story.liveUpdates] } as any);
-      }
+      // Build the rich payload — strip undefined / empty fields
+      const payload: Record<string, unknown> = {};
+      if (partialUpdate.text?.trim())        payload.text         = partialUpdate.text;
+      if (partialUpdate.title?.trim())       payload.title        = partialUpdate.title;
+      if (partialUpdate.imageUrl?.trim() && !partialUpdate.imageUrl.startsWith("blob:"))
+                                             payload.imageUrl     = partialUpdate.imageUrl;
+      if (partialUpdate.imageCaption?.trim()) payload.imageCaption = partialUpdate.imageCaption;
+      if (partialUpdate.imageCredit?.trim())  payload.imageCredit  = partialUpdate.imageCredit;
+      if (partialUpdate.tweetUrl?.trim())    payload.tweetUrl     = partialUpdate.tweetUrl;
+      if (partialUpdate.sourceUrl?.trim())   payload.sourceUrl    = partialUpdate.sourceUrl;
+      if (partialUpdate.sourceLabel?.trim()) payload.sourceLabel  = partialUpdate.sourceLabel;
+      if (partialUpdate.tags?.length)        payload.tags         = partialUpdate.tags;
+      if (partialUpdate.poll)                payload.poll         = partialUpdate.poll;
+      if (partialUpdate.isHighlight !== undefined) payload.isHighlight = partialUpdate.isHighlight;
+      if (partialUpdate.isBreaking  !== undefined) payload.isBreaking  = partialUpdate.isBreaking;
+
+      await apiAppendLiveUpdate(storyId, payload as any);
+      dispatch({ type: "CONTENT_UPDATED", id: storyId, changes: { liveUpdates: true } });
+      // Reload from server so our local IDs/timestamps match the DB record
+      await loadData();
     } catch (err) {
       console.error("Failed to add update:", err);
+      // Rollback the optimistic update on failure
+      setStories(prev =>
+        prev.map(s =>
+          s.id === storyId
+            ? { ...s, liveUpdates: s.liveUpdates.filter(u => u.id !== optimistic.id) }
+            : s
+        )
+      );
     }
   };
 
   // ── Edit a specific update ──
+  // Fix: read stories BEFORE setStories to avoid stale closure sending old data to DB
   const handleEditUpdate = async (storyId: string, updatedPartial: Partial<LiveUpdate>) => {
-    setStories(prev =>
-      prev.map(s => {
-        if (s.id !== storyId) return s;
-        const updatedList = s.liveUpdates.map(u =>
-          u.id === updatedPartial.id
-            ? { ...u, ...updatedPartial }
-            : u
-        );
-        return { ...s, liveUpdates: updatedList };
-      })
+    const story = stories.find(s => s.id === storyId);
+    if (!story) return;
+
+    // Build the new list once — used for both optimistic UI and the DB call
+    const updatedList = story.liveUpdates.map(u =>
+      u.id === updatedPartial.id ? { ...u, ...updatedPartial } : u
     );
+
+    setStories(prev =>
+      prev.map(s => s.id === storyId ? { ...s, liveUpdates: updatedList } : s)
+    );
+
     try {
-      const story = stories.find(s => s.id === storyId);
-      if (story) {
-        const updatedList = story.liveUpdates.map(u =>
-          u.id === updatedPartial.id ? { ...u, ...updatedPartial } : u
-        );
-        await apiUpdateNews(storyId, { liveUpdates: updatedList } as any);
-      }
+      await apiUpdateNews(storyId, { liveUpdates: updatedList } as any);
+      dispatch({ type: "CONTENT_UPDATED", id: storyId, changes: { liveUpdates: true } });
+      await loadData();
     } catch (err) {
       console.error("Failed to edit update:", err);
+      // Rollback to original on failure
+      setStories(prev =>
+        prev.map(s => s.id === storyId ? { ...s, liveUpdates: story.liveUpdates } : s)
+      );
     }
   };
 
   // ── Delete a specific update ──
+  // Fix: read stories BEFORE setStories to avoid stale closure sending old data to DB
   const handleDeleteUpdate = async (storyId: string, updateId: number) => {
+    const story = stories.find(s => s.id === storyId);
+    if (!story) return;
+
+    // Build the filtered list once — used for both optimistic UI and the DB call
+    const updatedList = story.liveUpdates.filter(u => u.id !== updateId);
+
     setStories(prev =>
-      prev.map(s => {
-        if (s.id !== storyId) return s;
-        return { ...s, liveUpdates: s.liveUpdates.filter(u => u.id !== updateId) };
-      })
+      prev.map(s => s.id === storyId ? { ...s, liveUpdates: updatedList } : s)
     );
+
     try {
-      const story = stories.find(s => s.id === storyId);
-      if (story) {
-        const updatedList = story.liveUpdates.filter(u => u.id !== updateId);
-        await apiUpdateNews(storyId, { liveUpdates: updatedList } as any);
-      }
+      await apiUpdateNews(storyId, { liveUpdates: updatedList } as any);
+      dispatch({ type: "CONTENT_UPDATED", id: storyId, changes: { liveUpdates: true } });
+      await loadData();
     } catch (err) {
       console.error("Failed to delete update:", err);
+      // Rollback to original on failure
+      setStories(prev =>
+        prev.map(s => s.id === storyId ? { ...s, liveUpdates: story.liveUpdates } : s)
+      );
     }
   };
 
@@ -1206,6 +1250,7 @@ const LiveStoriesPage: React.FC = () => {
     setEndingId(storyId);
     try {
       await apiUpdateNews(storyId, { status: "PUBLISHED", statusType: "ended" } as any);
+      dispatch({ type: "STATUS_CHANGED", id: storyId, changes: { statusType: "ended" } });
     } catch (err) {
       console.error("Failed to end live:", err);
       setStories(prev =>
@@ -1228,6 +1273,7 @@ const LiveStoriesPage: React.FC = () => {
     );
     try {
       await apiUpdateNews(storyId, { status: "PUBLISHED", statusType: "published", articleType: "LIVE" } as any);
+      dispatch({ type: "STATUS_CHANGED", id: storyId, changes: { status: "PUBLISHED", statusType: "published" } });
     } catch (err) {
       console.error("Failed to go live:", err);
     }

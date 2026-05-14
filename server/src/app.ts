@@ -6,7 +6,9 @@ import newsRoutes from "./routes/news.routes";
 import topicProfileRoutes from "./routes/topicProfile.routes";
 import categoryRoutes from "./routes/category.routes";
 import tagsRoutes from "./routes/tags.routes";
-import footerRoutes from "./routes/footer.routes"; // ← ADD THIS
+import footerRoutes from "./routes/footer.routes";
+import advertisementRoutes from "./routes/advertisement.routes"; // ← NEW
+import contactUsRoutes from "./routes/contactus.routes";         // ← NEW
 import { startScheduler } from "./scheduler";
 import path from "path";
 
@@ -30,7 +32,7 @@ app.use((req, res, next) => {
 
 // ✅ 3. MIDDLEWARE
 app.use(cookieParser());
-app.use(express.json({ limit: "10mb" })); // keeps JSON body parsing for text fields
+app.use(express.json({ limit: "10mb" }));
 
 startScheduler();
 
@@ -40,7 +42,9 @@ app.use("/api/news", newsRoutes);
 app.use("/api/topic-profiles", topicProfileRoutes);
 app.use("/api/categories", categoryRoutes);
 app.use("/api/tags", tagsRoutes);
-app.use("/api/footer-settings", footerRoutes); // ← ADD THIS
+app.use("/api/footer-settings", footerRoutes);
+app.use("/api/advertisement", advertisementRoutes); // ← NEW
+app.use("/api/contact", contactUsRoutes);        // ← NEW
 app.use("/uploads", express.static(path.join(process.cwd(), "uploads")));
 
 export default app;

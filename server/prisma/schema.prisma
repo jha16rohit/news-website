@@ -149,7 +149,124 @@ model FooterSettings {
 
   updatedAt DateTime @updatedAt
 }
+model ContactMessage {
+  id         String   @id @default(uuid())
+  name       String
+  email      String
+  phone      String?
+  subject    String?
+  message    String
+  read       Boolean  @default(false)
+  replied    Boolean  @default(false)
+  replyText  String?
+  receivedAt DateTime @default(now())
+}
+model AdInquiry {
+  id        String   @id @default(uuid())
+  name      String
+  email     String
+  phone     String?
+  company   String?
+  message   String?
+  budget    String?
 
+  targetPage  String?
+  duration    String?
+  customDays  Int?
+  adType      String?
+  imageUrl    String?
+  linkUrl     String?
+  adTitle     String?
+
+  status      AdInquiryStatus @default(pending)
+  adminNote   String?
+
+  publishedAt DateTime?
+  expiresAt   DateTime?
+  submittedAt DateTime  @default(now())
+
+  publishedAd PublishedAd?
+}
+model PublishedAd {
+  id         String   @id @default(uuid())
+  inquiryId  String   @unique
+  inquiry    AdInquiry @relation(fields: [inquiryId], references: [id], onDelete: Cascade)
+
+  imageUrl    String
+  linkUrl     String?
+  altText     String?
+  targetPage  String?
+  adTitle     String?
+  advertiser  String?
+
+  isActive    Boolean  @default(true)
+  publishedAt DateTime
+  expiresAt   DateTime
+  createdAt   DateTime @default(now())
+}
+model AdPageSettings {
+  id String @id @default("singleton")
+
+  whyEnabled      Boolean @default(true)
+  whyPoints       Json    @default("[]")
+
+  packagesEnabled Boolean @default(true)
+  packages        Json    @default("[]")
+
+  contactEnabled  Boolean @default(true)
+  contactEmail    String?
+  contactPhone    String?
+  contactNote     String?
+
+  updatedAt DateTime @updatedAt
+}
+model ContactUsSettings {
+  id String @id @default("singleton")
+
+  heroVisible        Boolean @default(true)
+  heroTitle          String?
+  heroSubtitle       String?
+
+  contactInfoVisible Boolean @default(true)
+
+  formVisible        Boolean @default(true)
+  formTitle          String?
+  formSubtitle       String?
+  formSuccessMsg     String?
+  subjectOptions     Json?
+
+  faqVisible         Boolean @default(true)
+  faqTitle           String?
+
+  contactInfo ContactInfo[]
+  faq         FAQItem[]
+
+  updatedAt DateTime @updatedAt
+}
+model ContactInfo {
+  id String @id @default(uuid())
+
+  settingsId String
+  settings ContactUsSettings @relation(fields: [settingsId], references: [id], onDelete: Cascade)
+
+  type     String
+  label    String
+  value    String
+  visible  Boolean @default(true)
+  position Int @default(0)
+}
+
+model FAQItem {
+  id String @id @default(uuid())
+
+  settingsId String
+  settings ContactUsSettings @relation(fields: [settingsId], references: [id], onDelete: Cascade)
+
+  question String
+  answer   String
+  visible  Boolean @default(true)
+  position Int @default(0)
+}
 enum ArticleType {
   STANDARD
   BREAKING
@@ -168,4 +285,11 @@ enum Priority {
   CRITICAL
   HIGH
   MEDIUM
+}
+enum AdInquiryStatus {
+  pending
+  reviewed
+ approved
+  published
+  rejected
 }

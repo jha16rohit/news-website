@@ -48,17 +48,24 @@ export default function Categories() {
   );
 
   const sorted = [...filtered].sort((a, b) => {
-    const aRoot = a.parentId ?? a.id;
-    const bRoot = b.parentId ?? b.id;
-    if (aRoot !== bRoot) return aRoot - bRoot;
-    if (!a.parentId && b.parentId) return -1;
-    if (a.parentId && !b.parentId) return 1;
-    return a.name.localeCompare(b.name);
-  });
+  const aRoot = a.parentId ?? a.id;
+  const bRoot = b.parentId ?? b.id;
 
+  // Compare UUID strings properly
+  if (aRoot !== bRoot) {
+    return aRoot.localeCompare(bRoot);
+  }
+
+  // Parent category first
+  if (!a.parentId && b.parentId) return -1;
+  if (a.parentId && !b.parentId) return 1;
+
+  // Alphabetical sorting
+  return a.name.localeCompare(b.name);
+});
   // ✅ FIXED TOGGLE
-  const toggleCategory = async (id: number) => {
-    await toggleActive(id.toString());
+const toggleCategory = async (id: string) => {
+await toggleActive(id);
     await fetchCategories();
   };
 
@@ -67,7 +74,7 @@ export default function Categories() {
     if (!categoryToDelete) return;
     const childCount = categories.filter(c => c.parentId === categoryToDelete.id).length;
 
-    await deleteCategoryApi(categoryToDelete.id.toString());
+await deleteCategoryApi(categoryToDelete.id);
 
     showToast(`"${categoryToDelete.name}" deleted${childCount ? ` along with ${childCount} sub-categor${childCount > 1 ? "ies" : "y"}` : ""}.`);
     setCategoryToDelete(null);
@@ -75,22 +82,34 @@ export default function Categories() {
   };
 
   // ✅ FIXED UPDATE
-  const handleEdit = async (updatedCat: Category) => {
-    const otherFeatured = categories.filter(c => c.featured && c.id !== updatedCat.id).length;
+ const handleEdit = async (updatedCat: Category) => {
+  const otherFeatured = categories.filter(
+    c => c.featured && c.id !== updatedCat.id
+  ).length;
 
-    if (updatedCat.featured && otherFeatured >= FEATURED_LIMIT) {
-      showToast("Limit reached: only 5 categories can be featured. Saved as unfeatured.");
-      await updateCategoryApi(updatedCat.id.toString(), { ...updatedCat, featured: false });
-    } else {
-await updateCategoryApi(updatedCat.id.toString(), {
-  ...updatedCat,
-  active: updatedCat.enabled,
-  showcase: updatedCat.inShowcase,
-});      showToast(`"${updatedCat.name}" updated.`);
-    }
+  if (updatedCat.featured && otherFeatured >= FEATURED_LIMIT) {
+    showToast(
+      "Limit reached: only 5 categories can be featured. Saved as unfeatured."
+    );
 
-    await fetchCategories();
-  };
+    await updateCategoryApi(updatedCat.id, {
+      ...updatedCat,
+      featured: false,
+    });
+
+  } else {
+
+    await updateCategoryApi(updatedCat.id, {
+      ...updatedCat,
+      active: updatedCat.enabled,
+      showcase: updatedCat.inShowcase,
+    });
+
+    showToast(`"${updatedCat.name}" updated.`);
+  }
+
+  await fetchCategories();
+};
 
   // ✅ FIXED CREATE
   const handleAdd = async (newCat: Omit<Category, "id">) => {
@@ -118,7 +137,7 @@ await updateCategoryApi(updatedCat.id.toString(), {
     await fetchCategories();
   };
 
-  const childCountOf = (id: number) => categories.filter(c => c.parentId === id).length;
+  const childCountOf = (id: string) => categories.filter(c => c.parentId === id).length;
 
   const stats = [
     { icon: <Folder size={20} />,   val: categories.filter(c => !c.parentId).length, label: "Parent Categories", bg: "bg-gray"  },

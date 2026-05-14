@@ -8,11 +8,48 @@ export type PriorityEnum    = "CRITICAL" | "HIGH" | "MEDIUM";
 export type StatusTypeEnum  = "published" | "paused";
 export type DeleteModeEnum  = "instant" | "interval";
 
+export interface PollOption {
+  label: string;
+  votes: number;
+}
+
+export interface PollData {
+  question: string;
+  options:  PollOption[];
+}
+
 export interface LiveUpdate {
-  id:         number;
-  time:       string;
-  text:       string;
-  timestamp?: string;
+  id:            number;
+  time:          string;
+  text:          string;
+  timestamp?:    string;
+  title?:        string;
+  isHighlight?:  boolean;
+  isBreaking?:   boolean;
+  imageUrl?:     string;
+  imageCaption?: string;
+  imageCredit?:  string;
+  tweetUrl?:     string;
+  poll?:         PollData;
+  sourceUrl?:    string;
+  sourceLabel?:  string;
+  tags?:         string[];
+}
+
+// Payload for the POST /:id/live-update endpoint
+export interface LiveUpdatePayload {
+  text?:         string;
+  title?:        string;
+  imageUrl?:     string;
+  imageCaption?: string;
+  imageCredit?:  string;
+  tweetUrl?:     string;
+  poll?:         PollData;
+  sourceUrl?:    string;
+  sourceLabel?:  string;
+  tags?:         string[];
+  isHighlight?:  boolean;
+  isBreaking?:   boolean;
 }
 
 export interface NewsPayload {
@@ -80,7 +117,6 @@ export const createNewsWithMedia = async (formData: FormData): Promise<any> => {
   const json = await res.json().catch(() => ({}));
 
   if (!res.ok) {
-    // Bubble up the server error message so the UI can display it
     throw new Error(json?.message || `Server error ${res.status}`);
   }
 
@@ -141,10 +177,12 @@ export const togglePauseBreaking = (id: string) =>
   apiClient(`/api/news/${id}/pause-toggle`, { method: "PATCH" });
 
 // ─── LIVE UPDATE ───────────────────────────────────────────────────────────────
-export const appendLiveUpdate = (id: string, text: string) =>
+// Appends a rich update to a live article's liveUpdates array.
+// The backend prepends it (newest first) and persists to DB.
+export const appendLiveUpdate = (id: string, payload: LiveUpdatePayload): Promise<any> =>
   apiClient(`/api/news/${id}/live-update`, {
     method: "POST",
-    body: JSON.stringify({ text }),
+    body: JSON.stringify(payload),
   });
 
 // ─── MEDIA LIBRARY ─────────────────────────────────────────────────────────────

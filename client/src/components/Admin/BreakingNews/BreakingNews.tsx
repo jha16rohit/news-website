@@ -7,6 +7,7 @@ import {
   Radio, Edit, Trash2, XCircle,
 } from "lucide-react";
 import { fetchAllNews, deleteNews as apiDeleteNews, updateNews as apiUpdateNews } from "../../../api/news";
+import { useNewsEvent, useNewsSubscription } from "../../../context/newscontext";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 interface BreakingItem {
@@ -44,6 +45,10 @@ function deriveStatus(
 // ─── Component ────────────────────────────────────────────────────────────────
 const BreakingNews: React.FC = () => {
   const navigate = useNavigate();
+  const { dispatch } = useNewsEvent();
+
+  // Re-fetch whenever another page changes a news item
+  useNewsSubscription(() => { loadData(); });
 
   const [items, setItems]           = useState<BreakingItem[]>([]);
   const [loading, setLoading]       = useState(true);
@@ -135,6 +140,7 @@ const BreakingNews: React.FC = () => {
     try {
       await apiUpdateNews(removeModal, { articleType: "STANDARD", statusType: "published" } as any);
       setItems(prev => prev.filter(i => i.id !== removeModal));
+      dispatch({ type: "TYPE_CHANGED", id: removeModal, changes: { articleType: "STANDARD" } });
     } catch (err) {
       console.error("Remove breaking failed:", err);
     } finally {
@@ -147,6 +153,7 @@ const BreakingNews: React.FC = () => {
     try {
       await apiDeleteNews(deleteModal);
       setItems(prev => prev.filter(i => i.id !== deleteModal));
+      dispatch({ type: "DELETED", id: deleteModal });
     } catch (err) {
       console.error("Delete failed:", err);
     } finally {
