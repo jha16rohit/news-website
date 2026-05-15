@@ -4,6 +4,7 @@ import prisma from "../config/db";
 import { extractImagesFromContent } from "../utils/extractImages";
 import slugify from "slugify";
 import { createClient } from "@supabase/supabase-js";
+import { Priority } from "@prisma/client"; // ← FIX: Priority enum import
 
 // ─── Supabase (for deleting images from storage) ──────────────────────────────
 const supabase = createClient(
@@ -40,10 +41,14 @@ function toArticleTypeEnum(type?: string): "STANDARD" | "BREAKING" | "LIVE" {
   return map[type ?? ""] ?? "STANDARD";
 }
 
-function normalisePriority(raw: unknown): string | null {
+// ─── FIX: Returns Priority enum or null (not string) ──────────────────────────
+function normalisePriority(raw: unknown): Priority | null {
   if (!raw) return null;
   const u = String(raw).toUpperCase();
-  return ["CRITICAL", "HIGH", "MEDIUM"].includes(u) ? u : null;
+  if (u === "CRITICAL") return Priority.CRITICAL;
+  if (u === "HIGH")     return Priority.HIGH;
+  if (u === "MEDIUM")   return Priority.MEDIUM;
+  return null;
 }
 
 async function resolveCategoryId(body: any): Promise<string> {
@@ -200,7 +205,7 @@ export const createNews = async (req: AuthRequest, res: Response) => {
         breakingPushNotif:     typeEnum === "BREAKING" ? Boolean(breakingPushNotif)     : false,
         breakingHomepageAlert: typeEnum === "BREAKING" ? Boolean(breakingHomepageAlert) : false,
 
-        priority: normalisePriority(priority),
+        priority:   normalisePriority(priority),   // ← FIX: now returns Priority enum
         statusType: statusType || (resolvedStatus === "SCHEDULED" ? "scheduled" : "published"),
         expiryTime: expiryTime ? new Date(expiryTime) : null,
 
@@ -419,7 +424,8 @@ export const updateNews = async (req: AuthRequest, res: Response) => {
           breakingPushNotif:     Boolean(breakingPushNotif),
           breakingHomepageAlert: Boolean(breakingHomepageAlert),
         }),
-        ...(priority   !== undefined && { priority:   normalisePriority(priority) }),
+        // ─── FIX: priority now uses enum ───────────────────────────────────────
+        ...(priority   !== undefined && { priority: normalisePriority(priority) }),
         ...(statusType !== undefined && { statusType }),
         ...(expiryTime !== undefined && { expiryTime: expiryTime ? new Date(expiryTime) : null }),
 
@@ -527,56 +533,33 @@ export const togglePauseBreaking = async (req: AuthRequest, res: Response) => {
 };
 
 // ─── LIVE UPDATE ───────────────────────────────────────────────────────────────
-// Accepts a rich update object from the "Add Live Update" panel.
-// Shape stored in DB (liveUpdates Json[]):
-//   { id, time, timestamp, text?, title?, imageUrl?, imageCaption?, imageCredit?,
-//     tweetUrl?, poll?, sourceUrl?, sourceLabel?, tags?, isHighlight?, isBreaking? }
 export const addLiveUpdate = async (req: AuthRequest, res: Response) => {
   try {
     const id = String(req.params.id);
 
-    // ── Validate article ─────────────────────────────────────────────────────
     const news = await prisma.news.findUnique({ where: { id } });
     if (!news)                       return res.status(404).json({ message: "News not found" });
     if (news.articleType !== "LIVE") return res.status(400).json({ message: "Not a live article" });
 
-    // ── Extract all rich fields from request body ────────────────────────────
     const {
-      text,
-      title,
-      imageUrl,
-      imageCaption,
-      imageCredit,
-      tweetUrl,
-      poll,
-      sourceUrl,
-      sourceLabel,
-      tags,
-      isHighlight,
-      isBreaking,
+      text, title, imageUrl, imageCaption, imageCredit,
+      tweetUrl, poll, sourceUrl, sourceLabel, tags, isHighlight, isBreaking,
     } = req.body;
 
-    // At least one meaningful field must be present
     const hasContent =
-      text?.trim() ||
-      title?.trim() ||
-      imageUrl?.trim() ||
-      tweetUrl?.trim() ||
-      sourceUrl?.trim() ||
-      (poll && poll.question?.trim()) ||
+      text?.trim() || title?.trim() || imageUrl?.trim() || tweetUrl?.trim() ||
+      sourceUrl?.trim() || (poll && poll.question?.trim()) ||
       (Array.isArray(tags) && tags.length > 0);
 
     if (!hasContent) {
       return res.status(400).json({ message: "Update must have at least one field (text, title, image, tweet, poll, source, or tags)." });
     }
 
-    // ── Build the new update object ──────────────────────────────────────────
     const now = new Date();
     const newUpdate: Record<string, unknown> = {
       id:        Date.now(),
       time:      now.toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit" }),
       timestamp: now.toISOString(),
-      // Optional rich fields — only include if truthy
       ...(text?.trim()         && { text:         text.trim() }),
       ...(title?.trim()        && { title:        title.trim() }),
       ...(imageUrl?.trim() && !imageUrl.startsWith("blob:")
@@ -589,7 +572,6 @@ export const addLiveUpdate = async (req: AuthRequest, res: Response) => {
       ...(Array.isArray(tags) && tags.length > 0 && { tags }),
       ...(isHighlight !== undefined && { isHighlight: Boolean(isHighlight) }),
       ...(isBreaking  !== undefined && { isBreaking:  Boolean(isBreaking)  }),
-      // Validate poll structure before storing
       ...(poll &&
           typeof poll.question === "string" &&
           poll.question.trim() &&
@@ -607,7 +589,6 @@ export const addLiveUpdate = async (req: AuthRequest, res: Response) => {
           }),
     };
 
-    // ── Prepend to existing updates (newest first) ───────────────────────────
     const existing = Array.isArray((news as any).liveUpdates)
       ? ((news as any).liveUpdates as object[])
       : [];
@@ -643,15 +624,9 @@ export const getMediaLibrary = async (req: Request, res: Response) => {
           NOT: { featuredImage: { startsWith: "blob:" } },
         },
         select: {
-          id:            true,
-          headline:      true,
-          featuredImage: true,
-          content:       true,
-          imageCaption:  true,
-          photoCredit:   true,
-          createdAt:     true,
-          status:        true,
-          views:         true,
+          id: true, headline: true, featuredImage: true,
+          content: true, imageCaption: true, photoCredit: true,
+          createdAt: true, status: true, views: true,
         },
         orderBy: { createdAt: "desc" },
         skip,
@@ -670,35 +645,13 @@ export const getMediaLibrary = async (req: Request, res: Response) => {
 
     const formatted = items.flatMap(item => {
       const contentImages = extractImagesFromContent(item.content || "");
-
       return [
         ...(item.featuredImage && !item.featuredImage.startsWith("blob:")
-          ? [{
-              newsId:    item.id,
-              url:       item.featuredImage,
-              headline:  item.headline,
-              caption:   item.imageCaption,
-              credit:    item.photoCredit,
-              createdAt: item.createdAt,
-              status:    item.status,
-              views:     item.views,
-              type:      "featured" as const,
-            }]
+          ? [{ newsId: item.id, url: item.featuredImage, headline: item.headline, caption: item.imageCaption, credit: item.photoCredit, createdAt: item.createdAt, status: item.status, views: item.views, type: "featured" as const }]
           : []),
-
         ...contentImages
           .filter(url => !url.startsWith("blob:"))
-          .map(url => ({
-            newsId:    item.id,
-            url,
-            headline:  item.headline,
-            caption:   null,
-            credit:    null,
-            createdAt: item.createdAt,
-            status:    item.status,
-            views:     item.views,
-            type:      "content" as const,
-          })),
+          .map(url => ({ newsId: item.id, url, headline: item.headline, caption: null, credit: null, createdAt: item.createdAt, status: item.status, views: item.views, type: "content" as const })),
       ];
     });
 
@@ -710,23 +663,19 @@ export const getMediaLibrary = async (req: Request, res: Response) => {
 };
 
 // ─── DELETE MEDIA IMAGE ────────────────────────────────────────────────────────
-// Removes featuredImage from DB and deletes the file from Supabase Storage
 export const deleteMediaImage = async (req: AuthRequest, res: Response) => {
   try {
-    const newsId = String(req.params.newsId);
-
+    const newsId  = String(req.params.newsId);
     const article = await prisma.news.findUnique({ where: { id: newsId } });
     if (!article) return res.status(404).json({ message: "Article not found" });
 
     const imageUrl = article.featuredImage;
 
-    // ── Remove from DB first ─────────────────────────────────────────────────
     await prisma.news.update({
       where: { id: newsId },
       data:  { featuredImage: null, imageCaption: null, photoCredit: null },
     });
 
-    // ── Delete from Supabase Storage ─────────────────────────────────────────
     if (imageUrl) {
       try {
         const filename = imageUrl.split(`/${BUCKET}/`).pop();

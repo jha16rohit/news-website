@@ -21,18 +21,21 @@ model User {
 }
 
 model News {
-  id         String   @id @default(uuid())
+  id         String  @id @default(uuid())
   headline   String
   shortTitle String?
   excerpt    String?
   content    String
+
   categoryId String
   category   Category @relation("MainCategory", fields: [categoryId], references: [id])
 
   categories Category[] @relation("NewsCategories")
-  language   String     @default("English")
-  location   String?
-  tags       NewsTag[]
+
+  language String  @default("English")
+  location String?
+
+  tags NewsTag[]
 
   articleType ArticleType @default(STANDARD)
 
@@ -40,9 +43,8 @@ model News {
   breakingPushNotif     Boolean @default(false)
   breakingHomepageAlert Boolean @default(false)
 
-  statusType String?   @default("published")
   expiryTime DateTime?
-  priority   String?
+  priority   Priority?
 
   liveUpdates Json?
 
@@ -52,10 +54,11 @@ model News {
 
   metaTitle       String?
   metaDescription String?
-  slug            String   @unique
-  keywords        String[]
-  focusKeywords   String?
-  canonicalUrl    String?
+
+  slug          String   @unique
+  keywords      String[]
+  focusKeywords String?
+  canonicalUrl  String?
 
   status      Status    @default(DRAFT)
   publishedAt DateTime?
@@ -70,22 +73,37 @@ model News {
   topicProfileId String?
   topicProfile   TopicProfile? @relation(fields: [topicProfileId], references: [id])
 
+  readHistory UserReadHistory[]
+  bookmarks   Bookmark[]
+  comments    Comment[]
+  likes       NewsLike[]
+
   views     Int      @default(0)
   createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  updatedAt DateTime @default(now()) @updatedAt
+
+  @@index([slug])
+  @@index([categoryId])
+  @@index([publishedAt])
+  @@index([createdAt])
+  @@index([status])
+  @@index([authorId])
 }
 
 model TopicProfile {
-  id          String   @id @default(uuid())
+  id          String  @id @default(uuid())
   name        String
-  slug        String   @unique
+  slug        String  @unique
   caption     String?
   description String
-  instagram   String?
-  facebook    String?
-  twitter     String?
-  imageUrl    String?
-  createdAt   DateTime @default(now())
+
+  instagram String?
+  facebook  String?
+  twitter   String?
+
+  imageUrl String?
+
+  createdAt DateTime @default(now())
 
   news News[]
 }
@@ -109,16 +127,20 @@ model Category {
   active   Boolean @default(true)
 
   createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  updatedAt DateTime @default(now()) @updatedAt
+
+  @@index([slug])
+  @@index([parentId])
 }
 
 model Tag {
-  id         String   @id @default(uuid())
-  name       String   @unique
-  usageCount Int      @default(0)
-  slug       String   @unique
-  isTrending Boolean  @default(false)
-  createdAt  DateTime @default(now())
+  id         String  @id @default(uuid())
+  name       String  @unique
+  usageCount Int     @default(0)
+  slug       String  @unique
+  isTrending Boolean @default(false)
+
+  createdAt DateTime @default(now())
 
   articles NewsTag[]
 
@@ -126,12 +148,13 @@ model Tag {
 }
 
 model NewsTag {
-  id     String @id @default(uuid())
-  news   News   @relation(fields: [newsId], references: [id], onDelete: Cascade)
-  newsId String
+  id String @id @default(uuid())
 
-  tag   Tag    @relation(fields: [tagId], references: [id], onDelete: Cascade)
+  newsId String
+  news   News   @relation(fields: [newsId], references: [id], onDelete: Cascade)
+
   tagId String
+  tag   Tag    @relation(fields: [tagId], references: [id], onDelete: Cascade)
 
   @@unique([newsId, tagId])
 }
@@ -147,126 +170,229 @@ model FooterSettings {
 
   images Json @default("[]")
 
-  updatedAt DateTime @updatedAt
+  updatedAt DateTime @default(now()) @updatedAt
 }
+
 model ContactMessage {
-  id         String   @id @default(uuid())
-  name       String
-  email      String
-  phone      String?
-  subject    String?
-  message    String
-  read       Boolean  @default(false)
-  replied    Boolean  @default(false)
-  replyText  String?
+  id      String  @id @default(uuid())
+  name    String
+  email   String
+  phone   String?
+  subject String?
+  message String
+
+  read      Boolean @default(false)
+  replied   Boolean @default(false)
+  replyText String?
+
   receivedAt DateTime @default(now())
+  updatedAt  DateTime @default(now()) @updatedAt
 }
+
 model AdInquiry {
-  id        String   @id @default(uuid())
-  name      String
-  email     String
-  phone     String?
-  company   String?
-  message   String?
-  budget    String?
+  id      String  @id @default(uuid())
+  name    String
+  email   String
+  phone   String?
+  company String?
+  message String?
+  budget  String?
 
-  targetPage  String?
-  duration    String?
-  customDays  Int?
-  adType      String?
-  imageUrl    String?
-  linkUrl     String?
-  adTitle     String?
+  targetPage String?
+  duration   String?
+  customDays Int?
+  adType     String?
 
-  status      AdInquiryStatus @default(pending)
-  adminNote   String?
+  imageUrl String?
+  linkUrl  String?
+  adTitle  String?
+
+  status    AdInquiryStatus @default(pending)
+  adminNote String?
 
   publishedAt DateTime?
   expiresAt   DateTime?
-  submittedAt DateTime  @default(now())
+
+  submittedAt DateTime @default(now())
 
   publishedAd PublishedAd?
 }
+
 model PublishedAd {
-  id         String   @id @default(uuid())
-  inquiryId  String   @unique
-  inquiry    AdInquiry @relation(fields: [inquiryId], references: [id], onDelete: Cascade)
+  id String @id @default(uuid())
 
-  imageUrl    String
-  linkUrl     String?
-  altText     String?
-  targetPage  String?
-  adTitle     String?
-  advertiser  String?
+  inquiryId String    @unique
+  inquiry   AdInquiry @relation(fields: [inquiryId], references: [id], onDelete: Cascade)
 
-  isActive    Boolean  @default(true)
+  imageUrl String
+  linkUrl  String?
+  altText  String?
+
+  targetPage String?
+  adTitle    String?
+  advertiser String?
+
+  isActive Boolean @default(true)
+
   publishedAt DateTime
   expiresAt   DateTime
-  createdAt   DateTime @default(now())
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @default(now()) @updatedAt
 }
+
 model AdPageSettings {
   id String @id @default("singleton")
 
-  whyEnabled      Boolean @default(true)
-  whyPoints       Json    @default("[]")
+  whyEnabled Boolean @default(true)
+  whyPoints  Json    @default("[]")
 
   packagesEnabled Boolean @default(true)
   packages        Json    @default("[]")
 
-  contactEnabled  Boolean @default(true)
-  contactEmail    String?
-  contactPhone    String?
-  contactNote     String?
+  contactEnabled Boolean @default(true)
+  contactEmail   String?
+  contactPhone   String?
+  contactNote    String?
 
-  updatedAt DateTime @updatedAt
+  updatedAt DateTime @default(now()) @updatedAt
 }
+
 model ContactUsSettings {
   id String @id @default("singleton")
 
-  heroVisible        Boolean @default(true)
-  heroTitle          String?
-  heroSubtitle       String?
+  heroVisible  Boolean @default(true)
+  heroTitle    String?
+  heroSubtitle String?
 
   contactInfoVisible Boolean @default(true)
 
-  formVisible        Boolean @default(true)
-  formTitle          String?
-  formSubtitle       String?
-  formSuccessMsg     String?
-  subjectOptions     Json?
+  formVisible    Boolean @default(true)
+  formTitle      String?
+  formSubtitle   String?
+  formSuccessMsg String?
 
-  faqVisible         Boolean @default(true)
-  faqTitle           String?
+  subjectOptions Json?
+
+  faqVisible Boolean @default(true)
+  faqTitle   String?
 
   contactInfo ContactInfo[]
   faq         FAQItem[]
 
-  updatedAt DateTime @updatedAt
+  updatedAt DateTime @default(now()) @updatedAt
 }
+
 model ContactInfo {
   id String @id @default(uuid())
 
   settingsId String
-  settings ContactUsSettings @relation(fields: [settingsId], references: [id], onDelete: Cascade)
+  settings   ContactUsSettings @relation(fields: [settingsId], references: [id], onDelete: Cascade)
 
-  type     String
-  label    String
-  value    String
+  type  String
+  label String
+  value String
+
   visible  Boolean @default(true)
-  position Int @default(0)
+  position Int     @default(0)
+
+  updatedAt DateTime @default(now()) @updatedAt
 }
 
 model FAQItem {
   id String @id @default(uuid())
 
   settingsId String
-  settings ContactUsSettings @relation(fields: [settingsId], references: [id], onDelete: Cascade)
+  settings   ContactUsSettings @relation(fields: [settingsId], references: [id], onDelete: Cascade)
 
   question String
   answer   String
+
   visible  Boolean @default(true)
-  position Int @default(0)
+  position Int     @default(0)
+
+  updatedAt DateTime @default(now()) @updatedAt
 }
+
+model SiteUser {
+  id         String  @id @default(uuid())
+  name       String
+  email      String  @unique
+  phone      String?
+  password   String?
+  googleId   String? @unique
+  profilePic String?
+
+  role       Role    @default(USER)
+  isVerified Boolean @default(false)
+
+  createdAt   DateTime          @default(now())
+  updatedAt   DateTime          @default(now()) @updatedAt
+  readHistory UserReadHistory[]
+  bookmarks   Bookmark[]
+  comments    Comment[]
+  likes       NewsLike[]
+
+  @@index([email])
+}
+
+model UserReadHistory {
+  id String @id @default(uuid())
+
+  userId String
+  newsId String
+
+  user SiteUser @relation(fields: [userId], references: [id], onDelete: Cascade)
+  news News     @relation(fields: [newsId], references: [id], onDelete: Cascade)
+
+  readAt DateTime @default(now())
+
+  @@unique([userId, newsId])
+}
+
+model Bookmark {
+  id String @id @default(uuid())
+
+  userId String
+  newsId String
+
+  user SiteUser @relation(fields: [userId], references: [id], onDelete: Cascade)
+  news News     @relation(fields: [newsId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+
+  @@unique([userId, newsId])
+}
+
+model Comment {
+  id String @id @default(uuid())
+
+  content String
+
+  userId String
+  newsId String
+
+  user SiteUser @relation(fields: [userId], references: [id], onDelete: Cascade)
+  news News     @relation(fields: [newsId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model NewsLike {
+  id String @id @default(uuid())
+
+  userId String
+  newsId String
+
+  user SiteUser @relation(fields: [userId], references: [id], onDelete: Cascade)
+  news News     @relation(fields: [newsId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+
+  @@unique([userId, newsId])
+}
+
 enum ArticleType {
   STANDARD
   BREAKING
@@ -279,6 +405,7 @@ enum Status {
   SCHEDULED
   EXPIRED
   DELETED
+  ARCHIVED
 }
 
 enum Priority {
@@ -286,10 +413,17 @@ enum Priority {
   HIGH
   MEDIUM
 }
+
 enum AdInquiryStatus {
   pending
   reviewed
- approved
+  approved
   published
   rejected
+}
+
+enum Role {
+  USER
+  ADMIN
+  EDITOR
 }

@@ -1,83 +1,157 @@
+// client/src/components/User/SignIn/SignIn.tsx
+// ──────────────────────────────────────────────────────────────
+// Fully wired to backend. On success, calls onSuccess(user, token)
+// so the parent (Navbar / AuthContext) can store user in memory/context.
+
 import React, { useState } from "react";
-import { X, Mail, Lock, Phone, User, ArrowLeft } from "lucide-react";
+import { X, Mail, Lock, Phone, User, ArrowLeft, Loader2 } from "lucide-react";
 import "./SignIn.css";
+import { registerUser, loginUser } from "../../../../api/user/userauth";
+import type { AuthUser } from "../../../../api/user/userauth";
+// ─────────────────────────────────────────────
+// PROPS
+// ─────────────────────────────────────────────
 
 interface SignInProps {
   onClose: () => void;
-  // 👇 NEW: onSuccess now expects the name and email you typed!
-  onSuccess: (name: string, email: string) => void;
+  /** Called after a successful login or register with the full user object + token */
+  onSuccess: (user: AuthUser, token: string) => void;
 }
+
+// ─────────────────────────────────────────────
+// COMPONENT
+// ─────────────────────────────────────────────
 
 const SignIn: React.FC<SignInProps> = ({ onClose, onSuccess }) => {
   const [activeView, setActiveView] = useState<"login" | "signup">("login");
   const [loginMethod, setLoginMethod] = useState<"email" | "phone">("email");
   const [step, setStep] = useState<"form" | "otp">("form");
 
-  // 👇 NEW: State to capture what you type
-  const [nameInput, setNameInput] = useState("");
-  const [emailInput, setEmailInput] = useState("");
-  const [phoneInput, setPhoneInput] = useState("");
+  // Form fields
+  const [nameInput,     setNameInput]     = useState("");
+  const [emailInput,    setEmailInput]    = useState("");
+  const [phoneInput,    setPhoneInput]    = useState("");
+  const [passwordInput, setPasswordInput] = useState("");
+  const [confirmPass,   setConfirmPass]   = useState("");
+
+  // UX state
+  const [loading, setLoading] = useState(false);
+  const [error,   setError]   = useState<string | null>(null);
+
+  // ── helpers ──────────────────────────────────────────────────
+
+  const resetError = () => setError(null);
 
   const handleViewChange = (view: "login" | "signup") => {
     setActiveView(view);
     setStep("form");
+    resetError();
   };
 
   const handleMethodChange = (method: "email" | "phone") => {
     setLoginMethod(method);
-    setStep("form"); 
+    setStep("form");
+    resetError();
   };
+
+  // ── OTP flow (phone login — UI only for now) ─────────────────
 
   const handleSendOtp = (e: React.FormEvent) => {
     e.preventDefault();
-    setStep("otp"); 
+    resetError();
+    setStep("otp");
   };
 
   const handleOtpChange = (e: React.ChangeEvent<HTMLInputElement>, index: number) => {
-    const val = e.target.value;
-    if (val && index < 5) {
-      const nextInput = document.getElementById(`otp-${index + 1}`);
-      nextInput?.focus();
+    if (e.target.value && index < 5) {
+      (document.getElementById(`otp-${index + 1}`) as HTMLInputElement)?.focus();
     }
   };
 
   const handleOtpKeyDown = (e: React.KeyboardEvent<HTMLInputElement>, index: number) => {
     if (e.key === "Backspace" && !e.currentTarget.value && index > 0) {
-      const prevInput = document.getElementById(`otp-${index - 1}`);
-      prevInput?.focus();
+      (document.getElementById(`otp-${index - 1}`) as HTMLInputElement)?.focus();
     }
   };
 
-  const handleFinalSubmit = (e: React.FormEvent) => {
+  // ── LOGIN ────────────────────────────────────────────────────
+
+  const handleLoginSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
-    // 👇 NEW: Logic to figure out what name/email to pass up
-    let finalName = nameInput;
-    let finalEmail = emailInput;
+    resetError();
 
-    if (activeView === "login") {
-      if (loginMethod === "email") {
-        // If logging in with email, just use the first part of the email as the name!
-        finalName = emailInput ? emailInput.split("@")[0] : "Reader";
-      } else {
-        finalName = "Mobile User";
-        finalEmail = phoneInput;
-      }
+    if (!emailInput || !passwordInput) {
+      setError("Email aur password dono zaroori hain.");
+      return;
     }
 
-    // Fallbacks just in case you leave it empty
-    if (!finalName) finalName = "New User";
-    if (!finalEmail) finalEmail = "user@localnewz.com";
-
-    // Pass the real data up to the Navbar!
-    onSuccess(finalName, finalEmail);
+    setLoading(true);
+    try {
+      const res = await loginUser({ email: emailInput, password: passwordInput });
+      onSuccess(res.user, res.token);
+      onClose();
+    } catch (err: any) {
+      setError(err?.message || "Login failed. Please try again.");
+    } finally {
+      setLoading(false);
+    }
   };
+
+  // ── REGISTER ─────────────────────────────────────────────────
+
+  const handleRegisterSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    resetError();
+
+    if (!nameInput.trim()) {
+      setError("Please enter your full name.");
+      return;
+    }
+    if (!emailInput || !passwordInput) {
+      setError("Email aur password dono zaroori hain.");
+      return;
+    }
+    if (passwordInput.length < 6) {
+      setError("Password kam se kam 6 characters ka hona chahiye.");
+      return;
+    }
+    if (passwordInput !== confirmPass) {
+      setError("Passwords match nahi kar rahe.");
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const res = await registerUser({
+        name:     nameInput.trim(),
+        email:    emailInput,
+        password: passwordInput,
+        phone:    phoneInput || undefined,
+      });
+      onSuccess(res.user, res.token);
+      onClose();
+    } catch (err: any) {
+      setError(err?.message || "Registration failed. Please try again.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // ── OTP verify (placeholder — integrate real OTP API here) ───
+
+  const handleOtpVerify = (e: React.FormEvent) => {
+    e.preventDefault();
+    // TODO: integrate real OTP verification API
+    setError("Phone login coming soon!");
+  };
+
+  // ── RENDER ───────────────────────────────────────────────────
 
   return (
     <div className="signin-overlay">
       <div className="signin-modal">
-        
-        <button className="signin-close-btn" onClick={onClose}>
+
+        <button className="signin-close-btn" onClick={onClose} disabled={loading}>
           <X size={20} />
         </button>
 
@@ -86,16 +160,38 @@ const SignIn: React.FC<SignInProps> = ({ onClose, onSuccess }) => {
           <p>Sign in to save articles and get personalised insights.</p>
         </div>
 
+        {/* Error banner */}
+        {error && (
+          <div className="signin-error-banner">
+            <span>{error}</span>
+            <button onClick={resetError}><X size={13} /></button>
+          </div>
+        )}
+
         {step === "form" && (
           <>
+            {/* Login / Signup toggle */}
             <div className="signin-toggle-wrapper">
               <div className="signin-toggle">
-                <button className={`toggle-btn ${activeView === "login" ? "active" : ""}`} onClick={() => handleViewChange("login")}>Login</button>
-                <button className={`toggle-btn ${activeView === "signup" ? "active" : ""}`} onClick={() => handleViewChange("signup")}>Sign Up</button>
+                <button
+                  className={`toggle-btn ${activeView === "login" ? "active" : ""}`}
+                  onClick={() => handleViewChange("login")}
+                  disabled={loading}
+                >
+                  Login
+                </button>
+                <button
+                  className={`toggle-btn ${activeView === "signup" ? "active" : ""}`}
+                  onClick={() => handleViewChange("signup")}
+                  disabled={loading}
+                >
+                  Sign Up
+                </button>
               </div>
             </div>
 
-            <button className="google-auth-btn" onClick={handleFinalSubmit}>
+            {/* Google (placeholder — wire OAuth here) */}
+            <button className="google-auth-btn" disabled={loading}>
               <svg viewBox="0 0 24 24" width="18" height="18" xmlns="http://www.w3.org/2000/svg">
                 <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/>
                 <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/>
@@ -109,52 +205,85 @@ const SignIn: React.FC<SignInProps> = ({ onClose, onSuccess }) => {
           </>
         )}
 
-        {/* ================= LOGIN VIEW ================= */}
+        {/* ═══════════ LOGIN VIEW ═══════════ */}
         {activeView === "login" && step === "form" && (
           <>
             <div className="signin-method-toggle">
-              <button className={`method-btn ${loginMethod === "email" ? "active" : ""}`} onClick={() => handleMethodChange("email")}>Email</button>
-              <button className={`method-btn ${loginMethod === "phone" ? "active" : ""}`} onClick={() => handleMethodChange("phone")}>Phone</button>
+              <button
+                className={`method-btn ${loginMethod === "email" ? "active" : ""}`}
+                onClick={() => handleMethodChange("email")}
+                disabled={loading}
+              >
+                Email
+              </button>
+              <button
+                className={`method-btn ${loginMethod === "phone" ? "active" : ""}`}
+                onClick={() => handleMethodChange("phone")}
+                disabled={loading}
+              >
+                Phone
+              </button>
             </div>
 
-            <form className="signin-form" onSubmit={loginMethod === "phone" ? handleSendOtp : handleFinalSubmit}>
-              {loginMethod === "email" ? (
-                <>
-                  <div className="form-group">
-                    <label>Email</label>
-                    <div className="input-wrapper">
-                      <Mail size={18} className="input-icon" />
-                      {/* 👇 Bound to State 👇 */}
-                      <input type="email" placeholder="you@example.com" value={emailInput} onChange={(e) => setEmailInput(e.target.value)} />
-                    </div>
+            {loginMethod === "email" ? (
+              <form className="signin-form" onSubmit={handleLoginSubmit}>
+                <div className="form-group">
+                  <label>Email</label>
+                  <div className="input-wrapper">
+                    <Mail size={18} className="input-icon" />
+                    <input
+                      type="email"
+                      placeholder="you@example.com"
+                      value={emailInput}
+                      onChange={e => { setEmailInput(e.target.value); resetError(); }}
+                      required
+                      disabled={loading}
+                    />
                   </div>
-                  <div className="form-group">
-                    <label>Password</label>
-                    <div className="input-wrapper">
-                      <Lock size={18} className="input-icon" />
-                      <input type="password" placeholder="••••••••" />
-                    </div>
+                </div>
+                <div className="form-group">
+                  <label>Password</label>
+                  <div className="input-wrapper">
+                    <Lock size={18} className="input-icon" />
+                    <input
+                      type="password"
+                      placeholder="••••••••"
+                      value={passwordInput}
+                      onChange={e => { setPasswordInput(e.target.value); resetError(); }}
+                      required
+                      disabled={loading}
+                    />
                   </div>
-                  <button type="submit" className="signin-submit-btn">Login</button>
-                </>
-              ) : (
-                <>
-                  <div className="form-group">
-                    <label>Phone number</label>
-                    <div className="input-wrapper">
-                      <Phone size={18} className="input-icon" />
-                      {/* 👇 Bound to State 👇 */}
-                      <input type="tel" placeholder="+91 98765 43210" value={phoneInput} onChange={(e) => setPhoneInput(e.target.value)} />
-                    </div>
+                </div>
+                <button type="submit" className="signin-submit-btn" disabled={loading}>
+                  {loading ? <><Loader2 size={16} className="spin-icon" /> Logging in...</> : "Login"}
+                </button>
+              </form>
+            ) : (
+              <form className="signin-form" onSubmit={handleSendOtp}>
+                <div className="form-group">
+                  <label>Phone number</label>
+                  <div className="input-wrapper">
+                    <Phone size={18} className="input-icon" />
+                    <input
+                      type="tel"
+                      placeholder="+91 98765 43210"
+                      value={phoneInput}
+                      onChange={e => setPhoneInput(e.target.value)}
+                      required
+                      disabled={loading}
+                    />
                   </div>
-                  <button type="submit" className="signin-submit-btn">Send OTP</button>
-                </>
-              )}
-            </form>
+                </div>
+                <button type="submit" className="signin-submit-btn" disabled={loading}>
+                  Send OTP
+                </button>
+              </form>
+            )}
           </>
         )}
 
-        {/* ================= OTP VERIFICATION VIEW ================= */}
+        {/* ═══════════ OTP VIEW ═══════════ */}
         {step === "otp" && (
           <div className="otp-view-container">
             <button className="otp-back-btn" onClick={() => setStep("form")}>
@@ -162,54 +291,110 @@ const SignIn: React.FC<SignInProps> = ({ onClose, onSuccess }) => {
             </button>
             <div className="otp-content">
               <h3>Verify your phone</h3>
-              <p>We sent a 6-digit code to your phone number. Enter it below to login.</p>
-              <div className="otp-inputs">
-                {[0, 1, 2, 3, 4, 5].map((index) => (
-                  <input key={index} id={`otp-${index}`} type="text" maxLength={1} className="otp-box" onChange={(e) => handleOtpChange(e, index)} onKeyDown={(e) => handleOtpKeyDown(e, index)} />
-                ))}
-              </div>
-              <button className="signin-submit-btn" onClick={handleFinalSubmit}>Verify & Login</button>
+              <p>We sent a 6-digit code to <strong>{phoneInput}</strong>. Enter it below.</p>
+              <form onSubmit={handleOtpVerify}>
+                <div className="otp-inputs">
+                  {[0, 1, 2, 3, 4, 5].map(i => (
+                    <input
+                      key={i}
+                      id={`otp-${i}`}
+                      type="text"
+                      maxLength={1}
+                      className="otp-box"
+                      onChange={e => handleOtpChange(e, i)}
+                      onKeyDown={e => handleOtpKeyDown(e, i)}
+                    />
+                  ))}
+                </div>
+                <button type="submit" className="signin-submit-btn">
+                  Verify &amp; Login
+                </button>
+              </form>
               <div className="otp-footer">
                 <span>Didn't receive the code?</span>
-                <button className="resend-btn">Resend OTP</button>
+                <button className="resend-btn" type="button">Resend OTP</button>
               </div>
             </div>
           </div>
         )}
 
-        {/* ================= SIGN UP VIEW ================= */}
+        {/* ═══════════ SIGN UP VIEW ═══════════ */}
         {activeView === "signup" && step === "form" && (
-          <form className="signin-form" onSubmit={handleFinalSubmit}>
+          <form className="signin-form" onSubmit={handleRegisterSubmit}>
             <div className="form-group">
               <label>Full name</label>
               <div className="input-wrapper">
                 <User size={18} className="input-icon" />
-                {/* 👇 Bound to State 👇 */}
-                <input type="text" placeholder="Your name" value={nameInput} onChange={(e) => setNameInput(e.target.value)} />
+                <input
+                  type="text"
+                  placeholder="Your name"
+                  value={nameInput}
+                  onChange={e => { setNameInput(e.target.value); resetError(); }}
+                  required
+                  disabled={loading}
+                />
               </div>
             </div>
             <div className="form-group">
               <label>Email</label>
               <div className="input-wrapper">
                 <Mail size={18} className="input-icon" />
-                <input type="email" placeholder="you@example.com" value={emailInput} onChange={(e) => setEmailInput(e.target.value)} />
+                <input
+                  type="email"
+                  placeholder="you@example.com"
+                  value={emailInput}
+                  onChange={e => { setEmailInput(e.target.value); resetError(); }}
+                  required
+                  disabled={loading}
+                />
+              </div>
+            </div>
+            <div className="form-group">
+              <label>Phone (optional)</label>
+              <div className="input-wrapper">
+                <Phone size={18} className="input-icon" />
+                <input
+                  type="tel"
+                  placeholder="+91 98765 43210"
+                  value={phoneInput}
+                  onChange={e => setPhoneInput(e.target.value)}
+                  disabled={loading}
+                />
               </div>
             </div>
             <div className="form-group">
               <label>Password</label>
               <div className="input-wrapper">
                 <Lock size={18} className="input-icon" />
-                <input type="password" placeholder="Create a strong password" />
+                <input
+                  type="password"
+                  placeholder="Minimum 6 characters"
+                  value={passwordInput}
+                  onChange={e => { setPasswordInput(e.target.value); resetError(); }}
+                  required
+                  disabled={loading}
+                />
               </div>
             </div>
             <div className="form-group">
               <label>Confirm Password</label>
               <div className="input-wrapper">
                 <Lock size={18} className="input-icon" />
-                <input type="password" placeholder="Confirm your password" />
+                <input
+                  type="password"
+                  placeholder="Repeat your password"
+                  value={confirmPass}
+                  onChange={e => { setConfirmPass(e.target.value); resetError(); }}
+                  required
+                  disabled={loading}
+                />
               </div>
             </div>
-            <button type="submit" className="signin-submit-btn">Create account</button>
+            <button type="submit" className="signin-submit-btn" disabled={loading}>
+              {loading
+                ? <><Loader2 size={16} className="spin-icon" /> Creating account...</>
+                : "Create account"}
+            </button>
           </form>
         )}
       </div>
