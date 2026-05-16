@@ -1,21 +1,43 @@
 // client/src/components/User/SignIn/SignIn.tsx
 // ──────────────────────────────────────────────────────────────
-// Fully wired to backend. On success, calls onSuccess(user, token)
-// so the parent (Navbar / AuthContext) can store user in memory/context.
+// Google Sign-In uses the GSI (Google Identity Services) SDK.
+// The SDK is loaded once lazily when the modal opens.
+// On button click → google.accounts.id.prompt() triggers the
+// native Google account picker (one-tap or popup).
+// The returned credential (id_token) is sent to our backend.
 
-import React, { useState } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { X, Mail, Lock, Phone, User, ArrowLeft, Loader2 } from "lucide-react";
 import "./SignIn.css";
-import { registerUser, loginUser } from "../../../../api/user/userauth";
+import { registerUser, loginUser, googleAuth } from "../../../../api/user/userauth";
 import type { AuthUser } from "../../../../api/user/userauth";
+
+// ─── Put your Google Client ID here (or in .env as VITE_GOOGLE_CLIENT_ID) ───
+const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID as string;
+
 // ─────────────────────────────────────────────
-// PROPS
+// TYPES
 // ─────────────────────────────────────────────
 
 interface SignInProps {
   onClose: () => void;
-  /** Called after a successful login or register with the full user object + token */
   onSuccess: (user: AuthUser, token: string) => void;
+}
+
+// Extend window for GSI types
+declare global {
+  interface Window {
+    google?: {
+      accounts: {
+        id: {
+          initialize: (cfg: object) => void;
+          prompt: (cb?: (n: { isNotDisplayed(): boolean; isSkippedMoment(): boolean }) => void) => void;
+          renderButton: (el: HTMLElement, cfg: object) => void;
+          cancel: () => void;
+        };
+      };
+    };
+  }
 }
 
 // ─────────────────────────────────────────────
@@ -23,9 +45,9 @@ interface SignInProps {
 // ─────────────────────────────────────────────
 
 const SignIn: React.FC<SignInProps> = ({ onClose, onSuccess }) => {
-  const [activeView, setActiveView] = useState<"login" | "signup">("login");
-  const [loginMethod, setLoginMethod] = useState<"email" | "phone">("email");
-  const [step, setStep] = useState<"form" | "otp">("form");
+  const [activeView, setActiveView]     = useState<"login" | "signup">("login");
+  const [loginMethod, setLoginMethod]   = useState<"email" | "phone">("email");
+  const [step, setStep]                 = useState<"form" | "otp">("form");
 
   // Form fields
   const [nameInput,     setNameInput]     = useState("");
@@ -35,10 +57,105 @@ const SignIn: React.FC<SignInProps> = ({ onClose, onSuccess }) => {
   const [confirmPass,   setConfirmPass]   = useState("");
 
   // UX state
-  const [loading, setLoading] = useState(false);
-  const [error,   setError]   = useState<string | null>(null);
+  const [loading,       setLoading]       = useState(false);
+  const [googleLoading, setGoogleLoading] = useState(false);
+  const [error,         setError]         = useState<string | null>(null);
+  const [gsiReady,      setGsiReady]      = useState(false);
 
-  // ── helpers ──────────────────────────────────────────────────
+  // ── Load Google GSI script once ─────────────────────────────
+  useEffect(() => {
+    if (!GOOGLE_CLIENT_ID) {
+      console.warn("VITE_GOOGLE_CLIENT_ID is not set — Google login disabled.");
+      return;
+    }
+
+    // Already loaded?
+    if (window.google?.accounts?.id) {
+      initializeGSI();
+      return;
+    }
+
+    const script = document.createElement("script");
+    script.src   = "https://accounts.google.com/gsi/client";
+    script.async = true;
+    script.defer = true;
+    script.onload = () => {
+      initializeGSI();
+    };
+    document.head.appendChild(script);
+
+    return () => {
+      // Cancel any pending prompt when modal closes
+      window.google?.accounts?.id?.cancel();
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // ── Initialise GSI with our client ID & credential callback ──
+  const initializeGSI = useCallback(() => {
+    window.google!.accounts.id.initialize({
+      client_id:         GOOGLE_CLIENT_ID,
+      callback:          handleGoogleCredential,
+      auto_select:       true,   // auto-selects if only one account is signed in
+      cancel_on_tap_outside: false,
+    });
+    setGsiReady(true);
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // ── Called by GSI when user picks an account ─────────────────
+  const handleGoogleCredential = async (response: { credential: string }) => {
+    setGoogleLoading(true);
+    setError(null);
+    try {
+      const res = await googleAuth(response.credential);
+      onSuccess(res.user, res.token);
+      onClose();
+    } catch (err: any) {
+      setError(err?.message || "Google login failed. Please try again.");
+    } finally {
+      setGoogleLoading(false);
+    }
+  };
+
+  // ── Trigger Google account picker on button click ─────────────
+  const handleGoogleClick = () => {
+    if (!GOOGLE_CLIENT_ID) {
+      setError("Google login is not configured. Please contact support.");
+      return;
+    }
+    if (!gsiReady || !window.google?.accounts?.id) {
+      setError("Google is still loading. Please try again in a moment.");
+      return;
+    }
+
+    setError(null);
+    // Prompt shows the native Google account chooser
+    window.google.accounts.id.prompt((notification) => {
+      if (notification.isNotDisplayed() || notification.isSkippedMoment()) {
+        // Fallback: render a hidden div-based button and click it
+        // (happens when browser blocks one-tap, e.g. third-party cookie restrictions)
+        triggerGooglePopupFallback();
+      }
+    });
+  };
+
+  // ── Fallback: use Google's renderButton approach ──────────────
+  const triggerGooglePopupFallback = () => {
+    const container = document.getElementById("google-btn-hidden-container");
+    if (!container) return;
+    // Clear and re-render the button, then auto-click it
+    container.innerHTML = "";
+    window.google!.accounts.id.renderButton(container, {
+      type:  "standard",
+      theme: "outline",
+      size:  "large",
+    });
+    // The rendered button is a real <div> — click its child iframe/button
+    const btn = container.querySelector("div[role='button']") as HTMLElement | null;
+    btn?.click();
+  };
+
+  // ── helpers ───────────────────────────────────────────────────
 
   const resetError = () => setError(null);
 
@@ -54,7 +171,7 @@ const SignIn: React.FC<SignInProps> = ({ onClose, onSuccess }) => {
     resetError();
   };
 
-  // ── OTP flow (phone login — UI only for now) ─────────────────
+  // ── OTP flow ─────────────────────────────────────────────────
 
   const handleSendOtp = (e: React.FormEvent) => {
     e.preventDefault();
@@ -103,22 +220,10 @@ const SignIn: React.FC<SignInProps> = ({ onClose, onSuccess }) => {
     e.preventDefault();
     resetError();
 
-    if (!nameInput.trim()) {
-      setError("Please enter your full name.");
-      return;
-    }
-    if (!emailInput || !passwordInput) {
-      setError("Email aur password dono zaroori hain.");
-      return;
-    }
-    if (passwordInput.length < 6) {
-      setError("Password kam se kam 6 characters ka hona chahiye.");
-      return;
-    }
-    if (passwordInput !== confirmPass) {
-      setError("Passwords match nahi kar rahe.");
-      return;
-    }
+    if (!nameInput.trim()) { setError("Please enter your full name."); return; }
+    if (!emailInput || !passwordInput) { setError("Email aur password dono zaroori hain."); return; }
+    if (passwordInput.length < 6) { setError("Password kam se kam 6 characters ka hona chahiye."); return; }
+    if (passwordInput !== confirmPass) { setError("Passwords match nahi kar rahe."); return; }
 
     setLoading(true);
     try {
@@ -137,21 +242,20 @@ const SignIn: React.FC<SignInProps> = ({ onClose, onSuccess }) => {
     }
   };
 
-  // ── OTP verify (placeholder — integrate real OTP API here) ───
-
   const handleOtpVerify = (e: React.FormEvent) => {
     e.preventDefault();
-    // TODO: integrate real OTP verification API
     setError("Phone login coming soon!");
   };
 
   // ── RENDER ───────────────────────────────────────────────────
 
+  const isAnyLoading = loading || googleLoading;
+
   return (
     <div className="signin-overlay">
       <div className="signin-modal">
 
-        <button className="signin-close-btn" onClick={onClose} disabled={loading}>
+        <button className="signin-close-btn" onClick={onClose} disabled={isAnyLoading}>
           <X size={20} />
         </button>
 
@@ -176,30 +280,41 @@ const SignIn: React.FC<SignInProps> = ({ onClose, onSuccess }) => {
                 <button
                   className={`toggle-btn ${activeView === "login" ? "active" : ""}`}
                   onClick={() => handleViewChange("login")}
-                  disabled={loading}
+                  disabled={isAnyLoading}
                 >
                   Login
                 </button>
                 <button
                   className={`toggle-btn ${activeView === "signup" ? "active" : ""}`}
                   onClick={() => handleViewChange("signup")}
-                  disabled={loading}
+                  disabled={isAnyLoading}
                 >
                   Sign Up
                 </button>
               </div>
             </div>
 
-            {/* Google (placeholder — wire OAuth here) */}
-            <button className="google-auth-btn" disabled={loading}>
-              <svg viewBox="0 0 24 24" width="18" height="18" xmlns="http://www.w3.org/2000/svg">
-                <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/>
-                <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/>
-                <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05"/>
-                <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/>
-              </svg>
-              Continue with Google
+            {/* ── Google Button ── */}
+            <button
+              className="google-auth-btn"
+              onClick={handleGoogleClick}
+              disabled={isAnyLoading || !gsiReady}
+            >
+              {googleLoading ? (
+                <Loader2 size={18} className="spin-icon" />
+              ) : (
+                <svg viewBox="0 0 24 24" width="18" height="18" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/>
+                  <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/>
+                  <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05"/>
+                  <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/>
+                </svg>
+              )}
+              {googleLoading ? "Signing in with Google..." : "Continue with Google"}
             </button>
+
+            {/* Hidden container used as fallback for GSI renderButton */}
+            <div id="google-btn-hidden-container" style={{ display: "none" }} />
 
             <div className="signin-divider"><span>or</span></div>
           </>
@@ -212,14 +327,14 @@ const SignIn: React.FC<SignInProps> = ({ onClose, onSuccess }) => {
               <button
                 className={`method-btn ${loginMethod === "email" ? "active" : ""}`}
                 onClick={() => handleMethodChange("email")}
-                disabled={loading}
+                disabled={isAnyLoading}
               >
                 Email
               </button>
               <button
                 className={`method-btn ${loginMethod === "phone" ? "active" : ""}`}
                 onClick={() => handleMethodChange("phone")}
-                disabled={loading}
+                disabled={isAnyLoading}
               >
                 Phone
               </button>
@@ -237,7 +352,7 @@ const SignIn: React.FC<SignInProps> = ({ onClose, onSuccess }) => {
                       value={emailInput}
                       onChange={e => { setEmailInput(e.target.value); resetError(); }}
                       required
-                      disabled={loading}
+                      disabled={isAnyLoading}
                     />
                   </div>
                 </div>
@@ -251,11 +366,11 @@ const SignIn: React.FC<SignInProps> = ({ onClose, onSuccess }) => {
                       value={passwordInput}
                       onChange={e => { setPasswordInput(e.target.value); resetError(); }}
                       required
-                      disabled={loading}
+                      disabled={isAnyLoading}
                     />
                   </div>
                 </div>
-                <button type="submit" className="signin-submit-btn" disabled={loading}>
+                <button type="submit" className="signin-submit-btn" disabled={isAnyLoading}>
                   {loading ? <><Loader2 size={16} className="spin-icon" /> Logging in...</> : "Login"}
                 </button>
               </form>
@@ -271,11 +386,11 @@ const SignIn: React.FC<SignInProps> = ({ onClose, onSuccess }) => {
                       value={phoneInput}
                       onChange={e => setPhoneInput(e.target.value)}
                       required
-                      disabled={loading}
+                      disabled={isAnyLoading}
                     />
                   </div>
                 </div>
-                <button type="submit" className="signin-submit-btn" disabled={loading}>
+                <button type="submit" className="signin-submit-btn" disabled={isAnyLoading}>
                   Send OTP
                 </button>
               </form>
@@ -331,7 +446,7 @@ const SignIn: React.FC<SignInProps> = ({ onClose, onSuccess }) => {
                   value={nameInput}
                   onChange={e => { setNameInput(e.target.value); resetError(); }}
                   required
-                  disabled={loading}
+                  disabled={isAnyLoading}
                 />
               </div>
             </div>
@@ -345,7 +460,7 @@ const SignIn: React.FC<SignInProps> = ({ onClose, onSuccess }) => {
                   value={emailInput}
                   onChange={e => { setEmailInput(e.target.value); resetError(); }}
                   required
-                  disabled={loading}
+                  disabled={isAnyLoading}
                 />
               </div>
             </div>
@@ -358,7 +473,7 @@ const SignIn: React.FC<SignInProps> = ({ onClose, onSuccess }) => {
                   placeholder="+91 98765 43210"
                   value={phoneInput}
                   onChange={e => setPhoneInput(e.target.value)}
-                  disabled={loading}
+                  disabled={isAnyLoading}
                 />
               </div>
             </div>
@@ -372,7 +487,7 @@ const SignIn: React.FC<SignInProps> = ({ onClose, onSuccess }) => {
                   value={passwordInput}
                   onChange={e => { setPasswordInput(e.target.value); resetError(); }}
                   required
-                  disabled={loading}
+                  disabled={isAnyLoading}
                 />
               </div>
             </div>
@@ -386,11 +501,11 @@ const SignIn: React.FC<SignInProps> = ({ onClose, onSuccess }) => {
                   value={confirmPass}
                   onChange={e => { setConfirmPass(e.target.value); resetError(); }}
                   required
-                  disabled={loading}
+                  disabled={isAnyLoading}
                 />
               </div>
             </div>
-            <button type="submit" className="signin-submit-btn" disabled={loading}>
+            <button type="submit" className="signin-submit-btn" disabled={isAnyLoading}>
               {loading
                 ? <><Loader2 size={16} className="spin-icon" /> Creating account...</>
                 : "Create account"}

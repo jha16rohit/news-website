@@ -25,10 +25,7 @@ export interface AuthResponse {
 }
 
 // ─────────────────────────────────────────────
-// TOKEN HELPERS  (replaces localStorage helper)
-// Token is stored in an httpOnly cookie by the server, but we also
-// keep it in memory so apiClient can attach it as a Bearer header
-// on requests where credentials: "include" is not used.
+// TOKEN HELPERS
 // ─────────────────────────────────────────────
 
 let _memoryToken: string | null = null;
@@ -78,7 +75,23 @@ export async function loginUser(data: {
 }
 
 // ─────────────────────────────────────────────
-// GET CURRENT USER  (requires valid JWT cookie / memory token)
+// GOOGLE AUTH  ← NEW
+// Sends the Google credential (JWT id_token) to the backend.
+// Backend verifies it, upserts the SiteUser, and returns our own JWT.
+// ─────────────────────────────────────────────
+
+export async function googleAuth(credential: string): Promise<AuthResponse> {
+  const json: AuthResponse = await apiClient("/api/users/google", {
+    method: "POST",
+    body: JSON.stringify({ credential }),
+  });
+
+  setMemoryToken(json.token);
+  return json;
+}
+
+// ─────────────────────────────────────────────
+// GET CURRENT USER
 // ─────────────────────────────────────────────
 
 export async function getMe(): Promise<{ user: AuthUser }> {

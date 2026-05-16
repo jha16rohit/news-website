@@ -1,4 +1,4 @@
-// server/src/app.ts  (updated — sirf naya line add hua hai, baaki same)
+// server/src/app.ts  
 
 import express from "express";
 import cors from "cors";
@@ -11,7 +11,7 @@ import tagsRoutes from "./routes/tags.routes";
 import footerRoutes from "./routes/footer.routes";
 import advertisementRoutes from "./routes/advertisement.routes";
 import contactUsRoutes from "./routes/contactus.routes";
-import siteUserRoutes from "./routes/siteuser.routes"; // ← NEW (frontend users)
+import siteUserRoutes from "./routes/siteuser.routes"; 
 import { startScheduler } from "./scheduler";
 import path from "path";
 
