@@ -389,7 +389,7 @@ export default function Tags() {
               ) : (
                 <div className="tags-chip-wrap">
                   {adminTrendingTags.map((t) => (
-                    <span key={t.id} className="tags-chip tags-chip--trending">
+                    <span key={t.id ?? (t as any)._id} className="tags-chip tags-chip--trending">
                       <Flame size={11} />
                       {t.name}
                       <button
@@ -429,7 +429,7 @@ export default function Tags() {
                 <div className="tags-chip-wrap">
                   {trendingTagsByUsage.map((t) => (
                     <span
-                      key={t.id}
+                      key={t.id ?? (t as any)._id}
                       className="tags-chip"
                       title={`${t._count?.articles} article${(t._count?.articles ?? 0) !== 1 ? "s" : ""}`}
                     >
@@ -489,7 +489,7 @@ export default function Tags() {
                 filtered.map((t) => {
                   const isTrending = trendingIds.has(t.id);
                   return (
-                    <div key={t.id} className={`tags-row ${isTrending ? "tags-row--trending" : ""}`}>
+                    <div key={t.id ?? (t as any)._id} className={`tags-row ${isTrending ? "tags-row--trending" : ""}`}>
                       <div className="tags-row-left">
                         <div className="tags-icon-box"><Tag size={16} /></div>
                         <div>

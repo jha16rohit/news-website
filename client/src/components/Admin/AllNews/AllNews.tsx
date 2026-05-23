@@ -77,13 +77,13 @@ function mapNewsItem(n: any, idx: number): NewsItem {
   }
 
   return {
-    id:              n.id,
+    id:              n._id ?? n.id,
     localId:         idx + 1,
     title:           n.headline,
     subtitle:        n.shortTitle || n.headline.slice(0, 50),
     category:        typeLabel[n.articleType] || "Standard Article",
-articleCategory: n.category?.name || "",
-    authorFirst:     n.author?.name || "Admin",
+articleCategory: n.categoryId?.name || "",
+    authorFirst:     n.authorId?.name || "Admin",
     authorLast:      "",
     status:          n.status === "PUBLISHED" ? "Published"
                      : n.status === "DRAFT"      ? "Draft"

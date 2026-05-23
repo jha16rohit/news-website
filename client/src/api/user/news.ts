@@ -2,9 +2,7 @@
 
 import { apiClient } from "../client";
 
-// ─────────────────────────────────────────────────────────────
-// TYPES
-// ─────────────────────────────────────────────────────────────
+// ─── TYPES ────────────────────────────────────────────────────────────────────
 
 export interface Category {
   id: string;
@@ -24,26 +22,25 @@ export interface NewsArticle {
   shortTitle?: string;
   excerpt?: string;
   content: string;
-
   slug: string;
-
   featuredImage?: string;
   imageCaption?: string;
   photoCredit?: string;
-
   articleType: "STANDARD" | "BREAKING" | "LIVE";
-
   language?: string;
   location?: string;
-
   views: number;
-
   createdAt: string;
   updatedAt: string;
   publishedAt?: string;
-
   category?: Category;
   author?: Author;
+  // Breaking extras
+  breakingNewsTicker?: boolean;
+  statusType?: string;
+  priority?: string;
+  // Live extras
+  liveUpdates?: any[];
 }
 
 export interface NewsResponse {
@@ -53,78 +50,56 @@ export interface NewsResponse {
   pages?: number;
 }
 
-// ─────────────────────────────────────────────────────────────
-// GET ALL NEWS
-// Used for:
-// - Homepage
-// - Hero section
-// - Latest news
-// - Trending sections
-// ─────────────────────────────────────────────────────────────
+// ─── GET ALL (PUBLISHED) ──────────────────────────────────────────────────────
+// Accepts optional filters; always hits the public endpoint.
+export const getAllNews = async (params?: {
+  articleType?: "STANDARD" | "BREAKING" | "LIVE";
+  categoryId?:  string;
+  search?:      string;
+  page?:        number;
+  limit?:       number;
+}): Promise<NewsResponse> => {
+  const qs = new URLSearchParams();
+  if (params?.articleType) qs.set("articleType", params.articleType);
+  if (params?.categoryId)  qs.set("categoryId",  params.categoryId);
+  if (params?.search)      qs.set("search",       params.search);
+  if (params?.page)        qs.set("page",         String(params.page));
+  if (params?.limit)       qs.set("limit",        String(params.limit));
 
-export const getAllNews = async (): Promise<NewsResponse> => {
-  return apiClient("/api/news");
+  const query = qs.toString();
+  return apiClient(`/api/news${query ? `?${query}` : ""}`);
 };
 
-// ─────────────────────────────────────────────────────────────
-// GET SINGLE ARTICLE BY SLUG
-// Used for:
-// /news/:slug page
-// ─────────────────────────────────────────────────────────────
+// ─── GET SINGLE ARTICLE BY SLUG ───────────────────────────────────────────────
+export const getNewsBySlug = async (slug: string): Promise<NewsArticle> =>
+  apiClient(`/api/news/${slug}`);
 
-export const getNewsBySlug = async (
-  slug: string
-): Promise<NewsArticle> => {
-  return apiClient(`/api/news/${slug}`);
-};
+// ─── BREAKING NEWS ────────────────────────────────────────────────────────────
+export const getBreakingNews = async (): Promise<NewsResponse> =>
+  apiClient("/api/news?articleType=BREAKING");
 
-// ─────────────────────────────────────────────────────────────
-// GET BREAKING NEWS
-// Used for:
-// - Breaking ticker
-// - Alert sections
-// ─────────────────────────────────────────────────────────────
+// ─── LIVE NEWS ────────────────────────────────────────────────────────────────
+export const getLiveNews = async (): Promise<NewsResponse> =>
+  apiClient("/api/news?articleType=LIVE");
 
-export const getBreakingNews = async (): Promise<NewsResponse> => {
-  return apiClient("/api/news?articleType=BREAKING");
-};
-
-// ─────────────────────────────────────────────────────────────
-// GET LIVE NEWS
-// Used for:
-// - Live updates page
-// - Live cards
-// ─────────────────────────────────────────────────────────────
-
-export const getLiveNews = async (): Promise<NewsResponse> => {
-  return apiClient("/api/news?articleType=LIVE");
-};
-
-// ─────────────────────────────────────────────────────────────
-// GET NEWS BY CATEGORY
-// Used for:
-// - Sports page
-// - Politics page
-// - Technology page
-// ─────────────────────────────────────────────────────────────
-
+// ─── NEWS BY CATEGORY ─────────────────────────────────────────────────────────
 export const getNewsByCategory = async (
-  categoryId: string
+  categoryId: string,
+  params?: { page?: number; limit?: number }
 ): Promise<NewsResponse> => {
-  return apiClient(`/api/news?categoryId=${categoryId}`);
+  const qs = new URLSearchParams({ categoryId });
+  if (params?.page)  qs.set("page",  String(params.page));
+  if (params?.limit) qs.set("limit", String(params.limit));
+  return apiClient(`/api/news?${qs.toString()}`);
 };
 
-// ─────────────────────────────────────────────────────────────
-// SEARCH NEWS
-// Used for:
-// - Search page
-// - Navbar search
-// ─────────────────────────────────────────────────────────────
-
+// ─── SEARCH NEWS ──────────────────────────────────────────────────────────────
 export const searchNews = async (
-  query: string
+  query: string,
+  params?: { page?: number; limit?: number }
 ): Promise<NewsResponse> => {
-  return apiClient(
-    `/api/news?search=${encodeURIComponent(query)}`
-  );
+  const qs = new URLSearchParams({ search: query });
+  if (params?.page)  qs.set("page",  String(params.page));
+  if (params?.limit) qs.set("limit", String(params.limit));
+  return apiClient(`/api/news?${qs.toString()}`);
 };

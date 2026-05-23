@@ -1,7 +1,6 @@
-// client/src/api/userAuth.ts
-// ─────────────────────────────────────────────
-// All API calls go to the real backend. No localStorage manipulation here.
-// Components/context are responsible for caching the returned user in memory/context.
+// client/src/api/userauth.ts
+// All API calls go to the real backend. No localStorage.
+// Components/context cache the returned user in React state / context.
 
 import { apiClient } from "../client";
 
@@ -25,12 +24,12 @@ export interface AuthResponse {
 }
 
 // ─────────────────────────────────────────────
-// TOKEN HELPERS
+// IN-MEMORY TOKEN
 // ─────────────────────────────────────────────
 
 let _memoryToken: string | null = null;
 
-export function setMemoryToken(token: string | null) {
+export function setMemoryToken(token: string | null): void {
   _memoryToken = token;
 }
 
@@ -52,7 +51,6 @@ export async function registerUser(data: {
     method: "POST",
     body: JSON.stringify(data),
   });
-
   setMemoryToken(json.token);
   return json;
 }
@@ -69,15 +67,14 @@ export async function loginUser(data: {
     method: "POST",
     body: JSON.stringify(data),
   });
-
   setMemoryToken(json.token);
   return json;
 }
 
 // ─────────────────────────────────────────────
-// GOOGLE AUTH  ← NEW
+// GOOGLE AUTH
 // Sends the Google credential (JWT id_token) to the backend.
-// Backend verifies it, upserts the SiteUser, and returns our own JWT.
+// Backend verifies, upserts the SiteUser, returns our own JWT.
 // ─────────────────────────────────────────────
 
 export async function googleAuth(credential: string): Promise<AuthResponse> {
@@ -85,7 +82,6 @@ export async function googleAuth(credential: string): Promise<AuthResponse> {
     method: "POST",
     body: JSON.stringify({ credential }),
   });
-
   setMemoryToken(json.token);
   return json;
 }

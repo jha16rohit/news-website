@@ -639,8 +639,16 @@ const CreateNewArticle: React.FC = () => {
   const navigate       = useNavigate();
 
   const params    = new URLSearchParams(routerLocation.search);
-  const editId    = params.get("edit");
-  const isEdit    = Boolean(editId);
+const rawEditId = params.get("edit");
+
+const editId =
+  rawEditId &&
+  rawEditId !== "undefined" &&
+  rawEditId !== "null"
+    ? rawEditId.trim()
+    : "";
+
+const isEdit = Boolean(editId);
   const typeParam = params.get("type") ?? "";
 
   // ── DB categories ──────────────────────────────────────────────────────────
@@ -649,11 +657,22 @@ const CreateNewArticle: React.FC = () => {
 
   useEffect(() => {
     getCategories()
-      .then((data: Category[]) => {
-        setDbCategories(Array.isArray(data) ? data : []);
+      .then((data: any[]) => {
+        const normalized = Array.isArray(data)
+          ? data.map((c: any) => ({
+              id:       c.id ?? String(c._id),
+              name:     c.name,
+              parentId: c.parentId ?? null,
+              enabled:  c.enabled !== undefined ? c.enabled : (c.active !== undefined ? c.active : true),
+            }))
+          : [];
+        setDbCategories(normalized);
         setCategoriesLoaded(true);
       })
-      .catch(() => setCategoriesLoaded(true));
+      .catch((err) => {
+        console.error("Failed to load categories:", err);
+        setCategoriesLoaded(true);
+      });
   }, []);
 
   const categoryOptions = dbCategories

@@ -92,12 +92,25 @@ export default function TrendingNews() {
       const mapped: Article[] = raw.map((a: any, i: number) => ({
         id:    a.id,
         title: a.headline || a.title || "Untitled",
-        // Normalize tag shape — backend may return NewsTag[] with nested tag object
+        // tags can be:
+        //   string[]              e.g. ["India", "Metro"]   ← actual backend shape
+        //   { tag:{id,name,slug} }[]  (join-table)
+        //   { id, name, slug }[]      (flat objects)
         tags: (a.tags ?? []).reduce((acc: ArticleTag[], nt: any) => {
-          const id   = nt.tag?.id   ?? nt.id   ?? "";
-          const name = nt.tag?.name ?? nt.name ?? "";
-          const slug = nt.tag?.slug ?? nt.slug ?? "";
-          if (id && name && slug) acc.push({ id, name, slug });
+          // ── plain string ──────────────────────────────────────────────────
+          if (typeof nt === "string") {
+            const name = nt.trim();
+            if (!name) return acc;
+            const slug = name.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
+            acc.push({ id: slug, name, slug });
+            return acc;
+          }
+          // ── object (join-table or flat) ───────────────────────────────────
+          const inner = nt?.tag ?? nt;
+          const name  = inner?.name ?? "";
+          if (!name) return acc;
+          const slug  = inner?.slug ?? name.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
+          acc.push({ id: inner?.id ?? nt?.tagId ?? slug, name, slug });
           return acc;
         }, []),
         trend:       timeSince(a.publishedAt ?? a.createdAt),

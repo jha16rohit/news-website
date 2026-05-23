@@ -15,7 +15,8 @@ export interface Tag {
 // ─── GET ALL TAGS ─────────────────────────────
 export const getAllTags = async (): Promise<Tag[]> => {
   const res = await apiClient("/api/tags");
-  return res;
+  const arr = Array.isArray(res) ? res : [];
+  return arr.map((t: any) => ({ ...t, id: t.id ?? String(t._id) }));
 };
 
 // ─── CREATE TAG ───────────────────────────────
@@ -24,13 +25,15 @@ export const createTag = async (name: string): Promise<Tag> => {
     method: "POST",
     body: JSON.stringify({ name }),
   });
-  return res.tag;
+  const t = res.tag;
+  return { ...t, id: t.id ?? String(t._id) };
 };
 
 // ─── TRENDING TAGS (admin-set isTrending=true) ────────────────────────────────
 export const getTrendingTags = async (): Promise<Tag[]> => {
   const res = await apiClient("/api/tags/trending");
-  return res;
+  const arr = Array.isArray(res) ? res : [];
+  return arr.map((t: any) => ({ ...t, id: t.id ?? String(t._id) }));
 };
 
 // ─── SET TRENDING ─────────────────────────────
@@ -39,7 +42,8 @@ export const setTagTrending = async (id: string, isTrending: boolean): Promise<T
     method: "PATCH",
     body: JSON.stringify({ isTrending }),
   });
-  return res.tag;
+  const t = res.tag;
+  return { ...t, id: t.id ?? String(t._id) };
 };
 
 // ─── DELETE TAG ───────────────────────────────

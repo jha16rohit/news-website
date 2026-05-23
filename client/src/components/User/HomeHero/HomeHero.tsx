@@ -12,8 +12,10 @@ interface Article {
   featuredImage?: string;
   views?: number;
   createdAt?: string;
-  category?: {
+
+  categoryId?: {
     name?: string;
+    color?: string;
   };
 }
 
@@ -132,7 +134,7 @@ const HeroSection: React.FC = () => {
 
               <div className="featured-overlay">
                 <span className="category-badge politics">
-                  {featuredArticle.category?.name || "NEWS"}
+              {featuredArticle.categoryId?.name || "NEWS"}
                 </span>
 
                 <h1 className="featured-title">
@@ -193,7 +195,7 @@ const HeroSection: React.FC = () => {
                     {/* Header Row: Category on left */}
                     <div className="trending-info-header">
                       <span className="trending-category">
-                        {article.category?.name || "NEWS"}
+{article.categoryId?.name || "NEWS"}
                       </span>
                     </div>
 

@@ -95,7 +95,7 @@ function mapStory(n: any): LiveStory {
   return {
     id:              n.id,
     title:           n.headline,
-    articleCategory: n.category?.name || "",
+articleCategory: n.categoryId?.name || "",
     status,
     views:           String(n.views ?? 0),
     liveStartedAt:   n.publishedAt || null,

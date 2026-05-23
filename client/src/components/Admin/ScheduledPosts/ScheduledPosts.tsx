@@ -133,7 +133,7 @@ const ScheduledPosts: React.FC = () => {
         id:              n.id,
         title:           n.headline,
         category:        n.articleType || "STANDARD",
-        articleCategory: n.category?.name || "",
+articleCategory: n.categoryId?.name || "",
         status:          n.status === "PUBLISHED" ? "Published" : n.status === "DRAFT" ? "Draft" : "Scheduled",
         scheduledFor:    n.scheduledAt || null,
         publishedAt:     n.publishedAt || null,

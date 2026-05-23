@@ -40,7 +40,7 @@ function mapApiToArticle(n: any, idx: number): Article {
     title:           n.headline,
     subtitle:        n.shortTitle || n.headline.slice(0, 50),
     category:        isBreaking ? "Breaking News" : isLive ? "Live Updates" : "Standard Article",
-    articleCategory: n.category?.name || "",
+articleCategory: n.categoryId?.name || "",
     authorFirst:     n.author?.name || "Admin",
     authorLast:      "",
     status:          n.status === "PUBLISHED" ? "Published"
