@@ -1,15 +1,20 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useParams, Link } from "react-router-dom";
 import {
   Clock, Eye, ChevronRight, Cloud, Sun, CloudRain,
-  Calendar, MapPin, Thermometer, TrendingUp, ArrowRight
+  Calendar, MapPin, Thermometer, ArrowRight
 } from "lucide-react";
-import { useNews } from "../../Admin/NewsStore/NewsStore";
+import { useCategories } from "../../../hooks/useCategories";
+
 import UserNavbar from "../UserNavbar/UserNavbar";
 import "./CategoryTemplate.css";
 import Advertisement from "../Advertisment/Advertisment";
 import UserFooter from "../UserFooter/UserFooter";
 import SubCategoryTemplate from "../SubCategoryTemplate/SubCategoryTemplate";
+import { getCategoryNews } from "../../../api/user/categoryNews";
+import Preloader from "../../Admin/Preloader/Preloder";
+
+import { getRecentNews } from "../../../api/user/recentNews";
 
 // ─── Static placeholder data ──────────────────────────────────────────────────
 const STATIC_ARTICLES = [
@@ -26,13 +31,7 @@ const STATIC_ARTICLES = [
   { id: 1011, title: "NBA Finals MVP Delivers Emotional Speech Amidst Championship Glory", subtitle: "Tears and triumph as the star player reflects on the journey to the title and thanks fans worldwide.", category: "Sports", published: "11 hours ago", views: "25.3K", img: "https://images.unsplash.com/photo-1517649763962-0c623066013b?w=600&q=80" },
 ];
 
-const RECENT_ITEMS = [
-  { id: 1, title: "KKR vs SRH IPL 2026 Date, Live Streaming Details", date: "April 2, 2026" },
-  { id: 2, title: "Raipur Stadium IPL 2026 Schedule Confirmed by BCCI", date: "March 27, 2026" },
-  { id: 3, title: "IPL 2026 Schedule: Phase Two Dates Officially Announced", date: "March 27, 2026" },
-  { id: 4, title: "Neeraj Chopra Targets Back-to-Back Olympic Javelin Gold", date: "March 26, 2026" },
-  { id: 5, title: "Virat Kohli Becomes Leading Run-Scorer in IPL History", date: "March 25, 2026" },
-];
+
 
 const FORECAST = [
   { day: "Fri", icon: <Sun size={14} />, hi: 36, lo: 29 },
@@ -182,11 +181,22 @@ const LOAD_MORE_COUNT = 3;
 
 export default function CategoryTemplate() {
   const { slug } = useParams<{ slug: string }>();
-  const { categories, articles: storeArticles } = useNews();
+  const { categories } = useCategories();
 
   const [visible, setVisible] = useState(INITIAL_VISIBLE);
 
-  const category = categories.find((c) => c.name.toLowerCase().replace(/\s+/g, "-") === slug);
+  const [categoryNews, setCategoryNews] =
+    useState<any[]>([]);
+
+  const [recentNews, setRecentNews] =
+  useState<any[]>([]);  
+
+  const [loading, setLoading] =
+    useState(true);
+
+const category = categories.find(
+  (c) => c.slug === slug
+);
   
   const parentCategory = category?.parentId 
     ? categories.find((c) => c.id === category.parentId) ?? null
@@ -194,17 +204,82 @@ export default function CategoryTemplate() {
 
   const color = "#e60000";
 
-  const storeFiltered = storeArticles.filter((a) => a.category.toLowerCase() === (category?.name ?? "").toLowerCase());
-  
-  const source: Article[] = storeFiltered.length > 0 
-    ? storeFiltered.map((a) => ({ ...a, img: "" })) 
-    : STATIC_ARTICLES.map((a) => ({ ...a, category: category?.name || "News" }));
+  useEffect(() => {
+    async function fetchNews() {
+      try {
+        setLoading(true);
 
-  const hero    = source[0];
-  const stacks  = source.slice(1, 4);
-  const allGrid = source.slice(4);
-  const grid    = allGrid.slice(0, visible);
-  
+        const data =
+          await getCategoryNews(slug!);
+
+        if (data.success) {
+          setCategoryNews(data.news || []);
+          const recent =
+  await getRecentNews();
+
+if (recent.success) {
+  setRecentNews(
+    recent.news || []
+  );
+}
+        }
+
+      } catch (error) {
+        console.error(
+          "Category news fetch error:",
+          error
+        );
+
+      } finally {
+        setLoading(false);
+      }
+    }
+
+    if (slug) {
+      fetchNews();
+    }
+
+  }, [slug]);
+
+  const source: Article[] =
+  categoryNews.map((a: any) => ({
+    id: a._id,
+
+    title:
+  a.shortTitle ||
+  a.headline,
+
+    subtitle:
+      a.excerpt ||
+      "Read full article for more details.",
+
+    category:
+      a.categoryName ||
+      category?.name ||
+      "News",
+
+    published:
+      a.publishedAt
+        ? new Date(
+            a.publishedAt
+          ).toLocaleDateString()
+        : "Recently",
+
+    views: String(a.views || 0),
+
+    img:
+      a.featuredImage ||
+      "https://via.placeholder.com/600x400",
+  }));
+const hero = source[0];
+
+const stacks = source.slice(1, 4);
+
+const allGrid = [...source].sort(
+  () => Math.random() - 0.5
+);
+
+const grid = allGrid.slice(0, visible);
   const canShowMore = visible < allGrid.length;
   const canShowLess = visible > INITIAL_VISIBLE;
 
@@ -220,18 +295,39 @@ export default function CategoryTemplate() {
     setVisible(INITIAL_VISIBLE);
   }
 
-  if (!category) {
-    return (
-      <>
-        <UserNavbar />
-        <div className="ct-notfound">
-          <TrendingUp size={48} color="#ccc" />
-          <h2>Category not found</h2>
-          <Link to="/">Return to Home</Link>
-        </div>
-      </>
-    );
-  }
+if (loading) {
+  return (
+  <>
+  <UserNavbar />
+  <Preloader />
+  </>
+  );
+}
+
+if (!loading && source.length === 0) {
+  return (
+    <>
+      <UserNavbar />
+
+      <div className="ct-notfound">
+        No news found
+      </div>
+    </>
+  );
+}
+
+  // if (!category) {
+  //   return (
+  //     <>
+  //       <UserNavbar />
+  //       <div className="ct-notfound">
+  //         <TrendingUp size={48} color="#ccc" />
+  //         <h2>Category not found</h2>
+  //         <Link to="/">Return to Home</Link>
+  //       </div>
+  //     </>
+  //   );
+  // }
 
   return (
     <>
@@ -255,12 +351,21 @@ export default function CategoryTemplate() {
                   <div className="ct-panel-line" style={{ background: color }} />
                 </div>
                 <ul className="ct-recent-list">
-                  {RECENT_ITEMS.map((item) => (
+                  {recentNews.slice(0, 5).map((item) => (
                     <li key={item.id} className="ct-recent-item">
                       <div className="ct-recent-icon"><ChevronRight size={14} style={{ color }} /></div>
                       <div>
-                        <p className="ct-recent-title">{item.title}</p>
-                        <span className="ct-recent-date">{item.date}</span>
+                        <p className="ct-recent-title">{
+  item.shortTitle ||
+  item.headline
+}</p>
+                        <span className="ct-recent-date">{
+  item.publishedAt
+    ? new Date(
+        item.publishedAt
+      ).toLocaleDateString()
+    : "Recently"
+}</span>
                       </div>
                     </li>
                   ))}

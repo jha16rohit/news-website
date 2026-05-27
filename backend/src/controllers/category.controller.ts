@@ -320,3 +320,95 @@ export const toggleActive = async (req: Request, res: Response) => {
     res.status(500).json({ message: "Error toggling active" });
   }
 };
+
+// ─── GET CATEGORY NEWS ──────────────────────────────────────────
+export const getCategoryNews = async (
+  req: Request,
+  res: Response
+) => {
+  try {
+    const { slug } = req.params;
+
+    // Find category using slug
+    const category = await Category.findOne({
+      slug,
+      active: true,
+    });
+
+    // If category not found
+    if (!category) {
+      return res.status(404).json({
+        success: false,
+        message: "Category not found",
+      });
+    }
+
+    // Find all subcategories
+    const childCategories = await Category.find({
+      parentId: String(category._id),
+      active: true,
+    });
+
+    // Combine parent + child category ids
+    const allowedCategoryIds = [
+      String(category._id),
+
+      ...childCategories.map((c) =>
+        String(c._id)
+      ),
+    ];
+
+    // Fetch all related news
+    const rawNews = await News.find({
+  categoryId: {
+    $in: allowedCategoryIds,
+  },
+
+  status: "PUBLISHED",
+}).sort({
+  createdAt: -1,
+});
+
+const news = await Promise.all(
+  rawNews.map(async (item) => {
+
+    const newsCategory =
+      await Category.findById(
+        item.categoryId
+      );
+
+    return {
+      ...item.toObject(),
+
+      categoryName:
+        newsCategory?.name || "News",
+    };
+  })
+);
+
+    // Send response
+    res.json({
+      success: true,
+
+      category,
+
+      childCategories,
+
+      totalNews: news.length,
+
+      news,
+    });
+
+  } catch (error) {
+    console.error(
+      "getCategoryNews error:",
+      error
+    );
+
+    res.status(500).json({
+      success: false,
+      message:
+        "Error fetching category news",
+    });
+  }
+};

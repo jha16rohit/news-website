@@ -8,8 +8,11 @@ import "./UserNavbar.css";
 import { NavLink, useLocation, useNavigate } from "react-router-dom";
 import { Bell, User, Menu, X, Search, ChevronDown, LogOut } from "lucide-react";
 import logo from "../../../assets/Logo.png";
-import { useNews } from "../../Admin/NewsStore/NewsStore";
-import type { Category } from "../../Admin/NewsStore/NewsStore";
+import { useCategories }
+from "../../../hooks/useCategories";
+
+import type { Category }
+from "../../../types/category";
 import SignIn from "./SignIn/SignIn";
 import {
   getMe,
@@ -33,7 +36,7 @@ const UserNavbar: React.FC = () => {
   const [isProfileOpen, setIsProfileOpen] = useState(false);
   const profileDropdownRef = useRef<HTMLDivElement>(null);
 
-  const { categories } = useNews();
+  const { categories } = useCategories();
   const location  = useLocation();
   const navigate  = useNavigate();
 
@@ -78,7 +81,9 @@ const UserNavbar: React.FC = () => {
   useEffect(() => {
     const currentSlug = location.pathname.split("/").pop();
     if (currentSlug && location.pathname.includes("/category/")) {
-      const activeCategory = categories.find(c => slugOf(c.name) === currentSlug);
+      const activeCategory = categories.find(
+        c => c.slug === currentSlug
+      );
       if (activeCategory) {
         setExpandedMobileCat(
           activeCategory.parentId != null
@@ -131,8 +136,6 @@ const UserNavbar: React.FC = () => {
     "Sensex Surges 800 Points As Foreign Investors Pour In Record Capital",
     "PM Modi Meets World Leaders",
   ];
-
-  const slugOf = (name: string) => name.toLowerCase().replace(/\s+/g, "-");
 
   const childrenOf = (parentId: string): Category[] =>
     categories.filter(c => String(c.parentId) === parentId && c.enabled);
@@ -234,7 +237,7 @@ const UserNavbar: React.FC = () => {
                     onMouseLeave={handleMouseLeave}
                   >
                     <NavLink
-                      to={`/category/${slugOf(cat.name)}`}
+                      to={`/category/${cat.slug}`}
                       className={({ isActive }) => isActive ? "active" : ""}
                     >
                       {cat.name}
@@ -246,7 +249,7 @@ const UserNavbar: React.FC = () => {
                         {children.map(child => (
                           <NavLink
                             key={String(child.id)}
-                            to={`/category/${slugOf(child.name)}`}
+                            to={`/category/${child.slug}`}
                             className="nav-dropdown-item"
                           >
                             {child.name}
@@ -276,14 +279,14 @@ const UserNavbar: React.FC = () => {
                 const isExpanded  = expandedMobileCat === catId;
 
                 const isActiveGroup =
-                  location.pathname === `/category/${slugOf(cat.name)}` ||
-                  children.some(c => location.pathname === `/category/${slugOf(c.name)}`);
+                  location.pathname === `/category/${cat.slug}` ||
+                  children.some(c => location.pathname === `/category/${c.slug}`);
 
                 return (
                   <div key={catId} className="mobile-cat-group">
                     <div className={`mobile-cat-header ${isActiveGroup ? "active-group" : ""}`}>
                       <NavLink
-                        to={`/category/${slugOf(cat.name)}`}
+                        to={`/category/${cat.slug}`}
                         className="mobile-link mobile-link--parent"
                         onClick={() => setMobileMenuOpen(false)}
                       >
@@ -300,7 +303,7 @@ const UserNavbar: React.FC = () => {
                         {children.map(child => (
                           <NavLink
                             key={String(child.id)}
-                            to={`/category/${slugOf(child.name)}`}
+                            to={`/category/${child.slug}`}
                             className="mobile-sub-link"
                             onClick={() => setMobileMenuOpen(false)}
                           >

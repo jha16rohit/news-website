@@ -832,3 +832,55 @@ export const getTagsInPublishedNews = async (req: Request, res: Response) => {
     res.status(500).json({ message: "Error fetching tags in use" });
   }
 };
+
+export const getRecentNews = async (
+  req: Request,
+  res: Response
+) => {
+  try {
+
+    const news = await News.find({
+      status: "PUBLISHED",
+    })
+      .sort({
+        createdAt: -1,
+      })
+      .limit(10);
+
+    const formattedNews =
+      await Promise.all(
+        news.map(async (item) => {
+
+          const category =
+            await Category.findById(
+              item.categoryId
+            );
+
+          return {
+            ...item.toObject(),
+
+            categoryName:
+              category?.name || "News",
+          };
+        })
+      );
+
+    res.json({
+      success: true,
+      news: formattedNews,
+    });
+
+  } catch (error) {
+
+    console.error(
+      "getRecentNews error:",
+      error
+    );
+
+    res.status(500).json({
+      success: false,
+      message:
+        "Error fetching recent news",
+    });
+  }
+};

@@ -1,22 +1,16 @@
-import React, { useState } from "react";
+import React, {
+  useEffect,
+  useState,
+} from "react";
 import { Link } from "react-router-dom";
 import { Clock, Eye, Home, ChevronRight, ArrowRight } from "lucide-react";
-import { useNews } from "../../Admin/NewsStore/NewsStore";
-import type { Category } from "../../Admin/NewsStore/NewsStore";
+import type { Category } from "../../../types/category";
+import { getCategoryNews } from "../../../api/user/categoryNews";
 import UserNavbar from "../UserNavbar/UserNavbar";
 import Advertisement from "../Advertisment/Advertisment";
 import UserFooter from "../UserFooter/UserFooter";
 import "./SubCategoryTemplate.css";
-
-// ─── Static placeholder data ───
-const STATIC_ARTICLES = [
-  { id: 1001, title: "Champions League Final: Historic Night", subtitle: "An electrifying finale saw two European giants battle.", category: "News", published: "2 hours ago", views: "34.2K", img: "https://images.unsplash.com/photo-1508098682722-e99c43a406b2?w=900&q=80" },
-  { id: 1002, title: "Slam Dunk Contest Sets Record", subtitle: "The annual contest drew the highest ratings in a decade.", category: "News", published: "3 hours ago", views: "18.1K", img: "https://images.unsplash.com/photo-1546519638-68e109498ffc?w=600&q=80" },
-  { id: 1003, title: "World Swimming Championships Upsets", subtitle: "Defending champions fell as rising stars claimed gold.", category: "News", published: "5 hours ago", views: "12.4K", img: "https://images.unsplash.com/photo-1519315901367-f34ff9154487?w=600&q=80" },
-  { id: 1004, title: "Clay Court Season Opens With Thriller", subtitle: "Rain delays and a comeback for the ages.", category: "News", published: "6 hours ago", views: "9.8K", img: "https://images.unsplash.com/photo-1554068865-24cecd4e34b8?w=600&q=80" },
-  { id: 1005, title: "India Clinches Historic Test Series", subtitle: "A thrilling final day saw India seal their triumph.", category: "News", published: "3 hours ago", views: "22.3K", img: "https://images.unsplash.com/photo-1540747913346-19212a4e3b4a?w=600&q=80" },
-  { id: 1006, title: "Formula 1 Season Ends in Crash", subtitle: "Safety cars and red flags dominated the track.", category: "News", published: "4 hours ago", views: "15.6K", img: "https://images.unsplash.com/photo-1614162692292-7ac56d7f7f1e?w=600&q=80" },
-];
+import Preloader from "../../Admin/Preloader/Preloder";
 
 interface SubCategoryProps {
   category: Category;
@@ -28,20 +22,96 @@ const INITIAL_VISIBLE = 8;
 const LOAD_MORE_COUNT = 4;
 
 export default function SubCategoryTemplate({ category, parentCategory, color }: SubCategoryProps) {
-  const { articles: storeArticles } = useNews();
   const [visible, setVisible] = useState(INITIAL_VISIBLE);
 
-  // Filter articles
-  const storeFiltered = storeArticles.filter((a) => a.category.toLowerCase() === category.name.toLowerCase());
-  
-  const source = storeFiltered.length > 0 
-    ? storeFiltered.map((a) => ({ ...a, img: "" })) 
-    : STATIC_ARTICLES.map((a) => ({ ...a, category: category.name }));
+  const [news, setNews] =
+    useState<any[]>([]);
+
+  const [loading, setLoading] =
+    useState(true);
+
+  useEffect(() => {
+    async function fetchNews() {
+      try {
+        setLoading(true);
+
+        const data =
+          await getCategoryNews(
+            category.slug
+          );
+
+        if (data.success) {
+          setNews(data.news || []);
+        }
+
+      } catch (error) {
+        console.error(error);
+
+      } finally {
+        setLoading(false);
+      }
+    }
+
+    fetchNews();
+
+  }, [category.slug]);
+
+const source = news.map((a: any) => ({
+  id: a._id,
+
+  title:
+    a.shortTitle ||
+    a.headline,
+
+  subtitle:
+    a.excerpt ||
+    "Read full article.",
+
+  category:
+    a.categoryName ||
+    category.name,
+
+  published:
+    a.publishedAt
+      ? new Date(
+          a.publishedAt
+        ).toLocaleDateString()
+      : "Recently",
+
+  views: String(
+    a.views || 0
+  ),
+
+  img:
+    a.featuredImage ||
+    "https://via.placeholder.com/600x400",
+}));
+
 
   const gridArticles = source.slice(0, visible);
   
   const canShowMore = visible < source.length;
   const canShowLess = visible > INITIAL_VISIBLE;
+
+if (loading) {
+  return(
+   <>
+  <UserNavbar />
+  <Preloader />
+  </>
+  );
+}
+
+if (!loading && source.length === 0) {
+  return (
+    <>
+      <UserNavbar />
+      <div className="sct-notfound">
+        No news found
+      </div>
+    </>
+  );
+}
 
   return (
     <>
@@ -57,7 +127,7 @@ export default function SubCategoryTemplate({ category, parentCategory, color }:
               <ChevronRight size={14} />
               {parentCategory && (
                 <>
-                  <Link to={`/category/${parentCategory.name.toLowerCase().replace(/\s+/g, "-")}`}>
+                  <Link to={`/category/${parentCategory.slug}`}>
                     {parentCategory.name}
                   </Link>
                   <ChevronRight size={14} />
@@ -121,7 +191,7 @@ export default function SubCategoryTemplate({ category, parentCategory, color }:
           </div>
         </section>
 
-        <Advertisement page={category.name.toLowerCase().replace(/\s+/g, "-")}/>
+        <Advertisement page={category.slug} />
         <UserFooter />
       </div>
     </>

@@ -13,35 +13,96 @@ import {
   deleteMediaImage,
   getTagsInPublishedNews,
   getPublishedNews,
+  getRecentNews,
 } from "../controllers/news.controller";
+
 import { uploadToSupabase } from "../middleware/Upload.middleware";
-import { protect }          from "../middleware/auth.middleware";
+import { protect } from "../middleware/auth.middleware";
 
 const router = Router();
 
-// ─── Media Library ────────────────────────────────────────────────────────────
-router.get("/media-library",            getMediaLibrary);
-router.delete("/media-library/:newsId", protect, deleteMediaImage);
+// ─── Media Library ────────────────────────────────────────────────
+router.get(
+  "/media-library",
+  getMediaLibrary
+);
 
-// ─── Public reads ─────────────────────────────────────────────────────────────
-router.get("/",                getAllNews);
-router.get("/id/:id",          getNewsById);
-router.get("/tags-in-use",     getTagsInPublishedNews);
-router.get("/published",       getPublishedNews);
+router.delete(
+  "/media-library/:newsId",
+  protect,
+  deleteMediaImage
+);
 
-// ─── Create ───────────────────────────────────────────────────────────────────
-router.post("/create", uploadToSupabase, createNews);
+// ─── Public reads ────────────────────────────────────────────────
+router.get(
+  "/",
+  getAllNews
+);
 
-// ─── Admin mutations ──────────────────────────────────────────────────────────
-router.put("/:id",                protect, updateNews);
-router.delete("/:id",             protect, deleteNews);
-router.patch("/:id/pause-toggle", protect, togglePauseBreaking);
-router.post("/:id/live-update",   protect, addLiveUpdate);
+router.get(
+  "/id/:id",
+  getNewsById
+);
 
-// ─── Purge scheduler (cron or manual trigger) ─────────────────────────────────
-router.delete("/admin/purge-deleted", protect, purgeDeletedNews);
+router.get(
+  "/tags-in-use",
+  getTagsInPublishedNews
+);
 
-// ⚠️  Keep slug route LAST — catch-all for /:slug
-router.get("/:slug", getNewsBySlug);
+router.get(
+  "/published",
+  getPublishedNews
+);
+
+// ✅ NEW RECENT NEWS ROUTE
+router.get(
+  "/recent",
+  getRecentNews
+);
+
+// ─── Create ──────────────────────────────────────────────────────
+router.post(
+  "/create",
+  uploadToSupabase,
+  createNews
+);
+
+// ─── Admin mutations ─────────────────────────────────────────────
+router.put(
+  "/:id",
+  protect,
+  updateNews
+);
+
+router.delete(
+  "/:id",
+  protect,
+  deleteNews
+);
+
+router.patch(
+  "/:id/pause-toggle",
+  protect,
+  togglePauseBreaking
+);
+
+router.post(
+  "/:id/live-update",
+  protect,
+  addLiveUpdate
+);
+
+// ─── Purge scheduler ─────────────────────────────────────────────
+router.delete(
+  "/admin/purge-deleted",
+  protect,
+  purgeDeletedNews
+);
+
+// ⚠️ KEEP THIS LAST
+router.get(
+  "/:slug",
+  getNewsBySlug
+);
 
 export default router;

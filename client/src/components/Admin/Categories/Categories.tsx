@@ -10,7 +10,7 @@ import {
   deleteCategory as deleteCategoryApi,
   toggleActive,
 } from "../../../api/category.api";
-import type { Category } from "../NewsStore/NewsStore";
+import type { Category } from "../../../types/category";
 
 const FEATURED_LIMIT = 5;
 

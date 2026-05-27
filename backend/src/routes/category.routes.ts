@@ -7,6 +7,7 @@ import {
   deleteCategory,
   toggleFeatured,
   toggleActive,
+  getCategoryNews,
 } from "../controllers/category.controller";
 
 const router = Router();
@@ -16,6 +17,7 @@ router.post("/", createCategory);
 
 // ─── READ ──────────────────────────────────────────────────────────────────
 router.get("/", getAllCategories);
+router.get("/:slug/news", getCategoryNews);
 router.get("/:id", getCategoryById);
 
 // ─── UPDATE ────────────────────────────────────────────────────────────────

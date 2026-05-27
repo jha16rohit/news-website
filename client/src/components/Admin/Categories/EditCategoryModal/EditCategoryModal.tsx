@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { X, Check, Palette, ChevronDown } from "lucide-react";
 import "./EditCategoryModal.css";
-import type { Category } from "../../NewsStore/NewsStore";
+import type { Category } from "../../../../types/category";
 
 interface Props {
   isOpen:     boolean;
@@ -60,7 +60,12 @@ export default function EditCategoryModal({ isOpen, onClose, category, onSave, c
               <select
                 className="modal-select"
                 value={form.parentId ?? ""}
-                onChange={e => setForm({ ...form, parentId: e.target.value ? Number(e.target.value) : null })}
+                onChange={e =>
+                  setForm({
+                    ...form,
+                    parentId: e.target.value || null,
+                  })
+                }
               >
                 <option value="">None (top-level)</option>
                 {parentOptions.map(p => (
@@ -106,7 +111,6 @@ export default function EditCategoryModal({ isOpen, onClose, category, onSave, c
 
           <div className="toggles-row">
             <label className="toggle-group">
-              {/* 👇 Bound to form.featured 👇 */}
               <button 
                 className={`modal-toggle${form.featured ? " on" : ""}`} 
                 onClick={() => setForm({ ...form, featured: !form.featured })}
@@ -117,7 +121,6 @@ export default function EditCategoryModal({ isOpen, onClose, category, onSave, c
             </label>
             
             <label className="toggle-group">
-              {/* 👇 Bound to form.inShowcase 👇 */}
               <button 
                 className={`modal-toggle${form.inShowcase ? " on" : ""}`} 
                 onClick={() => setForm({ ...form, inShowcase: !form.inShowcase })}
@@ -128,7 +131,6 @@ export default function EditCategoryModal({ isOpen, onClose, category, onSave, c
             </label>
 
             <label className="toggle-group">
-              {/* 👇 Bound to form.enabled 👇 */}
               <button 
                 className={`modal-toggle${form.enabled ? " on" : ""}`} 
                 onClick={() => setForm({ ...form, enabled: !form.enabled })}
