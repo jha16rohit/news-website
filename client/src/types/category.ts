@@ -25,6 +25,14 @@ export interface Category {
 
   articles?: number;
 
+  // ✅ ADD THIS
+  children?: {
+    id?: string;
+    name: string;
+    color?: string;
+    active?: boolean;
+  }[];
+
   _count?: {
     news: number;
   };

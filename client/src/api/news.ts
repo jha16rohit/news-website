@@ -201,3 +201,11 @@ export const deleteMediaImage = (newsId: string) =>
   apiClient(`/api/news/media-library/${newsId}`, {
     method: "DELETE",
   });
+
+  // ─── BREAKING TICKER NEWS ───────────────────────────────────────
+export const getBreakingTickerNews = async () => {
+
+  return apiClient(
+    "/api/news/breaking-ticker"
+  );
+};

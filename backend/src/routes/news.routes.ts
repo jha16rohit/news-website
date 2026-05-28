@@ -1,4 +1,5 @@
 import { Router } from "express";
+
 import {
   createNews,
   getAllNews,
@@ -14,6 +15,10 @@ import {
   getTagsInPublishedNews,
   getPublishedNews,
   getRecentNews,
+
+  // ✅ ADD THIS
+  getBreakingTickerNews,
+
 } from "../controllers/news.controller";
 
 import { uploadToSupabase } from "../middleware/Upload.middleware";
@@ -54,10 +59,16 @@ router.get(
   getPublishedNews
 );
 
-// ✅ NEW RECENT NEWS ROUTE
+// ✅ RECENT NEWS
 router.get(
   "/recent",
   getRecentNews
+);
+
+// ✅ BREAKING TICKER NEWS
+router.get(
+  "/breaking-ticker",
+  getBreakingTickerNews
 );
 
 // ─── Create ──────────────────────────────────────────────────────

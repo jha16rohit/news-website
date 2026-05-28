@@ -884,3 +884,50 @@ export const getRecentNews = async (
     });
   }
 };
+
+export const getBreakingTickerNews = async (
+  req: Request,
+  res: Response
+) => {
+  try {
+
+    const news = await News.find({
+      status: "PUBLISHED",
+
+      shortTitle: {
+        $exists: true,
+        $ne: "",
+      },
+    })
+      .sort({
+        createdAt: -1,
+      })
+      .limit(15)
+      .select("shortTitle headline");
+
+    const headlines = news.map(
+      (item: any) =>
+        item.shortTitle?.trim()
+          ? item.shortTitle
+          : item.headline
+    );
+
+    res.json({
+      success: true,
+      headlines,
+    });
+
+  } catch (error) {
+
+    console.error(
+      "getBreakingTickerNews error:",
+      error
+    );
+
+    res.status(500).json({
+      success: false,
+      message:
+        "Error fetching ticker news",
+    });
+  }
+};

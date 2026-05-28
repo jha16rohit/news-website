@@ -20,6 +20,8 @@ import {
   setMemoryToken,
 } from "../../../api/user/userauth";
 import type { AuthUser } from "../../../api/user/userauth";
+import { getBreakingTickerNews } from "../../../api/news";
+
 // ── helper ──────────────────────────────────────────────────────
 
 function computeInitials(name: string): string {
@@ -49,7 +51,34 @@ const UserNavbar: React.FC = () => {
 
   const searchInputRef   = useRef<HTMLInputElement>(null);
   const dropdownTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const [headlines, setHeadlines] = useState<string[]>([]);
 
+  useEffect(() => {
+
+  const fetchTickerNews =
+    async () => {
+
+      try {
+
+        const data =
+          await getBreakingTickerNews();
+
+        setHeadlines(
+          data.headlines || []
+        );
+
+      } catch (error) {
+
+        console.error(
+          "Failed to fetch ticker news:",
+          error
+        );
+      }
+    };
+
+  fetchTickerNews();
+
+}, []);
   // ── Date ────────────────────────────────────────────────────
 
   useEffect(() => {
@@ -130,12 +159,7 @@ const UserNavbar: React.FC = () => {
 
   // ── Nav helpers ───────────────────────────────────────────────
 
-  const headlines = [
-    "India Passes Historic Budget Bill With Overwhelming Majority",
-    "India Wins Test Series Against Australia 3-1",
-    "Sensex Surges 800 Points As Foreign Investors Pour In Record Capital",
-    "PM Modi Meets World Leaders",
-  ];
+  
 
   const childrenOf = (parentId: string): Category[] =>
     categories.filter(c => String(c.parentId) === parentId && c.enabled);
