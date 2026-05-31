@@ -15,10 +15,10 @@ import {
   getTagsInPublishedNews,
   getPublishedNews,
   getRecentNews,
-
-  // ✅ ADD THIS
   getBreakingTickerNews,
-
+  getTrendingNews,
+  getNewsByTag,
+  getNewsByTopicSlug,
 } from "../controllers/news.controller";
 
 import { uploadToSupabase } from "../middleware/Upload.middleware";
@@ -59,18 +59,25 @@ router.get(
   getPublishedNews
 );
 
-// ✅ RECENT NEWS
 router.get(
   "/recent",
   getRecentNews
 );
 
-// ✅ BREAKING TICKER NEWS
 router.get(
   "/breaking-ticker",
   getBreakingTickerNews
 );
 
+// ✅ NEW TAG ROUTE
+router.get(
+  "/tag/:slug",
+  getNewsByTag
+);
+router.get(
+  "/topic/:slug",
+  getNewsByTopicSlug
+);
 // ─── Create ──────────────────────────────────────────────────────
 router.post(
   "/create",
@@ -108,6 +115,11 @@ router.delete(
   "/admin/purge-deleted",
   protect,
   purgeDeletedNews
+);
+
+router.get(
+  "/trending-news",
+  getTrendingNews
 );
 
 // ⚠️ KEEP THIS LAST

@@ -58,7 +58,7 @@
   display: flex;
   align-items: center;
   width: max-content;
-  animation: ticker-scroll 35s linear infinite;
+  animation: ticker-scroll 40s linear infinite;
 }
 
 .ticker-track:hover { animation-play-state: paused; }
@@ -789,7 +789,7 @@
   display: flex;
   align-items: center;
   width: max-content;
-  animation: ticker-scroll 35s linear infinite;
+  animation: ticker-scroll 40s linear infinite;
 }
 
 .ticker-track:hover { animation-play-state: paused; }

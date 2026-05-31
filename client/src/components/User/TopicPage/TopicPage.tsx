@@ -4,39 +4,92 @@ import { Link } from "react-router-dom";
 import { User, Facebook, Instagram } from "lucide-react";
 import { FaXTwitter } from "react-icons/fa6";
 
+import { getTopicProfiles } from "../../../api/user/topicProfile";
+import Preloader from "../../Admin/Preloader/Preloder";
+
 interface Profile {
-  id: number;
+  _id: string;
+
   name: string;
   slug: string;
   caption: string;
   description: string;
+
   instagram: string;
   facebook: string;
   twitter: string;
+
   imageUrl?: string;
 }
 
 const TopicPage: React.FC = () => {
   const [topics, setTopics] = useState<Profile[]>([]);
+  const [loading, setLoading] = useState(true);
+
   const [visibleCount, setVisibleCount] = useState(8);
 
   useEffect(() => {
-    const loadTopics = () => {
-      const raw = localStorage.getItem("topic_profiles");
-      if (raw) {
-        setTopics(JSON.parse(raw));
+  const fetchTopics = async () => {
+    try {
+      setLoading(true);
+
+      const response =
+        await getTopicProfiles();
+
+      console.log(
+        "Topics API:",
+        response
+      );
+
+      setTopics(response);
+
+    } catch (error) {
+      console.error(error);
+
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  fetchTopics();
+
+}, []);
+
+  useEffect(() => {
+  const fetchTopics =
+    async () => {
+      try {
+
+        const response =
+          await getTopicProfiles();
+
+        console.log(
+          "Topics API:",
+          response
+        );
+
+        setTopics(response);
+
+      } catch (error) {
+        console.error(error);
       }
     };
 
-    loadTopics();
-    window.addEventListener("storage", loadTopics);
-    return () => window.removeEventListener("storage", loadTopics);
-  }, []);
+  fetchTopics();
+
+}, []);
 
   const handleShowMore = () => {
     setVisibleCount((prevCount) => prevCount + 4);
   };
-
+  
+  if (loading) {
+  return (
+    <div className="topic-loader">
+      <Preloader />
+    </div>
+  );
+}
   return (
     <div className="topic-page-wrapper">
       <main className="topic-main-content">
@@ -45,7 +98,7 @@ const TopicPage: React.FC = () => {
           <div className="topic-grid">
             {topics.slice(0, visibleCount).map((topic) => (
 
-              <Link to={`/topic/${topic.id}`} key={topic.id} className="topic-card text-decoration-none">
+              <Link to={`/topic/${topic.slug}`} key={topic._id} className="topic-card text-decoration-none">
 
                 {/* 1. Full Width Image at Top */}
                 <div className="topic-card-image-wrapper">

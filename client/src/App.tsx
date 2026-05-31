@@ -49,7 +49,7 @@ export default function App() {
             <Route path="/live/:eventId" element={<LiveDetail />} />
             <Route path="/live-events" element={<LiveEventsPage />} />
             <Route path="/Topic" element={<TopicPage />} />
-            <Route path="/topic/:id" element={<TopicDetail />} />
+            <Route path="/topic/:slug" element={<TopicDetail />} />
             <Route path="/profile" element={<UserProfile />} />
             <Route path="/advertise" element={<AdvertiseWithUs />} /> 
             <Route path="/about" element={<AboutUs />} />
@@ -91,7 +91,7 @@ export default function App() {
             <Route path="footer-management" element={<FooterManagement />} />
             <Route path="advertisement-manager" element={<AdvertisementManager />} />
             <Route path="about-manager" element={<AboutUsAdmin />} />
-<Route path="contact-manager" element={<ContactUsAdmin />} />  
+            <Route path="contact-manager" element={<ContactUsAdmin />} />  
           </Route>
 
           <Route path="*" element={<h1>Page Not Found</h1>} />

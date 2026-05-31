@@ -5,8 +5,14 @@ import { FaXTwitter } from "react-icons/fa6";
 import { Link, useParams } from "react-router-dom";
 import Advertisement from "../Advertisment/Advertisment";
 
+import { getTopicProfiles } from "../../../api/user/topicProfile";
+
+import Preloader from "../../Admin/Preloader/Preloder";
+
+import { getTopicNews } from "../../../api/user/topicNews";
+
 interface Profile {
-  id: number;
+  _id: string;
   name: string;
   slug: string;
   caption: string;
@@ -18,48 +24,77 @@ interface Profile {
   imageUrl?: string;
 }
 
-const relatedNews = [
-  {
-    id: 1,
-    title: "'Dhurandhar' Box Office Collection Day 5: Film Crosses ₹200 Crore Mark",
-    desc: "The political drama continues its dream run at the box office, crossing the ₹200 crore mark in just five days of release.",
-    category: "Entertainment",
-    author: "Entertainment Desk",
-    time: "about 1 year ago",
-    img: "https://images.unsplash.com/photo-1514525253161-7a46d19cd819?auto=format&fit=crop&q=80&w=400",
-    isLive: true
-  },
-  {
-    id: 2,
-    title: "India's GDP Growth Rate Hits 7.5% in Q1, Surpassing Expectations",
-    desc: "India's economy shows robust recovery with a 7.5% growth rate in the first quarter, driven by strong consumer spending and industrial output.",
-    category: "Business",
-    author: "Business Desk",
-    time: "about 1 day ago",
-    img: "https://images.unsplash.com/photo-1553877522-43269d4ea984?auto=format&fit=crop&q=80&w=400",
-    isLive: true
-  }
-];
+
 
 const TopicDetail: React.FC = () => {
   const [isExpanded, setIsExpanded] = useState(false);
   const [topic, setTopic] = useState<Profile | null>(null);
+  const [relatedNews,setRelatedNews] =  useState<any[]>([]);
   
-  const { id } = useParams<{ id: string }>();
+  const { slug } = useParams<{ slug: string }>();
 
   useEffect(() => {
-    const raw = localStorage.getItem("topic_profiles");
-    if (raw) {
-      const allTopics: Profile[] = JSON.parse(raw);
-      const foundTopic = allTopics.find(t => t.id.toString() === id);
-      setTopic(foundTopic || null);
+
+  const fetchTopic = async () => {
+
+    try {
+
+      setLoading(true);
+
+      const response =
+        await getTopicProfiles();
+
+      const foundTopic =
+        response.find(
+          (t: Profile) =>
+            t.slug === slug
+        );
+
+      setTopic(
+        foundTopic || null
+      );
+      const newsResponse =
+  await getTopicNews(
+    slug!
+  );
+
+setRelatedNews(
+  newsResponse.news || []
+);
+
+    } catch (error) {
+
+      console.error(error);
+
+    } finally {
+
+      setLoading(false);
     }
-  }, [id]);
+  };
 
-  if (!topic) {
-    return <div style={{ padding: "100px", textAlign: "center", fontSize: "20px" }}>Topic not found.</div>;
-  }
+  fetchTopic();
 
+}, [slug]);
+
+  const [loading, setLoading] = useState(true);
+
+ 
+
+  if (loading) {
+  return (
+    <div>
+      <Preloader />
+    </div>
+  );
+}
+
+ if (!topic) {
+  return (
+    <div>
+      Topic not found
+    </div>
+  );
+}
   return (
     <div className="topic-detail-wrapper">
       
@@ -135,25 +170,27 @@ const TopicDetail: React.FC = () => {
       <div className="topic-detail-container topic-detail-related-section">
         <div className="topic-detail-related-header">
           <h2>Related News</h2>
-          <span>{relatedNews.length} articles</span>
+          
         </div>
 
         <div className="topic-detail-related-list">
           {relatedNews.map((news) => (
-            <Link to={`/article/${news.id}`} key={news.id} className="topic-detail-news-card text-decoration-none">
+            <Link to={`/news/${news.slug}`}key={news.id} className="topic-detail-news-card text-decoration-none">
               <div className="topic-detail-news-img-wrap">
                 {news.isLive && <span className="topic-detail-live-badge">LIVE</span>}
-                <img src={news.img} alt={news.title} />
+                <img src={news.featuredImage} alt={news.headline} />
               </div>
               <div className="topic-detail-news-content">
-                <h3 className="topic-detail-news-title">{news.title}</h3>
-                <p className="topic-detail-news-desc">{news.desc}</p>
+                <h3 className="topic-detail-news-title">{news.headline}</h3>
+                <p className="topic-detail-news-desc">{news.excerpt}</p>
                 <div className="topic-detail-news-meta">
                   <span className="topic-detail-news-cat">{news.category}</span>
                   <span className="topic-detail-divider">|</span>
                   <span>{news.author}</span>
                   <span className="topic-detail-divider">|</span>
-                  <span className="topic-detail-time"><Clock size={12} /> {news.time}</span>
+                  <span className="topic-detail-time"><Clock size={12} /> {new Date(
+  news.createdAt
+).toLocaleDateString()}</span>
                 </div>
               </div>
             </Link>

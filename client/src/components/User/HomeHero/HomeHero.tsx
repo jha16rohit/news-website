@@ -2,6 +2,7 @@ import React, { useRef, useEffect, useState } from "react";
 import { Clock, Eye, ChevronLeft, ChevronRight } from "lucide-react";
 import { Link } from "react-router-dom";
 import { getAllNews } from "../../../api/user/news";
+import { getTrendingTags } from "../../../api/user/tag";
 import "./HomeHero.css";
 
 interface Article {
@@ -18,6 +19,11 @@ interface Article {
     color?: string;
   };
 }
+interface Tag {
+  _id: string;
+  name: string;
+  slug: string;
+}
 
 const HeroSection: React.FC = () => {
   // Reference for the scrolling tags container
@@ -26,21 +32,25 @@ const HeroSection: React.FC = () => {
   // Backend Articles State
   const [articles, setArticles] = useState<Article[]>([]);
 
-  // Mock data for the trending tags
-  const trendingTags = [
-    "Budget 2026",
-    "Election Results",
-    "IPL Live",
-    "Stock Market",
-    "Tech Trends",
-    "Local News",
-    "Global Affairs",
-    "Health & Wellness",
-    "Startups",
-    "Bollywood Updates",
-    "Space Missions",
-    "AI Revolution",
-  ];
+  const [trendingTags, setTrendingTags] = useState<Tag[]>([]);
+
+  useEffect(() => {
+  const fetchTrendingTags = async () => {
+    try {
+      const tags = await getTrendingTags();
+
+      setTrendingTags(tags);
+
+    } catch (error) {
+      console.error(
+        "Failed to fetch trending tags:",
+        error
+      );
+    }
+  };
+
+  fetchTrendingTags();
+}, []);
 
   // Fetch News From Backend
   useEffect(() => {
@@ -91,19 +101,15 @@ const HeroSection: React.FC = () => {
           </button>
 
           <div className="tags-scroll-wrapper" ref={tagsScrollRef}>
-            {trendingTags.map((tag, index) => {
-              const slug = tag.toLowerCase().replace(/\s+/g, "-");
-
-              return (
-                <Link
-                  to={`/tag/${slug}`}
-                  key={index}
-                  className="tag-pill text-decoration-none"
-                >
-                  {tag}
-                </Link>
-              );
-            })}
+            {trendingTags.map((tag) => (
+  <Link
+    key={tag._id}
+    to={`/tag/${tag.slug}`}
+    className="tag-pill text-decoration-none"
+  >
+    {tag.name}
+  </Link>
+))}
           </div>
 
           <button

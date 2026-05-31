@@ -5,6 +5,7 @@ import News from "../models/News";
 import Category from "../models/Category";
 import Tag from "../models/Tag";
 import User from "../models/user";
+import TopicProfile from "../models/TopicProfile";
 import { extractImagesFromContent } from "../utils/Extractimages";
 import slugify from "slugify";
 import { createClient } from "@supabase/supabase-js";
@@ -928,6 +929,168 @@ export const getBreakingTickerNews = async (
       success: false,
       message:
         "Error fetching ticker news",
+    });
+  }
+};
+
+export const getNewsByTag = async (
+  req: Request,
+  res: Response
+) => {
+  try {
+    const { slug } = req.params;
+
+    const tag = await Tag.findOne({
+      slug,
+    });
+
+    if (!tag) {
+      return res.status(404).json({
+        success: false,
+        message: "Tag not found",
+      });
+    }
+
+    const news = await News.find({
+      status: "PUBLISHED",
+      tags: tag.name,
+    }).sort({
+      createdAt: -1,
+    });
+
+    res.json({
+      success: true,
+      news,
+    });
+
+  } catch (error) {
+
+    console.error(
+      "getNewsByTag error:",
+      error
+    );
+
+    res.status(500).json({
+      success: false,
+      message:
+        "Error fetching tag news",
+    });
+  }
+};
+
+
+export const getTrendingNews = async (
+  req: Request,
+  res: Response
+) => {
+  try {
+    // Get all trending tags
+    const trendingTags = await Tag.find({
+      isTrending: true,
+    });
+
+    const tagNames = trendingTags.map(
+      (tag) => tag.name
+    );
+
+    // Get all news matching trending tags
+    const news = await News.find({
+      status: "PUBLISHED",
+      tags: {
+        $in: tagNames,
+      },
+    }).sort({
+      createdAt: -1,
+    });
+
+    // Random shuffle
+    const shuffled = [...news].sort(
+      () => Math.random() - 0.5
+    );
+
+    // Get category names
+    const newsWithCategory =
+      await Promise.all(
+        shuffled.map(async (article) => {
+          const category =
+            await Category.findById(
+              article.categoryId
+            );
+
+          return {
+            ...article.toObject(),
+            category:
+              category?.name ||
+              "News",
+          };
+        })
+      );
+
+    res.json({
+      success: true,
+      news: newsWithCategory,
+    });
+
+  } catch (error) {
+    console.error(
+      "getTrendingNews error:",
+      error
+    );
+
+    res.status(500).json({
+      success: false,
+      message:
+        "Failed to fetch trending news",
+    });
+  }
+};
+
+export const getNewsByTopicSlug = async (
+  req: Request,
+  res: Response
+) => {
+  try {
+
+    const { slug } = req.params;
+
+    const topic =
+      await TopicProfile.findOne({
+        slug,
+      });
+
+    if (!topic) {
+      return res.status(404).json({
+        success: false,
+        message: "Topic not found",
+      });
+    }
+
+    const news = await News.find({
+      status: "PUBLISHED",
+      tags: topic.name,
+    })
+      .sort({
+        createdAt: -1,
+      });
+
+    res.json({
+      success: true,
+      topic: topic.name,
+      total: news.length,
+      news,
+    });
+
+  } catch (error) {
+
+    console.error(
+      "getNewsByTopicSlug error:",
+      error
+    );
+
+    res.status(500).json({
+      success: false,
+      message:
+        "Failed to fetch topic news",
     });
   }
 };
