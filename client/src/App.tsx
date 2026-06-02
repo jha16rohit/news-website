@@ -30,7 +30,7 @@ import TopicProfiles from "./components/Admin/TopicProfiles/TopicProfiles";
 import { NewsProvider } from "./components/Admin/NewsProvider/NewsProvider";
 import UserProfile from "./components/User/UserProfile/UserProfile";
 import FooterManagement from "./components/Admin/FooterManagement/FooterManagement";
-import AdvertisementManager from "./components/Admin/AdvertisementManager/AdvertisementManager"; // 👈 NEW
+import AdvertisementManager from "./components/Admin/AdvertisementManager/AdvertisementManager";
 import ProtectedRoute from "./routes/protectedroutes";
 import AboutUsAdmin from "./components/Admin/AboutUsAdmin/AboutUsAdmin";
 import ContactUsAdmin from "./components/Admin/ContactUsAdmin/ContactUsAdmin";
@@ -45,13 +45,17 @@ export default function App() {
           {/* USER ROUTES */}
           <Route element={<UserLayout />}>
             <Route path="/" element={<UserDashboard />} />
+
+            {/* ArticleDetail — handles both MongoDB ObjectId and URL slugs */}
             <Route path="/article/:articleId" element={<ArticleDetail />} />
+            <Route path="/news/:articleId" element={<ArticleDetail />} />
+
             <Route path="/live/:eventId" element={<LiveDetail />} />
             <Route path="/live-events" element={<LiveEventsPage />} />
             <Route path="/Topic" element={<TopicPage />} />
             <Route path="/topic/:slug" element={<TopicDetail />} />
             <Route path="/profile" element={<UserProfile />} />
-            <Route path="/advertise" element={<AdvertiseWithUs />} /> 
+            <Route path="/advertise" element={<AdvertiseWithUs />} />
             <Route path="/about" element={<AboutUs />} />
             <Route path="/contact" element={<ContactUs />} />
             <Route path="/tag/:tagSlug" element={<TagPage />} />
@@ -91,7 +95,7 @@ export default function App() {
             <Route path="footer-management" element={<FooterManagement />} />
             <Route path="advertisement-manager" element={<AdvertisementManager />} />
             <Route path="about-manager" element={<AboutUsAdmin />} />
-            <Route path="contact-manager" element={<ContactUsAdmin />} />  
+            <Route path="contact-manager" element={<ContactUsAdmin />} />
           </Route>
 
           <Route path="*" element={<h1>Page Not Found</h1>} />

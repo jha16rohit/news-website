@@ -555,7 +555,16 @@ const AddUpdatePanel: React.FC<AddUpdatePanelProps> = ({ storyId, editingUpdate,
   const hasPoll   = showPoll && pollQuestion.trim().length > 0 && pollOptions.filter(Boolean).length >= 2;
   const hasSource = sourceUrl.trim().length > 0;
   const hasTags   = tags.length > 0;
-  const canPost   = hasTitle || hasBody || hasImage || hasTweet || hasPoll || hasSource || hasTags;
+  const canPost =
+  hasTitle &&
+  (
+    hasBody ||
+    hasImage ||
+    hasTweet ||
+    hasPoll ||
+    hasSource ||
+    hasTags
+  );
 
   const handlePost = () => {
     if (!canPost) return;
