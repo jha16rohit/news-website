@@ -23,20 +23,39 @@ import {
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 function toSlug(name: string) {
-  return (
-    "/" +
-    name
-      .toLowerCase()
-      .replace(/[^a-z0-9]+/g, "-")
-      .replace(/^-|-$/g, "")
-  );
+  const latinSlug = name
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-|-$/g, "");
+
+  // Agar english text hai toh normal slug return karo
+  if (latinSlug) {
+    return "/" + latinSlug;
+  }
+
+  // Agar Hindi / non-Latin text hai toh ek unique hash slug generate karo
+  let hash = 0;
+  for (let i = 0; i < name.length; i++) {
+    hash = (Math.imul(31, hash) + name.charCodeAt(i)) | 0;
+  }
+  return "/tag-" + Math.abs(hash).toString(36);
 }
 
 function toRawSlug(name: string) {
-  return name
+  const latinSlug = name
     .toLowerCase()
     .replace(/[^a-z0-9]+/g, "")
     .replace(/^-|-$/g, "");
+    
+  if (latinSlug) {
+    return latinSlug;
+  }
+
+  let hash = 0;
+  for (let i = 0; i < name.length; i++) {
+    hash = (Math.imul(31, hash) + name.charCodeAt(i)) | 0;
+  }
+  return "tag-" + Math.abs(hash).toString(36);
 }
 
 function formatDate(iso: string) {
@@ -249,7 +268,6 @@ export default function Tags() {
   );
 
   const totalTagged  = allTags.reduce((s, t) => s + (t._count?.articles ?? 0), 0);
-  // const withArticles = allTags.filter((t) => (t._count?.articles ?? 0) > 0).length;
 
   // ── Toggle trending via API ────────────────────────────────────────────────
   const toggleTrending = useCallback(async (tag: TagType) => {
@@ -275,9 +293,14 @@ export default function Tags() {
 
   // ── Handlers ───────────────────────────────────────────────────────────────
   const handleAdd = async (name: string) => {
-    await createTag(name);
-    await loadTags();
-    setShowAdd(false);
+    try {
+      await createTag(name);
+      await loadTags();
+      setShowAdd(false);
+    } catch (e: any) {
+      // Re-throw so AddTagModal can display the error inside itself
+      throw e instanceof Error ? e : new Error("Failed to create tag. Please try again.");
+    }
   };
 
   const handleDelete = async () => {

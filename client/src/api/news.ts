@@ -150,10 +150,10 @@ export const fetchAllNews = (params?: {
 
 // ─── GET ───────────────────────────────────────────────────────────────────────
 export const fetchNewsBySlug = (slug: string) =>
-  apiClient(`/api/news/${slug}`);
+  apiClient(`/api/news/slug/${slug}`);
 
 export const fetchNewsById = (id: string) =>
-  apiClient(`/api/news/id/${id}`);
+  apiClient(`/api/news/${id}`);
 
 // ─── UPDATE ────────────────────────────────────────────────────────────────────
 export const updateNews = (id: string, data: Partial<NewsPayload>) =>
@@ -161,6 +161,25 @@ export const updateNews = (id: string, data: Partial<NewsPayload>) =>
     method: "PUT",
     body: JSON.stringify(data),
   });
+
+// 🖼️ UPDATE WITH MEDIA — sends multipart/form-data so the featured image can be
+// replaced at the same time as other fields are updated.
+export const updateNewsWithMedia = async (id: string, formData: FormData): Promise<any> => {
+  const res = await fetch(`http://localhost:5001/api/news/${id}`, {
+    method: "PUT",
+    body: formData,
+    credentials: "include",
+    // Do NOT set Content-Type — browser sets it with the correct boundary automatically.
+  });
+
+  const json = await res.json().catch(() => ({}));
+
+  if (!res.ok) {
+    throw new Error(json?.message || `Server error ${res.status}`);
+  }
+
+  return json;
+};
 
 // ─── DELETE ────────────────────────────────────────────────────────────────────
 export const deleteNews = (

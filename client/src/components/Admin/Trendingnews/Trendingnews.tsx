@@ -5,7 +5,7 @@ import {
   Check, Flame, Loader2, AlertCircle,
 } from "lucide-react";
 import "./Trendingnews.css";
-import { getTrendingTags, type Tag as TagType } from "../../../api/tags.api";
+import { getTrendingTags, getAllTags, type Tag as TagType } from "../../../api/tags.api";
 import { fetchAllNews, type StatusEnum } from "../../../api/news";
 
 // ─────────────────────────────────────────────
@@ -56,6 +56,9 @@ function calcScore(views: number, maxViews: number): number {
 // ─────────────────────────────────────────────
 export default function TrendingNews() {
   const [adminTrendingSlugs, setAdminTrendingSlugs] = useState<Set<string>>(new Set());
+  // Map of lowercase tag name → full Tag object from DB (includes correct slug/id)
+  // This is the source of truth — avoids slug regeneration mismatches for Hindi tags
+  const [liveTagMap,         setLiveTagMap]         = useState<Map<string, TagType> | null>(null);
   const [articles,           setArticles]           = useState<Article[]>([]);
   const [loading,            setLoading]            = useState(true);
   const [error,              setError]              = useState<string | null>(null);
@@ -63,13 +66,22 @@ export default function TrendingNews() {
   const [timeRange,          setTimeRange]          = useState("Last 24 Hours");
   const [dropdownOpen,       setDropdownOpen]       = useState(false);
 
-  // ── Load admin-pinned trending tags (just for flame badge) ─────────────────
+  // ── Load admin-pinned trending tags + full live tag list ───────────────────
   const loadTrendingTags = useCallback(async () => {
     try {
-      const tags: TagType[] = await getTrendingTags();
-      setAdminTrendingSlugs(new Set(tags.map((t) => t.slug)));
+      const [trendingTags, allTags] = await Promise.all([
+        getTrendingTags(),
+        getAllTags(),
+      ]);
+      setAdminTrendingSlugs(new Set(trendingTags.map((t) => t.slug)));
+      // Build name→Tag map (lowercase key) so article tag strings can be
+      // resolved to their real DB slug/id regardless of script (Hindi, etc.)
+      const nameMap = new Map<string, TagType>();
+      allTags.forEach((t) => nameMap.set(t.name.toLowerCase().trim(), t));
+      setLiveTagMap(nameMap);
     } catch (e) {
-      console.error("Failed to load trending tags:", e);
+      console.error("Failed to load tags:", e);
+      // On error, leave liveTagMap null — filter will show all article tags
     }
   }, []);
 
@@ -101,16 +113,25 @@ export default function TrendingNews() {
           if (typeof nt === "string") {
             const name = nt.trim();
             if (!name) return acc;
-            const slug = name.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
-            acc.push({ id: slug, name, slug });
+            // Look up the real DB tag by name (handles Hindi/non-Latin slugs)
+            const dbTag = liveTagMap?.get(name.toLowerCase());
+            const slug = (
+              dbTag?.slug ?? 
+              name.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "")
+            ) || "tag-" + name.split("").reduce((h: number, c: string) => (Math.imul(31, h) + c.charCodeAt(0)) | 0, 0).toString(36).replace("-", "");
+            acc.push({ id: dbTag?.id ?? slug, name, slug });
             return acc;
           }
           // ── object (join-table or flat) ───────────────────────────────────
           const inner = nt?.tag ?? nt;
           const name  = inner?.name ?? "";
           if (!name) return acc;
-          const slug  = inner?.slug ?? name.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
-          acc.push({ id: inner?.id ?? nt?.tagId ?? slug, name, slug });
+          const dbTag = liveTagMap?.get(name.toLowerCase());
+          const slug = (
+            dbTag?.slug ?? inner?.slug ?? 
+            name.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "")
+          ) || "tag-" + name.split("").reduce((h: number, c: string) => (Math.imul(31, h) + c.charCodeAt(0)) | 0, 0).toString(36).replace("-", "");
+          acc.push({ id: dbTag?.id ?? inner?.id ?? nt?.tagId ?? slug, name, slug });
           return acc;
         }, []),
         trend:       timeSince(a.publishedAt ?? a.createdAt),
@@ -135,26 +156,39 @@ export default function TrendingNews() {
   }, []);
 
   useEffect(() => {
-    loadTrendingTags();
-    loadArticles();
+    // Load tags first so liveTagMap is available when articles are mapped
+    loadTrendingTags().then(() => loadArticles());
   }, [loadTrendingTags, loadArticles]);
 
-  // ── Derive filter tags from ALL articles (not just admin-pinned) ───────────
-  // Count usage per tag, then: admin-trending first → sort by article count desc
+  // ── Derive filter tags — resolve article tag names via liveTagMap ──────────
+  // Article tags are stored as plain strings. liveTagMap resolves them to their
+  // real DB slug (including hash-slugs for Hindi/non-Latin tags).
+  // Tags deleted from the DB are excluded because they won't be in liveTagMap.
   const filterTags = useMemo((): FilterTag[] => {
     const map = new Map<string, FilterTag>();
 
     for (const article of articles) {
       for (const tag of article.tags) {
-        if (!tag.slug) continue;
-        const existing = map.get(tag.slug);
+        if (!tag.name) continue;
+
+        // If liveTagMap is loaded, resolve to the real DB slug
+        const dbTag   = liveTagMap?.get(tag.name.toLowerCase().trim());
+        // If liveTagMap is loaded and this tag doesn't exist in DB, skip it (deleted)
+        if (liveTagMap !== null && !dbTag) continue;
+
+        const resolvedSlug = dbTag?.slug ?? tag.slug;
+        if (!resolvedSlug) continue;
+
+        const existing = map.get(resolvedSlug);
         if (existing) {
           existing.articleCount += 1;
         } else {
-          map.set(tag.slug, {
-            ...tag,
+          map.set(resolvedSlug, {
+            id:              dbTag?.id   ?? tag.id,
+            name:            dbTag?.name ?? tag.name,
+            slug:            resolvedSlug,
             articleCount:    1,
-            isAdminTrending: adminTrendingSlugs.has(tag.slug),
+            isAdminTrending: adminTrendingSlugs.has(resolvedSlug),
           });
         }
       }
@@ -165,15 +199,26 @@ export default function TrendingNews() {
       if (!a.isAdminTrending && b.isAdminTrending)  return 1;
       return b.articleCount - a.articleCount;
     });
-  }, [articles, adminTrendingSlugs]);
+  }, [articles, adminTrendingSlugs, liveTagMap]);
 
-  // ── Filtered articles ──────────────────────────────────────────────────────
-  const filteredArticles = useMemo(() =>
-    activeTagSlug === "all"
-      ? articles
-      : articles.filter((a) => a.tags.some((t) => t.slug === activeTagSlug)),
-    [articles, activeTagSlug]
-  );
+  // ── Reset active filter if the selected tag was deleted ───────────────────
+  useEffect(() => {
+    if (activeTagSlug !== "all" && liveTagMap !== null) {
+      const stillExists = Array.from(liveTagMap.values()).some((t) => t.slug === activeTagSlug);
+      if (!stillExists) setActiveTagSlug("all");
+    }
+  }, [liveTagMap, activeTagSlug]);
+
+  // ── Filtered articles — also resolve via liveTagMap ───────────────────────
+  const filteredArticles = useMemo(() => {
+    if (activeTagSlug === "all") return articles;
+    return articles.filter((a) =>
+      a.tags.some((t) => {
+        const dbTag = liveTagMap?.get(t.name.toLowerCase().trim());
+        return (dbTag?.slug ?? t.slug) === activeTagSlug;
+      })
+    );
+  }, [articles, activeTagSlug, liveTagMap]);
 
   // ── Stats ──────────────────────────────────────────────────────────────────
   const totalViews = filteredArticles.reduce((acc, a) => acc + a.views, 0);

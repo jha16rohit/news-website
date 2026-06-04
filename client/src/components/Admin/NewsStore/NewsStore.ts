@@ -1,10 +1,10 @@
-// NewsStore.ts  — full type definitions + context
+// NewsStore.ts — full type definitions + context
 
 import { createContext, useContext } from "react";
 
 // ─── LiveUpdate ────────────────────────────────────────────────────────────────
 export interface LiveUpdate {
-  id:         number;
+  id:         string | number; // Updated to match flexible backend dynamic UUIDs
   time:       string;
   text:       string;
   timestamp?: string;
@@ -12,7 +12,7 @@ export interface LiveUpdate {
 
 // ─── Article ───────────────────────────────────────────────────────────────────
 export interface Article {
-  id:             number;
+  id:             string; // ← CHANGED FROM number TO string TO MATCH MONGO/_ID
   title:          string;
   subtitle?:      string;
   category:       string;
@@ -42,7 +42,7 @@ export interface Article {
 
 // ─── Category ─────────────────────────────────────────────────────────────────
 export interface Category {
-  id:          string;           // ← string (UUID), NOT number
+  id:          string;           
   name:        string;
   description?: string;
   articles?:   string;
@@ -62,16 +62,16 @@ export interface NewsStore {
   articles:         Article[];
   setArticles:      (a: Article[]) => void;
   addArticle:       (article: Omit<Article, "id">) => void;
-  updateArticle:    (id: number, patch: Partial<Article>) => void;
-  deleteArticle:    (id: number) => void;
-  convertToBreaking:(id: number) => void;
-  convertToLive:    (id: number) => void;
-  endLive:          (id: number) => void;
-  promoteToBreaking:(ids: number[]) => void;
-  addLiveUpdate:    (articleId: number, text: string) => void;
-  togglePause:      (id: number) => void;
-  increasePriority: (id: number) => void;
-  decreasePriority: (id: number) => void;
+  updateArticle:    (id: string, patch: Partial<Article>) => void; // ← Changed id type to string
+  deleteArticle:    (id: string) => void;                          // ← Changed id type to string
+  convertToBreaking:(id: string) => void;                          // ← Changed id type to string
+  convertToLive:    (id: string) => void;                          // ← Changed id type to string
+  endLive:          (id: string) => void;                          // ← Changed id type to string
+  promoteToBreaking:(ids: string[]) => void;                       // ← Changed id type to string[]
+  addLiveUpdate:    (articleId: string, text: string) => void;     // ← Changed id type to string
+  togglePause:      (id: string) => void;                          // ← Changed id type to string
+  increasePriority: (id: string) => void;                          // ← Changed id type to string
+  decreasePriority: (id: string) => void;                          // ← Changed id type to string
 
   categories:       Category[];
   addCategory:      (category: Omit<Category, "id">) => void;

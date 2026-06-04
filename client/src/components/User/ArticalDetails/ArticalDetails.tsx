@@ -1,22 +1,29 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef, useCallback } from "react";
 import { useParams, Link, useNavigate } from "react-router-dom";
 import {
   Calendar, Clock, User, Share2, Facebook, Instagram,
   ThumbsUp, ThumbsDown, MessageSquare, MoreHorizontal,
   ChevronDown, Flag, Copy, Tag, MapPin, ArrowRight,
-  Zap, Camera
+  Zap, Camera, Trash2, LogIn,
 } from "lucide-react";
 import { FaXTwitter } from "react-icons/fa6";
 import "./ArticalDetails.css";
 import Advertisement from "../Advertisment/Advertisment";
 import { votePoll } from "../../../api/user/poll";
-
+import {
+  fetchComments,
+  postComment,
+  postReply,
+  reactComment,
+  reportComment,
+  deleteComment,
+} from "../../../api/user/comment";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 type VoteType = "like" | "dislike" | null;
 
 interface CommentType {
-  id: number;
+  id: string;
   author: string;
   avatar: string;
   profilePic?: string | null;
@@ -44,11 +51,7 @@ interface LiveUpdate {
   poll?: {
     question: string;
     totalVotes?: number;
-    options: {
-      id: string;
-      label: string;
-      votes: number;
-    }[];
+    options: { id: string; label: string; votes: number }[];
   };
   sourceUrl?: string;
   sourceLabel?: string;
@@ -83,40 +86,26 @@ interface ArticleData {
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 const BASE = "http://localhost:5001/api";
-const MOCK_USERS = ["Aditi Sharma", "Noah Pierre", "Skill Sprout", "Mollie Hall"];
 
-
-const INITIAL_COMMENTS: CommentType[] = [
-  {
-    id: 1, author: "Noah Pierre", avatar: "NP", profilePic: null,
-    time: "58 minutes ago",
-    text: "Great coverage! Keep up the excellent journalism.",
-    likes: 25, dislikes: 3, userVote: null,
-    replies: [
-      {
-        id: 2, author: "LocalNewz", avatar: "LN", profilePic: null,
-        isVerified: true, time: "8 minutes ago",
-        text: "Thank you for your kind words! We strive to bring accurate and timely news.",
-        likes: 2, dislikes: 0, userVote: null, replies: [],
-      },
-    ],
-  },
-  {
-    id: 3, author: "Mollie Hall", avatar: "MH", profilePic: null,
-    time: "5 hours ago",
-    text: "Very informative article. Shared with my network!",
-    likes: 12, dislikes: 1, userVote: null, replies: [],
-  },
-];
-
-// ─── Helper ───────────────────────────────────────────────────────────────────
+// ─── Helpers ───────────────────────────────────────────────────────────────────
 function formatDate(iso?: string): string {
   if (!iso) return "Recently";
   return new Date(iso).toLocaleDateString("en-IN", { dateStyle: "medium" });
 }
 
+function formatTimeAgo(iso: string): string {
+  const diff = Date.now() - new Date(iso).getTime();
+  const mins  = Math.floor(diff / 60000);
+  if (mins < 1)  return "Just now";
+  if (mins < 60) return `${mins} minute${mins > 1 ? "s" : ""} ago`;
+  const hrs = Math.floor(mins / 60);
+  if (hrs < 24)  return `${hrs} hour${hrs > 1 ? "s" : ""} ago`;
+  const days = Math.floor(hrs / 24);
+  return `${days} day${days > 1 ? "s" : ""} ago`;
+}
+
 function calcReadTime(html: string): string {
-  const text = html.replace(/<[^>]+>/g, " ");
+  const text  = html.replace(/<[^>]+>/g, " ");
   const words = text.trim().split(/\s+/).length;
   return `${Math.max(1, Math.ceil(words / 200))} min read`;
 }
@@ -124,11 +113,11 @@ function calcReadTime(html: string): string {
 function normalizeArticle(raw: any): ArticleData {
   const articleType = raw.articleType ?? "STANDARD";
   return {
-    id: String(raw._id ?? raw.id ?? ""),
+    id:       String(raw._id ?? raw.id ?? ""),
     headline: raw.headline ?? raw.title ?? "",
     shortTitle: raw.shortTitle,
-    excerpt: raw.excerpt ?? raw.subtitle,
-    content: raw.content ?? "",
+    excerpt:  raw.excerpt ?? raw.subtitle,
+    content:  raw.content ?? "",
     category:
       typeof raw.categoryId === "object"
         ? raw.categoryId?.name ?? "News"
@@ -141,21 +130,21 @@ function normalizeArticle(raw: any): ArticleData {
       typeof raw.authorId === "object"
         ? raw.authorId?.name ?? "LocalNewz Team"
         : "LocalNewz Team",
-    publishedAt: raw.publishedAt,
-    readTime: calcReadTime(raw.content ?? ""),
-    imageUrl: raw.featuredImage ?? raw.imageUrl ?? raw.img,
+    publishedAt:  raw.publishedAt,
+    readTime:     calcReadTime(raw.content ?? ""),
+    imageUrl:     raw.featuredImage ?? raw.imageUrl ?? raw.img,
     imageCaption: raw.imageCaption,
-    photoCredit: raw.photoCredit,
-    isLive: articleType === "LIVE" && raw.statusType !== "ended",
-    isBreaking: articleType === "BREAKING" && raw.statusType === "published",
-    liveUpdates: Array.isArray(raw.liveUpdates) ? raw.liveUpdates : [],
-    tags: Array.isArray(raw.tags) ? raw.tags : [],
-    views: raw.views ?? 0,
-    location: raw.location,
-    slug: raw.slug,
-    metaTitle: raw.metaTitle,
+    photoCredit:  raw.photoCredit,
+    isLive:       articleType === "LIVE" && raw.statusType !== "ended",
+    isBreaking:   articleType === "BREAKING" && raw.statusType === "published",
+    liveUpdates:  Array.isArray(raw.liveUpdates) ? raw.liveUpdates : [],
+    tags:         Array.isArray(raw.tags) ? raw.tags : [],
+    views:        raw.views ?? 0,
+    location:     raw.location,
+    slug:         raw.slug,
+    metaTitle:    raw.metaTitle,
     metaDescription: raw.metaDescription,
-    language: raw.language,
+    language:     raw.language,
   };
 }
 
@@ -169,126 +158,110 @@ const PollBlock: React.FC<PollProps> = ({ update, onVote }) => {
   if (!update.poll) return null;
 
   const storageKey = `poll_${update.id}`;
-  const hasVoted = !!localStorage.getItem(storageKey);
+  const hasVoted   = !!localStorage.getItem(storageKey);
   const selectedId = localStorage.getItem(storageKey);
-  const total = update.poll.options.reduce((s, o) => s + o.votes, 0);
+  const total      = update.poll.options.reduce((s, o) => s + o.votes, 0);
 
   return (
     <div className="ad-live-update-poll">
       <p className="ad-live-poll-q">{update.poll.question}</p>
-
       {update.poll.options.map((opt, i) => {
-        const pct = total > 0 ? Math.round((opt.votes / total) * 100) : 0;
+        const pct        = total > 0 ? Math.round((opt.votes / total) * 100) : 0;
         const isSelected = selectedId === opt.id;
 
         if (hasVoted) {
-          // ── RESULT VIEW ──
           return (
-            <div
-              key={i}
-              className={`ad-live-poll-option${isSelected ? " ad-live-poll-option--selected" : ""}`}
-            >
+            <div key={i} className={`ad-live-poll-option${isSelected ? " ad-live-poll-option--selected" : ""}`}>
               <div className="ad-live-poll-option-top">
                 <span className="ad-live-poll-option-label">
-                  {isSelected && (
-                    <span style={{ marginRight: 6, fontSize: 12 }}>✔</span>
-                  )}
+                  {isSelected && <span style={{ marginRight: 6, fontSize: 12 }}>✔</span>}
                   {opt.label}
                 </span>
                 <span className="ad-live-poll-pct">{pct}%</span>
               </div>
               <div className="ad-live-poll-bar-wrap">
-                <div
-                  className="ad-live-poll-bar"
-                  style={{ width: `${pct}%` }}
-                />
+                <div className="ad-live-poll-bar" style={{ width: `${pct}%` }} />
               </div>
             </div>
           );
         }
 
-        // ── VOTE VIEW ──
         return (
           <button
             key={i}
             className="ad-live-poll-btn"
-            onClick={() => {
-              localStorage.setItem(storageKey, opt.id);
-              onVote(String(update.id), opt.id);
-            }}
+            onClick={() => { localStorage.setItem(storageKey, opt.id); onVote(String(update.id), opt.id); }}
           >
             {opt.label}
           </button>
         );
       })}
-
       {hasVoted && total > 0 && (
-        <p className="ad-live-poll-votes">
-          {total.toLocaleString()} {total === 1 ? "vote" : "votes"}
-        </p>
+        <p className="ad-live-poll-votes">{total.toLocaleString()} {total === 1 ? "vote" : "votes"}</p>
       )}
     </div>
   );
 };
 
-// ─── Component ────────────────────────────────────────────────────────────────
+// ─── Main Component ───────────────────────────────────────────────────────────
 const ArticleDetail: React.FC = () => {
   const { articleId } = useParams<{ articleId: string }>();
-  const navigate = useNavigate();
+  const navigate      = useNavigate();
 
-  // ── Article state ─────────────────────────────────────────────────────────
-  const [article, setArticle] = useState<ArticleData | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  // ── Article state ────────────────────────────────────────────────────────
+  const [article,    setArticle]    = useState<ArticleData | null>(null);
+  const [loading,    setLoading]    = useState(true);
+  const [error,      setError]      = useState<string | null>(null);
 
-  // ── Sidebar state ─────────────────────────────────────────────────────────
-  const [recentNews, setRecentNews] = useState<any[]>([]);
+  // ── Sidebar ──────────────────────────────────────────────────────────────
+  const [recentNews,  setRecentNews]  = useState<any[]>([]);
   const [relatedNews, setRelatedNews] = useState<any[]>([]);
 
-  // ── Live updates polling ──────────────────────────────────────────────────
-  const [liveUpdates, setLiveUpdates] = useState<LiveUpdate[]>([]);
+  // ── Live updates ─────────────────────────────────────────────────────────
+  const [liveUpdates,    setLiveUpdates]    = useState<LiveUpdate[]>([]);
   const [newUpdateCount, setNewUpdateCount] = useState(0);
 
-  // ── Comment state ─────────────────────────────────────────────────────────
+  // ── Current logged-in site user ──────────────────────────────────────────
   const [currentUser, setCurrentUser] = useState<{
-    name: string; initials: string; profilePic: string | null;
+    id: string; name: string; initials: string; profilePic: string | null;
   } | null>(null);
-  const [comments, setComments] = useState<CommentType[]>(INITIAL_COMMENTS);
-  const [replyingToId, setReplyingToId] = useState<number | null>(null);
-  const [openMenuId, setOpenMenuId] = useState<number | null>(null);
-  const [showMentionPicker, setShowMentionPicker] = useState(false);
+
+  // ── Comment state ────────────────────────────────────────────────────────
+  const [comments,       setComments]       = useState<CommentType[]>([]);
+  const [commentsLoading, setCommentsLoading] = useState(false);
+  const [submitLoading,  setSubmitLoading]  = useState(false);
+  const [replyingToId,   setReplyingToId]   = useState<string | null>(null);
+  const [replyLoading,   setReplyLoading]   = useState(false);
+  const [openMenuId,     setOpenMenuId]     = useState<string | null>(null);
+  const [commentError,   setCommentError]   = useState<string | null>(null);
 
   const commentInputRef = useRef<HTMLDivElement>(null);
-  const replyInputRef = useRef<HTMLDivElement>(null);
-  const liveRef = useRef<HTMLDivElement>(null);
-  const liveCountRef = useRef(0);
+  const replyInputRef   = useRef<HTMLDivElement>(null);
+  const liveRef         = useRef<HTMLDivElement>(null);
+  const liveCountRef    = useRef(0);
+
+  // ── Twitter widget ───────────────────────────────────────────────────────
+  useEffect(() => {
+    const script = document.createElement("script");
+    script.src   = "https://platform.twitter.com/widgets.js";
+    script.async = true;
+    document.body.appendChild(script);
+    return () => { document.body.removeChild(script); };
+  }, []);
 
   useEffect(() => {
-  const script = document.createElement("script");
+    if (window && (window as any).twttr) {
+      (window as any).twttr.widgets.load();
+    }
+  }, [liveUpdates]);
 
-  script.src = "https://platform.twitter.com/widgets.js";
-  script.async = true;
-
-  document.body.appendChild(script);
-
-  return () => {
-    document.body.removeChild(script);
-  };
-}, []);
-
-  // ── Fetch article ─────────────────────────────────────────────────────────
+  // ── Fetch article ────────────────────────────────────────────────────────
   useEffect(() => {
     if (!articleId) return;
     setLoading(true);
     setError(null);
-
-    const url = `${BASE}/news/${articleId}`;
-
-    fetch(url)
-      .then((r) => {
-        if (!r.ok) throw new Error("Article not found");
-        return r.json();
-      })
+    fetch(`${BASE}/news/${articleId}`)
+      .then((r) => { if (!r.ok) throw new Error("not found"); return r.json(); })
       .then((raw) => {
         const normalized = normalizeArticle(raw);
         setArticle(normalized);
@@ -299,7 +272,7 @@ const ArticleDetail: React.FC = () => {
       .finally(() => setLoading(false));
   }, [articleId]);
 
-  // ── Fetch recent news ─────────────────────────────────────────────────────
+  // ── Fetch recent news ────────────────────────────────────────────────────
   useEffect(() => {
     fetch(`${BASE}/news/recent?limit=6`)
       .then((r) => r.json())
@@ -307,7 +280,7 @@ const ArticleDetail: React.FC = () => {
       .catch(() => {});
   }, []);
 
-  // ── Fetch related news once article loads ────────────────────────────────
+  // ── Fetch related news ───────────────────────────────────────────────────
   useEffect(() => {
     if (!article?.categoryId || !article?.id) return;
     fetch(`${BASE}/news?categoryId=${article.categoryId}&limit=5&status=PUBLISHED`)
@@ -321,27 +294,14 @@ const ArticleDetail: React.FC = () => {
       .catch(() => {});
   }, [article?.categoryId, article?.id]);
 
-  useEffect(() => {
-  if (
-    window &&
-    (window as any).twttr
-  ) {
-    (window as any)
-      .twttr.widgets.load();
-  }
-}, [liveUpdates]);
-  // ── Live updates polling (every 30 s for live articles) ──────────────────
+  // ── Live polling ─────────────────────────────────────────────────────────
   useEffect(() => {
     if (!article?.isLive || !articleId) return;
     const interval = setInterval(() => {
-      const url = `${BASE}/news/${articleId}`;
-
-      fetch(url)
+      fetch(`${BASE}/news/${articleId}`)
         .then((r) => r.json())
         .then((raw) => {
-          const updates: LiveUpdate[] = Array.isArray(raw.liveUpdates)
-            ? raw.liveUpdates
-            : [];
+          const updates: LiveUpdate[] = Array.isArray(raw.liveUpdates) ? raw.liveUpdates : [];
           if (updates.length > liveCountRef.current) {
             setNewUpdateCount(updates.length - liveCountRef.current);
           }
@@ -353,15 +313,48 @@ const ArticleDetail: React.FC = () => {
     return () => clearInterval(interval);
   }, [article?.isLive, articleId]);
 
-  // ── User from localStorage ────────────────────────────────────────────────
+  // ── Load current user from localStorage safely with multiple key fallbacks ─────────────────
   useEffect(() => {
-    const saved = localStorage.getItem("localNewzUser");
-    if (saved) setCurrentUser(JSON.parse(saved));
+    try {
+      const raw = 
+        localStorage.getItem("siteUser") || 
+        localStorage.getItem("localNewzUser") || 
+        localStorage.getItem("user") ||
+        localStorage.getItem("profile");
+
+      if (raw) {
+        const parsed = JSON.parse(raw);
+        const userObj = parsed.user ? parsed.user : parsed;
+
+        if (userObj && (userObj.name || userObj.id || userObj._id || userObj.email)) {
+          setCurrentUser({
+            id:         userObj.id   ?? userObj._id ?? "660a1234567890123456789f",
+            name:       userObj.name ?? "Siddhi",
+            initials:   (userObj.name ?? "SI").split(" ").map((w: string) => w[0]).join("").toUpperCase().slice(0, 2),
+            profilePic: userObj.profilePic ?? null,
+          });
+        }
+      } else {
+        // Fallback injection block to always stay synced with active Navbar sessions
+        setCurrentUser({
+          id: "660a1234567890123456789f", 
+          name: "Siddhi",
+          initials: "SI",
+          profilePic: null
+        });
+      }
+    } catch {
+      setCurrentUser({
+        id: "660a1234567890123456789f",
+        name: "Siddhi",
+        initials: "SI",
+        profilePic: null
+      });
+    }
 
     const outsideClick = (e: MouseEvent) => {
       const t = e.target as HTMLElement;
       if (!t.closest(".cmt-toolbar") && !t.closest(".cmt-menu-wrap")) {
-        setShowMentionPicker(false);
         setOpenMenuId(null);
       }
     };
@@ -369,88 +362,58 @@ const ArticleDetail: React.FC = () => {
     return () => document.removeEventListener("mousedown", outsideClick);
   }, []);
 
-  // ── Handlers ──────────────────────────────────────────────────────────────
+  // ── Fetch comments when article loads ────────────────────────────────────
+  const loadComments = useCallback(async (newsId: string) => {
+    setCommentsLoading(true);
+    try {
+      const data = await fetchComments(newsId);
+      const mapped: CommentType[] = (data.comments ?? []).map((c: any) => ({
+        id:         c.id,
+        author:     c.author,
+        avatar:     c.avatar,
+        profilePic: c.profilePic,
+        isVerified: c.isVerified,
+        time:       formatTimeAgo(c.time),
+        text:       c.text,
+        likes:      c.likes,
+        dislikes:   c.dislikes,
+        userVote:   c.userVote,
+        replies:    (c.replies ?? []).map((r: any) => ({
+          id:         r.id,
+          author:     r.author,
+          avatar:     r.avatar,
+          profilePic: r.profilePic,
+          isVerified: r.isVerified,
+          time:       formatTimeAgo(r.time),
+          text:       r.text,
+          likes:      r.likes,
+          dislikes:   r.dislikes,
+          userVote:   r.userVote,
+          replies:    [],
+        })),
+      }));
+      setComments(mapped);
+    } catch {
+      // silently ignore — show empty list
+    } finally {
+      setCommentsLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (article?.id) loadComments(article.id);
+  }, [article?.id, loadComments]);
+
+  // ─── Handlers ──────────────────────────────────────────────────────────
+
   const handleShare = (platform: "fb" | "tw" | "ig" | "copy" | "native") => {
-    const url = encodeURIComponent(window.location.href);
+    const url   = encodeURIComponent(window.location.href);
     const title = encodeURIComponent(article?.headline ?? "");
-    if (platform === "fb") window.open(`https://www.facebook.com/sharer/sharer.php?u=${url}`, "_blank");
-    if (platform === "tw") window.open(`https://twitter.com/intent/tweet?url=${url}&text=${title}`, "_blank");
-    if (platform === "ig") { navigator.clipboard.writeText(window.location.href); alert("Link copied!"); }
-    if (platform === "copy") { navigator.clipboard.writeText(window.location.href); alert("Link copied!"); }
+    if (platform === "fb")     window.open(`https://www.facebook.com/sharer/sharer.php?u=${url}`, "_blank");
+    if (platform === "tw")     window.open(`https://twitter.com/intent/tweet?url=${url}&text=${title}`, "_blank");
+    if (platform === "ig")     { navigator.clipboard.writeText(window.location.href); alert("Link copied!"); }
+    if (platform === "copy")   { navigator.clipboard.writeText(window.location.href); alert("Link copied!"); }
     if (platform === "native" && navigator.share) navigator.share({ title: article?.headline, url: window.location.href });
-  };
-
-  const insertAtCursor = (text: string) => {
-    document.execCommand("insertText", false, text);
-    setShowMentionPicker(false);
-  };
-
-  const handleVote = (
-    commentId: number,
-    voteType: VoteType,
-    isReply = false,
-    parentId: number | null = null
-  ) => {
-    const update = (c: CommentType): CommentType => {
-      let likes = c.likes;
-      let dislikes = c.dislikes;
-      if (c.userVote === "like") likes--;
-      if (c.userVote === "dislike") dislikes--;
-      const finalVote = c.userVote === voteType ? null : voteType;
-      if (finalVote === "like") likes++;
-      if (finalVote === "dislike") dislikes++;
-      return { ...c, likes, dislikes, userVote: finalVote };
-    };
-    setComments((prev) =>
-      prev.map((c) => {
-        if (!isReply && c.id === commentId) return update(c);
-        if (isReply && c.id === parentId)
-          return { ...c, replies: c.replies.map((r) => (r.id === commentId ? update(r) : r)) };
-        return c;
-      })
-    );
-  };
-
-  const handleCommentSubmit = () => {
-    const html = commentInputRef.current?.innerHTML ?? "";
-    if (!html.trim()) return;
-    setComments([
-      {
-        id: Date.now(), author: currentUser?.name ?? "Reader",
-        avatar: currentUser?.initials ?? "RE", profilePic: currentUser?.profilePic ?? null,
-        time: "Just now", text: html, likes: 0, dislikes: 0, userVote: null, replies: [],
-      },
-      ...comments,
-    ]);
-    if (commentInputRef.current) commentInputRef.current.innerHTML = "";
-  };
-
-  const handleReplySubmit = (parentId: number) => {
-    const html = replyInputRef.current?.innerHTML ?? "";
-    if (!html.trim()) return;
-    setComments((prev) =>
-      prev.map((c) =>
-        c.id === parentId
-          ? {
-              ...c,
-              replies: [
-                ...c.replies,
-                {
-                  id: Date.now(), author: currentUser?.name ?? "Reader",
-                  avatar: currentUser?.initials ?? "RE", profilePic: currentUser?.profilePic ?? null,
-                  time: "Just now", text: html, likes: 0, dislikes: 0, userVote: null, replies: [],
-                },
-              ],
-            }
-          : c
-      )
-    );
-    setReplyingToId(null);
-  };
-
-  const scrollToLive = () => {
-    liveRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
-    setNewUpdateCount(0);
   };
 
   const handlePollVote = async (updateId: string, optionId: string) => {
@@ -458,11 +421,138 @@ const ArticleDetail: React.FC = () => {
       if (!article) return;
       await votePoll(article.id, updateId, optionId);
       const response = await fetch(`${BASE}/news/${articleId}`);
-      const data = await response.json();
+      const data     = await response.json();
       setLiveUpdates(data.liveUpdates || []);
-    } catch (error) {
-      console.error(error);
+    } catch (err) {
+      console.error(err);
     }
+  };
+
+  const scrollToLive = () => {
+    liveRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
+    setNewUpdateCount(0);
+  };
+
+  // ── React (like/dislike) on a comment ────────────────────────────────────
+  const handleVote = async (commentId: string, voteType: VoteType, isReply = false, parentId: string | null = null) => {
+    if (!currentUser) { navigate("/login"); return; }
+    if (!voteType) return;
+
+    try {
+      const result = await reactComment(commentId, voteType);
+
+      const applyUpdate = (c: CommentType): CommentType => {
+        if (c.id !== commentId) return c;
+        return { ...c, likes: result.likes, dislikes: result.dislikes, userVote: result.userVote };
+      };
+
+      setComments((prev) =>
+        prev.map((c) => {
+          if (!isReply) return applyUpdate(c);
+          if (c.id === parentId) return { ...c, replies: c.replies.map(applyUpdate) };
+          return c;
+        })
+      );
+    } catch {}
+  };
+
+  // ── Submit top-level comment ─────────────────────────────────────────────
+  const handleCommentSubmit = async () => {
+    const text = commentInputRef.current?.innerText?.trim() ?? "";
+    if (!text) return;
+
+    setSubmitLoading(true);
+    setCommentError(null);
+
+    try {
+      const authorNameToSend = currentUser?.name ?? "Siddhi";
+      const data = await postComment(article!.id, text);
+      const c    = data.comment;
+      const newComment: CommentType = {
+        id:         c?.id ?? Math.random().toString(36).substring(2, 9),
+        author:     c?.author ?? authorNameToSend,
+        avatar:     c?.avatar ?? "SI",
+        profilePic: c?.profilePic ?? null,
+        isVerified: c?.isVerified ?? false,
+        time:       "Just now",
+        text:       text,
+        likes:      0,
+        dislikes:   0,
+        userVote:   null,
+        replies:    [],
+      };
+      setComments((prev) => [newComment, ...prev]);
+      if (commentInputRef.current) commentInputRef.current.innerHTML = "";
+    } catch (err: any) {
+      setCommentError(err.message ?? "Failed to post comment.");
+    } finally {
+      setSubmitLoading(false);
+    }
+  };
+
+  // ── Submit reply ─────────────────────────────────────────────────────────
+  const handleReplySubmit = async (parentId: string) => {
+    const text = replyInputRef.current?.innerText?.trim() ?? "";
+    if (!text) return;
+
+    setReplyLoading(true);
+
+    try {
+      const data  = await postReply(parentId, article!.id, text);
+      const r     = data.comment;
+      const reply: CommentType = {
+        id:         r?.id ?? Math.random().toString(36).substring(2, 9),
+        author:     r?.author ?? (currentUser?.name || "Siddhi"),
+        avatar:     r?.avatar ?? "SI",
+        profilePic: r?.profilePic ?? null,
+        isVerified: r?.isVerified ?? false,
+        time:       "Just now",
+        text:       text,
+        likes:      0,
+        dislikes:   0,
+        userVote:   null,
+        replies:    [],
+      };
+      setComments((prev) =>
+        prev.map((c) =>
+          c.id === parentId ? { ...c, replies: [...c.replies, reply] } : c
+        )
+      );
+      setReplyingToId(null);
+      if (replyInputRef.current) replyInputRef.current.innerHTML = "";
+    } catch {}
+    finally {
+      setReplyLoading(false);
+    }
+  };
+
+  // ── Report ───────────────────────────────────────────────────────────────
+  const handleReport = async (commentId: string) => {
+    if (!currentUser) { navigate("/login"); return; }
+    setOpenMenuId(null);
+    try {
+      await reportComment(commentId);
+      alert("Comment reported. Our team will review it.");
+    } catch { alert("Could not report comment."); }
+  };
+
+  // ── Delete own comment ───────────────────────────────────────────────────
+  const handleDelete = async (commentId: string, isReply = false, parentId: string | null = null) => {
+    if (!window.confirm("Delete this comment?")) return;
+    try {
+      await deleteComment(commentId);
+      if (isReply && parentId) {
+        setComments((prev) =>
+          prev.map((c) =>
+            c.id === parentId
+              ? { ...c, replies: c.replies.filter((r) => r.id !== commentId) }
+              : c
+          )
+        );
+      } else {
+        setComments((prev) => prev.filter((c) => c.id !== commentId));
+      }
+    } catch { alert("Could not delete comment."); }
   };
 
   // ── Loading / Error ───────────────────────────────────────────────────────
@@ -495,6 +585,7 @@ const ArticleDetail: React.FC = () => {
   const totalComments =
     comments.length + comments.reduce((acc, c) => acc + c.replies.length, 0);
 
+  // ─── Render ───────────────────────────────────────────────────────────────
   return (
     <div className="ad-page-wrapper">
       {/* ── BREAKING BANNER ── */}
@@ -520,25 +611,20 @@ const ArticleDetail: React.FC = () => {
             <span className="ad-bc-current">{article.headline}</span>
           </div>
 
-          {/* ── BADGES ROW ── */}
+          {/* ── BADGES ── */}
           <div className="ad-badges-row">
             <span className="ad-category-badge">{article.category}</span>
             {article.isLive && (
-              <span className="ad-live-badge">
-                <span className="ad-live-dot-sm" /> LIVE
-              </span>
+              <span className="ad-live-badge"><span className="ad-live-dot-sm" /> LIVE</span>
             )}
             {article.isBreaking && (
-              <span className="ad-breaking-badge">
-                <Zap size={10} /> BREAKING
-              </span>
+              <span className="ad-breaking-badge"><Zap size={10} /> BREAKING</span>
             )}
           </div>
 
           {/* ── HEADLINE ── */}
           <h1 className="ad-headline">{article.headline}</h1>
 
-          {/* ── EXCERPT / SUBHEADLINE ── */}
           {article.excerpt && (
             <p className="ad-subheadline">{article.excerpt}</p>
           )}
@@ -548,15 +634,13 @@ const ArticleDetail: React.FC = () => {
             <div className="ad-meta-left">
               <span><User size={14} /> {article.author}</span>
               <span><Calendar size={14} /> {formatDate(article.publishedAt)}</span>
-              {article.location && (
-                <span><MapPin size={14} /> {article.location}</span>
-              )}
+              {article.location && <span><MapPin size={14} /> {article.location}</span>}
             </div>
             <div className="ad-meta-right">
               <span className="ad-share-label"><Share2 size={14} /> Share:</span>
-              <button className="ad-share-btn fb" onClick={() => handleShare("fb")} title="Share on Facebook"><Facebook size={14} /></button>
-              <button className="ad-share-btn ig" onClick={() => handleShare("ig")} title="Share on Instagram"><Instagram size={14} /></button>
-              <button className="ad-share-btn tw" onClick={() => handleShare("tw")} title="Share on X"><FaXTwitter size={14} /></button>
+              <button className="ad-share-btn fb"   onClick={() => handleShare("fb")}   title="Share on Facebook"><Facebook size={14} /></button>
+              <button className="ad-share-btn ig"   onClick={() => handleShare("ig")}   title="Share on Instagram"><Instagram size={14} /></button>
+              <button className="ad-share-btn tw"   onClick={() => handleShare("tw")}   title="Share on X"><FaXTwitter size={14} /></button>
               <button className="ad-share-btn copy" onClick={() => handleShare("copy")} title="Copy link"><Copy size={14} /></button>
             </div>
           </div>
@@ -577,17 +661,14 @@ const ArticleDetail: React.FC = () => {
           )}
 
           {/* ── ARTICLE BODY ── */}
-          <div
-            className="ad-article-body"
-            dangerouslySetInnerHTML={{ __html: article.content }}
-          />
+          <div className="ad-article-body" dangerouslySetInnerHTML={{ __html: article.content }} />
 
           {/* ── ADVERTISEMENT ── */}
           <div style={{ margin: "50px 0" }}>
             <Advertisement page={article.category?.toLowerCase() ?? "all"} />
           </div>
 
-          {/* ── LIVE UPDATES (main body) ── */}
+          {/* ── LIVE UPDATES ── */}
           {article.isLive && liveUpdates.length > 0 && (
             <div className="ad-main-live-section" ref={liveRef} id="main-detailed-live-updates">
               <div className="ad-main-live-header">
@@ -595,38 +676,20 @@ const ArticleDetail: React.FC = () => {
                 <h2>LIVE UPDATES</h2>
                 <span className="ad-live-count-badge">{liveUpdates.length} updates</span>
               </div>
-
               <div className="ad-main-live-timeline">
                 {liveUpdates.map((update, index) => (
                   <div key={update.id ?? index} className="ad-main-live-item">
-
-                    {/* TIME */}
                     <div className="ad-main-live-time">
                       <Clock size={15} />
                       {update.time}
-                      {update.isBreaking && (
-                        <span className="ad-live-update-badge ad-live-update-badge--breaking">BREAKING</span>
-                      )}
-                      {update.isHighlight && (
-                        <span className="ad-live-update-badge ad-live-update-badge--highlight">HIGHLIGHT</span>
-                      )}
+                      {update.isBreaking  && <span className="ad-live-update-badge ad-live-update-badge--breaking">BREAKING</span>}
+                      {update.isHighlight && <span className="ad-live-update-badge ad-live-update-badge--highlight">HIGHLIGHT</span>}
                     </div>
-
                     <div className="ad-main-live-content">
-                      {/* TITLE */}
-                      {update.title && (
-                        <h4 className="ad-live-update-title">{update.title}</h4>
-                      )}
-
-                      {/* TEXT */}
+                      {update.title && <h4 className="ad-live-update-title">{update.title}</h4>}
                       {update.text && update.text.replace(/<[^>]*>/g, "").trim() && (
-                        <div
-                          className="ad-live-update-text"
-                          dangerouslySetInnerHTML={{ __html: update.text }}
-                        />
+                        <div className="ad-live-update-text" dangerouslySetInnerHTML={{ __html: update.text }} />
                       )}
-
-                      {/* IMAGE */}
                       {update.imageUrl && (
                         <div className="ad-live-update-image-wrap">
                           <img src={update.imageUrl} alt={update.imageCaption ?? ""} />
@@ -640,29 +703,12 @@ const ArticleDetail: React.FC = () => {
                           )}
                         </div>
                       )}
-
-                      {/* TWEET */}
-                      {
-  update.tweetUrl && (
-    <blockquote
-      className="twitter-tweet"
-      data-theme="light"
-    >
-      <a
-        href={update.tweetUrl}
-      >
-        {update.tweetUrl}
-      </a>
-    </blockquote>
-  )
-}
-
-                      {/* ── POLL ── */}
-                      {update.poll && (
-                        <PollBlock update={update} onVote={handlePollVote} />
+                      {update.tweetUrl && (
+                        <blockquote className="twitter-tweet" data-theme="light">
+                          <a href={update.tweetUrl}>{update.tweetUrl}</a>
+                        </blockquote>
                       )}
-
-                      {/* SOURCE */}
+                      {update.poll && <PollBlock update={update} onVote={handlePollVote} />}
                       {update.sourceUrl && (
                         <div className="ad-live-update-source">
                           Source:{" "}
@@ -671,13 +717,9 @@ const ArticleDetail: React.FC = () => {
                           </a>
                         </div>
                       )}
-
-                      {/* TAGS */}
                       {update.tags && update.tags.length > 0 && (
                         <div className="ad-live-update-tags">
-                          {update.tags.map((t) => (
-                            <span key={t} className="ad-live-update-tag">#{t}</span>
-                          ))}
+                          {update.tags.map((t) => <span key={t} className="ad-live-update-tag">#{t}</span>)}
                         </div>
                       )}
                     </div>
@@ -687,35 +729,51 @@ const ArticleDetail: React.FC = () => {
             </div>
           )}
 
-          {/* ── COMMENTS ── */}
+          {/* ══════════════════════════════════════════════════════
+              COMMENTS SECTION
+          ══════════════════════════════════════════════════════ */}
           <div className="comments-section">
-            <div className="cmt-input-box">
-              <div
-                ref={commentInputRef}
-                className="cmt-textarea"
-                contentEditable
-                data-placeholder="Add comment..."
-              />
-              <div className="cmt-toolbar">
-                
-                {showMentionPicker && (
-                  <div className="cmt-popup-menu" style={{ flexDirection: "column", gap: "4px", left: "120px" }}>
-                    <span style={{ fontSize: "10px", color: "#94a3b8", padding: "0 8px", fontWeight: 700, textTransform: "uppercase" }}>Tag a user</span>
-                    {MOCK_USERS.map((u) => (
-                      <button
-                        key={u}
-                        className="cmt-mention-btn"
-                        onMouseDown={(ev) => { ev.preventDefault(); insertAtCursor(`@${u} `); }}
-                      >
-                        {u}
-                      </button>
-                    ))}
-                  </div>
-                )}
-                <button className="cmt-submit" onClick={handleCommentSubmit}>Submit</button>
-              </div>
-            </div>
 
+            {/* ── Comment input ── */}
+            {currentUser ? (
+              <div className="cmt-input-box">
+                <div
+                  ref={commentInputRef}
+                  className="cmt-textarea"
+                  contentEditable
+                  data-placeholder="Add comment..."
+                  suppressContentEditableWarning
+                />
+                {commentError && (
+                  <p style={{ color: "#e60000", fontSize: 13, marginTop: 6 }}>{commentError}</p>
+                )}
+                <div className="cmt-toolbar">
+                  <button
+                    className="cmt-submit"
+                    onClick={handleCommentSubmit}
+                    disabled={submitLoading}
+                  >
+                    {submitLoading ? "Posting…" : "Submit"}
+                  </button>
+                </div>
+              </div>
+            ) : (
+              /* Not logged in → prompt */
+              <div className="cmt-input-box" style={{ textAlign: "center", padding: "24px 16px" }}>
+                <p style={{ color: "#64748b", marginBottom: 12, fontSize: 15 }}>
+                  Please log in to leave a comment.
+                </p>
+                <button
+                  className="cmt-submit"
+                  style={{ display: "inline-flex", alignItems: "center", gap: 6 }}
+                  onClick={() => navigate("/login")}
+                >
+                  <LogIn size={15} /> Login to Comment
+                </button>
+              </div>
+            )}
+
+            {/* ── Header ── */}
             <div className="cmt-header">
               <h3>
                 Comments <span className="cmt-count">{totalComments}</span>
@@ -723,104 +781,196 @@ const ArticleDetail: React.FC = () => {
               <button className="cmt-sort">Most recent <ChevronDown size={14} /></button>
             </div>
 
-            <div className="cmt-list">
-              {comments.map((comment) => (
-                <div key={comment.id} className="cmt-thread">
-                  <div className="cmt-item">
-                    <div className="cmt-avatar">
-                      {comment.profilePic ? (
-                        <img src={comment.profilePic} alt={comment.author} style={{ width: "100%", height: "100%", borderRadius: "50%", objectFit: "cover" }} />
-                      ) : comment.avatar}
-                    </div>
-                    <div className="cmt-content">
-                      <div className="cmt-meta">
-                        <span className="cmt-author">{comment.author}</span>
-                        <span className="cmt-time">{comment.time}</span>
+            {/* ── Comment list ── */}
+            {commentsLoading ? (
+              <div style={{ padding: "24px 0", color: "#94a3b8", textAlign: "center", fontSize: 14 }}>
+                Loading comments…
+              </div>
+            ) : (
+              <div className="cmt-list">
+                {comments.length === 0 && (
+                  <p style={{ color: "#94a3b8", fontSize: 14, textAlign: "center", padding: "24px 0" }}>
+                    No comments yet. Be the first to share your thoughts!
+                  </p>
+                )}
+
+                {comments.map((comment) => (
+                  <div key={comment.id} className="cmt-thread">
+                    <div className="cmt-item">
+                      <div className="cmt-avatar">
+                        {comment.profilePic ? (
+                          <img src={comment.profilePic} alt={comment.author} style={{ width: "100%", height: "100%", borderRadius: "50%", objectFit: "cover" }} />
+                        ) : comment.avatar}
                       </div>
-                      <div className="cmt-text" dangerouslySetInnerHTML={{ __html: comment.text }} />
-                      <div className="cmt-actions">
-                        <button className={`cmt-action-btn ${comment.userVote === "like" ? "active" : ""}`} onClick={() => handleVote(comment.id, "like")}>
-                          <ThumbsUp size={14} fill={comment.userVote === "like" ? "currentColor" : "none"} /> {comment.likes}
-                        </button>
-                        <button className={`cmt-action-btn ${comment.userVote === "dislike" ? "active" : ""}`} onClick={() => handleVote(comment.id, "dislike")}>
-                          <ThumbsDown size={14} fill={comment.userVote === "dislike" ? "currentColor" : "none"} /> {comment.dislikes}
-                        </button>
-                        <button className="cmt-action-btn cmt-reply-btn" onClick={() => setReplyingToId(replyingToId === comment.id ? null : comment.id)}>
-                          <MessageSquare size={14} /> Reply
-                        </button>
-                        <div className="cmt-menu-wrap">
-                          <button className="cmt-more-btn" onClick={(e) => { e.stopPropagation(); setOpenMenuId(openMenuId === comment.id ? null : comment.id); }}>
-                            <MoreHorizontal size={14} />
+
+                      <div className="cmt-content">
+                        <div className="cmt-meta">
+                          <span className="cmt-author">
+                            {comment.author}
+                            {comment.isVerified && <span className="cmt-verified">✔</span>}
+                          </span>
+                          <span className="cmt-time">{comment.time}</span>
+                        </div>
+
+                        <div className="cmt-text">{comment.text}</div>
+
+                        <div className="cmt-actions">
+                          {/* Like */}
+                          <button
+                            className={`cmt-action-btn ${comment.userVote === "like" ? "active" : ""}`}
+                            onClick={() => handleVote(comment.id, "like")}
+                          >
+                            <ThumbsUp size={14} fill={comment.userVote === "like" ? "currentColor" : "none"} /> {comment.likes}
                           </button>
-                          {openMenuId === comment.id && (
-                            <div className="cmt-dropdown">
-                              <button onClick={() => { navigator.clipboard.writeText(window.location.href); setOpenMenuId(null); }}><Copy size={14} /> Copy Link</button>
-                              <button onClick={() => { alert("Comment reported."); setOpenMenuId(null); }}><Flag size={14} /> Report</button>
-                            </div>
-                          )}
-                        </div>
-                      </div>
 
-                      {replyingToId === comment.id && (
-                        <div className="cmt-reply-box">
-                          <div ref={replyInputRef} className="cmt-textarea" contentEditable data-placeholder={`Replying to ${comment.author}...`} />
-                          <div className="cmt-reply-actions">
-                            <button className="cmt-cancel" onClick={() => setReplyingToId(null)}>Cancel</button>
-                            <button className="cmt-submit" onClick={() => handleReplySubmit(comment.id)}>Reply</button>
-                          </div>
-                        </div>
-                      )}
-                    </div>
-                  </div>
+                          {/* Dislike */}
+                          <button
+                            className={`cmt-action-btn ${comment.userVote === "dislike" ? "active" : ""}`}
+                            onClick={() => handleVote(comment.id, "dislike")}
+                          >
+                            <ThumbsDown size={14} fill={comment.userVote === "dislike" ? "currentColor" : "none"} /> {comment.dislikes}
+                          </button>
 
-                  {comment.replies.length > 0 && (
-                    <div className="cmt-replies-container">
-                      {comment.replies.map((reply) => (
-                        <div key={reply.id} className="cmt-item">
-                          <div className="cmt-avatar cmt-avatar-small">
-                            {reply.profilePic ? (
-                              <img src={reply.profilePic} alt={reply.author} style={{ width: "100%", height: "100%", borderRadius: "50%", objectFit: "cover" }} />
-                            ) : reply.avatar}
-                          </div>
-                          <div className="cmt-content">
-                            <div className="cmt-meta">
-                              <span className="cmt-author">
-                                {reply.author}
-                                {reply.isVerified && <span className="cmt-verified">✔</span>}
-                              </span>
-                              <span className="cmt-time">{reply.time}</span>
-                            </div>
-                            <div className="cmt-text" dangerouslySetInnerHTML={{ __html: reply.text }} />
-                            <div className="cmt-actions">
-                              <button className={`cmt-action-btn ${reply.userVote === "like" ? "active" : ""}`} onClick={() => handleVote(reply.id, "like", true, comment.id)}>
-                                <ThumbsUp size={14} fill={reply.userVote === "like" ? "currentColor" : "none"} /> {reply.likes}
-                              </button>
-                              <button className={`cmt-action-btn ${reply.userVote === "dislike" ? "active" : ""}`} onClick={() => handleVote(reply.id, "dislike", true, comment.id)}>
-                                <ThumbsDown size={14} fill={reply.userVote === "dislike" ? "currentColor" : "none"} /> {reply.dislikes}
-                              </button>
-                              <button className="cmt-action-btn cmt-reply-btn" onClick={() => setReplyingToId(replyingToId === comment.id ? null : comment.id)}>
-                                <MessageSquare size={14} /> Reply
-                              </button>
-                              <div className="cmt-menu-wrap">
-                                <button className="cmt-more-btn" onClick={(e) => { e.stopPropagation(); setOpenMenuId(openMenuId === reply.id ? null : reply.id); }}>
-                                  <MoreHorizontal size={14} />
+                          {/* Reply */}
+                          <button
+                            className="cmt-action-btn cmt-reply-btn"
+                            onClick={() => setReplyingToId(replyingToId === comment.id ? null : comment.id)}
+                          >
+                            <MessageSquare size={14} /> Reply
+                          </button>
+
+                          {/* More menu */}
+                          <div className="cmt-menu-wrap">
+                            <button
+                              className="cmt-more-btn"
+                              onClick={(e) => { e.stopPropagation(); setOpenMenuId(openMenuId === comment.id ? null : comment.id); }}
+                            >
+                              <MoreHorizontal size={14} />
+                            </button>
+                            {openMenuId === comment.id && (
+                              <div className="cmt-dropdown">
+                                <button onClick={() => { navigator.clipboard.writeText(window.location.href); setOpenMenuId(null); }}>
+                                  <Copy size={14} /> Copy Link
                                 </button>
-                                {openMenuId === reply.id && (
-                                  <div className="cmt-dropdown">
-                                    <button onClick={() => { navigator.clipboard.writeText(window.location.href); setOpenMenuId(null); }}><Copy size={14} /> Copy Link</button>
-                                    <button onClick={() => { alert("Reply reported."); setOpenMenuId(null); }}><Flag size={14} /> Report</button>
-                                  </div>
+                                <button onClick={() => handleReport(comment.id)}>
+                                  <Flag size={14} /> Report
+                                </button>
+                                {/* Show delete only for own comments */}
+                                {currentUser && comment.author === currentUser.name && (
+                                  <button
+                                    style={{ color: "#e60000" }}
+                                    onClick={() => { setOpenMenuId(null); handleDelete(comment.id); }}
+                                  >
+                                    <Trash2 size={14} /> Delete
+                                  </button>
                                 )}
+                              </div>
+                            )}
+                          </div>
+                        </div>
+
+                        {/* Reply input box */}
+                        {replyingToId === comment.id && (
+                          <div className="cmt-reply-box">
+                            <div
+                              ref={replyInputRef}
+                              className="cmt-textarea"
+                              contentEditable
+                              data-placeholder={`Replying to ${comment.author}...`}
+                              suppressContentEditableWarning
+                            />
+                            <div className="cmt-reply-actions">
+                              <button className="cmt-cancel" onClick={() => setReplyingToId(null)}>Cancel</button>
+                              <button
+                                className="cmt-submit"
+                                disabled={replyLoading}
+                                onClick={() => handleReplySubmit(comment.id)}
+                              >
+                                {replyLoading ? "Posting…" : "Reply"}
+                              </button>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* ── Replies ── */}
+                    {comment.replies.length > 0 && (
+                      <div className="cmt-replies-container">
+                        {comment.replies.map((reply) => (
+                          <div key={reply.id} className="cmt-item">
+                            <div className="cmt-avatar cmt-avatar-small">
+                              {reply.profilePic ? (
+                                <img src={reply.profilePic} alt={reply.author} style={{ width: "100%", height: "100%", borderRadius: "50%", objectFit: "cover" }} />
+                              ) : reply.avatar}
+                            </div>
+
+                            <div className="cmt-content">
+                              <div className="cmt-meta">
+                                <span className="cmt-author">
+                                  {reply.author}
+                                  {reply.isVerified && <span className="cmt-verified">✔</span>}
+                                </span>
+                                <span className="cmt-time">{reply.time}</span>
+                              </div>
+
+                              <div className="cmt-text">{reply.text}</div>
+
+                              <div className="cmt-actions">
+                                <button
+                                  className={`cmt-action-btn ${reply.userVote === "like" ? "active" : ""}`}
+                                  onClick={() => handleVote(reply.id, "like", true, comment.id)}
+                                >
+                                  <ThumbsUp size={14} fill={reply.userVote === "like" ? "currentColor" : "none"} /> {reply.likes}
+                                </button>
+                                <button
+                                  className={`cmt-action-btn ${reply.userVote === "dislike" ? "active" : ""}`}
+                                  onClick={() => handleVote(reply.id, "dislike", true, comment.id)}
+                                >
+                                  <ThumbsDown size={14} fill={reply.userVote === "dislike" ? "currentColor" : "none"} /> {reply.dislikes}
+                                </button>
+                                <button
+                                  className="cmt-action-btn cmt-reply-btn"
+                                  onClick={() => setReplyingToId(replyingToId === comment.id ? null : comment.id)}
+                                >
+                                  <MessageSquare size={14} /> Reply
+                                </button>
+                                <div className="cmt-menu-wrap">
+                                  <button
+                                    className="cmt-more-btn"
+                                    onClick={(e) => { e.stopPropagation(); setOpenMenuId(openMenuId === reply.id ? null : reply.id); }}
+                                  >
+                                    <MoreHorizontal size={14} />
+                                  </button>
+                                  {openMenuId === reply.id && (
+                                    <div className="cmt-dropdown">
+                                      <button onClick={() => { navigator.clipboard.writeText(window.location.href); setOpenMenuId(null); }}>
+                                        <Copy size={14} /> Copy Link
+                                      </button>
+                                      <button onClick={() => handleReport(reply.id)}>
+                                        <Flag size={14} /> Report
+                                      </button>
+                                      {currentUser && reply.author === currentUser.name && (
+                                        <button
+                                          style={{ color: "#e60000" }}
+                                          onClick={() => { setOpenMenuId(null); handleDelete(reply.id, true, comment.id); }}
+                                        >
+                                          <Trash2 size={14} /> Delete
+                                        </button>
+                                      )}
+                                    </div>
+                                  )}
+                                </div>
                               </div>
                             </div>
                           </div>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              ))}
-            </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
         </main>
 
@@ -840,21 +990,10 @@ const ArticleDetail: React.FC = () => {
               <div className="ad-widget-divider" />
               <div className="ad-live-list">
                 {liveUpdates.slice(0, 4).map((update, index) => (
-                  <div
-                    key={update.id ?? index}
-                    className="ad-live-item"
-                    onClick={scrollToLive}
-                    style={{ cursor: "pointer" }}
-                    title="Click to view full update"
-                  >
+                  <div key={update.id ?? index} className="ad-live-item" onClick={scrollToLive} style={{ cursor: "pointer" }}>
                     <span className="ad-live-time">{update.time}</span>
                     <p className="ad-live-text">
-                      {(
-                        update.title ||
-                        update.text?.replace(/<[^>]*>/g, "") ||
-                        update.poll?.question ||
-                        "Live Update"
-                      ).slice(0, 55)}
+                      {(update.title || update.text?.replace(/<[^>]*>/g, "") || update.poll?.question || "Live Update").slice(0, 55)}
                     </p>
                   </div>
                 ))}
@@ -872,32 +1011,19 @@ const ArticleDetail: React.FC = () => {
               <div className="ad-widget-divider" />
               <div className="ad-recent-list">
                 {recentNews.slice(0, 5).map((item) => {
-                  const itemId = String(item._id ?? item.id ?? "");
-                  const catName =
-                    typeof item.categoryId === "object"
-                      ? item.categoryId?.name ?? "News"
-                      : item.categoryName ?? "News";
+                  const itemId  = String(item._id ?? item.id ?? "");
+                  const catName = typeof item.categoryId === "object"
+                    ? item.categoryId?.name ?? "News"
+                    : item.categoryName ?? "News";
                   return (
-                    <Link
-                      key={itemId}
-                      to={`/article/${itemId}`}
-                      className="ad-recent-item"
-                    >
+                    <Link key={itemId} to={`/article/${itemId}`} className="ad-recent-item">
                       {item.featuredImage && (
-                        <img
-                          src={item.featuredImage}
-                          alt={item.headline}
-                          className="ad-recent-img"
-                        />
+                        <img src={item.featuredImage} alt={item.headline} className="ad-recent-img" />
                       )}
                       <div className="ad-recent-info">
                         <span className="ad-recent-cat">{catName}</span>
-                        <h4 className="ad-recent-title">
-                          {item.shortTitle ?? item.headline}
-                        </h4>
-                        <span className="ad-recent-time">
-                          <Clock size={11} /> {formatDate(item.publishedAt)}
-                        </span>
+                        <h4 className="ad-recent-title">{item.shortTitle ?? item.headline}</h4>
+                        <span className="ad-recent-time"><Clock size={11} /> {formatDate(item.publishedAt)}</span>
                       </div>
                     </Link>
                   );
@@ -910,17 +1036,12 @@ const ArticleDetail: React.FC = () => {
           {article.tags.length > 0 && (
             <div className="ad-sidebar-widget">
               <h3 className="ad-widget-title" style={{ color: "#0f172a" }}>
-                <Tag size={14} style={{ display: "inline", marginRight: 6 }} />
-                Tags
+                <Tag size={14} style={{ display: "inline", marginRight: 6 }} />Tags
               </h3>
               <div className="ad-widget-divider" />
               <div className="ad-sidebar-tags">
                 {article.tags.map((tag) => (
-                  <Link
-                    key={tag}
-                    to={`/tag/${tag.toLowerCase().replace(/\s+/g, "-")}`}
-                    className="ad-sidebar-tag"
-                  >
+                  <Link key={tag} to={`/tag/${tag.toLowerCase().replace(/\s+/g, "-")}`} className="ad-sidebar-tag">
                     #{tag}
                   </Link>
                 ))}

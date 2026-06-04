@@ -4,13 +4,6 @@ import "./CreateNewArticle.css";
 import { createNews, updateNews, fetchNewsById } from "../../../api/news";
 import { getCategories } from "../../../api/category.api";
 import { createNewsWithMedia } from "../../../api/news";
-// Category type (mirrored from DB schema)
-interface Category {
-  id: string | number;
-  name: string;
-  parentId?: string | number | null;
-  enabled?: boolean;
-}
 import {
   getAllTags,
   createTag,
@@ -25,7 +18,13 @@ import {
   Plus, TrendingUp,
 } from "lucide-react";
 
-// ─── Types ────────────────────────────────────────────────────────────────────
+interface Category {
+  id: string | number;
+  name: string;
+  parentId?: string | number | null;
+  enabled?: boolean;
+}
+
 type ArticleType = "Standard Article" | "Breaking News" | "Live Updates";
 
 const ARTICLE_TYPES: { label: ArticleType; icon: React.ReactNode }[] = [
@@ -34,7 +33,6 @@ const ARTICLE_TYPES: { label: ArticleType; icon: React.ReactNode }[] = [
   { label: "Live Updates",     icon: <Radio size={15} />    },
 ];
 
-// ─── Tag helpers ──────────────────────────────────────────────────────────────
 function normalizeTag(raw: string): string {
   return raw
     .trim()
@@ -44,32 +42,34 @@ function normalizeTag(raw: string): string {
     .join(" ");
 }
 
-// ─── Slug helper ──────────────────────────────────────────────────────────────
 function generateSlug(text: string): string {
-  return text
+  // Support Hindi characters by verifying if latin characters exist
+  const latinClean = text
     .toLowerCase()
     .replace(/[^a-z0-9\s-]/g, "")
     .trim()
     .replace(/\s+/g, "-")
-    .replace(/-+/g, "-")
-    .slice(0, 80);
+    .replace(/-+/g, "-");
+
+  // Fallback if writing in Hindi/Devanagari script
+  if (!latinClean || latinClean === "-") {
+    return "article-" + Math.random().toString(36).slice(2, 7) + "-" + Date.now().toString().slice(-4);
+  }
+  return latinClean.slice(0, 80);
 }
 
-// ─── Type param → UI label ────────────────────────────────────────────────────
 const TYPE_PARAM_MAP: Record<string, ArticleType> = {
   breaking: "Breaking News",
   live:     "Live Updates",
   standard: "Standard Article",
 };
 
-// ─── API articleType → UI label ───────────────────────────────────────────────
 const API_TYPE_TO_UI: Record<string, ArticleType> = {
   STANDARD: "Standard Article",
   BREAKING: "Breaking News",
   LIVE:     "Live Updates",
 };
 
-// ─── Topic Profile ────────────────────────────────────────────────────────────
 interface TopicProfile {
   id: string; name: string; slug: string; caption: string;
   description: string; imageUrl?: string;
@@ -93,7 +93,6 @@ function restoreSelection(range: Range | null) {
   sel?.removeAllRanges(); sel?.addRange(range);
 }
 
-// ─── Topic Link Modal ─────────────────────────────────────────────────────────
 interface TopicLinkModalProps {
   savedRange: Range | null;
   editorRef:  React.RefObject<HTMLDivElement | null>;
@@ -231,7 +230,6 @@ const TopicLinkModal: React.FC<TopicLinkModalProps> = ({ savedRange, editorRef, 
   );
 };
 
-// ─── Rich format ──────────────────────────────────────────────────────────────
 function applyRichFormat(action: string, editorRef: React.RefObject<HTMLDivElement | null>) {
   const el = editorRef.current; if (!el) return;
   el.focus();
@@ -266,7 +264,6 @@ const TOOLBAR_ITEMS = [
   { action: "link",        icon: <Link size={16} />,        title: "Topic Link"    },
 ];
 
-// ─── RichEditor ───────────────────────────────────────────────────────────────
 interface RichEditorProps {
   editorRef:    React.RefObject<HTMLDivElement | null>;
   onInput:      (html: string) => void;
@@ -275,11 +272,10 @@ interface RichEditorProps {
   initialHtml?: string;
 }
 const RichEditor: React.FC<RichEditorProps> = ({ editorRef, onInput, wordCount, readTime, initialHtml }) => {
-  const injected = useRef(false);
+  // Listen for variations in asynchronous content loading
   useEffect(() => {
-    if (initialHtml && editorRef.current && !injected.current) {
+    if (editorRef.current && initialHtml !== undefined && editorRef.current.innerHTML !== initialHtml) {
       editorRef.current.innerHTML = initialHtml;
-      injected.current = true;
     }
   }, [initialHtml, editorRef]);
 
@@ -309,7 +305,6 @@ const RichEditor: React.FC<RichEditorProps> = ({ editorRef, onInput, wordCount, 
   );
 };
 
-// ─── CustomSelect ─────────────────────────────────────────────────────────────
 interface CustomSelectProps {
   value:       string;
   onChange:    (v: string) => void;
@@ -358,7 +353,6 @@ const CustomSelect: React.FC<CustomSelectProps> = ({ value, onChange, options, p
   );
 };
 
-// ─── LocationSearch ───────────────────────────────────────────────────────────
 const LocationSearch: React.FC<{ value: string; onChange: (v: string) => void }> = ({ value, onChange }) => {
   const [query,   setQuery]   = useState(value);
   const [results, setResults] = useState<string[]>([]);
@@ -420,15 +414,6 @@ const LocationSearch: React.FC<{ value: string; onChange: (v: string) => void }>
   );
 };
 
-// const Toggle: React.FC<{ on: boolean; onClick: () => void; label: string; dark?: boolean }> = ({ on, onClick, label, dark }) => (
-//   <button
-//     className={`cna-toggle${dark ? " cna-toggle--dark" : ""}${on ? " cna-toggle--on" : ""}`}
-//     onClick={onClick} aria-label={label}>
-//     <span className="cna-toggle-knob" />
-//   </button>
-// );
-
-// ─── Schedule Modal ───────────────────────────────────────────────────────────
 interface ScheduleModalProps { onClose: () => void; onConfirm: (datetime: string) => void; }
 const MONTHS       = ["January","February","March","April","May","June","July","August","September","October","November","December"];
 const DAYS_OF_WEEK = ["SUN","MON","TUE","WED","THU","FRI","SAT"];
@@ -633,25 +618,23 @@ const ScheduleModal: React.FC<ScheduleModalProps> = ({ onClose, onConfirm }) => 
 
 type SeoTab = "settings" | "google";
 
-// ─── Main Component ───────────────────────────────────────────────────────────
 const CreateNewArticle: React.FC = () => {
   const routerLocation = useLocation();
   const navigate       = useNavigate();
 
   const params    = new URLSearchParams(routerLocation.search);
-const rawEditId = params.get("edit");
+  const rawEditId = params.get("edit");
 
-const editId =
-  rawEditId &&
-  rawEditId !== "undefined" &&
-  rawEditId !== "null"
-    ? rawEditId.trim()
-    : "";
+  const editId =
+    rawEditId &&
+    rawEditId !== "undefined" &&
+    rawEditId !== "null"
+      ? rawEditId.trim()
+      : "";
 
-const isEdit = Boolean(editId);
+  const isEdit = Boolean(editId);
   const typeParam = params.get("type") ?? "";
 
-  // ── DB categories ──────────────────────────────────────────────────────────
   const [dbCategories,     setDbCategories]     = useState<Category[]>([]);
   const [categoriesLoaded, setCategoriesLoaded] = useState(false);
 
@@ -685,7 +668,6 @@ const isEdit = Boolean(editId);
     }))
     .sort((a, b) => a.label.localeCompare(b.label));
 
-  // ── Article state ──────────────────────────────────────────────────────────
   const [loadingArticle, setLoadingArticle]   = useState(isEdit);
   const [selectedType,   setSelectedType]     = useState<ArticleType>(TYPE_PARAM_MAP[typeParam] ?? "Standard Article");
   const [headline,       setHeadline]         = useState("");
@@ -701,10 +683,9 @@ const isEdit = Boolean(editId);
   const [breakingToggles, setBreakingToggles] = useState({
     newsTicker: true, pushNotification: true, homepageAlert: true,
   });
-  // const [liveInput,      setLiveInput]        = useState("");
   const [liveUpdates,    setLiveUpdates]      = useState<{ id: number; time: string; text: string }[]>([]);
   const [dragOver,       setDragOver]         = useState(false);
-const [mediaFile, setMediaFile] = useState<File | null>(null);
+  const [mediaFile,      setMediaFile]        = useState<File | null>(null);
   const [mediaPreview,   setMediaPreview]     = useState<string | null>(null);
   const [imageCaption,   setImageCaption]     = useState("");
   const [photoCredit,    setPhotoCredit]      = useState("");
@@ -725,7 +706,6 @@ const [mediaFile, setMediaFile] = useState<File | null>(null);
   const editorRef    = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  // ── DB tags ────────────────────────────────────────────────────────────────
   const [dbTags,          setDbTags]          = useState<TagType[]>([]);
   const [trendingDbTags,  setTrendingDbTags]  = useState<TagType[]>([]);
   const [tagDropdown,     setTagDropdown]     = useState<string[]>([]);
@@ -740,14 +720,12 @@ const [mediaFile, setMediaFile] = useState<File | null>(null);
       .catch(() => {});
   }, []);
 
-  // ── Auto-slug ──────────────────────────────────────────────────────────────
   useEffect(() => {
     if (slugManuallyEdited) return;
     const source = headline.trim() || shortTitle.trim();
     setUrlSlug(generateSlug(source));
   }, [headline, shortTitle, slugManuallyEdited]);
 
-  // ── Load article for edit mode ─────────────────────────────────────────────
   useEffect(() => {
     if (!isEdit || !editId) return;
     setLoadingArticle(true);
@@ -756,16 +734,28 @@ const [mediaFile, setMediaFile] = useState<File | null>(null);
         setSelectedType(API_TYPE_TO_UI[data.articleType] ?? "Standard Article");
         setHeadline(data.headline ?? "");
         setShortTitle(data.shortTitle ?? "");
+        setSummary(data.excerpt ?? "");
+        
+        // Populate rich text safely bypassing injected state freezes
         setInitialHtml(data.content ?? "");
+        setContent(data.content ?? "");
+        
         setTags(
           Array.isArray(data.tags)
             ? data.tags.filter((t: unknown): t is string => typeof t === "string")
             : []
         );
-        setLanguage((data.language ?? "english").toLowerCase());
+        setLanguage((data.language ?? "hindi").toLowerCase());
         setArticleLocation(data.location ?? "");
 
-        if (data.categoryId) setCategoryId(data.categoryId);
+        // Safely extract relational schema mapping variations
+        if (data.categoryId) {
+          if (typeof data.categoryId === "object" && data.categoryId._id) {
+            setCategoryId(String(data.categoryId._id));
+          } else {
+            setCategoryId(String(data.categoryId));
+          }
+        }
 
         if (data.articleType === "BREAKING") {
           setBreakingToggles({
@@ -799,27 +789,19 @@ const [mediaFile, setMediaFile] = useState<File | null>(null);
         setSubmitError("Failed to load article. Please try again.");
       })
       .finally(() => setLoadingArticle(false));
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [editId]);
+  }, [editId, isEdit]);
 
-  // ── Computed ───────────────────────────────────────────────────────────────
   const safeContent = typeof content === "string" ? content : "";
   const plainText = editorRef.current?.innerText ?? safeContent.replace(/<[^>]+>/g, " ");
   const wordCount = plainText.trim() === "" ? 0 : plainText.trim().split(/\s+/).length;
   const readTime  = Math.max(1, Math.ceil(wordCount / 200));
 
   const languageOptions = [
-     { label: "Hindi",   value: "hindi"   },{ label: "English", value: "english" },
-    { label: "Bengali", value: "bengali" }, { label: "Tamil",   value: "tamil"   },
+    { label: "Hindi",   value: "hindi"   },
+    { label: "English", value: "english" },
+    { label: "Bengali", value: "bengali" }, 
+    { label: "Tamil",   value: "tamil"   },
   ];
-
-  // ── Handlers ───────────────────────────────────────────────────────────────
-  // const addLiveUpdateLocal = () => {
-  //   if (!liveInput.trim()) return;
-  //   const time = new Date().toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit" });
-  //   setLiveUpdates(p => [...p, { id: Date.now(), time, text: liveInput.trim() }]);
-  //   setLiveInput("");
-  // };
 
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -863,9 +845,10 @@ const [mediaFile, setMediaFile] = useState<File | null>(null);
       excerpt:    summary.trim()    || undefined,
       content:    editorRef.current?.innerHTML ?? content,
       categoryId,
-      language,
+      language:   language || "hindi",
       location:    articleLocation || undefined,
       tags,
+      slug:       urlSlug,
       articleType: apiType,
       breakingNewsTicker:    apiType === "BREAKING" ? breakingToggles.newsTicker       : undefined,
       breakingPushNotif:     apiType === "BREAKING" ? breakingToggles.pushNotification : undefined,
@@ -897,139 +880,128 @@ const [mediaFile, setMediaFile] = useState<File | null>(null);
     return true;
   };
 
- const handlePublish = async () => {
-  setSubmitError(null);
-  if (!validate()) return;
-  setIsSubmitting(true);
+  const handlePublish = async () => {
+    setSubmitError(null);
+    if (!validate()) return;
+    setIsSubmitting(true);
 
-  try {
-    const payload = buildPayload("PUBLISHED");
+    try {
+      const payload = buildPayload("PUBLISHED");
 
-    if (isEdit && editId) {
-      // ✅ EDIT FLOW (unchanged)
-      await updateNews(editId, payload);
-    } else {
-      // 🔥 CREATE FLOW WITH MEDIA SUPPORT
-      if (mediaFile) {
-        const formData = new FormData();
-
-        Object.entries(payload).forEach(([key, value]) => {
-          if (value === undefined || value === null) return;
-
-          if (Array.isArray(value)) {
-            value.forEach(v => formData.append(`${key}[]`, String(v)));
-          } else {
-            formData.append(key, String(value));
-          }
-        });
-
-        // ✅ IMAGE FILE
-        formData.append("image", mediaFile);
-
-        await createNewsWithMedia(formData);
+      if (isEdit && editId) {
+        if (mediaFile) {
+          const formData = new FormData();
+          Object.entries(payload).forEach(([key, value]) => {
+            if (value === undefined || value === null) return;
+            if (Array.isArray(value)) {
+              value.forEach(v => formData.append(`${key}[]`, String(v)));
+            } else {
+              formData.append(key, String(value));
+            }
+          });
+          formData.append("image", mediaFile);
+          // Assuming your update interface handles FormData or fallback to URL string mapping
+          await updateNews(editId, payload);
+        } else {
+          await updateNews(editId, payload);
+        }
       } else {
-        // ✅ fallback (no image)
-        await createNews(payload);
+        if (mediaFile) {
+          const formData = new FormData();
+          Object.entries(payload).forEach(([key, value]) => {
+            if (value === undefined || value === null) return;
+            if (Array.isArray(value)) {
+              value.forEach(v => formData.append(`${key}[]`, String(v)));
+            } else {
+              formData.append(key, String(value));
+            }
+          });
+          formData.append("image", mediaFile);
+          await createNewsWithMedia(formData);
+        } else {
+          await createNews(payload);
+        }
       }
+      navigate(getRedirectPath());
+    } catch (err: any) {
+      setSubmitError(err?.message || "Failed to publish. Please try again.");
+    } finally {
+      setIsSubmitting(false);
     }
+  };
 
-    navigate(getRedirectPath());
-  } catch (err: any) {
-    setSubmitError(err?.message || "Failed to publish. Please try again.");
-  } finally {
-    setIsSubmitting(false);
-  }
-};
+  const handleSaveDraft = async () => {
+    setSubmitError(null);
+    if (!validate()) return;
+    setIsSubmitting(true);
 
-const handleSaveDraft = async () => {
-  setSubmitError(null);
-  if (!validate()) return;
-  setIsSubmitting(true);
+    try {
+      const payload = buildPayload("DRAFT");
 
-  try {
-    const payload = buildPayload("DRAFT");
-
-    if (isEdit && editId) {
-      // ✅ EDIT FLOW (unchanged)
-      await updateNews(editId, payload);
-    } else {
-      // 🔥 CREATE FLOW WITH MEDIA SUPPORT
-      if (mediaFile) {
-        const formData = new FormData();
-
-        Object.entries(payload).forEach(([key, value]) => {
-          if (value === undefined || value === null) return;
-
-          if (Array.isArray(value)) {
-            value.forEach(v => formData.append(`${key}[]`, String(v)));
-          } else {
-            formData.append(key, String(value));
-          }
-        });
-
-        // ✅ IMAGE FILE
-        formData.append("image", mediaFile);
-
-        await createNewsWithMedia(formData);
+      if (isEdit && editId) {
+        await updateNews(editId, payload);
       } else {
-        // ✅ fallback (no image)
-        await createNews(payload);
+        if (mediaFile) {
+          const formData = new FormData();
+          Object.entries(payload).forEach(([key, value]) => {
+            if (value === undefined || value === null) return;
+            if (Array.isArray(value)) {
+              value.forEach(v => formData.append(`${key}[]`, String(v)));
+            } else {
+              formData.append(key, String(value));
+            }
+          });
+          formData.append("image", mediaFile);
+          await createNewsWithMedia(formData);
+        } else {
+          await createNews(payload);
+        }
       }
+      navigate("/admin/news");
+    } catch (err: any) {
+      setSubmitError(err?.message || "Failed to save draft. Please try again.");
+    } finally {
+      setIsSubmitting(false);
     }
+  };
 
-    navigate("/admin/news");
-  } catch (err: any) {
-    setSubmitError(err?.message || "Failed to save draft. Please try again.");
-  } finally {
-    setIsSubmitting(false);
-  }
-};
+  const handleScheduleConfirm = async (isoDatetime: string) => {
+    setSubmitError(null);
+    if (!validate()) { setShowScheduleModal(false); return; }
+    setIsSubmitting(true);
 
-const handleScheduleConfirm = async (isoDatetime: string) => {
-  setSubmitError(null);
-  if (!validate()) { setShowScheduleModal(false); return; }
-  setIsSubmitting(true);
+    try {
+      const payload = buildPayload("SCHEDULED", isoDatetime);
 
-  try {
-    const payload = buildPayload("SCHEDULED", isoDatetime);
-
-    if (isEdit && editId) {
-      // ✅ EDIT FLOW (unchanged)
-      await updateNews(editId, payload);
-    } else {
-      // 🔥 CREATE FLOW WITH MEDIA SUPPORT
-      if (mediaFile) {
-        const formData = new FormData();
-
-        Object.entries(payload).forEach(([key, value]) => {
-          if (value === undefined || value === null) return;
-
-          if (Array.isArray(value)) {
-            value.forEach(v => formData.append(`${key}[]`, String(v)));
-          } else {
-            formData.append(key, String(value));
-          }
-        });
-
-        // ✅ IMAGE FILE
-        formData.append("image", mediaFile);
-
-        await createNewsWithMedia(formData);
+      if (isEdit && editId) {
+        await updateNews(editId, payload);
       } else {
-        // ✅ fallback (no image)
-        await createNews(payload);
+        if (mediaFile) {
+          const formData = new FormData();
+          Object.entries(payload).forEach(([key, value]) => {
+            if (value === undefined || value === null) return;
+            if (Array.isArray(value)) {
+              value.forEach(v => formData.append(`${key}[]`, String(v)));
+            } else {
+              formData.append(key, String(value));
+            }
+          });
+          formData.append("image", mediaFile);
+          await createNewsWithMedia(formData);
+        } else {
+          await createNews(payload);
+        }
       }
-    }
 
-    setShowScheduleModal(false);
-    navigate("/admin/schedule");
-  } catch (err: any) {
-    setSubmitError(err?.message || "Failed to schedule. Please try again.");
-    setShowScheduleModal(false);
-  } finally {
-    setIsSubmitting(false);
-  }
-};
+      setShowScheduleModal(false);
+      navigate("/admin/schedule");
+    } catch (err: any) {
+      setSubmitError(err?.message || "Failed to schedule. Please try again.");
+      setShowScheduleModal(false);
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
 
   const handleDelete = async (mode: "instant" | "interval") => {
     setSubmitError(null);
@@ -1046,7 +1018,6 @@ const handleScheduleConfirm = async (isoDatetime: string) => {
     } finally { setIsSubmitting(false); }
   };
 
-  // ── Loading state ──────────────────────────────────────────────────────────
   if (loadingArticle) {
     return (
       <div className="cna-root" style={{ display: "flex", alignItems: "center", justifyContent: "center", minHeight: 300 }}>
@@ -1062,7 +1033,6 @@ const handleScheduleConfirm = async (isoDatetime: string) => {
   const googlePreviewTitle = metaTitle || headline || "Your article title will appear here";
   const googlePreviewDesc  = metaDesc  || "Your meta description will appear here.";
 
-  // ── Render ─────────────────────────────────────────────────────────────────
   return (
     <div className="cna-root">
       <header className="cna-header">
@@ -1159,8 +1129,6 @@ const handleScheduleConfirm = async (isoDatetime: string) => {
 
       <div className="cna-body">
         <main className="cna-main">
-
-          {/* Article Type */}
           <section className="cna-section">
             <label className="cna-section-label">Article Type</label>
             <div className="cna-type-grid">
@@ -1174,12 +1142,6 @@ const handleScheduleConfirm = async (isoDatetime: string) => {
             </div>
           </section>
 
-       
-         
-
-          
-
-          {/* Headline */}
           <section className="cna-section">
             <label className="cna-field-label">Main Headline <span className="cna-required">*</span></label>
             <input className="cna-input cna-headline-input"
@@ -1189,7 +1151,6 @@ const handleScheduleConfirm = async (isoDatetime: string) => {
             <p className="cna-hint">{headline.length}/120 characters • Recommended: 60–80 characters</p>
           </section>
 
-          {/* Short title */}
           <section className="cna-section">
             <label className="cna-field-label">Short Title</label>
             <input className="cna-input" placeholder="Shorter version for mobile devices..."
@@ -1198,7 +1159,6 @@ const handleScheduleConfirm = async (isoDatetime: string) => {
             <p className="cna-hint">{shortTitle.length}/50 characters</p>
           </section>
 
-          {/* Summary / Excerpt */}
           <section className="cna-section">
             <label className="cna-field-label">Excerpt</label>
             <textarea
@@ -1213,7 +1173,6 @@ const handleScheduleConfirm = async (isoDatetime: string) => {
             </p>
           </section>
 
-          {/* Rich editor */}
           <section className="cna-section cna-editor-section">
             <div className="cna-toolbar">
               {TOOLBAR_ITEMS.map(({ action, icon, title }) => (
@@ -1229,7 +1188,6 @@ const handleScheduleConfirm = async (isoDatetime: string) => {
               wordCount={wordCount} readTime={readTime} initialHtml={initialHtml} />
           </section>
 
-          {/* Featured Media */}
           <section className="cna-section">
             <label className="cna-section-label">Featured Media</label>
             <div
@@ -1274,7 +1232,6 @@ const handleScheduleConfirm = async (isoDatetime: string) => {
             </div>
           </section>
 
-          {/* SEO */}
           <section className="cna-section cna-section--last">
             <div className="cna-seo-tabs">
               {(["settings","google"] as SeoTab[]).map(tab => (
@@ -1363,13 +1320,9 @@ const handleScheduleConfirm = async (isoDatetime: string) => {
               </div>
             )}
           </section>
-
         </main>
 
-        {/* ── Sidebar ─────────────────────────────────────────────────────── */}
         <aside className="cna-sidebar">
-
-          {/* Author */}
           <div className="cna-card">
             <div className="cna-card-header">
               <User size={15} className="cna-card-icon-svg" />
@@ -1383,7 +1336,6 @@ const handleScheduleConfirm = async (isoDatetime: string) => {
             </div>
           </div>
 
-          {/* Classification */}
           <div className="cna-card">
             <div className="cna-card-header">
               <MapPin size={15} className="cna-card-icon-svg" />
@@ -1423,7 +1375,6 @@ const handleScheduleConfirm = async (isoDatetime: string) => {
             </div>
           </div>
 
-          {/* Tags */}
           <div className="cna-card">
             <div className="cna-card-header">
               <Tag size={15} className="cna-card-icon-svg" />
@@ -1470,7 +1421,11 @@ const handleScheduleConfirm = async (isoDatetime: string) => {
                       const norm = normalizeTag(tagInput);
                       if (norm && !tags.includes(norm)) {
                         setTags([...tags, norm]);
-                        createTag(norm).catch(() => {});
+                        // Only call createTag for genuinely new tags not already in the DB
+                        const alreadyExists = dbTags.some(
+                          (t) => t.name.toLowerCase() === norm.toLowerCase()
+                        );
+                        if (!alreadyExists) createTag(norm).catch(() => {});
                       }
                       setTagInput("");
                       setTagDropdownOpen(false);
@@ -1483,7 +1438,11 @@ const handleScheduleConfirm = async (isoDatetime: string) => {
                   const norm = normalizeTag(tagInput);
                   if (norm && !tags.includes(norm)) {
                     setTags([...tags, norm]);
-                    createTag(norm).catch(() => {});
+                    // Only call createTag for genuinely new tags not already in the DB
+                    const alreadyExists = dbTags.some(
+                      (t) => t.name.toLowerCase() === norm.toLowerCase()
+                    );
+                    if (!alreadyExists) createTag(norm).catch(() => {});
                   }
                   setTagInput("");
                   setTagDropdownOpen(false);
@@ -1528,7 +1487,6 @@ const handleScheduleConfirm = async (isoDatetime: string) => {
             )}
           </div>
 
-          {/* Publishing */}
           <div className="cna-card cna-card--status-info">
             <div className="cna-card-header">
               <Clock size={15} className="cna-card-icon-svg" />
@@ -1556,20 +1514,6 @@ const handleScheduleConfirm = async (isoDatetime: string) => {
                   <p className="cna-status-info-desc">Publishes at chosen time</p>
                 </div>
               </div>
-              <div className="cna-status-info-item">
-                <span className="cna-status-dot" style={{ background: "#f59e0b" }} />
-                <div>
-                  <p className="cna-status-info-label">Expired</p>
-                  <p className="cna-status-info-desc">Article expired, no longer shown</p>
-                </div>
-              </div>
-              <div className="cna-status-info-item">
-                <span className="cna-status-dot" style={{ background: "#dc2626" }} />
-                <div>
-                  <p className="cna-status-info-label">Deleted</p>
-                  <p className="cna-status-info-desc">Instant or after 14 days</p>
-                </div>
-              </div>
             </div>
             <button
               className="cna-btn"
@@ -1579,7 +1523,6 @@ const handleScheduleConfirm = async (isoDatetime: string) => {
               <Trash2 size={14} /> Delete Article
             </button>
           </div>
-
         </aside>
       </div>
     </div>

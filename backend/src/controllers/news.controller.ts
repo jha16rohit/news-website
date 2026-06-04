@@ -29,15 +29,25 @@ function normalizeTagName(name: string): string {
     .join(" ");
 }
 
+// Look for your "buildUniqueSlug" method around line 33 and swap it out with this one:
+
 async function buildUniqueSlug(
   base: string,
   excludeId?: string,
 ): Promise<string> {
-  const raw = slugify(base, { lower: true, strict: true });
+  // strict true strips out Hindi characters. Let's create an elegant fallback
+  let raw = slugify(base, { lower: true, strict: true });
+  
+  if (!raw || raw.trim() === "") {
+    // Fallback logic to protect multi-language/Hindi headlines from producing blank values
+    raw = "samachar-" + Math.random().toString(36).slice(2, 7);
+  }
+
   const query: any = { slug: raw };
   if (excludeId) query._id = { $ne: excludeId };
   const existing = await News.findOne(query);
   if (!existing) return raw;
+  
   return `${raw}-${Math.random().toString(36).slice(2, 7)}`;
 }
 
@@ -94,15 +104,19 @@ async function upsertTags(tags: string[]): Promise<string[]> {
       continue;
     }
 
-    const tagSlug = slugify(normalized, {
+   let tagSlug = slugify(normalized, {
       lower: true,
       strict: true,
     });
 
+    // Fallback logic for Hindi/Devanagari tags to prevent them from being skipped
     if (!tagSlug) {
-      continue;
+      let hash = 0;
+      for (let i = 0; i < normalized.length; i++) {
+        hash = (Math.imul(31, hash) + normalized.charCodeAt(i)) | 0;
+      }
+      tagSlug = "tag-" + Math.abs(hash).toString(36);
     }
-
     let tag = await Tag.findOne({
       slug: tagSlug,
     });
