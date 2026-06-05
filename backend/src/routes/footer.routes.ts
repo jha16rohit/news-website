@@ -5,7 +5,7 @@ import {
   uploadFooterImageHandler,
   deleteFooterImage,
 } from "../controllers/footer.controller";
-import { uploadFooterImage } from "../middleware/footerupload.middleware";
+import { uploadFooterImage } from "../middleware/Footerupload.middleware";
 import { protect } from "../middleware/auth.middleware";
 
 const router = Router();

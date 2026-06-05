@@ -5,7 +5,6 @@ import cors from "cors";
 import cookieParser from "cookie-parser";
 import authRoutes from "./routes/auth.routes";
 import newsRoutes from "./routes/news.routes";
-// ✅ Named Destructuring Import (Fixes Code 1192 error completely)
 import { commentRouter, adminCommentRouter } from "./routes/comment.routes";
 import topicProfileRoutes from "./routes/topicProfile.routes";
 import categoryRoutes from "./routes/category.routes";
@@ -13,7 +12,8 @@ import tagsRoutes from "./routes/tags.routes";
 import footerRoutes from "./routes/footer.routes";
 import advertisementRoutes from "./routes/advertisement.routes";
 import contactUsRoutes from "./routes/contactus.routes";
-import siteUserRoutes from "./routes/siteuser.routes"; 
+import siteUserRoutes from "./routes/siteuser.routes";
+import { analyticsPublicRouter, analyticsAdminRouter } from "./routes/analytics.routes"; // ← ADD
 import { startScheduler } from "./scheduler";
 import path from "path";
 
@@ -45,9 +45,13 @@ startScheduler();
 app.use("/api/auth",            authRoutes);
 app.use("/api/news",            newsRoutes);
 
-// ✅ Separated Mappings for Public & Admin Dashboards
+// ── Comment routes ──────────────────────────────
 app.use("/api/comments",        commentRouter);
 app.use("/api/admin/comments",  adminCommentRouter);
+
+// ── Analytics routes ────────────────────────────
+app.use("/api/analytics",       analyticsPublicRouter);   // ← ADD (public: pageview + readtime)
+app.use("/api/admin/analytics", analyticsAdminRouter);    // ← ADD (admin: kpis, chart, export…)
 
 app.use("/api/topic-profiles",  topicProfileRoutes);
 app.use("/api/categories",      categoryRoutes);

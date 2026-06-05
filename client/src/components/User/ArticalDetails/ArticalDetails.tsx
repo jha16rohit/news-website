@@ -18,7 +18,7 @@ import {
   reportComment,
   deleteComment,
 } from "../../../api/user/comment";
-
+import { trackPageView, trackReadTime } from "../../../api/analytics";
 // ─── Types ────────────────────────────────────────────────────────────────────
 type VoteType = "like" | "dislike" | null;
 
@@ -239,7 +239,49 @@ const ArticleDetail: React.FC = () => {
   const replyInputRef   = useRef<HTMLDivElement>(null);
   const liveRef         = useRef<HTMLDivElement>(null);
   const liveCountRef    = useRef(0);
+// ── Analytics Tracking (Page Views & Read Time) ──────────────────────────
+  useEffect(() => {
+    if (!article?.id) return;
 
+    // Use localStorage to maintain session across tabs
+    let sessionId = localStorage.getItem('news_session_id');
+    if (!sessionId) {
+      sessionId = crypto.randomUUID(); 
+      localStorage.setItem('news_session_id', sessionId);
+    }
+
+    // Extract user email if they are logged in
+    let userEmail = null;
+    try {
+      const rawUser = localStorage.getItem("siteUser") || localStorage.getItem("user");
+      if (rawUser) {
+        const parsed = JSON.parse(rawUser);
+        userEmail = parsed?.user?.email || parsed?.email || null;
+      }
+    } catch (e) {}
+
+    // Pass the email into the page view tracker
+    trackPageView(article.id, sessionId, userEmail);
+
+    const startTime = Date.now();
+    const handleExit = () => {
+      const timeSpentSeconds = Math.floor((Date.now() - startTime) / 1000);
+      if (timeSpentSeconds > 0) {
+        trackReadTime(article.id, sessionId, timeSpentSeconds);
+      }
+    };
+
+    window.addEventListener('beforeunload', handleExit);
+    window.addEventListener('visibilitychange', () => {
+      if (document.visibilityState === 'hidden') handleExit();
+    });
+
+    return () => {
+      window.removeEventListener('beforeunload', handleExit);
+      window.removeEventListener('visibilitychange', handleExit);
+      handleExit();
+    };
+  }, [article?.id]);
   // ── Twitter widget ───────────────────────────────────────────────────────
   useEffect(() => {
     const script = document.createElement("script");
