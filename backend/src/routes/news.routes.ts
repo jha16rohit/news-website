@@ -52,7 +52,7 @@ router.post(
 );
 
 // ─── Admin mutations ────────────────────────────────────────────
-router.put("/:id",              protect, updateNews);
+router.put("/:id",              protect, uploadToSupabase, updateNews);
 router.delete("/:id",           protect, deleteNews);
 router.patch("/:id/pause-toggle", protect, togglePauseBreaking);
 router.post("/:id/live-update",   protect, addLiveUpdate);

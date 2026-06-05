@@ -73,8 +73,7 @@ export const trackPageView = async (req: Request, res: Response) => {
           [`sources.${source}`]:       1,
         },
       },
-      { upsert: true, new: true }
-    );
+{ upsert: true, returnDocument: 'after' }    );
 
     await Analytics.findOneAndUpdate(
       { newsId: "SITE", date: bucket },
@@ -85,8 +84,7 @@ export const trackPageView = async (req: Request, res: Response) => {
           [`sources.${source}`]:       1,
         },
       },
-      { upsert: true, new: true }
-    );
+{ upsert: true, returnDocument: 'after' }    );
 
     return res.status(200).json({ ok: true });
   } catch (err) {
@@ -115,8 +113,8 @@ export const trackReadTime = async (req: Request, res: Response) => {
       const doc = await Analytics.findOneAndUpdate(
         { newsId: id, date: bucket },
         { $inc: { totalReadTime: secs, readSessions: 1 } },
-        { upsert: true, new: true }
-      );
+{ upsert: true, returnDocument: 'after' }   
+   );
       if (doc && doc.readSessions > 0) {
         doc.avgReadTime = Math.round(doc.totalReadTime / doc.readSessions);
         await doc.save();

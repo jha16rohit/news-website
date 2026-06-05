@@ -1,7 +1,7 @@
 import React, { useState, useRef, useCallback, useEffect } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import "./CreateNewArticle.css";
-import { createNews, updateNews, fetchNewsById } from "../../../api/news";
+import { createNews, updateNews, updateNewsWithMedia, fetchNewsById } from "../../../api/news";
 import { getCategories } from "../../../api/category.api";
 import { createNewsWithMedia } from "../../../api/news";
 import {
@@ -854,6 +854,7 @@ const CreateNewArticle: React.FC = () => {
       breakingPushNotif:     apiType === "BREAKING" ? breakingToggles.pushNotification : undefined,
       breakingHomepageAlert: apiType === "BREAKING" ? breakingToggles.homepageAlert    : undefined,
       liveUpdates: apiType === "LIVE" ? liveUpdates : undefined,
+      featuredImage: mediaFile ? undefined : (mediaPreview && !mediaPreview.startsWith("blob:") ? mediaPreview : undefined),
       imageCaption:  imageCaption   || undefined,
       photoCredit:   photoCredit    || undefined,
       metaTitle:       metaTitle      || undefined,
@@ -894,14 +895,21 @@ const CreateNewArticle: React.FC = () => {
           Object.entries(payload).forEach(([key, value]) => {
             if (value === undefined || value === null) return;
             if (Array.isArray(value)) {
-              value.forEach(v => formData.append(`${key}[]`, String(v)));
+              // If array contains objects, send as a single JSON-encoded field
+              if (value.length > 0 && typeof value[0] === "object") {
+                formData.append(key, JSON.stringify(value));
+              } else {
+                // Primitive arrays (strings) — repeated key[]
+                value.forEach((v: any) => formData.append(`${key}[]`, String(v)));
+              }
+            } else if (typeof value === "object") {
+              formData.append(key, JSON.stringify(value));
             } else {
               formData.append(key, String(value));
             }
           });
           formData.append("image", mediaFile);
-          // Assuming your update interface handles FormData or fallback to URL string mapping
-          await updateNews(editId, payload);
+          await updateNewsWithMedia(editId, formData);
         } else {
           await updateNews(editId, payload);
         }
@@ -911,7 +919,15 @@ const CreateNewArticle: React.FC = () => {
           Object.entries(payload).forEach(([key, value]) => {
             if (value === undefined || value === null) return;
             if (Array.isArray(value)) {
-              value.forEach(v => formData.append(`${key}[]`, String(v)));
+              // If array contains objects, send as a single JSON-encoded field
+              if (value.length > 0 && typeof value[0] === "object") {
+                formData.append(key, JSON.stringify(value));
+              } else {
+                // Primitive arrays (strings) — repeated key[]
+                value.forEach((v: any) => formData.append(`${key}[]`, String(v)));
+              }
+            } else if (typeof value === "object") {
+              formData.append(key, JSON.stringify(value));
             } else {
               formData.append(key, String(value));
             }
@@ -946,7 +962,15 @@ const CreateNewArticle: React.FC = () => {
           Object.entries(payload).forEach(([key, value]) => {
             if (value === undefined || value === null) return;
             if (Array.isArray(value)) {
-              value.forEach(v => formData.append(`${key}[]`, String(v)));
+              // If array contains objects, send as a single JSON-encoded field
+              if (value.length > 0 && typeof value[0] === "object") {
+                formData.append(key, JSON.stringify(value));
+              } else {
+                // Primitive arrays (strings) — repeated key[]
+                value.forEach((v: any) => formData.append(`${key}[]`, String(v)));
+              }
+            } else if (typeof value === "object") {
+              formData.append(key, JSON.stringify(value));
             } else {
               formData.append(key, String(value));
             }
@@ -981,7 +1005,15 @@ const CreateNewArticle: React.FC = () => {
           Object.entries(payload).forEach(([key, value]) => {
             if (value === undefined || value === null) return;
             if (Array.isArray(value)) {
-              value.forEach(v => formData.append(`${key}[]`, String(v)));
+              // If array contains objects, send as a single JSON-encoded field
+              if (value.length > 0 && typeof value[0] === "object") {
+                formData.append(key, JSON.stringify(value));
+              } else {
+                // Primitive arrays (strings) — repeated key[]
+                value.forEach((v: any) => formData.append(`${key}[]`, String(v)));
+              }
+            } else if (typeof value === "object") {
+              formData.append(key, JSON.stringify(value));
             } else {
               formData.append(key, String(value));
             }

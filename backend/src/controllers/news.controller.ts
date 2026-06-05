@@ -288,10 +288,13 @@ export const createNews = async (req: AuthRequest, res: Response) => {
         statusType || (resolvedStatus === "PUBLISHED" ? "published" : "paused"),
       expiryTime: expiryTime ? new Date(expiryTime) : undefined,
 
-      liveUpdates:
-        typeEnum === "LIVE" && Array.isArray(liveUpdates)
-          ? liveUpdates
-          : undefined,
+      liveUpdates: (() => {
+        if (typeEnum !== "LIVE") return undefined;
+        // May arrive as parsed array (JSON body) or JSON string (FormData)
+        let lu = liveUpdates;
+        if (typeof lu === "string") { try { lu = JSON.parse(lu); } catch { lu = undefined; } }
+        return Array.isArray(lu) ? lu : undefined;
+      })(),
 
       featuredImage: imageUrl ?? undefined,
       imageCaption: imageCaption?.trim() || undefined,
@@ -682,12 +685,19 @@ export const updateNews = async (req: AuthRequest, res: Response) => {
       updateData.expiryTime = expiryTime ? new Date(expiryTime) : null;
 
     if (typeEnum === "LIVE" && liveUpdates !== undefined) {
-      updateData.liveUpdates = Array.isArray(liveUpdates)
-        ? liveUpdates
-        : undefined;
+      // liveUpdates may arrive as a parsed array (JSON body) or a JSON string (FormData)
+      let parsedLiveUpdates = liveUpdates;
+      if (typeof liveUpdates === "string") {
+        try { parsedLiveUpdates = JSON.parse(liveUpdates); } catch { parsedLiveUpdates = undefined; }
+      }
+      updateData.liveUpdates = Array.isArray(parsedLiveUpdates) ? parsedLiveUpdates : undefined;
     }
 
-    if (featuredImage !== undefined && !featuredImage?.startsWith("blob:")) {
+    // Prefer a freshly-uploaded file URL from middleware; fall back to the
+    // value sent in the JSON body; never accept a blob: URL.
+    if ((req as any).uploadedImageUrl) {
+      updateData.featuredImage = (req as any).uploadedImageUrl;
+    } else if (featuredImage !== undefined && !featuredImage?.startsWith("blob:")) {
       updateData.featuredImage = featuredImage?.trim() || null;
     }
     if (imageCaption !== undefined)

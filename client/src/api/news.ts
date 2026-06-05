@@ -108,7 +108,7 @@ export const createNews = (data: NewsPayload) =>
 
 // 🔥 CREATE WITH MEDIA — throws on server error so callers can catch it
 export const createNewsWithMedia = async (formData: FormData): Promise<any> => {
-  const res = await fetch("http://localhost:5001/api/news/create", {
+  const res = await fetch("/api/news/create", {
     method: "POST",
     body: formData,
     credentials: "include",
@@ -165,7 +165,7 @@ export const updateNews = (id: string, data: Partial<NewsPayload>) =>
 // 🖼️ UPDATE WITH MEDIA — sends multipart/form-data so the featured image can be
 // replaced at the same time as other fields are updated.
 export const updateNewsWithMedia = async (id: string, formData: FormData): Promise<any> => {
-  const res = await fetch(`http://localhost:5001/api/news/${id}`, {
+  const res = await fetch(`/api/news/${id}`, {
     method: "PUT",
     body: formData,
     credentials: "include",
