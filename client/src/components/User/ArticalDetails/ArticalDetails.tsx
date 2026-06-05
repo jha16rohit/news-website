@@ -223,7 +223,7 @@ const ArticleDetail: React.FC = () => {
 
   // ── Current logged-in site user ──────────────────────────────────────────
   const [currentUser, setCurrentUser] = useState<{
-    id: string; name: string; initials: string; profilePic: string | null;
+    id: string; name: string; email: string | null; initials: string; profilePic: string | null;
   } | null>(null);
 
   // ── Comment state ────────────────────────────────────────────────────────
@@ -235,52 +235,95 @@ const ArticleDetail: React.FC = () => {
   const [openMenuId,     setOpenMenuId]     = useState<string | null>(null);
   const [commentError,   setCommentError]   = useState<string | null>(null);
 
-  const commentInputRef = useRef<HTMLDivElement>(null);
-  const replyInputRef   = useRef<HTMLDivElement>(null);
-  const liveRef         = useRef<HTMLDivElement>(null);
-  const liveCountRef    = useRef(0);
-// ── Analytics Tracking (Page Views & Read Time) ──────────────────────────
+  const commentInputRef    = useRef<HTMLDivElement>(null);
+  const replyInputRef      = useRef<HTMLDivElement>(null);
+  const liveRef            = useRef<HTMLDivElement>(null);
+  const liveCountRef       = useRef(0);
+  // Tracks which articleId we have already fired trackPageView for.
+  // Prevents a double-fire when currentUser state settles after article loads.
+  const pageViewTrackedRef = useRef<string | null>(null);
+  // viewId returned by trackPageView — ties trackReadTime to this exact visit.
+  const viewIdRef          = useRef<string | null>(null);
+  // Accumulates ACTIVE read time (tab visible, user on page) in seconds.
+  const activeSecsRef      = useRef(0);
+  // Wall-clock timestamp of when the tab last became visible.
+  const visibleSinceRef    = useRef<number | null>(null);
+
+  // ── Analytics Tracking (Page Views & Read Time) ──────────────────────────
   useEffect(() => {
     if (!article?.id) return;
 
-    // Use localStorage to maintain session across tabs
-    let sessionId = localStorage.getItem('news_session_id');
+    // Fire exactly once per article visit. The ref guard blocks re-runs when
+    // currentUser state settles after the article loads, which would otherwise
+    // send a second pageview with a different visitorId (guest hash vs email)
+    // and inflate unique visitor counts.
+    if (pageViewTrackedRef.current === article.id) return;
+    pageViewTrackedRef.current = article.id;
+
+    // Reset active-time accumulators for this new visit.
+    activeSecsRef.current   = 0;
+    viewIdRef.current       = null;
+    visibleSinceRef.current = document.visibilityState === "visible" ? Date.now() : null;
+
+    let sessionId = localStorage.getItem("news_session_id");
     if (!sessionId) {
-      sessionId = crypto.randomUUID(); 
-      localStorage.setItem('news_session_id', sessionId);
+      sessionId = crypto.randomUUID();
+      localStorage.setItem("news_session_id", sessionId);
     }
 
-    // Extract user email if they are logged in
-    let userEmail = null;
-    try {
-      const rawUser = localStorage.getItem("siteUser") || localStorage.getItem("user");
-      if (rawUser) {
-        const parsed = JSON.parse(rawUser);
-        userEmail = parsed?.user?.email || parsed?.email || null;
-      }
-    } catch (e) {}
+    const userEmail = currentUser?.email ?? null;
 
-    // Pass the email into the page view tracker
-    trackPageView(article.id, sessionId, userEmail);
-
-    const startTime = Date.now();
-    const handleExit = () => {
-      const timeSpentSeconds = Math.floor((Date.now() - startTime) / 1000);
-      if (timeSpentSeconds > 0) {
-        trackReadTime(article.id, sessionId, timeSpentSeconds);
-      }
-    };
-
-    window.addEventListener('beforeunload', handleExit);
-    window.addEventListener('visibilitychange', () => {
-      if (document.visibilityState === 'hidden') handleExit();
+    // trackPageView is async and returns a viewId. We store it in a ref so
+    // trackReadTime always uses the ID for THIS visit, not a stale one.
+    trackPageView(article.id, sessionId, userEmail).then((id) => {
+      viewIdRef.current = id;
     });
 
-    return () => {
-      window.removeEventListener('beforeunload', handleExit);
-      window.removeEventListener('visibilitychange', handleExit);
-      handleExit();
+    // ── Active time tracking ──────────────────────────────────────────────────
+    // We only count seconds where the tab is visible and the user is on the page.
+    // visibilitychange pauses/resumes the clock; beforeunload + cleanup flush it.
+
+    const flushActiveTime = () => {
+      // Add the time accrued since the tab last became visible.
+      if (visibleSinceRef.current !== null) {
+        activeSecsRef.current += Math.floor((Date.now() - visibleSinceRef.current) / 1000);
+        visibleSinceRef.current = null;
+      }
     };
+
+    const sendReadTime = () => {
+      flushActiveTime();
+      const secs   = activeSecsRef.current;
+      const vid    = viewIdRef.current;
+      if (secs > 0 && vid) {
+        trackReadTime(article.id, vid, secs);
+      }
+    };
+
+    const onVisibility = () => {
+      if (document.visibilityState === "hidden") {
+        // Tab hidden — pause the clock and flush accumulated time.
+        flushActiveTime();
+        sendReadTime();
+      } else {
+        // Tab visible again — restart the clock.
+        visibleSinceRef.current = Date.now();
+      }
+    };
+
+    window.addEventListener("beforeunload", sendReadTime);
+    document.addEventListener("visibilitychange", onVisibility);
+
+    return () => {
+      window.removeEventListener("beforeunload", sendReadTime);
+      document.removeEventListener("visibilitychange", onVisibility);
+      // Navigating away (SPA route change) — flush remaining active time.
+      sendReadTime();
+      // Reset guard so the next article is tracked fresh.
+      pageViewTrackedRef.current = null;
+    };
+  // currentUser intentionally omitted — the ref guard handles one-shot guarantee.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [article?.id]);
   // ── Twitter widget ───────────────────────────────────────────────────────
   useEffect(() => {
@@ -358,40 +401,39 @@ const ArticleDetail: React.FC = () => {
   // ── Load current user from localStorage safely with multiple key fallbacks ─────────────────
   useEffect(() => {
     try {
-      const raw = 
-        localStorage.getItem("siteUser") || 
-        localStorage.getItem("localNewzUser") || 
+      const raw =
+        localStorage.getItem("siteUser") ||
+        localStorage.getItem("localNewzUser") ||
         localStorage.getItem("user") ||
         localStorage.getItem("profile");
 
       if (raw) {
         const parsed = JSON.parse(raw);
-        const userObj = parsed.user ? parsed.user : parsed;
+        // Support both { user: {...} } and flat { id, name, ... } shapes
+        const userObj = parsed.user ?? parsed;
 
         if (userObj && (userObj.name || userObj.id || userObj._id || userObj.email)) {
+          const name = userObj.name ?? userObj.displayName ?? null;
           setCurrentUser({
-            id:         userObj.id   ?? userObj._id ?? "660a1234567890123456789f",
-            name:       userObj.name ?? "Siddhi",
-            initials:   (userObj.name ?? "SI").split(" ").map((w: string) => w[0]).join("").toUpperCase().slice(0, 2),
-            profilePic: userObj.profilePic ?? null,
+            id:         String(userObj.id ?? userObj._id ?? ""),
+            name:       name ?? "User",
+            email:      userObj.email ?? null,
+            initials:   name
+              ? name.split(" ").map((w: string) => w[0]).join("").toUpperCase().slice(0, 2)
+              : "U",
+            profilePic: userObj.profilePic ?? userObj.avatar ?? null,
           });
+        } else {
+          // Parsed successfully but no usable user data — treat as guest
+          setCurrentUser(null);
         }
       } else {
-        // Fallback injection block to always stay synced with active Navbar sessions
-        setCurrentUser({
-          id: "660a1234567890123456789f", 
-          name: "Siddhi",
-          initials: "SI",
-          profilePic: null
-        });
+        // No user in storage — guest session
+        setCurrentUser(null);
       }
     } catch {
-      setCurrentUser({
-        id: "660a1234567890123456789f",
-        name: "Siddhi",
-        initials: "SI",
-        profilePic: null
-      });
+      // Corrupt localStorage — treat as guest
+      setCurrentUser(null);
     }
 
     const outsideClick = (e: MouseEvent) => {
@@ -507,7 +549,7 @@ const ArticleDetail: React.FC = () => {
     setCommentError(null);
 
     try {
-      const authorNameToSend = currentUser?.name ?? "Siddhi";
+      const authorNameToSend = currentUser?.name ?? "Guest";
       const data = await postComment(article!.id, text);
       const c    = data.comment;
       const newComment: CommentType = {
@@ -544,7 +586,7 @@ const ArticleDetail: React.FC = () => {
       const r     = data.comment;
       const reply: CommentType = {
         id:         r?.id ?? Math.random().toString(36).substring(2, 9),
-        author:     r?.author ?? (currentUser?.name || "Siddhi"),
+        author:     r?.author ?? (currentUser?.name || "Guest"),
         avatar:     r?.avatar ?? "SI",
         profilePic: r?.profilePic ?? null,
         isVerified: r?.isVerified ?? false,

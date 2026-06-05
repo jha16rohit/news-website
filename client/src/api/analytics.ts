@@ -1,8 +1,10 @@
 // src/api/admin/analytics.ts
 // All analytics API calls consumed by the admin dashboard
 
-const BASE = "http://localhost:5001/api/admin/analytics";
-const PUBLIC_BASE = "http://localhost:5001/api/analytics";
+// Use relative URLs so the Vite proxy forwards requests to localhost:5001
+// and session cookies are included correctly.
+const BASE        = "/api/admin/analytics";
+const PUBLIC_BASE = "/api/analytics";
 
 // ── Admin API helpers ─────────────────────────────────────────
 
@@ -41,41 +43,91 @@ export function getExportUrl(range: number) {
   return `${BASE}/export?range=${range}`;
 }
 
-// ── Public tracking helpers (called from article pages) ────────
+// ── Resolve the logged-in user's email ───────────────────────────────────────
+// Cached for the lifetime of the page so we don't call /me on every view.
+let _cachedEmail: string | null = null;
+let _emailFetched = false;
 
-// UPDATED: Added userEmail to the function signature and fetch body
-export async function trackPageView(newsId: string, sessionId: string, userEmail?: string | null, referrer?: string) {
+async function getLoggedInEmail(): Promise<string | null> {
+  if (_emailFetched) return _cachedEmail;
   try {
-    await fetch(`${PUBLIC_BASE}/pageview`, {
-      method:  "POST",
-      headers: { "Content-Type": "application/json" },
-      body:    JSON.stringify({ 
-        newsId, 
-        sessionId, 
-        userEmail, 
-        referrer: referrer ?? document.referrer 
-      }),
-    });
-  } catch { /* fire-and-forget — never crash the page */ }
+    const res = await fetch("/api/auth/me", { credentials: "include" });
+    if (!res.ok) { _cachedEmail = null; _emailFetched = true; return null; }
+    const data = await res.json();
+    // Support common response shapes: { email } or { user: { email } }
+    _cachedEmail = data?.email ?? data?.user?.email ?? null;
+    _emailFetched = true;
+  } catch {
+    _cachedEmail = null;
+    _emailFetched = true;
+  }
+  return _cachedEmail;
 }
 
-/** Call on page exit / visibility change with seconds spent */
-export async function trackReadTime(newsId: string, sessionId: string, seconds: number) {
+// ── Public tracking helpers (called from article pages) ──────────────────────
+
+/**
+ * Track a page view. Returns a viewId that MUST be passed to trackReadTime.
+ * The viewId ties this exact visit's read-time to the right PageView record,
+ * so repeated visits by the same user each get their own read-time counted.
+ */
+export async function trackPageView(
+  newsId: string,
+  sessionId: string,
+  userEmail?: string | null,
+  referrer?: string,
+): Promise<string | null> {
   try {
-    // Use sendBeacon so it fires even when tab closes
-    const payload = JSON.stringify({ newsId, sessionId, seconds });
+    const resolvedEmail = userEmail ?? await getLoggedInEmail();
+
+    const res = await fetch(`${PUBLIC_BASE}/pageview`, {
+      method:      "POST",
+      headers:     { "Content-Type": "application/json" },
+      credentials: "include",
+      body: JSON.stringify({
+        newsId,
+        sessionId,
+        userEmail: resolvedEmail,
+        referrer:  referrer ?? document.referrer,
+      }),
+    });
+
+    if (!res.ok) return null;
+    const data = await res.json();
+    // Backend returns { ok: true, viewId: "sessionId_timestamp" }
+    return data.viewId ?? null;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Send the active read time for this specific visit.
+ *
+ * @param newsId    - article being read
+ * @param viewId    - returned by trackPageView; ties time to the right PageView record
+ * @param seconds   - total ACTIVE seconds (tab visible + user on page), not wall-clock time
+ *
+ * Uses sendBeacon so it fires reliably even when the tab is closing.
+ * Safe to call multiple times — the backend deduplicates using viewId.
+ */
+export function trackReadTime(newsId: string, viewId: string, seconds: number): void {
+  if (seconds < 1) return; // nothing meaningful to record
+
+  try {
+    const payload = JSON.stringify({ newsId, viewId, seconds });
     if (navigator.sendBeacon) {
       navigator.sendBeacon(
         `${PUBLIC_BASE}/readtime`,
-        new Blob([payload], { type: "application/json" })
+        new Blob([payload], { type: "application/json" }),
       );
     } else {
-      await fetch(`${PUBLIC_BASE}/readtime`, {
-        method:  "POST",
-        headers: { "Content-Type": "application/json" },
-        body:    payload,
+      fetch(`${PUBLIC_BASE}/readtime`, {
+        method:    "POST",
+        headers:   { "Content-Type": "application/json" },
+        body:      payload,
         keepalive: true,
-      });
+      }).catch(() => {});
     }
   } catch { /* fire-and-forget */ }
 }

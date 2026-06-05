@@ -14,8 +14,9 @@ export interface IPageView extends Document {
   newsId:      string;           // article _id
   visitorId:   string;           // hashed IP + UA (never store raw IP)
   source:      TrafficSource;
-  readTime?:   number;           // seconds spent on page (sent on page exit/visibility change)
+  readTime?:   number;           // active seconds on page (sent on exit/visibility change)
   sessionId:   string;           // random UUID per browser tab session
+  viewId:      string;           // unique per visit: sessionId_timestamp — used by trackReadTime
   createdAt:   Date;
 }
 
@@ -24,8 +25,9 @@ const PageViewSchema = new Schema<IPageView>(
     newsId:    { type: String, required: true, index: true },
     visitorId: { type: String, required: true, index: true },
     source:    { type: String, enum: ["direct", "google", "social", "other"], default: "direct" },
-    readTime:  { type: Number, default: 0 },
+    readTime:  { type: Number, default: null },
     sessionId: { type: String, required: true },
+    viewId:    { type: String, required: true, index: true },
   },
   { timestamps: true }
 );
