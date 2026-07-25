@@ -1,13 +1,4 @@
-/**
- * NewsContext.tsx
- *
- * Shared context that broadcasts news status/type changes across all admin
- * pages (AllNews, BreakingNews, ScheduledPosts, LiveStories).
- *
- * Usage:
- *   1. Wrap your admin router/layout with <NewsProvider>
- *   2. Call useNewsEvent() to dispatch or listen for changes
- */
+
 
 import React, {
   createContext,

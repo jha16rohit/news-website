@@ -4,12 +4,16 @@ import {
   Calendar, Clock, User, Share2, Facebook, Instagram,
   ThumbsUp, ThumbsDown, MessageSquare, MoreHorizontal,
   ChevronDown, Flag, Copy, Tag, MapPin, ArrowRight,
-  Zap, Camera, Trash2, LogIn,
+  Zap, Camera, Trash2,
 } from "lucide-react";
 import { FaXTwitter } from "react-icons/fa6";
 import "./ArticalDetails.css";
 import Advertisement from "../Advertisment/Advertisment";
 import { votePoll } from "../../../api/user/poll";
+import {
+  getAdvertisementPool,
+  type Advertisement as AdType,
+} from "../../../api/user/advertisementPool";
 import {
   fetchComments,
   postComment,
@@ -19,6 +23,7 @@ import {
   deleteComment,
 } from "../../../api/user/comment";
 import { trackPageView, trackReadTime } from "../../../api/analytics";
+import { useAuth } from "../../../context/AuthContext";
 // ─── Types ────────────────────────────────────────────────────────────────────
 type VoteType = "like" | "dislike" | null;
 
@@ -207,6 +212,7 @@ const PollBlock: React.FC<PollProps> = ({ update, onVote }) => {
 const ArticleDetail: React.FC = () => {
   const { articleId } = useParams<{ articleId: string }>();
   const navigate      = useNavigate();
+  const { user, openLogin } = useAuth();
 
   // ── Article state ────────────────────────────────────────────────────────
   const [article,    setArticle]    = useState<ArticleData | null>(null);
@@ -225,6 +231,26 @@ const ArticleDetail: React.FC = () => {
   const [currentUser, setCurrentUser] = useState<{
     id: string; name: string; email: string | null; initials: string; profilePic: string | null;
   } | null>(null);
+
+  useEffect(() => {
+  if (!user) {
+    setCurrentUser(null);
+    return;
+  }
+
+  setCurrentUser({
+    id: user.id,
+    name: user.name,
+    email: user.email,
+    initials: user.name
+      .split(" ")
+      .map((w) => w[0])
+      .join("")
+      .toUpperCase()
+      .slice(0, 2),
+    profilePic: user.profilePic ?? null,
+  });
+}, [user]);
 
   // ── Comment state ────────────────────────────────────────────────────────
   const [comments,       setComments]       = useState<CommentType[]>([]);
@@ -248,6 +274,14 @@ const ArticleDetail: React.FC = () => {
   const activeSecsRef      = useRef(0);
   // Wall-clock timestamp of when the tab last became visible.
   const visibleSinceRef    = useRef<number | null>(null);
+
+  const [ads, setAds] = useState<{
+  cards: AdType[];
+  strips: AdType[];
+}>({
+  cards: [],
+  strips: [],
+});
 
   // ── Analytics Tracking (Page Views & Read Time) ──────────────────────────
   useEffect(() => {
@@ -370,11 +404,17 @@ const ArticleDetail: React.FC = () => {
     if (!article?.categoryId || !article?.id) return;
     fetch(`${BASE}/news?categoryId=${article.categoryId}&limit=5&status=PUBLISHED`)
       .then((r) => r.json())
-      .then((d) => {
+      .then(async(d) => {
         const filtered = (d.news ?? []).filter(
           (n: any) => String(n._id ?? n.id) !== String(article.id)
         );
         setRelatedNews(filtered.slice(0, 4));
+        const adResponse = await getAdvertisementPool({
+  cards: 1,
+  strips: 1,
+});
+
+setAds(adResponse);
       })
       .catch(() => {});
   }, [article?.categoryId, article?.id]);
@@ -398,53 +438,6 @@ const ArticleDetail: React.FC = () => {
     return () => clearInterval(interval);
   }, [article?.isLive, articleId]);
 
-  // ── Load current user from localStorage safely with multiple key fallbacks ─────────────────
-  useEffect(() => {
-    try {
-      const raw =
-        localStorage.getItem("siteUser") ||
-        localStorage.getItem("localNewzUser") ||
-        localStorage.getItem("user") ||
-        localStorage.getItem("profile");
-
-      if (raw) {
-        const parsed = JSON.parse(raw);
-        // Support both { user: {...} } and flat { id, name, ... } shapes
-        const userObj = parsed.user ?? parsed;
-
-        if (userObj && (userObj.name || userObj.id || userObj._id || userObj.email)) {
-          const name = userObj.name ?? userObj.displayName ?? null;
-          setCurrentUser({
-            id:         String(userObj.id ?? userObj._id ?? ""),
-            name:       name ?? "User",
-            email:      userObj.email ?? null,
-            initials:   name
-              ? name.split(" ").map((w: string) => w[0]).join("").toUpperCase().slice(0, 2)
-              : "U",
-            profilePic: userObj.profilePic ?? userObj.avatar ?? null,
-          });
-        } else {
-          // Parsed successfully but no usable user data — treat as guest
-          setCurrentUser(null);
-        }
-      } else {
-        // No user in storage — guest session
-        setCurrentUser(null);
-      }
-    } catch {
-      // Corrupt localStorage — treat as guest
-      setCurrentUser(null);
-    }
-
-    const outsideClick = (e: MouseEvent) => {
-      const t = e.target as HTMLElement;
-      if (!t.closest(".cmt-toolbar") && !t.closest(".cmt-menu-wrap")) {
-        setOpenMenuId(null);
-      }
-    };
-    document.addEventListener("mousedown", outsideClick);
-    return () => document.removeEventListener("mousedown", outsideClick);
-  }, []);
 
   // ── Fetch comments when article loads ────────────────────────────────────
   const loadComments = useCallback(async (newsId: string) => {
@@ -543,7 +536,13 @@ const ArticleDetail: React.FC = () => {
   // ── Submit top-level comment ─────────────────────────────────────────────
   const handleCommentSubmit = async () => {
     const text = commentInputRef.current?.innerText?.trim() ?? "";
+
     if (!text) return;
+
+    if (!currentUser) {
+        openLogin();
+        return;
+    }
 
     setSubmitLoading(true);
     setCommentError(null);
@@ -747,10 +746,11 @@ const ArticleDetail: React.FC = () => {
           {/* ── ARTICLE BODY ── */}
           <div className="ad-article-body" dangerouslySetInnerHTML={{ __html: article.content }} />
 
-          {/* ── ADVERTISEMENT ── */}
           <div style={{ margin: "50px 0" }}>
-            <Advertisement page={article.category?.toLowerCase() ?? "all"} />
-          </div>
+  <Advertisement
+    adData={ads.strips[0] ?? null}
+  />
+</div>
 
           {/* ── LIVE UPDATES ── */}
           {article.isLive && liveUpdates.length > 0 && (
@@ -813,50 +813,34 @@ const ArticleDetail: React.FC = () => {
             </div>
           )}
 
-          {/* ══════════════════════════════════════════════════════
-              COMMENTS SECTION
-          ══════════════════════════════════════════════════════ */}
-          <div className="comments-section">
+          <div className="cmt-input-box">
+  <div
+    ref={commentInputRef}
+    className="cmt-textarea"
+    contentEditable
+    data-placeholder="Add comment..."
+    suppressContentEditableWarning
+  />
 
-            {/* ── Comment input ── */}
-            {currentUser ? (
-              <div className="cmt-input-box">
-                <div
-                  ref={commentInputRef}
-                  className="cmt-textarea"
-                  contentEditable
-                  data-placeholder="Add comment..."
-                  suppressContentEditableWarning
-                />
-                {commentError && (
-                  <p style={{ color: "#e60000", fontSize: 13, marginTop: 6 }}>{commentError}</p>
-                )}
-                <div className="cmt-toolbar">
-                  <button
-                    className="cmt-submit"
-                    onClick={handleCommentSubmit}
-                    disabled={submitLoading}
-                  >
-                    {submitLoading ? "Posting…" : "Submit"}
-                  </button>
-                </div>
-              </div>
-            ) : (
-              /* Not logged in → prompt */
-              <div className="cmt-input-box" style={{ textAlign: "center", padding: "24px 16px" }}>
-                <p style={{ color: "#64748b", marginBottom: 12, fontSize: 15 }}>
-                  Please log in to leave a comment.
-                </p>
-                <button
-                  className="cmt-submit"
-                  style={{ display: "inline-flex", alignItems: "center", gap: 6 }}
-                  onClick={() => navigate("/login")}
-                >
-                  <LogIn size={15} /> Login to Comment
-                </button>
-              </div>
-            )}
+  {commentError && (
+    <p style={{ color: "#e60000", fontSize: 13, marginTop: 6 }}>
+      {commentError}
+    </p>
+  )}
 
+  <div className="cmt-toolbar">
+    <button
+      className="cmt-submit"
+      onClick={handleCommentSubmit}
+      disabled={submitLoading}
+    >
+      {submitLoading ? "Posting..." : "Submit"}
+    </button>
+  </div>
+</div>
+          
+           
+<div>
             {/* ── Header ── */}
             <div className="cmt-header">
               <h3>
@@ -1132,6 +1116,11 @@ const ArticleDetail: React.FC = () => {
               </div>
             </div>
           )}
+
+          <Advertisement
+  adData={ads.cards[0] ?? null}
+  variant="card"
+/>
 
           {/* RELATED NEWS WIDGET */}
           {relatedNews.length > 0 && (

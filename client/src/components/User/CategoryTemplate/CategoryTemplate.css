@@ -650,3 +650,33 @@
     order: 1;
   }
 }
+
+/* Card Advertisement Widget (static placeholder) */
+.ct-card-ad {
+  background: var(--ct-white);
+  border-radius: var(--ct-radius);
+  padding: 14px;
+  box-shadow: var(--ct-shadow-sm);
+  border: 1px solid var(--ct-border);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+}
+
+.ct-card-ad__label {
+  font-size: 10px;
+  font-weight: 700;
+  color: var(--ct-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  align-self: flex-start;
+}
+
+.ct-card-ad__img {
+  width: 100%;
+  max-width: 300px;
+  height: auto;
+  border-radius: var(--ct-radius-sm);
+  display: block;
+}

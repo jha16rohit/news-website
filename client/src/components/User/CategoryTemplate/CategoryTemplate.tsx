@@ -6,15 +6,14 @@ import {
 } from "lucide-react";
 import { useCategories } from "../../../hooks/useCategories";
 
-import UserNavbar from "../UserNavbar/UserNavbar";
 import "./CategoryTemplate.css";
 import Advertisement from "../Advertisment/Advertisment";
-import UserFooter from "../UserFooter/UserFooter";
 import SubCategoryTemplate from "../SubCategoryTemplate/SubCategoryTemplate";
 import { getCategoryNews } from "../../../api/user/categoryNews";
 import Preloader from "../../Admin/Preloader/Preloder";
 
 import { getRecentNews } from "../../../api/user/recentNews";
+import {getAdvertisementPool,  type Advertisement as AdType,} from "../../../api/user/advertisementPool";
 
 // ─── Static placeholder data ──────────────────────────────────────────────────
 const STATIC_ARTICLES = [
@@ -194,6 +193,14 @@ export default function CategoryTemplate() {
   const [loading, setLoading] =
     useState(true);
 
+  const [ads, setAds] = useState<{
+  cards: AdType[];
+  strips: AdType[];
+}>({
+  cards: [],
+  strips: [],
+});  
+
 const category = categories.find(
   (c) => c.slug === slug
 );
@@ -222,6 +229,14 @@ if (recent.success) {
     recent.news || []
   );
 }
+
+// Load advertisements
+      const adResponse = await getAdvertisementPool({
+        cards: 1,
+        strips: 2,
+      });
+
+      setAds(adResponse);
         }
 
       } catch (error) {
@@ -298,23 +313,12 @@ const grid = allGrid.slice(0, visible);
 if (loading) {
   return (
   <>
-  <UserNavbar />
+  
   <Preloader />
   </>
   );
 }
 
-if (!loading && source.length === 0) {
-  return (
-    <>
-      <UserNavbar />
-
-      <div className="ct-notfound">
-        No news found
-      </div>
-    </>
-  );
-}
 
   // if (!category) {
   //   return (
@@ -322,7 +326,7 @@ if (!loading && source.length === 0) {
   //       <UserNavbar />
   //       <div className="ct-notfound">
   //         <TrendingUp size={48} color="#ccc" />
-  //         <h2>Category not found</h2>
+  //         <h2>Category not found</h2> 
   //         <Link to="/">Return to Home</Link>
   //       </div>
   //     </>
@@ -331,7 +335,6 @@ if (!loading && source.length === 0) {
 
   return (
     <>
-      <UserNavbar />
       <div className="ct-root" style={{ "--cat-color": color } as React.CSSProperties}>
 
         {/* ── TOP SECTION: Hero + Stacks LEFT | Recent News RIGHT ── */}
@@ -374,6 +377,9 @@ if (!loading && source.length === 0) {
             </div>
           </div>
         </section>
+        <Advertisement
+  adData={ads.strips[0] ?? null}
+/>
 
         {/* ── LATEST NEWS: Grid cards LEFT | Weather + Calendar RIGHT ── */}
         <section className="ct-section ct-section--gray">
@@ -415,15 +421,21 @@ if (!loading && source.length === 0) {
 
               <aside className="ct-news-sidebar">
                 <WeatherWidget color={color} />
+                 <Advertisement
+    adData={ads.cards[0] ?? null}
+    variant="card"
+  />
                 <CalendarWidget />
+                
               </aside>
 
             </div>
           </div>
         </section>
 
-        <Advertisement page={slug || "home"} />
-        <UserFooter />
+        <Advertisement
+            adData={ads.strips[1] ?? null}
+            />
 
       </div>
     </>

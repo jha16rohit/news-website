@@ -2,7 +2,7 @@ import React, { useState, useRef, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import "./AdminTopBar.css";
 import { Bell, Plus, Search, ChevronDown, Settings, LogOut, Menu, X } from "lucide-react";
-import { useNews } from "../NewsStore/NewsStore";
+// import { useNews } from "../NewsStore/NewsStore";
 import { logoutUser } from "../../../api/auth"; // ✅ import logout API call
 
 interface AdminTopBarProps {
@@ -13,13 +13,13 @@ const AdminTopBar: React.FC<AdminTopBarProps> = ({ onMenuClick }) => {
   const [profileOpen, setProfileOpen] = useState(false);
   const [searchOpen, setSearchOpen]   = useState(false);
   const navigate = useNavigate();
-  const { articles } = useNews();
+  // const { articles } = useNews();
 
   // Count articles that are currently live:
   // tagType === "live" AND statusType is not "ended"
-  const liveCount = articles.filter(
-    (a) => a.tagType === "live" && a.statusType !== "ended"
-  ).length;
+  // const liveCount = articles.filter(
+  //   (a) => a.tagType === "live" && a.statusType !== "ended"
+  // ).length;
 
   const profileRef = useRef<HTMLDivElement>(null);
   const searchRef  = useRef<HTMLDivElement>(null);
@@ -73,7 +73,7 @@ const AdminTopBar: React.FC<AdminTopBarProps> = ({ onMenuClick }) => {
       <div className="topbar-actions">
         <div className="live-badge">
           <span className="live-dot" />
-          <span className="live-text">{liveCount} Live</span>
+          {/* <span className="live-text">{liveCount} Live</span> */}
         </div>
 
         <div className="notification" onClick={() => navigate("/admin/notification")}>

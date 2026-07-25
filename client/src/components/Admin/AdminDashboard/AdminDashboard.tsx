@@ -1,6 +1,6 @@
 import "./AdminDashboard.css";
-import BreakingNewsPanel from "../BreakingNewsPanel/BreakingNewsPanel";
-import QuickActions from "../QuickActions/QuickActions";
+// import BreakingNewsPanel from "../BreakingNewsPanel/BreakingNewsPanel";
+// import QuickActions from "../QuickActions/QuickActions";
 import TrafficOverview from "../TrafficOverview/TrafficOverview";
 import TopPerformers from "../TopPerformers/TopPerformers";
 import RecentArticles from "../RecentArticles/RecentArticles";
@@ -30,10 +30,10 @@ const AdminDashboard = () => {
       </div>
 
       {/* BREAKING + QUICK ACTIONS */}
-      <div className="dashboard-grid">
+      {/* <div className="dashboard-grid">
         <BreakingNewsPanel />
         <QuickActions />
-      </div>
+      </div> */}
 
       {/* TRAFFIC + TOP PERFORMERS */}
       <div className="dashboard-row">

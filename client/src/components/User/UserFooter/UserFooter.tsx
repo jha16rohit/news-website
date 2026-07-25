@@ -4,8 +4,9 @@ import { Mail, ChevronRight, TrendingUp, Youtube } from "lucide-react";
 import { FaXTwitter, FaFacebookF, FaInstagram, FaWhatsapp } from "react-icons/fa6";
 import logo from "../../../assets/Logo.png";
 import "./UserFooter.css";
+import { getCategories } from "../../../api/category.api";
 
-import { useNews } from "../../Admin/NewsStore/NewsStore";
+// import { useNews } from "../../Admin/NewsStore/NewsStore";
 import { getFooterSettings } from "../../../api/user/userfooter"; // ← adjust path if needed
 import type { FooterSettingsData } from "../../../api/user/userfooter";
 
@@ -42,32 +43,54 @@ const DEFAULT_FOOTER_DATA: FooterSettingsData = {
 // ─── Component ────────────────────────────────────────────────────────────────
 const Footer: React.FC = () => {
   const [footerData, setFooterData] = useState<FooterSettingsData>(DEFAULT_FOOTER_DATA);
-  const { categories } = useNews() || { categories: [] };
+  const [categories, setCategories] = useState<any[]>([]);
+  
 
   // ── Fetch from DB on mount ──────────────────────────────────────────────────
   useEffect(() => {
-    const loadFromDB = async () => {
-      try {
-        const data = await getFooterSettings();
-        // If DB returned empty images array, keep the default background
-        if (Array.isArray(data.images) && data.images.length === 0) {
-          setFooterData({ ...data, images: [] });
-        } else {
-          setFooterData(data);
-        }
-      } catch (err) {
-        console.error("Footer: could not load settings from DB, using defaults.", err);
-        // Keep DEFAULT_FOOTER_DATA — no visible error to the user
+  const loadData = async () => {
+    try {
+      // Footer Settings
+      const footer = await getFooterSettings();
+
+      if (Array.isArray(footer.images) && footer.images.length === 0) {
+        setFooterData({ ...footer, images: [] });
+      } else {
+        setFooterData(footer);
       }
-    };
 
-    loadFromDB();
+      // Categories
+      const categoryData = await getCategories();
 
-    // Re-fetch when admin saves (same-tab live update via window event)
-    const onAdminSave = () => loadFromDB();
-    window.addEventListener("localNewzFooterUpdate", onAdminSave);
-    return () => window.removeEventListener("localNewzFooterUpdate", onAdminSave);
-  }, []);
+      console.log("Categories Response:", categoryData);
+
+      setCategories(
+        categoryData.categories ||
+        categoryData.data ||
+        categoryData ||
+        []
+      );
+
+    } catch (err) {
+      console.error("Footer load failed:", err);
+    }
+  };
+
+  loadData();
+
+  const onAdminSave = () => {
+    loadData();
+  };
+
+  window.addEventListener("localNewzFooterUpdate", onAdminSave);
+
+  return () => {
+    window.removeEventListener(
+      "localNewzFooterUpdate",
+      onAdminSave
+    );
+  };
+}, []);
 
   const activeImage = footerData.images.find((img) => img.isActive)?.url ?? null;
 

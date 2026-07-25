@@ -3,32 +3,26 @@ import mongoose, {
   Schema,
 } from "mongoose";
 
-export interface IAdInquiry
-  extends Document {
+export interface IAdInquiry extends Document {
   name: string;
   email: string;
   phone?: string;
   company?: string;
   message?: string;
-  budget?: string;
 
-  targetPage?: string;
-  duration?: string;
-  customDays?: number;
-  adType?: string;
+  adType: "card" | "strip";
 
   imageUrl?: string;
-  linkUrl?: string;
-  adTitle?: string;
+imagePublicId?: string;
+linkUrl?: string;
+adTitle?: string;
 
   status:
     | "pending"
-    | "reviewed"
-    | "approved"
     | "published"
     | "rejected";
 
-  adminNote?: string;
+  rejectionReason?: string;
 
   publishedAt?: Date;
   expiresAt?: Date;
@@ -36,63 +30,91 @@ export interface IAdInquiry
   submittedAt: Date;
 }
 
-const AdInquirySchema =
-  new Schema<IAdInquiry>(
-    {
-      name: {
-        type: String,
-        required: true,
-      },
+const AdInquirySchema = new Schema<IAdInquiry>({
+  name: {
+    type: String,
+    required: true,
+    trim: true,
+  },
 
-      email: {
-        type: String,
-        required: true,
-      },
+  email: {
+    type: String,
+    required: true,
+    trim: true,
+    lowercase: true,
+  },
 
-      phone: String,
-      company: String,
-      message: String,
-      budget: String,
+  phone: {
+    type: String,
+    trim: true,
+  },
 
-      targetPage: String,
-      duration: String,
+  company: {
+    type: String,
+    trim: true,
+  },
 
-      customDays: Number,
+  message: {
+    type: String,
+    trim: true,
+  },
 
-      adType: String,
+  adType: {
+    type: String,
+    enum: ["card", "strip"],
+    required: true,
+  },
 
-      imageUrl: String,
-      linkUrl: String,
-      adTitle: String,
+  imageUrl: {
+  type: String,
+},
 
-      status: {
-        type: String,
-        enum: [
-          "pending",
-          "reviewed",
-          "approved",
-          "published",
-          "rejected",
-        ],
-        default: "pending",
-      },
+imagePublicId: {
+  type: String,
+},
 
-      adminNote: String,
+  linkUrl: {
+    type: String,
+    trim: true,
+  },
 
-      publishedAt: Date,
-      expiresAt: Date,
+  adTitle: {
+    type: String,
+    trim: true,
+  },
 
-      submittedAt: {
-        type: Date,
-        default: Date.now,
-      },
-    }
-  );
+  status: {
+    type: String,
+    enum: [
+      "pending",
+      "published",
+      "rejected",
+    ],
+    default: "pending",
+  },
 
-const AdInquiry =
-  mongoose.model<IAdInquiry>(
-    "AdInquiry",
-    AdInquirySchema
-  );
+  rejectionReason: {
+    type: String,
+    trim: true,
+},
+
+  publishedAt: {
+    type: Date,
+  },
+
+  expiresAt: {
+    type: Date,
+  },
+
+  submittedAt: {
+    type: Date,
+    default: Date.now,
+  },
+});
+
+const AdInquiry = mongoose.model<IAdInquiry>(
+  "AdInquiry",
+  AdInquirySchema
+);
 
 export default AdInquiry;

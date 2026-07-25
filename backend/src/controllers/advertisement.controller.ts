@@ -1,9 +1,10 @@
+
 // ─── controllers/advertisement.controller.ts ─────────────────────────────────
 import { Request, Response } from "express";
 import { Resend } from "resend";
 import AdInquiry from "../models/AdInquiry";
 import PublishedAd from "../models/PublishedAd";
-import AdPageSettings from "../models/AdPageSettings";
+import AdvertisementPool from "../models/AdvertisementPool";
 
 // ── Resend client ─────────────────────────────────────────────────────────────
 let resendClient: Resend | null = null;
@@ -24,10 +25,6 @@ async function sendAdInquiryNotification(inquiry: {
   phone?: string | null;
   company?: string | null;
   message?: string | null;
-  budget?: string | null;
-  targetPage?: string | null;
-  duration?: string | null;
-  customDays?: number | null;
   adType?: string | null;
   imageUrl?: string | null;
   linkUrl?: string | null;
@@ -44,10 +41,7 @@ async function sendAdInquiryNotification(inquiry: {
   const adminUrl = `${
     process.env.SITE_URL?.trim() || "http://localhost:3000"
   }/admin/advertisements`;
-  const durationStr =
-    inquiry.duration === "custom"
-      ? `${inquiry.customDays} days (custom)`
-      : inquiry.duration || "—";
+  
 
   const { error } = await getResend().emails.send({
     from: "Local Newz <onboarding@resend.dev>",
@@ -82,10 +76,8 @@ async function sendAdInquiryNotification(inquiry: {
 
         <p style="font-size:12px;color:#aaa;text-transform:uppercase;letter-spacing:.05em;font-weight:600;margin:0 0 8px">Campaign Details</p>
         <table style="width:100%;border-collapse:collapse;font-size:14px;margin-bottom:20px">
-          <tr><td style="padding:6px 0;color:#888;width:120px">Target Page</td><td style="padding:6px 0;color:#111">${inquiry.targetPage || "—"}</td></tr>
-          <tr><td style="padding:6px 0;color:#888">Duration</td><td style="padding:6px 0;color:#111">${durationStr}</td></tr>
+          
           <tr><td style="padding:6px 0;color:#888">Ad Type</td><td style="padding:6px 0;color:#111">${inquiry.adType || "—"}</td></tr>
-          ${inquiry.budget ? `<tr><td style="padding:6px 0;color:#888">Budget</td><td style="padding:6px 0;color:#111;font-weight:600">${inquiry.budget}</td></tr>` : ""}
           ${inquiry.adTitle ? `<tr><td style="padding:6px 0;color:#888">Ad Title</td><td style="padding:6px 0;color:#111">${inquiry.adTitle}</td></tr>` : ""}
           ${inquiry.linkUrl ? `<tr><td style="padding:6px 0;color:#888">Link URL</td><td style="padding:6px 0"><a href="${inquiry.linkUrl}" style="color:#e10600">${inquiry.linkUrl}</a></td></tr>` : ""}
           ${inquiry.imageUrl ? `<tr><td style="padding:6px 0;color:#888">Image URL</td><td style="padding:6px 0"><a href="${inquiry.imageUrl}" style="color:#e10600">View Image</a></td></tr>` : ""}
@@ -125,8 +117,6 @@ export const getInquiries = async (req: Request, res: Response) => {
     const { status } = req.query;
     type InquiryStatus =
   | "pending"
-  | "reviewed"
-  | "approved"
   | "published"
   | "rejected";
 
@@ -160,15 +150,13 @@ export const createInquiry = async (req: Request, res: Response) => {
       phone,
       company,
       message,
-      budget,
-      targetPage,
-      duration,
-      customDays,
       adType,
-      imageUrl,
       linkUrl,
       adTitle,
     } = req.body;
+
+    const imageUrl = (req as any).uploadedImageUrl;
+const imagePublicId = (req as any).uploadedImagePublicId;
 
     const inquiry = await AdInquiry.create({
       name,
@@ -176,14 +164,11 @@ export const createInquiry = async (req: Request, res: Response) => {
       phone,
       company,
       message,
-      budget,
-      targetPage,
-      duration,
-      customDays: customDays ? Number(customDays) : undefined,
       adType,
-      imageUrl,
       linkUrl,
       adTitle,
+      imageUrl,
+      imagePublicId
     });
 
     sendAdInquiryNotification({
@@ -193,10 +178,6 @@ export const createInquiry = async (req: Request, res: Response) => {
       phone: inquiry.phone,
       company: inquiry.company,
       message: inquiry.message,
-      budget: inquiry.budget,
-      targetPage: inquiry.targetPage,
-      duration: inquiry.duration,
-      customDays: inquiry.customDays,
       adType: inquiry.adType,
       imageUrl: inquiry.imageUrl,
       linkUrl: inquiry.linkUrl,
@@ -208,7 +189,20 @@ export const createInquiry = async (req: Request, res: Response) => {
       )
     );
 
-    res.status(201).json(inquiry);
+    return res.status(201).json({
+  id: String(inquiry._id),
+  name: inquiry.name,
+  email: inquiry.email,
+  phone: inquiry.phone,
+  company: inquiry.company,
+  message: inquiry.message,
+  adType: inquiry.adType,
+  imageUrl: inquiry.imageUrl,
+  linkUrl: inquiry.linkUrl,
+  adTitle: inquiry.adTitle,
+  status: inquiry.status,
+  submittedAt: inquiry.submittedAt,
+});
   } catch (err: any) {
     res.status(500).json({ message: err.message });
   }
@@ -216,9 +210,13 @@ export const createInquiry = async (req: Request, res: Response) => {
 
 export const updateInquiryStatus = async (req: Request, res: Response) => {
   try {
-    const { status, adminNote } = req.body;
-    const update: any = { status };
-    if (adminNote !== undefined) update.adminNote = adminNote;
+    const { status, rejectionReason } = req.body;
+
+const update: any = { status };
+
+if (rejectionReason !== undefined) {
+    update.rejectionReason = rejectionReason;
+}
 
     const inquiry = await AdInquiry.findByIdAndUpdate(
       req.params.id,
@@ -243,13 +241,27 @@ export const deleteInquiry = async (req: Request, res: Response) => {
 };
 
 // ── Published Ads ─────────────────────────────────────────────────────────────
-
-export const getPublishedAds = async (_req: Request, res: Response) => {
+export const getPublishedAds = async (
+  _req: Request,
+  res: Response
+) => {
   try {
-    const ads = await PublishedAd.find().sort({ createdAt: -1 });
-    res.json(ads);
+    const ads = await PublishedAd.find().sort({
+      publishedAt: -1,
+    });
+
+    const formattedAds = ads.map((ad) => ({
+      id: ad._id.toString(),
+      ...ad.toObject(),
+    }));
+
+    return res.status(200).json(formattedAds);
   } catch (err: any) {
-    res.status(500).json({ message: err.message });
+    console.error(err);
+
+    return res.status(500).json({
+      message: err.message,
+    });
   }
 };
 
@@ -257,123 +269,215 @@ export const publishAd = async (req: Request, res: Response) => {
   try {
     const {
       inquiryId,
-      imageUrl,
-      linkUrl,
-      altText,
-      targetPage,
-      adTitle,
-      advertiser,
-      publishedAt,
-      expiresAt,
+      durationDays,
+      publishNotes,
     } = req.body;
 
-    const ad = await PublishedAd.create({
-      inquiryId,
-      imageUrl,
-      linkUrl,
-      altText,
-      targetPage,
-      adTitle,
-      advertiser,
-      publishedAt: new Date(publishedAt),
-      expiresAt: new Date(expiresAt),
-    });
-
-    await AdInquiry.findByIdAndUpdate(inquiryId, {
-      status: "published",
-      publishedAt: new Date(publishedAt),
-      expiresAt: new Date(expiresAt),
-    });
-
-    res.status(201).json(ad);
-  } catch (err: any) {
-    res.status(500).json({ message: err.message });
-  }
-};
-
-export const toggleAdActive = async (req: Request, res: Response) => {
-  try {
-    const existing = await PublishedAd.findById(req.params.id);
-    if (!existing)
-      return res.status(404).json({ message: "Ad not found" });
-
-    const ad = await PublishedAd.findByIdAndUpdate(
-      req.params.id,
-      { isActive: !existing.isActive },
-      { new: true }
-    );
-    res.json(ad);
-  } catch (err: any) {
-    res.status(500).json({ message: err.message });
-  }
-};
-
-export const deleteAd = async (req: Request, res: Response) => {
-  try {
-    await PublishedAd.findByIdAndDelete(req.params.id);
-    res.json({ success: true });
-  } catch (err: any) {
-    res.status(500).json({ message: err.message });
-  }
-};
-
-// ── Page Settings ─────────────────────────────────────────────────────────────
-
-export const getAdPageSettings = async (_req: Request, res: Response) => {
-  try {
-    let settings = await AdPageSettings.findOne({ id: "singleton" });
-
-    if (!settings) {
-      settings = await AdPageSettings.create({
-        id: "singleton",
-        whyPoints: [
-          "Hyper-local audience across 18+ Indian cities",
-          "Flexible campaign durations",
-          "Real-time performance analytics",
-        ] as any[],
-        packages: [
-          { label: "7 Days", price: "₹2,999" },
-          { label: "14 Days", price: "₹4,999" },
-          { label: "30 Days", price: "₹8,999" },
-          { label: "3 Months", price: "₹19,999" },
-        ] as any[],
+    // Validate input
+    if (!inquiryId || !durationDays) {
+      return res.status(400).json({
+        message: "Inquiry ID and duration are required.",
       });
     }
-    res.json(settings);
+
+    // Check if inquiry exists
+    const inquiry = await AdInquiry.findById(inquiryId);
+
+    if (!inquiry) {
+      return res.status(404).json({
+        message: "Inquiry not found.",
+      });
+    }
+
+    // Prevent duplicate publishing
+    const existingAd = await PublishedAd.findOne({
+      inquiryId,
+    });
+
+    if (existingAd) {
+      return res.status(400).json({
+        message: "This inquiry has already been published.",
+      });
+    }
+
+    const publishedAt = new Date();
+
+    const expiresAt = new Date();
+    expiresAt.setDate(
+      expiresAt.getDate() + Number(durationDays)
+    );
+
+    const publishedAd = await PublishedAd.create({
+      inquiryId: inquiry._id.toString(),
+
+      imageUrl: inquiry.imageUrl,
+
+      linkUrl: inquiry.linkUrl,
+
+      altText: inquiry.adTitle || inquiry.company || inquiry.name,
+
+      advertiser: inquiry.company || inquiry.name,
+
+
+      adType: inquiry.adType,
+
+      status: "active",
+
+      durationDays,
+
+      publishNotes,
+
+      publishedAt,
+
+      expiresAt,
+    });
+    const lastAdvertisement = await AdvertisementPool
+  .findOne({
+    adType: publishedAd.adType,
+  })
+  .sort({ queueOrder: -1 });
+
+const nextQueueOrder = lastAdvertisement
+  ? lastAdvertisement.queueOrder + 1
+  : 1;
+
+await AdvertisementPool.create({
+  publishedAdId: publishedAd._id.toString(),
+  adType: publishedAd.adType,
+  queueOrder: nextQueueOrder,
+  isActive: true,
+});
+
+
+    inquiry.status = "published";
+    await inquiry.save();
+
+    return res.status(201).json(publishedAd);
   } catch (err: any) {
-    res.status(500).json({ message: err.message });
+    console.error(err);
+
+    return res.status(500).json({
+      message: err.message,
+    });
   }
 };
 
-export const updateAdPageSettings = async (req: Request, res: Response) => {
+
+export const endAdvertisement = async (
+  req: Request,
+  res: Response
+) => {
+  try {
+    const { endReason } = req.body;
+
+    const ad = await PublishedAd.findById(req.params.id);
+
+    if (!ad) {
+      return res.status(404).json({
+        message: "Advertisement not found.",
+      });
+    }
+
+    if (ad.status !== "active") {
+      return res.status(400).json({
+        message: "Only active advertisements can be ended.",
+      });
+    }
+
+    ad.status = "ended";
+ad.endedAt = new Date();
+ad.endReason = endReason?.trim() || "Ended by Admin";
+
+// Save advertisement
+await ad.save();
+
+// Remove advertisement from the active rotation pool
+await AdvertisementPool.deleteOne({
+  publishedAdId: ad._id.toString(),
+});
+
+return res.status(200).json({
+  message: "Advertisement ended successfully.",
+  advertisement: ad,
+});
+  } catch (err: any) {
+    console.error(err);
+
+    return res.status(500).json({
+      message: err.message,
+    });
+  }
+};
+
+export const renewAdvertisement = async (
+  req: Request,
+  res: Response
+) => {
   try {
     const {
-      whyEnabled,
-      whyPoints,
-      packagesEnabled,
-      packages,
-      contactEnabled,
-      contactEmail,
-      contactPhone,
-      contactNote,
+      durationDays,
+      publishNotes,
     } = req.body;
 
-    const settings = await AdPageSettings.findOneAndUpdate(
-      { id: "singleton" },
-      {
-        whyEnabled,
-        whyPoints,
-        packagesEnabled,
-        packages,
-        contactEnabled,
-        contactEmail,
-        contactPhone,
-        contactNote,
-      },
-      { new: true, upsert: true, setDefaultsOnInsert: true }
+    if (!durationDays) {
+      return res.status(400).json({
+        message: "Duration is required.",
+      });
+    }
+
+    const ad = await PublishedAd.findById(req.params.id);
+
+    if (!ad) {
+      return res.status(404).json({
+        message: "Advertisement not found.",
+      });
+    }
+
+    const publishedAt = new Date();
+
+    const expiresAt = new Date();
+    expiresAt.setDate(
+      expiresAt.getDate() + Number(durationDays)
     );
-    res.json(settings);
+
+    ad.status = "active";
+    ad.durationDays = Number(durationDays);
+    ad.publishNotes = publishNotes || ad.publishNotes;
+
+    ad.publishedAt = publishedAt;
+    ad.renewedAt = publishedAt;
+    ad.expiresAt = expiresAt;
+
+    // Remove old ending information
+    ad.endedAt = undefined;
+    ad.endReason = undefined;
+
+    await ad.save();
+    // Find the last queue position for this advertisement type
+const lastAdvertisement = await AdvertisementPool
+  .findOne({
+    adType: ad.adType,
+  })
+  .sort({ queueOrder: -1 });
+
+const nextQueueOrder = lastAdvertisement
+  ? lastAdvertisement.queueOrder + 1
+  : 1;
+
+// Add advertisement back into the rotation pool
+await AdvertisementPool.create({
+  publishedAdId: ad._id.toString(),
+  adType: ad.adType,
+  queueOrder: nextQueueOrder,
+  isActive: true,
+});
+
+    return res.status(200).json(ad);
   } catch (err: any) {
-    res.status(500).json({ message: err.message });
+    console.error(err);
+
+    return res.status(500).json({
+      message: err.message,
+    });
   }
 };

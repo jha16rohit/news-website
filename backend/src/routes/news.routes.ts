@@ -22,7 +22,7 @@ import {
   getNewsByTopicSlug,
 } from "../controllers/news.controller";
 
-import { uploadToSupabase } from "../middleware/Upload.middleware";
+import { uploadToCloudinary } from "../middleware/Upload.middleware";
 import { protect } from "../middleware/auth.middleware";
 
 const router = Router();
@@ -44,7 +44,7 @@ router.get("/topic/:slug",     getNewsByTopicSlug);
 router.get("/", getAllNews);
 
 // ─── Create ─────────────────────────────────────────────────────
-router.post("/create", uploadToSupabase, createNews);
+router.post("/create", uploadToCloudinary, createNews);
 
 router.post(
   "/:newsId/live-update/:updateId/vote",
@@ -52,7 +52,7 @@ router.post(
 );
 
 // ─── Admin mutations ────────────────────────────────────────────
-router.put("/:id",              protect, uploadToSupabase, updateNews);
+router.put("/:id",              protect, uploadToCloudinary, updateNews);
 router.delete("/:id",           protect, deleteNews);
 router.patch("/:id/pause-toggle", protect, togglePauseBreaking);
 router.post("/:id/live-update",   protect, addLiveUpdate);

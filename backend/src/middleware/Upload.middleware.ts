@@ -1,19 +1,15 @@
 import multer from "multer";
-import { createClient } from "@supabase/supabase-js";
 import path from "path";
 import { Request, Response, NextFunction } from "express";
+import cloudinary from "../config/cloudinary";
 
 // ─── Supabase client ──────────────────────────────────────────────────────────
 // Add to your .env:
 //   SUPABASE_URL=https://rgmgvcgpxbwrcyqzdybg.supabase.co
 //   SUPABASE_SERVICE_KEY=<service_role key from Supabase dashboard → Settings → API>
 //
-const supabase = createClient(
-  process.env.SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_KEY!
-);
 
-const BUCKET = "news-images"; // must match the bucket you created in Supabase dashboard
+ // must match the bucket you created in Supabase dashboard
 
 // ─── multer: keep file in memory, never touch disk ───────────────────────────
 const multerMemory = multer({
@@ -35,30 +31,22 @@ const multerMemory = multer({
 // After this runs, the controller can read:
 //   (req as any).uploadedImageUrl  →  full public Supabase URL, or undefined
 //
-export const uploadToSupabase = [
-  // Step 1: parse the multipart form into memory
+export const uploadToCloudinary = [
   multerMemory.single("image"),
 
-  // Step 2: stream buffer → Supabase Storage
   async (req: Request, _res: Response, next: NextFunction) => {
-    if (!req.file) return next(); // no image attached — fine, just continue
+    if (!req.file) return next();
 
     try {
-      const ext      = path.extname(req.file.originalname).toLowerCase();
-      const filename = `${Date.now()}-${Math.round(Math.random() * 1e9)}${ext}`;
+      const base64 = req.file.buffer.toString("base64");
 
-      const { error } = await supabase.storage
-        .from(BUCKET)
-        .upload(filename, req.file.buffer, {
-          contentType: req.file.mimetype,
-          upsert:      false,
-        });
+      const dataURI = `data:${req.file.mimetype};base64,${base64}`;
 
-      if (error) throw error;
+      const result = await cloudinary.uploader.upload(dataURI, {
+        folder: "news-images",
+      });
 
-      // Attach the permanent public URL to the request for the controller to use
-      const { data } = supabase.storage.from(BUCKET).getPublicUrl(filename);
-      (req as any).uploadedImageUrl = data.publicUrl;
+      (req as any).uploadedImageUrl = result.secure_url;
 
       next();
     } catch (err) {

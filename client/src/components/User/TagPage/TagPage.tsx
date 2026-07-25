@@ -6,6 +6,11 @@ import { getTagNews } from "../../../api/user/tagNews";
 import { getRecentNews } from "../../../api/user/recentNews";
 import { getTrendingTags } from "../../../api/user/tag";
 import Preloader from "../../Admin/Preloader/Preloder";
+import {
+  getAdvertisementPool,
+  type Advertisement as AdType,
+} from "../../../api/user/advertisementPool";
+import Advertisement from "../Advertisment/Advertisment";
 
 
 const TagPage: React.FC = () => {
@@ -15,6 +20,13 @@ const TagPage: React.FC = () => {
   const [recentNews, setRecentNews] = useState<any[]>([]);
   const [trendingTags, setTrendingTags] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [ads, setAds] = useState<{
+    cards: AdType[];
+    strips: AdType[];
+}>({
+    cards: [],
+    strips: [],
+});
 
   const currentTagSlug = tagSlug || "budget-2026";
   const displayTag = currentTagSlug
@@ -49,7 +61,13 @@ setTrendingTags(
   tags || []
 );
 }
+const adResponse =
+    await getAdvertisementPool({
+        cards: 1,
+        strips: 0,
+    });
 
+setAds(adResponse);
 
 
     } catch (error) {
@@ -197,7 +215,10 @@ setTrendingTags(
                 </div>
               </div>
 
-
+<Advertisement
+    adData={ads.cards[0] ?? null}
+    variant="card"
+/>
             
 
               {/* Tag cloud */}

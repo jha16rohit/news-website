@@ -64,6 +64,7 @@ const AdminSidebar: React.FC<AdminSidebarProps> = ({ open, onClose }) => {
           <SidebarItem icon={<MdNotifications />} label="Notifications" badge="12" active={isActive("/admin/notification")} onClick={() => go("/admin/notification")} />
           
           {/* 👇 NEW: Footer Management Link 👇 */}
+          <SidebarItem icon={<FaWindowMaximize />} label="User Insights" active={isActive("/admin/user-insights")} onClick={() => go("/admin/user-insights")} />
           <SidebarItem icon={<FaWindowMaximize />} label="Footer Manager" active={isActive("/admin/footer-management")} onClick={() => go("/admin/footer-management")} />
           <SidebarItem icon={<FaWindowMaximize />} label="Advertisement Manager" active={isActive("/admin/advertisement-manager")} onClick={() => go("/admin/advertisement-manager")} />
           <SidebarItem icon={<FaWindowMaximize />} label="About Manager" active={isActive("/admin/about-manager")} onClick={() => go("/admin/about-manager")} />

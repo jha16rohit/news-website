@@ -11,6 +11,7 @@ import { X, Mail, Lock, Phone, User, ArrowLeft, Loader2 } from "lucide-react";
 import "./SignIn.css";
 import { registerUser, loginUser, googleAuth } from "../../../../api/user/userauth";
 import type { AuthUser } from "../../../../api/user/userauth";
+import { useAuth } from "../../../../context/AuthContext";
 
 // ─── Put your Google Client ID here (or in .env as VITE_GOOGLE_CLIENT_ID) ───
 const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID as string;
@@ -44,7 +45,12 @@ declare global {
 // COMPONENT
 // ─────────────────────────────────────────────
 
-const SignIn: React.FC<SignInProps> = ({ onClose, onSuccess }) => {
+const SignIn: React.FC<SignInProps> = ({
+  onClose,
+  onSuccess,
+}) => {
+
+  const { login } = useAuth();
   const [activeView, setActiveView]     = useState<"login" | "signup">("login");
   const [loginMethod, setLoginMethod]   = useState<"email" | "phone">("email");
   const [step, setStep]                 = useState<"form" | "otp">("form");
@@ -108,8 +114,12 @@ const SignIn: React.FC<SignInProps> = ({ onClose, onSuccess }) => {
     setError(null);
     try {
       const res = await googleAuth(response.credential);
-      onSuccess(res.user, res.token);
-      onClose();
+
+login(res.user);
+
+onSuccess(res.user, res.token);
+
+onClose();
     } catch (err: any) {
       setError(err?.message || "Google login failed. Please try again.");
     } finally {
@@ -204,9 +214,16 @@ const SignIn: React.FC<SignInProps> = ({ onClose, onSuccess }) => {
 
     setLoading(true);
     try {
-      const res = await loginUser({ email: emailInput, password: passwordInput });
-      onSuccess(res.user, res.token);
-      onClose();
+      const res = await loginUser({
+    email: emailInput,
+    password: passwordInput,
+});
+
+login(res.user);
+
+onSuccess(res.user, res.token);
+
+onClose();
     } catch (err: any) {
       setError(err?.message || "Login failed. Please try again.");
     } finally {
@@ -228,13 +245,17 @@ const SignIn: React.FC<SignInProps> = ({ onClose, onSuccess }) => {
     setLoading(true);
     try {
       const res = await registerUser({
-        name:     nameInput.trim(),
-        email:    emailInput,
-        password: passwordInput,
-        phone:    phoneInput || undefined,
-      });
-      onSuccess(res.user, res.token);
-      onClose();
+    name: nameInput.trim(),
+    email: emailInput,
+    password: passwordInput,
+    phone: phoneInput || undefined,
+});
+
+login(res.user);
+
+onSuccess(res.user, res.token);
+
+onClose();
     } catch (err: any) {
       setError(err?.message || "Registration failed. Please try again.");
     } finally {

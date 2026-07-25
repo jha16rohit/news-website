@@ -1,33 +1,150 @@
+/* ==================================================================
+   TrafficOverview.css
+   ================================================================== */
+
+.traffic-card,
+.traffic-card * {
+  box-sizing: border-box;
+}
+
 .traffic-card {
   background: #ffffff;
   border-radius: 16px;
   border: 1px solid #e5e7eb;
   padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
 }
 
-/* HEADER */
+/* ------------------------------------------------------------------ */
+/* HEADER                                                              */
+/* ------------------------------------------------------------------ */
+
 .traffic-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 16px;
+  flex-wrap: wrap;
+  gap: 12px;
 }
 
 .traffic-header h3 {
-  font-size: 20px;
+  margin: 0;
+  font-size: 18px;
   font-weight: 700;
+  color: #111827;
 }
 
 .traffic-header p {
-  font-size: 14px;
+  margin: 2px 0 0;
+  font-size: 13px;
   color: #6b7280;
 }
 
-/* LEGEND */
+.traffic-header-right {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+/* ------------------------------------------------------------------ */
+/* RANGE TABS                                                          */
+/* ------------------------------------------------------------------ */
+
+.traffic-range-tabs {
+  display: inline-flex;
+  background: #f3f4f6;
+  border-radius: 10px;
+  padding: 3px;
+  gap: 2px;
+}
+
+.traffic-range-btn {
+  appearance: none;
+  border: none;
+  background: transparent;
+  padding: 6px 12px;
+  font-size: 13px;
+  font-weight: 600;
+  color: #6b7280;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: background-color 150ms ease, color 150ms ease;
+  white-space: nowrap;
+}
+
+.traffic-range-btn:hover:not(:disabled) {
+  color: #111827;
+}
+
+.traffic-range-btn--active {
+  background: #ffffff;
+  color: #111827;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.08);
+}
+
+.traffic-range-btn:disabled {
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+/* ------------------------------------------------------------------ */
+/* REFRESH BUTTON                                                       */
+/* ------------------------------------------------------------------ */
+
+.traffic-refresh-btn {
+  appearance: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  border: 1px solid #e5e7eb;
+  background: #ffffff;
+  color: #4b5563;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: background-color 150ms ease, border-color 150ms ease, transform 150ms ease;
+}
+
+.traffic-refresh-btn:hover:not(:disabled) {
+  background: #f9fafb;
+  border-color: #d1d5db;
+}
+
+.traffic-refresh-btn:active:not(:disabled) {
+  transform: scale(0.94);
+}
+
+.traffic-refresh-btn:disabled {
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+.tp-spinning {
+  animation: tp-spin 0.8s linear infinite;
+}
+
+@keyframes tp-spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* ------------------------------------------------------------------ */
+/* LEGEND                                                               */
+/* ------------------------------------------------------------------ */
+
 .legend {
   display: flex;
   gap: 16px;
-  font-size: 14px;
+  font-size: 13px;
+  color: #374151;
   align-items: center;
 }
 
@@ -39,21 +156,156 @@
 
 .views-dot::before {
   content: "";
-  width: 10px;
-  height: 10px;
+  width: 9px;
+  height: 9px;
   background: #3b82f6;
   border-radius: 50%;
+  flex-shrink: 0;
 }
 
 .visitors-dot::before {
   content: "";
-  width: 10px;
-  height: 10px;
+  width: 9px;
+  height: 9px;
   background: #22c55e;
   border-radius: 50%;
+  flex-shrink: 0;
 }
 
-/* CHART */
+/* ------------------------------------------------------------------ */
+/* CHART WRAPPER                                                        */
+/* ------------------------------------------------------------------ */
+
 .chart-wrapper {
   height: 300px;
+  position: relative;
+}
+
+/* ------------------------------------------------------------------ */
+/* CUSTOM TOOLTIP                                                       */
+/* ------------------------------------------------------------------ */
+
+.traffic-tooltip {
+  background: #111827;
+  color: #ffffff;
+  padding: 10px 14px;
+  border-radius: 10px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.18);
+  font-size: 12.5px;
+  line-height: 1.5;
+}
+
+.traffic-tooltip-label {
+  margin: 0 0 4px;
+  font-weight: 700;
+  color: #ffffff;
+}
+
+.traffic-tooltip p {
+  margin: 0;
+}
+
+/* ------------------------------------------------------------------ */
+/* SKELETON LOADER                                                      */
+/* ------------------------------------------------------------------ */
+
+.chart-skeleton {
+  height: 100%;
+  width: 100%;
+  display: flex;
+  align-items: flex-end;
+  gap: 12px;
+  padding: 0 8px;
+}
+
+.chart-skeleton-bar {
+  flex: 1;
+  border-radius: 6px 6px 0 0;
+  background: linear-gradient(90deg, #eef0f3 25%, #f7f8fa 37%, #eef0f3 63%);
+  background-size: 400% 100%;
+  animation: tp-shimmer 1.4s ease infinite;
+}
+
+@keyframes tp-shimmer {
+  0% {
+    background-position: 100% 50%;
+  }
+  100% {
+    background-position: 0 50%;
+  }
+}
+
+/* ------------------------------------------------------------------ */
+/* ERROR / EMPTY STATES                                                 */
+/* ------------------------------------------------------------------ */
+
+.traffic-error,
+.traffic-empty {
+  height: 100%;
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  font-size: 13.5px;
+  color: #6b7280;
+  text-align: center;
+}
+
+.traffic-error {
+  color: #dc2626;
+}
+
+.traffic-error button {
+  appearance: none;
+  border: 1px solid #fca5a5;
+  background: #fef2f2;
+  color: #dc2626;
+  font-size: 12.5px;
+  font-weight: 600;
+  padding: 4px 10px;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background-color 150ms ease;
+}
+
+.traffic-error button:hover {
+  background: #fee2e2;
+}
+
+/* ------------------------------------------------------------------ */
+/* RESPONSIVE                                                           */
+/* ------------------------------------------------------------------ */
+
+@media (max-width: 640px) {
+  .traffic-card {
+    padding: 16px;
+  }
+
+  .traffic-header {
+    align-items: flex-start;
+  }
+
+  .traffic-header-right {
+    width: 100%;
+    justify-content: space-between;
+  }
+
+  .traffic-range-tabs {
+    width: 100%;
+  }
+
+  .traffic-range-btn {
+    flex: 1;
+    text-align: center;
+  }
+
+  .legend {
+    order: 3;
+    width: 100%;
+  }
+
+  .chart-wrapper {
+    height: 240px;
+  }
 }

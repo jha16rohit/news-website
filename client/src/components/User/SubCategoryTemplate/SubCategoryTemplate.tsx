@@ -6,11 +6,13 @@ import { Link } from "react-router-dom";
 import { Clock, Eye, Home, ChevronRight, ArrowRight } from "lucide-react";
 import type { Category } from "../../../types/category";
 import { getCategoryNews } from "../../../api/user/categoryNews";
-import UserNavbar from "../UserNavbar/UserNavbar";
 import Advertisement from "../Advertisment/Advertisment";
-import UserFooter from "../UserFooter/UserFooter";
 import "./SubCategoryTemplate.css";
 import Preloader from "../../Admin/Preloader/Preloder";
+import {
+  getAdvertisementPool,
+  type Advertisement as AdType,
+} from "../../../api/user/advertisementPool";
 
 interface SubCategoryProps {
   category: Category;
@@ -30,6 +32,14 @@ export default function SubCategoryTemplate({ category, parentCategory, color }:
   const [loading, setLoading] =
     useState(true);
 
+  const [ads, setAds] = useState<{
+  cards: AdType[];
+  strips: AdType[];
+}>({
+  cards: [],
+  strips: [],
+});  
+
   useEffect(() => {
     async function fetchNews() {
       try {
@@ -43,6 +53,13 @@ export default function SubCategoryTemplate({ category, parentCategory, color }:
         if (data.success) {
           setNews(data.news || []);
         }
+
+        const adResponse = await getAdvertisementPool({
+  cards: 0,
+  strips: 2,
+});
+
+setAds(adResponse);
 
       } catch (error) {
         console.error(error);
@@ -96,26 +113,13 @@ const source = news.map((a: any) => ({
 if (loading) {
   return(
    <>
-  <UserNavbar />
   <Preloader />
   </>
   );
 }
 
-if (!loading && source.length === 0) {
   return (
     <>
-      <UserNavbar />
-      <div className="sct-notfound">
-        No news found
-      </div>
-    </>
-  );
-}
-
-  return (
-    <>
-      <UserNavbar />
       
       <div className="sct-root" style={{ "--cat-color": color } as React.CSSProperties}>
         
@@ -141,6 +145,11 @@ if (!loading && source.length === 0) {
             </div>
           </div>
         </div>
+
+        {/* TOP AD */}
+<Advertisement
+  adData={ads.strips[0] ?? null}
+/>
 
         {/* ── FOCUSED NEWS GRID ── */}
         <section className="sct-section">
@@ -191,8 +200,10 @@ if (!loading && source.length === 0) {
           </div>
         </section>
 
-        <Advertisement page={category.slug} />
-        <UserFooter />
+<Advertisement
+  adData={ads.strips[1] ?? null}
+/>
+       
       </div>
     </>
   );

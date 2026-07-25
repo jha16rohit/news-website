@@ -3,32 +3,54 @@ dotenv.config({ path: ".env" });
 
 import http from "http";
 import { Server as SocketServer } from "socket.io";
-import { initAnalyticsSocket } from "./socket/analyticssocket"; // adjust path if needed
+import cron from "node-cron";
 
 import app from "./app";
 import connectDB from "./config/db";
-
-console.log(process.env.MONGO_URI);
+import advertisementPool from "./services/advertisement/AdvertisementPool";
+import { initAnalyticsSocket } from "./socket/analyticssocket";
+import { cleanupPendingInquiries } from "./services/cleanup.service";
 
 const PORT = process.env.PORT || 5001;
 
-connectDB();
+async function startServer() {
+  try {
+    // Connect to MongoDB
+    await connectDB();
 
-// 1. Create a raw HTTP server using your Express app
-const httpServer = http.createServer(app);
 
-// 2. Initialize Socket.IO with that server
-const io = new SocketServer(httpServer, {
-  cors: { 
-    origin: process.env.FRONTEND_URL ?? "http://localhost:5173", 
-    credentials: true 
-  },
-});
+    // Create HTTP Server
+    const httpServer = http.createServer(app);
 
-// 3. Attach your analytics socket logic
-initAnalyticsSocket(io);
+    // Initialize Socket.IO
+    const io = new SocketServer(httpServer, {
+      cors: {
+        origin: process.env.FRONTEND_URL ?? "http://localhost:5173",
+        credentials: true,
+      },
+    });
 
-// 4. Call listen on the httpServer, NOT app.listen
-httpServer.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`);
-});
+    initAnalyticsSocket(io);
+
+    // ===========================
+    // Daily Cleanup Job
+    // ===========================
+    cron.schedule("0 2 * * *", async () => {
+      console.log("Running scheduled cleanup...");
+      await cleanupPendingInquiries();
+    });
+
+    console.log("Cleanup scheduler started.");
+
+    // Start Server
+    httpServer.listen(PORT, () => {
+      console.log(`Server running on port ${PORT}`);
+    });
+
+  } catch (error) {
+    console.error("Server startup failed:", error);
+    process.exit(1);
+  }
+}
+
+startServer();

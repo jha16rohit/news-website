@@ -2,7 +2,7 @@ import React, { useState, useMemo, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import "./ScheduledPosts.css";
 import { fetchAllNews, deleteNews as apiDeleteNews, updateNews as apiUpdateNews } from "../../../api/news";
-import { useNewsEvent, useNewsSubscription } from "../../../context/newscontext";
+// import { useNewsEvent, useNewsSubscription } from "../../../context/newscontext";
 import {
   CalendarClock, FileText, Clock, ChevronLeft, ChevronRight,
   Trash2, Edit3, Eye, Send, MoreHorizontal, Search,
@@ -96,10 +96,10 @@ const ArticleMenu: React.FC<{
 /* ─── Main Component ─── */
 const ScheduledPosts: React.FC = () => {
   const navigate = useNavigate();
-  const { dispatch } = useNewsEvent();
+  // const { dispatch } = useNewsEvent();
 
   // Re-fetch whenever another page changes a news item
-  useNewsSubscription(() => { loadData(); });
+  // useNewsSubscription(() => { loadData(); });
 
   const [scheduledArticles, setScheduledArticles] = useState<RemoteArticle[]>([]);
   const [draftArticles, setDraftArticles]         = useState<RemoteArticle[]>([]);
@@ -204,8 +204,10 @@ articleCategory: n.categoryId?.name || "",
     confirm(`Publish "${article.title.slice(0, 50)}…" now?`, async () => {
       try {
         await apiUpdateNews(article.id, { status: "PUBLISHED" } as any);
-        setScheduledArticles(prev => prev.filter(a => a.id !== article.id));
-        dispatch({ type: "STATUS_CHANGED", id: article.id, changes: { status: "PUBLISHED" } });
+
+setScheduledArticles(prev => prev.filter(a => a.id !== article.id));
+
+await loadData();
       } catch (err) { console.error(err); }
       setConfirmAction(null);
     });
@@ -215,9 +217,12 @@ articleCategory: n.categoryId?.name || "",
     confirm(`Delete "${article.title.slice(0, 50)}…"? This cannot be undone.`, async () => {
       try {
         await apiDeleteNews(article.id);
-        setScheduledArticles(prev => prev.filter(a => a.id !== article.id));
-        setDraftArticles(prev => prev.filter(a => a.id !== article.id));
-        dispatch({ type: "DELETED", id: article.id });
+
+setScheduledArticles(prev => prev.filter(a => a.id !== article.id));
+
+setDraftArticles(prev => prev.filter(a => a.id !== article.id));
+
+await loadData();
       } catch (err) { console.error(err); }
       setConfirmAction(null);
     });
@@ -228,7 +233,7 @@ articleCategory: n.categoryId?.name || "",
       try {
         await apiUpdateNews(article.id, { status: "PUBLISHED" } as any);
         setDraftArticles(prev => prev.filter(a => a.id !== article.id));
-        dispatch({ type: "STATUS_CHANGED", id: article.id, changes: { status: "PUBLISHED" } });
+        await loadData();
       } catch (err) { console.error(err); }
       setConfirmAction(null);
     });

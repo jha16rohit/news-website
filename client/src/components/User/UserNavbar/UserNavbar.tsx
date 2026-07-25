@@ -10,31 +10,38 @@ import { Bell, User, Menu, X, Search, ChevronDown, LogOut } from "lucide-react";
 import logo from "../../../assets/Logo.png";
 import { useCategories }
 from "../../../hooks/useCategories";
+import { useAuth } from "../../../context/AuthContext";
 
 import type { Category }
 from "../../../types/category";
-import SignIn from "./SignIn/SignIn";
-import {
-  getMe,
-  logoutUser,
-  setMemoryToken,
-} from "../../../api/user/userauth";
-import type { AuthUser } from "../../../api/user/userauth";
+// import SignIn from "./SignIn/SignIn";
+// import {
+//   getMe,
+//   logoutUser,
+//   setMemoryToken,
+// } from "../../../api/user/userauth";
+// import type { AuthUser } from "../../../api/user/userauth";
 import { getBreakingTickerNews } from "../../../api/news";
 
 // ── helper ──────────────────────────────────────────────────────
 
-function computeInitials(name: string): string {
-  const words = name.trim().split(" ");
-  if (words.length > 1) return (words[0][0] + words[words.length - 1][0]).toUpperCase();
-  return name.substring(0, 2).toUpperCase();
-}
+// function computeInitials(name: string): string {
+//   const words = name.trim().split(" ");
+//   if (words.length > 1) return (words[0][0] + words[words.length - 1][0]).toUpperCase();
+//   return name.substring(0, 2).toUpperCase();
+// }
 
 // ── component ───────────────────────────────────────────────────
 
 const UserNavbar: React.FC = () => {
-  const [isSignInOpen, setIsSignInOpen] = useState(false);
-  const [user, setUser]                 = useState<(AuthUser & { initials: string }) | null>(null);
+  const {
+  user,
+  // loginOpen,
+  openLogin,
+  // closeLogin,
+  // login,
+  logout,
+} = useAuth();
   const [isProfileOpen, setIsProfileOpen] = useState(false);
   const profileDropdownRef = useRef<HTMLDivElement>(null);
 
@@ -127,35 +134,32 @@ const UserNavbar: React.FC = () => {
   // The httpOnly cookie is sent automatically with credentials: "include".
   // If getMe() succeeds, user is already logged in from a previous session.
 
-  useEffect(() => {
-    getMe()
-      .then(({ user }) => setUser({ ...user, initials: computeInitials(user.name) }))
-      .catch(() => {
-        // Not logged in — that's fine, stay null
-        setUser(null);
-      });
-  }, []);
+  // useEffect(() => {
+  //   getMe()
+  //     .then(({ user }) => setUser({ ...user, initials: computeInitials(user.name) }))
+  //     .catch(() => {
+  //       // Not logged in — that's fine, stay null
+  //       setUser(null);
+  //     });
+  // }, []);
 
   // ── Called by SignIn modal on successful login / register ─────
 
-  const handleLoginSuccess = (authUser: AuthUser, token: string) => {
-    setMemoryToken(token);
-    setUser({ ...authUser, initials: computeInitials(authUser.name) });
-    setIsSignInOpen(false);
-  };
+  // const handleLoginSuccess = (authUser: AuthUser, token: string) => {
+  //   setMemoryToken(token);
+  //   setUser({ ...authUser, initials: computeInitials(authUser.name) });
+  //   setIsSignInOpen(false);
+  // };
 
   // ── Logout ───────────────────────────────────────────────────
 
   const handleLogout = async () => {
-    setIsProfileOpen(false);
-    try {
-      await logoutUser();
-    } catch {
-      // Even if network fails, clear local state
-    }
-    setUser(null);
-    navigate("/");
-  };
+  setIsProfileOpen(false);
+
+  await logout();
+
+  navigate("/");
+};
 
   // ── Nav helpers ───────────────────────────────────────────────
 
@@ -386,7 +390,12 @@ const UserNavbar: React.FC = () => {
                   <div className="nav-avatar">
                     {user.profilePic
                       ? <img src={user.profilePic} alt="Profile" style={{ width: "100%", height: "100%", borderRadius: "50%", objectFit: "cover" }} />
-                      : user.initials}
+                      : user.name
+                          .split(" ")
+                          .map(word => word[0])
+                          .join("")
+                          .slice(0, 2)
+                          .toUpperCase()}
                   </div>
                   <span className="nav-username">{user.name}</span>
                 </button>
@@ -409,7 +418,7 @@ const UserNavbar: React.FC = () => {
                 )}
               </div>
             ) : (
-              <button className="nav-signin-btn" onClick={() => setIsSignInOpen(true)}>
+              <button className="nav-signin-btn" onClick={openLogin}>
                 <User size={16} /><span>Sign In</span>
               </button>
             )}
@@ -417,12 +426,12 @@ const UserNavbar: React.FC = () => {
         </div>
       </header>
 
-      {isSignInOpen && (
+      {/* {isSignInOpen && (
         <SignIn
           onClose={() => setIsSignInOpen(false)}
           onSuccess={handleLoginSuccess}
         />
-      )}
+      )} */}
     </div>
   );
 };

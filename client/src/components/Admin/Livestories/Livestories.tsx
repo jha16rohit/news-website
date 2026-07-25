@@ -7,7 +7,7 @@ import {
   updateNews      as apiUpdateNews,
   appendLiveUpdate as apiAppendLiveUpdate,
 } from "../../../api/news";
-import { useNewsEvent, useNewsSubscription } from "../../../context/newscontext";
+// import { useNewsEvent, useNewsSubscription } from "../../../context/newscontext";
 
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -1090,10 +1090,10 @@ const StoryDetailPanel: React.FC<StoryDetailPanelProps> = ({
 // ─── Component ────────────────────────────────────────────────────────────────
 const LiveStoriesPage: React.FC = () => {
   const navigate = useNavigate();
-  const { dispatch } = useNewsEvent();
+  // const { dispatch } = useNewsEvent();
 
-  // Re-fetch whenever another page changes a news item
-  useNewsSubscription(() => { loadData(); });
+  // // Re-fetch whenever another page changes a news item
+  // useNewsSubscription(() => { loadData(); });
 
   const [stories,          setStories]          = useState<LiveStory[]>([]);
   const [loading,          setLoading]           = useState(true);
@@ -1177,7 +1177,7 @@ const LiveStoriesPage: React.FC = () => {
       if (partialUpdate.isBreaking  !== undefined) payload.isBreaking  = partialUpdate.isBreaking;
 
       await apiAppendLiveUpdate(storyId, payload as any);
-      dispatch({ type: "CONTENT_UPDATED", id: storyId, changes: { liveUpdates: true } });
+      
       // Reload from server so our local IDs/timestamps match the DB record
       await loadData();
     } catch (err) {
@@ -1210,7 +1210,7 @@ const LiveStoriesPage: React.FC = () => {
 
     try {
       await apiUpdateNews(storyId, { liveUpdates: updatedList } as any);
-      dispatch({ type: "CONTENT_UPDATED", id: storyId, changes: { liveUpdates: true } });
+      
       await loadData();
     } catch (err) {
       console.error("Failed to edit update:", err);
@@ -1236,7 +1236,7 @@ const LiveStoriesPage: React.FC = () => {
 
     try {
       await apiUpdateNews(storyId, { liveUpdates: updatedList } as any);
-      dispatch({ type: "CONTENT_UPDATED", id: storyId, changes: { liveUpdates: true } });
+      
       await loadData();
     } catch (err) {
       console.error("Failed to delete update:", err);
@@ -1258,8 +1258,8 @@ const LiveStoriesPage: React.FC = () => {
     );
     setEndingId(storyId);
     try {
-      await apiUpdateNews(storyId, { status: "PUBLISHED", statusType: "ended" } as any);
-      dispatch({ type: "STATUS_CHANGED", id: storyId, changes: { statusType: "ended" } });
+      await loadData();
+     
     } catch (err) {
       console.error("Failed to end live:", err);
       setStories(prev =>
@@ -1282,7 +1282,7 @@ const LiveStoriesPage: React.FC = () => {
     );
     try {
       await apiUpdateNews(storyId, { status: "PUBLISHED", statusType: "published", articleType: "LIVE" } as any);
-      dispatch({ type: "STATUS_CHANGED", id: storyId, changes: { status: "PUBLISHED", statusType: "published" } });
+      
     } catch (err) {
       console.error("Failed to go live:", err);
     }

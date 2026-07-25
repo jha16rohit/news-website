@@ -9,14 +9,8 @@ import TopicProfile from "../models/TopicProfile";
 import { extractImagesFromContent } from "../utils/Extractimages";
 import slugify from "slugify";
 import { randomUUID } from "crypto";
-import { createClient } from "@supabase/supabase-js";
+import cloudinary from "../config/cloudinary";
 
-// ─── Supabase (for deleting images from storage) ─────────────────────────────
-const supabase = createClient(
-  process.env.SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_KEY!,
-);
-const BUCKET = "news-images";
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -1047,22 +1041,18 @@ export const deleteMediaImage = async (req: AuthRequest, res: Response) => {
     });
 
     if (imageUrl) {
-      try {
-        const filename = imageUrl.split(`/${BUCKET}/`).pop();
-        if (filename) {
-          const { error } = await supabase.storage
-            .from(BUCKET)
-            .remove([filename]);
-          if (error)
-            console.warn("Supabase storage delete warning:", error.message);
-        }
-      } catch (storageErr) {
-        console.warn(
-          "Could not delete file from Supabase Storage:",
-          storageErr,
-        );
-      }
-    }
+  try {
+    const publicId = imageUrl
+      .split("/")
+      .slice(-2)
+      .join("/")
+      .split(".")[0];
+
+    await cloudinary.uploader.destroy(publicId);
+  } catch (err) {
+    console.warn("Cloudinary delete warning:", err);
+  }
+}
 
     res.json({ success: true, message: "Image removed successfully" });
   } catch (error) {

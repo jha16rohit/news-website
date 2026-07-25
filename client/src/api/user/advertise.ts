@@ -1,7 +1,3 @@
-// client/src/api/user/advertise.ts
-// ─────────────────────────────────────────────
-// User-facing Advertise With Us API calls
-
 import { apiClient } from "../client";
 
 export interface AdPageSettings {
@@ -15,22 +11,6 @@ export interface AdPageSettings {
   contactNote: string;
 }
 
-export interface AdInquiryPayload {
-  name: string;
-  email: string;
-  phone: string;
-  company?: string;
-  message?: string;
-  budget?: string;
-  targetPage: string;
-  duration: string;
-  customDays?: string;
-  adType: string;
-  imageUrl?: string;
-  linkUrl?: string;
-  adTitle?: string;
-}
-
 export interface AdInquiryResponse {
   id: string;
   submittedAt: string;
@@ -39,15 +19,30 @@ export interface AdInquiryResponse {
   email: string;
 }
 
-// Get sidebar settings (public)
+export interface MyAdInquiry {
+  id: string;
+  adType: "card" | "strip";
+  status: "pending" | "published" | "rejected";
+  submittedAt: string;
+  rejectionReason?: string;
+  price?: string;
+  durationDays?: number;
+  expiresAt?: string;
+}
+
+// Get sidebar settings
 export const getAdPageSettings = (): Promise<AdPageSettings> =>
   apiClient("/api/advertisement/page-settings");
 
-// Submit ad inquiry (public)
+// Submit advertisement inquiry
 export const submitAdInquiry = (
-  data: AdInquiryPayload
+  data: FormData
 ): Promise<AdInquiryResponse> =>
   apiClient("/api/advertisement/inquiries", {
     method: "POST",
-    body: JSON.stringify(data),
+    body: data,
   });
+
+// Get my advertisement requests
+export const getMyAdInquiries = (): Promise<MyAdInquiry[]> =>
+  apiClient("/api/advertisement/inquiries");

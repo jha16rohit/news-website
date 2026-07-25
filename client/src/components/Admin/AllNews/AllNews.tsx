@@ -9,7 +9,7 @@ import {
   fetchAllNews, deleteNews as apiDeleteNews, updateNews as apiUpdateNews,
 } from "../../../api/news";
 import type { ArticleTypeEnum } from "../../../api/news";
-import { useNewsEvent, useNewsSubscription } from "../../../context/newscontext";
+
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 interface NewsItem {
@@ -124,10 +124,10 @@ const AllNews: React.FC = () => {
   const [openDropdown, setOpenDropdown]   = useState<string | null>(null);
   const [deleteModal, setDeleteModal]     = useState<string | null>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
-  const { dispatch } = useNewsEvent();
+  
 
   // Re-fetch whenever another page mutates an article
-  useNewsSubscription(() => { loadData(activeType, search); });
+
 
   // Drag state
   const dragIndex     = useRef<number | null>(null);
@@ -244,34 +244,44 @@ setArticles((data.news || []).map(mapNewsItem));
 
       case "mark-breaking": {
         const isBreaking = item?.tagType === "breaking";
-        try {
-          await apiUpdateNews(id, { articleType: isBreaking ? "STANDARD" : "BREAKING", status: "PUBLISHED" } as any);
-          dispatch({ type: "TYPE_CHANGED", id, changes: { articleType: isBreaking ? "STANDARD" : "BREAKING" } });
-        } catch (err) { console.error(err); }
-        setArticles(prev => prev.map(a => {
-          if (a.id !== id) return a;
-          if (isBreaking) {
-            return { ...a, category: "Standard Article", tag: undefined, tagType: undefined, leftBorder: undefined, priority: "Normal", priorityType: "normal" };
-          }
-          return { ...a, category: "Breaking News", tag: "Breaking", tagType: "breaking", leftBorder: "breaking-left", priority: "High", priorityType: "high" };
-        }));
-        break;
+
+try {
+  await apiUpdateNews(
+    id,
+    {
+      articleType: isBreaking ? "STANDARD" : "BREAKING",
+      status: "PUBLISHED",
+    } as any
+  );
+
+  await loadData(activeType, search);
+
+} catch (err) {
+  console.error(err);
+}
+
+break;
       }
 
       case "convert-live": {
         const isLive = item?.tagType === "live";
-        try {
-          await apiUpdateNews(id, { articleType: isLive ? "STANDARD" : "LIVE", status: "PUBLISHED" } as any);
-          dispatch({ type: "TYPE_CHANGED", id, changes: { articleType: isLive ? "STANDARD" : "LIVE" } });
-        } catch (err) { console.error(err); }
-        setArticles(prev => prev.map(a => {
-          if (a.id !== id) return a;
-          if (isLive) {
-            return { ...a, category: "Standard Article", tag: undefined, tagType: undefined, leftBorder: undefined, statusType: "published", published: a.publishedAt ? new Date(a.publishedAt).toLocaleDateString("en-IN") : "—" };
-          }
-          return { ...a, category: "Live Updates", tag: "Live", tagType: "live", leftBorder: "live-left", status: "Published", statusType: "live-published", published: "Live", liveStartedAt: new Date().toISOString() };
-        }));
-        break;
+
+try {
+  await apiUpdateNews(
+    id,
+    {
+      articleType: isLive ? "STANDARD" : "LIVE",
+      status: "PUBLISHED",
+    } as any
+  );
+
+  await loadData(activeType, search);
+
+} catch (err) {
+  console.error(err);
+}
+
+break;
       }
 
       case "delete":
@@ -285,11 +295,18 @@ setArticles((data.news || []).map(mapNewsItem));
   const confirmDelete = async () => {
     if (!deleteModal) return;
     try {
-      await apiDeleteNews(deleteModal, { deleteMode: deleteModeChoice, deleteIntervalDays: 14 });
-      dispatch({ type: "DELETED", id: deleteModal });
-    } catch (err) { console.error("Delete failed:", err); }
-    setArticles(prev => prev.filter(a => a.id !== deleteModal));
-    setDeleteModal(null);
+  await apiDeleteNews(deleteModal, {
+    deleteMode: deleteModeChoice,
+    deleteIntervalDays: 14,
+  });
+
+  await loadData(activeType, search);
+
+} catch (err) {
+  console.error("Delete failed:", err);
+}
+
+setDeleteModal(null);
   };
 
   // ── Bulk actions ──────────────────────────────────────────────────────────
@@ -297,12 +314,10 @@ setArticles((data.news || []).map(mapNewsItem));
     for (const id of selectedItems) {
       try {
         await apiUpdateNews(id, { status: "PUBLISHED" } as any);
-        dispatch({ type: "STATUS_CHANGED", id, changes: { status: "PUBLISHED" } });
+        
       } catch (err) { console.error(err); }
     }
-    setArticles(prev => prev.map(a =>
-      selectedItems.has(a.id) ? { ...a, status: "Published", statusType: "published", published: "Just now" } : a
-    ));
+    await loadData(activeType, search);
     setSelectedItems(new Set());
   };
 
@@ -310,12 +325,10 @@ setArticles((data.news || []).map(mapNewsItem));
     for (const id of selectedItems) {
       try {
         await apiUpdateNews(id, { status: "DRAFT" } as any);
-        dispatch({ type: "STATUS_CHANGED", id, changes: { status: "DRAFT" } });
+        
       } catch (err) { console.error(err); }
     }
-    setArticles(prev => prev.map(a =>
-      selectedItems.has(a.id) ? { ...a, status: "Draft", statusType: "draft", published: "-", views: "-" } : a
-    ));
+    await loadData(activeType, search);
     setSelectedItems(new Set());
   };
 
@@ -323,10 +336,10 @@ setArticles((data.news || []).map(mapNewsItem));
     for (const id of selectedItems) {
       try {
         await apiDeleteNews(id);
-        dispatch({ type: "DELETED", id });
+        
       } catch (err) { console.error(err); }
     }
-    setArticles(prev => prev.filter(a => !selectedItems.has(a.id)));
+    await loadData(activeType, search);
     setSelectedItems(new Set());
   };
 

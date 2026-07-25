@@ -10,6 +10,10 @@ import { getTopicProfiles } from "../../../api/user/topicProfile";
 import Preloader from "../../Admin/Preloader/Preloder";
 
 import { getTopicNews } from "../../../api/user/topicNews";
+import {
+  getAdvertisementPool,
+  type Advertisement as AdType,
+} from "../../../api/user/advertisementPool";
 
 interface Profile {
   _id: string;
@@ -30,6 +34,13 @@ const TopicDetail: React.FC = () => {
   const [isExpanded, setIsExpanded] = useState(false);
   const [topic, setTopic] = useState<Profile | null>(null);
   const [relatedNews,setRelatedNews] =  useState<any[]>([]);
+  const [ads, setAds] = useState<{
+  cards: AdType[];
+  strips: AdType[];
+}>({
+  cards: [],
+  strips: [],
+});
   
   const { slug } = useParams<{ slug: string }>();
 
@@ -61,6 +72,14 @@ const TopicDetail: React.FC = () => {
 setRelatedNews(
   newsResponse.news || []
 );
+
+const adResponse =
+    await getAdvertisementPool({
+        cards: 0,
+        strips: 1,
+    });
+
+setAds(adResponse);
 
     } catch (error) {
 
@@ -163,7 +182,9 @@ setRelatedNews(
       
       {/* Permanent Ad Section */}
       <div className="topic-detail-ad-fullwidth">
-        <Advertisement />
+        <Advertisement
+    adData={ads.strips[0] ?? null}
+/>
       </div>
       
       {/* Related News Section */}

@@ -1,163 +1,154 @@
-// client/src/components/User/AdvertiseWithUs/AdvertiseWithUs.tsx
-// ──────────────────────────────────────────────────────────────
-// Fully wired to real backend. No localStorage.
-// On submit → POST /api/advertisements/inquiries → stored in DB → email to admin.
-
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef, useCallback } from "react";
 import { Link } from "react-router-dom";
 import {
-  Home, ChevronRight, Send, CheckCircle,
-  Mail, Phone, Image as ImageIcon,
-  Link as LinkIcon, Upload, X, Loader2,
+  Home, ChevronRight, Send, CheckCircle, XCircle, Clock,
+  Link as LinkIcon, Upload, X, Loader2, Plus, LogIn, User as UserIcon,
 } from "lucide-react";
 import "./AdvertiseWithUs.css";
-import { getAdPageSettings, submitAdInquiry } from "../../../api/user/advertise";
-import type { AdPageSettings } from "../../../api/user/advertise";
+import { getMyAdInquiries, submitAdInquiry } from "../../../api/user/advertise";
+import { useAuth } from "../../../context/AuthContext";
 
-const PAGE_OPTIONS = [
-  { value: "home",          label: "Home Page" },
-  { value: "all",           label: "All Pages (Sitewide)" },
-  { value: "politics",      label: "Politics" },
-  { value: "sports",        label: "Sports" },
-  { value: "business",      label: "Business & Finance" },
-  { value: "technology",    label: "Technology" },
-  { value: "entertainment", label: "Entertainment" },
-  { value: "health",        label: "Health & Wellness" },
-];
+/* ─── Types ─────────────────────────────────────────────── */
+type AdType = "card" | "strip";
+type InquiryStatus = "pending" | "published" | "rejected";
 
-const DURATION_OPTIONS = [
-  { value: "7",      label: "7 Days" },
-  { value: "14",     label: "14 Days" },
-  { value: "30",     label: "30 Days" },
-  { value: "90",     label: "3 Months" },
-  { value: "custom", label: "Custom" },
-];
+interface MyInquiry {
+  id: string;
+  adType: AdType;
+  status: InquiryStatus;
+  submittedAt: string;
+  rejectionReason?: string;
+  price?: string;
+  durationDays?: number;
+  expiresAt?: string;
+}
 
-const DEFAULT_SETTINGS: AdPageSettings = {
-  whyEnabled: false, whyPoints: [],
-  packagesEnabled: false, packages: [],
-  contactEnabled: false,
-  contactEmail: "", contactPhone: "", contactNote: "",
+
+// Sizes are locked here so uploaded ads can never break the site layout.
+const AD_TYPE_SPECS: Record<AdType, { label: string; minW: number; maxW: number; minH: number; maxH: number; example: string }> = {
+  card:  { label: "Card",           minW: 250, maxW: 400,  minH: 200, maxH: 350, example: "e.g. 300×250" },
+  strip: { label: "Strip / Banner", minW: 600, maxW: 1600, minH: 60,  maxH: 200, example: "e.g. 1200×120" },
 };
 
-export default function AdvertiseWithUs() {
-  const [settings,    setSettings]    = useState<AdPageSettings>(DEFAULT_SETTINGS);
-  const [form, setForm] = useState({
-    name: "", email: "", phone: "", company: "",
-    targetPage: "home", duration: "30", customDays: "", message: "",
-    adTitle: "", imageUrl: "", linkUrl: "", adType: "banner", budget: "",
+const STATUS_META: Record<InquiryStatus, { label: string; color: string; icon: React.ReactNode }> = {
+  pending:   { label: "Pending Review", color: "#f59e0b", icon: <Clock size={13} /> },
+  published: { label: "Live",           color: "#22c55e", icon: <CheckCircle size={13} /> },
+  rejected:  { label: "Rejected",       color: "#ef4444", icon: <XCircle size={13} /> },
+};
+
+
+
+/* ─── Image validation helpers ───────────────────────────── */
+function getImageDimensions(file: File): Promise<{ width: number; height: number }> {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    const url = URL.createObjectURL(file);
+    img.onload = () => { resolve({ width: img.naturalWidth, height: img.naturalHeight }); URL.revokeObjectURL(url); };
+    img.onerror = () => { reject(new Error("Could not read image.")); URL.revokeObjectURL(url); };
+    img.src = url;
   });
-  const [errors,         setErrors]         = useState<Partial<typeof form>>({});
-  const [loading,        setLoading]        = useState(false);
-  const [submitted,      setSubmitted]      = useState(false);
-  const [refId,          setRefId]          = useState("");
-  const [apiError,       setApiError]       = useState<string | null>(null);
-  const [uploadedFile,   setUploadedFile]   = useState<File | null>(null);
-  const [uploadedPreview,setUploadedPreview]= useState<string>("");
-  const fileInputRef = useRef<HTMLInputElement>(null);
+}
 
-  // Load sidebar settings from backend
-  useEffect(() => {
-    getAdPageSettings()
-      .then((s: AdPageSettings) => setSettings(s))
-      .catch(() => { /* keep defaults */ });
-  }, []);
-
-  const handleChange = (
-    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>
-  ) => {
-    const { name, value } = e.target;
-    setForm(prev => ({ ...prev, [name]: value }));
-    if (errors[name as keyof typeof form])
-      setErrors(prev => ({ ...prev, [name]: "" }));
-  };
-
-  const validate = () => {
-    const errs: Partial<typeof form> = {};
-    if (!form.name.trim())  errs.name  = "Required";
-    if (!form.email.trim() || !/\S+@\S+\.\S+/.test(form.email)) errs.email = "Valid email required";
-    if (!form.phone.trim()) errs.phone = "Required";
-    if (form.duration === "custom" && !form.customDays.trim()) errs.customDays = "Enter number of days";
-    setErrors(errs);
-    return Object.keys(errs).length === 0;
-  };
-
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    setUploadedFile(file);
-    const reader = new FileReader();
-    reader.onload = ev => setUploadedPreview(ev.target?.result as string);
-    reader.readAsDataURL(file);
-  };
-
-  const removeUploadedFile = () => {
-    setUploadedFile(null);
-    setUploadedPreview("");
-    if (fileInputRef.current) fileInputRef.current.value = "";
-  };
-
-  const handleSubmit = async () => {
-    if (!validate()) return;
-    setApiError(null);
-    setLoading(true);
-
-    try {
-      const res = await submitAdInquiry({
-        name:       form.name,
-        email:      form.email,
-        phone:      form.phone,
-        company:    form.company   || undefined,
-        message:    form.message   || undefined,
-        budget:     form.budget    || undefined,
-        targetPage: form.targetPage,
-        duration:   form.duration,
-        customDays: form.duration === "custom" ? form.customDays : undefined,
-        adType:     form.adType,
-        imageUrl:   form.imageUrl  || undefined,
-        linkUrl:    form.linkUrl   || undefined,
-        adTitle:    form.adTitle   || undefined,
-      });
-
-      setRefId(res.id.slice(-6).toUpperCase());
-      setSubmitted(true);
-    } catch (err: unknown) {
-      const message = err instanceof Error ? err.message : "Failed to submit inquiry. Please try again.";
-      setApiError(message);
-    } finally {
-      setLoading(false);
+async function validateAdImage(file: File, adType: AdType): Promise<string | null> {
+  if (!["image/jpeg", "image/png", "image/webp"].includes(file.type)) {
+    return "Only JPG, PNG or WebP images are allowed.";
+  }
+  if (file.size > 5 * 1024 * 1024) {
+    return "Image must be under 5MB.";
+  }
+  const spec = AD_TYPE_SPECS[adType];
+  try {
+    const { width, height } = await getImageDimensions(file);
+    if (width < spec.minW || width > spec.maxW || height < spec.minH || height > spec.maxH) {
+      return `${spec.label} images must be between ${spec.minW}×${spec.minH}px and ${spec.maxW}×${spec.maxH}px (${spec.example}). Your image is ${width}×${height}px.`;
     }
-  };
+  } catch {
+    return "Couldn't read image dimensions. Please try a different file.";
+  }
+  return null;
+}
 
-  const hasAnySidebar =
-    settings.whyEnabled || settings.packagesEnabled || settings.contactEnabled;
+function fmtDate(iso?: string) {
+  if (!iso) return "—";
+  return new Date(iso).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" });
+}
 
-  // ── SUCCESS PAGE ─────────────────────────────────────────────
-  if (submitted) {
+/* ================================================================
+   MAIN COMPONENT
+================================================================ */
+export default function AdvertiseWithUs() {
+  const {
+    user: currentUser,
+    isLoggedIn,
+    openLogin,
+} = useAuth();
+
+  const [mode, setMode] = useState<"list" | "form" | "thanks">("list");
+  const [inquiries, setInquiries] = useState<MyInquiry[]>([]);
+  const [loadingList, setLoadingList] = useState(true);
+  const [refId, setRefId] = useState("");
+
+  const loadInquiries = useCallback(() => {
+    if (!currentUser) return;
+    setLoadingList(true);
+    getMyAdInquiries()
+      .then((data: MyInquiry[]) => setInquiries(data || []))
+      .catch(() => setInquiries([]))
+      .finally(() => setLoadingList(false));
+  }, [currentUser]);
+
+  useEffect(() => { loadInquiries(); }, [loadInquiries]);
+
+  /* ── NOT LOGGED IN ── */
+  if (!isLoggedIn || !currentUser) {
     return (
-      <div className="awu-success-page">
-        <div className="awu-success-card">
-          <div className="awu-success-icon"><CheckCircle size={52} /></div>
-          <h2>Inquiry Submitted!</h2>
-          <p>
-            Thanks, <strong>{form.name}</strong>! We'll reach out to{" "}
-            <strong>{form.email}</strong> or <strong>{form.phone}</strong> within 24–48 hours.
-          </p>
-          <div className="awu-success-ref">
-            <span>Reference ID</span>
-            <code>#ADV-{refId}</code>
-          </div>
-          <Link to="/" className="awu-btn-home">Back to Home</Link>
+      <div className="awu-gate">
+        <div className="awu-gate-card">
+          <div className="awu-gate-icon"><LogIn size={30} /></div>
+          <h2>Advertise With Us</h2>
+          <p>Please log in to submit an advertisement request and track its status.</p>
+          <button
+    className="awu-btn-primary"
+    onClick={openLogin}
+>
+    Log In to Continue
+</button>
         </div>
       </div>
     );
   }
 
-  // ── FORM PAGE ────────────────────────────────────────────────
+  /* ── THANK YOU ── */
+  if (mode === "thanks") {
+    return (
+      <div className="awu-gate">
+        <div className="awu-gate-card">
+          <div className="awu-gate-icon awu-gate-icon--success"><CheckCircle size={32} /></div>
+          <h2>Thanks, {currentUser.name}!</h2>
+          <p>Your ad request has been submitted. Our team will review it and update the status below.</p>
+          <div className="awu-refid"><span>Reference ID</span><code>#ADV-{refId}</code></div>
+          <button className="awu-btn-primary" onClick={() => { setMode("list"); loadInquiries(); }}>
+            Back to My Requests
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  /* ── FORM ── */
+  if (mode === "form") {
+    return (
+      <AdInquiryForm
+        currentUser={currentUser}
+        onCancel={() => setMode("list")}
+        onSubmitted={(id) => { setRefId(id.slice(-6).toUpperCase()); setMode("thanks"); }}
+      />
+    );
+  }
+
+  /* ── GREETING + TABLE ── */
   return (
     <div className="awu-root">
-
-      {/* HERO */}
       <div className="awu-hero">
         <div className="awu-hero-inner">
           <div className="awu-breadcrumb">
@@ -165,116 +156,268 @@ export default function AdvertiseWithUs() {
             <ChevronRight size={12} />
             <span>Advertise With Us</span>
           </div>
-          <h1>Advertise With Us</h1>
-          <p>Fill the form below and our team will get back to you within 24–48 hours.</p>
+          <h1>Welcome, {currentUser.name} <span className="awu-wave">👋</span></h1>
+          <p>Submit a new ad request or track the status of your existing ones below.</p>
         </div>
       </div>
 
-      {/* MAIN */}
-      <div className={`awu-main ${hasAnySidebar ? "awu-main--with-sidebar" : "awu-main--centered"}`}>
+      <div className="awu-main awu-main--centered">
+        <div className="awu-list-card">
+          <div className="awu-list-head">
+            <h2>My Ad Requests</h2>
+            <button className="awu-btn-new" onClick={() => setMode("form")}>
+              <Plus size={15} /> New Request
+            </button>
+          </div>
 
-        {/* FORM CARD */}
-        <div className="awu-form-card">
-          <h2 className="awu-form-title">Send Us Your Inquiry</h2>
-
-          {apiError && (
-            <div className="awu-api-error">
-              <X size={14} /> {apiError}
+          {loadingList ? (
+            <div className="awu-empty"><Loader2 size={26} className="spin-icon" /></div>
+          ) : inquiries.length === 0 ? (
+            <div className="awu-empty">
+              <UserIcon size={32} />
+              <p>You haven't submitted any ad requests yet.</p>
+              <button className="awu-btn-new" onClick={() => setMode("form")}>
+                <Plus size={15} /> Create Your First Request
+              </button>
+            </div>
+          ) : (
+            <div className="awu-table-wrap">
+              <table className="awu-table">
+                <thead>
+                  <tr>
+                    <th>Ad Type</th>
+                    <th>Submitted</th>
+                    <th>Status</th>
+                    <th>Details</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {inquiries.map((iq) => {
+                    const meta = STATUS_META[iq.status];
+                    return (
+                      <tr key={iq.id}>
+                        <td className="awu-td-cap">{AD_TYPE_SPECS[iq.adType]?.label ?? iq.adType}</td>
+                        <td>{fmtDate(iq.submittedAt)}</td>
+                        <td>
+                          <span className="awu-status-pill" style={{ background: meta.color + "1a", color: meta.color, borderColor: meta.color + "50" }}>
+                            {meta.icon} {meta.label}
+                          </span>
+                        </td>
+                        <td className="awu-td-details">
+                          {iq.status === "rejected" && iq.rejectionReason && (
+                            <span className="awu-reason">"{iq.rejectionReason}"</span>
+                          )}
+                          {iq.status === "published" && (
+                            <span className="awu-live-info">
+                              {iq.durationDays ? `${iq.durationDays} days` : "Ongoing"}
+                              {iq.expiresAt ? ` · till ${fmtDate(iq.expiresAt)}` : ""}
+                            </span>
+                          )}
+                          {iq.status === "pending" && <span className="awu-muted">Awaiting review</span>}
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
             </div>
           )}
+        </div>
+      </div>
+    </div>
+  );
+}
 
-          {/* Your Details */}
+/* ================================================================
+   NEW INQUIRY FORM
+================================================================ */
+function AdInquiryForm({
+  currentUser,
+  onCancel,
+  onSubmitted,
+}: {
+  currentUser: { id: string; name: string; email: string };
+  onCancel: () => void;
+  onSubmitted: (id: string) => void;
+}) {
+  const [form, setForm] = useState({
+    name: currentUser.name || "",
+    email: currentUser.email || "",
+    phone: "",
+    company: "",
+    adType: "card" as AdType,
+    linkUrl: "",
+    message: "",
+  });
+  const [errors, setErrors] = useState<Partial<Record<string, string>>>({});
+  const [loading, setLoading] = useState(false);
+  const [apiError, setApiError] = useState<string | null>(null);
+
+  const [imageFile, setImageFile] = useState<File | null>(null);
+  const [imagePreview, setImagePreview] = useState("");
+  const [imageError, setImageError] = useState<string | null>(null);
+  const [checkingImage, setCheckingImage] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const spec = AD_TYPE_SPECS[form.adType];
+
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
+    const { name, value } = e.target;
+    setForm(prev => ({ ...prev, [name]: value }));
+    if (errors[name]) setErrors(prev => ({ ...prev, [name]: "" }));
+  };
+
+  // Re-validate the already-picked image whenever the ad type changes,
+  // since Card and Strip have different size limits.
+  useEffect(() => {
+    if (imageFile) {
+      setCheckingImage(true);
+      validateAdImage(imageFile, form.adType).then(err => {
+        setImageError(err);
+        setCheckingImage(false);
+      });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [form.adType]);
+
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setCheckingImage(true);
+    setImageError(null);
+    const err = await validateAdImage(file, form.adType);
+    setCheckingImage(false);
+    if (err) {
+      setImageError(err);
+      setImageFile(null);
+      setImagePreview("");
+      if (fileInputRef.current) fileInputRef.current.value = "";
+      return;
+    }
+    setImageFile(file);
+    const reader = new FileReader();
+    reader.onload = ev => setImagePreview(ev.target?.result as string);
+    reader.readAsDataURL(file);
+  };
+
+  const removeImage = () => {
+    setImageFile(null);
+    setImagePreview("");
+    setImageError(null);
+    if (fileInputRef.current) fileInputRef.current.value = "";
+  };
+
+  const validate = () => {
+    const errs: Partial<Record<string, string>> = {};
+    if (!form.name.trim()) errs.name = "Required";
+    if (!form.email.trim() || !/\S+@\S+\.\S+/.test(form.email)) errs.email = "Valid email required";
+    if (!form.phone.trim()) errs.phone = "Required";
+    if (!imageFile) errs.image = "Please upload your ad image";
+    setErrors(errs);
+    return Object.keys(errs).length === 0 && !imageError;
+  };
+
+  const handleSubmit = async () => {
+    if (!validate()) return;
+    setApiError(null);
+    setLoading(true);
+    try {
+      const fd = new FormData();
+      fd.append("name", form.name);
+      fd.append("email", form.email);
+      fd.append("phone", form.phone);
+      if (form.company) fd.append("company", form.company);
+      fd.append("adType", form.adType);
+      if (form.linkUrl) fd.append("linkUrl", form.linkUrl);
+      if (form.message) fd.append("message", form.message);
+      fd.append("adImage", imageFile as File);
+
+      const res = await submitAdInquiry(fd);
+
+onSubmitted((res as any).id);
+    } catch (err: unknown) {
+      setApiError(err instanceof Error ? err.message : "Failed to submit. Please try again.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <div className="awu-root">
+      <div className="awu-hero">
+        <div className="awu-hero-inner">
+          <div className="awu-breadcrumb">
+            <Link to="/"><Home size={12} /> Home</Link>
+            <ChevronRight size={12} />
+            <span onClick={onCancel} style={{ cursor: "pointer" }}>Advertise With Us</span>
+            <ChevronRight size={12} />
+            <span>New Request</span>
+          </div>
+          <h1>New Ad Request</h1>
+          <p>Fill in your details and upload your ad creative below.</p>
+        </div>
+      </div>
+
+      <div className="awu-main awu-main--centered">
+        <div className="awu-form-card">
+          {apiError && <div className="awu-api-error"><X size={14} /> {apiError}</div>}
+
           <div className="awu-section-label">Your Details</div>
           <div className="awu-row">
             <div className="awu-field">
               <label>Full Name *</label>
-              <input name="name" value={form.name} onChange={handleChange}
-                placeholder="Rahul Verma" disabled={loading} />
+              <input name="name" value={form.name} onChange={handleChange} disabled={loading} />
               {errors.name && <span className="awu-err">{errors.name}</span>}
             </div>
             <div className="awu-field">
               <label>Company / Brand</label>
-              <input name="company" value={form.company} onChange={handleChange}
-                placeholder="Acme Pvt. Ltd." disabled={loading} />
+              <input name="company" value={form.company} onChange={handleChange} placeholder="Acme Pvt. Ltd." disabled={loading} />
             </div>
           </div>
           <div className="awu-row">
             <div className="awu-field">
               <label>Email *</label>
-              <input name="email" type="email" value={form.email} onChange={handleChange}
-                placeholder="you@example.com" disabled={loading} />
+              <input name="email" type="email" value={form.email} onChange={handleChange} disabled={loading} />
               {errors.email && <span className="awu-err">{errors.email}</span>}
             </div>
             <div className="awu-field">
               <label>Phone *</label>
-              <input name="phone" type="tel" value={form.phone} onChange={handleChange}
-                placeholder="+91 98765 43210" disabled={loading} />
+              <input name="phone" type="tel" value={form.phone} onChange={handleChange} placeholder="+91 98765 43210" disabled={loading} />
               {errors.phone && <span className="awu-err">{errors.phone}</span>}
             </div>
           </div>
 
-          {/* Campaign */}
-          <div className="awu-section-label">Campaign Preference</div>
+          <div className="awu-section-label">Campaign</div>
           <div className="awu-row">
             <div className="awu-field">
-              <label>Target Page</label>
-              <select name="targetPage" value={form.targetPage} onChange={handleChange} disabled={loading}>
-                {PAGE_OPTIONS.map(p => <option key={p.value} value={p.value}>{p.label}</option>)}
+              <label>Ad Format *</label>
+              <select name="adType" value={form.adType} onChange={handleChange} disabled={loading}>
+                <option value="card">Card ({AD_TYPE_SPECS.card.example})</option>
+                <option value="strip">Strip / Banner ({AD_TYPE_SPECS.strip.example})</option>
               </select>
             </div>
-            <div className="awu-field">
-              <label>Duration</label>
-              <select name="duration" value={form.duration} onChange={handleChange} disabled={loading}>
-                {DURATION_OPTIONS.map(d => <option key={d.value} value={d.value}>{d.label}</option>)}
-              </select>
-            </div>
-          </div>
-
-          {form.duration === "custom" && (
-            <div className="awu-field">
-              <label>Number of Days *</label>
-              <input name="customDays" type="number" min="1" value={form.customDays}
-                onChange={handleChange} placeholder="e.g. 45" disabled={loading} />
-              {errors.customDays && <span className="awu-err">{errors.customDays}</span>}
-            </div>
-          )}
-
-          <div className="awu-field">
-            <label>Budget (Optional)</label>
-            <input name="budget" value={form.budget} onChange={handleChange}
-              placeholder="e.g. ₹10,000 – ₹20,000" disabled={loading} />
-          </div>
-          <div className="awu-field">
-            <label>Message / Requirements</label>
-            <textarea name="message" value={form.message} onChange={handleChange}
-              rows={3} placeholder="Tell us about your campaign goals..." disabled={loading} />
-          </div>
-
-          {/* Ad Creative */}
-          <div className="awu-section-label">
-            Ad Creative <span className="awu-section-label-opt">(Optional)</span>
-          </div>
-          <div className="awu-field">
-            <label><ImageIcon size={12} /> Ad Image URL</label>
-            <input name="imageUrl" value={form.imageUrl} onChange={handleChange}
-              placeholder="https://your-site.com/banner.jpg" disabled={loading} />
-            <span className="awu-field-hint">Recommended: 1200×300px. JPG, PNG or WebP.</span>
           </div>
           <div className="awu-field">
             <label><LinkIcon size={12} /> Destination URL</label>
-            <input name="linkUrl" value={form.linkUrl} onChange={handleChange}
-              placeholder="https://your-site.com/landing-page" disabled={loading} />
-            <span className="awu-field-hint">Where users land when they click your ad.</span>
+            <input name="linkUrl" value={form.linkUrl} onChange={handleChange} placeholder="https://your-site.com/landing-page" disabled={loading} />
+          </div>
+          <div className="awu-field">
+            <label>Message (optional)</label>
+            <textarea name="message" value={form.message} onChange={handleChange} rows={3} placeholder="Anything we should know about your campaign?" disabled={loading} />
           </div>
 
-          {/* File upload (preview only) */}
+          <div className="awu-section-label">Ad Creative</div>
           <div className="awu-field">
-            <label><Upload size={12} /> Upload Ad Image</label>
-            {!uploadedFile ? (
+            <label><Upload size={12} /> Upload Ad Image *</label>
+            <div className="awu-spec-hint">
+              Accepted size for <strong>{spec.label}</strong>: {spec.minW}×{spec.minH}px – {spec.maxW}×{spec.maxH}px ({spec.example}). Max 5MB. JPG, PNG or WebP.
+            </div>
+
+            {!imageFile ? (
               <div className="awu-upload-zone" onClick={() => fileInputRef.current?.click()}>
                 <Upload size={22} />
                 <span>Click to upload your ad image</span>
-                <em>JPG, PNG, WebP · Max 5MB</em>
+                <em>{spec.example} recommended</em>
                 <input
                   ref={fileInputRef}
                   type="file"
@@ -285,77 +428,26 @@ export default function AdvertiseWithUs() {
               </div>
             ) : (
               <div className="awu-upload-preview">
-                <img src={uploadedPreview} alt="Uploaded preview" />
+                <img src={imagePreview} alt="Uploaded preview" />
                 <div className="awu-upload-preview-info">
-                  <span className="awu-upload-name">{uploadedFile.name}</span>
-                  <span className="awu-upload-size">{(uploadedFile.size / 1024).toFixed(0)} KB</span>
+                  <span className="awu-upload-name">{imageFile.name}</span>
+                  <span className="awu-upload-size">{(imageFile.size / 1024).toFixed(0)} KB</span>
                 </div>
-                <button className="awu-upload-remove" onClick={removeUploadedFile} title="Remove">
-                  <X size={14} />
-                </button>
+                <button className="awu-upload-remove" onClick={removeImage} title="Remove"><X size={14} /></button>
               </div>
             )}
-            <span className="awu-field-hint">
-              You can also send the file via email after submitting if preferred.
-            </span>
+            {checkingImage && <span className="awu-checking"><Loader2 size={12} className="spin-icon" /> Checking image size…</span>}
+            {imageError && <span className="awu-err">{imageError}</span>}
+            {errors.image && <span className="awu-err">{errors.image}</span>}
           </div>
 
-          <button className="awu-submit-btn" onClick={handleSubmit} disabled={loading}>
-            {loading
-              ? <><Loader2 size={15} className="spin-icon" /> Submitting…</>
-              : <><Send size={15} /> Submit Inquiry</>}
-          </button>
+          <div className="awu-form-actions">
+            <button className="awu-btn-cancel" onClick={onCancel} disabled={loading}>Cancel</button>
+            <button className="awu-submit-btn" onClick={handleSubmit} disabled={loading || checkingImage}>
+              {loading ? <><Loader2 size={15} className="spin-icon" /> Submitting…</> : <><Send size={15} /> Submit Request</>}
+            </button>
+          </div>
         </div>
-
-        {/* SIDEBAR */}
-        {hasAnySidebar && (
-          <div className="awu-sidebar">
-            {settings.whyEnabled && settings.whyPoints.length > 0 && (
-              <div className="awu-sidebar-card">
-                <h3>Why Advertise With Us?</h3>
-                <ul>
-                  {settings.whyPoints.map((pt: string, i: number) => (
-                    <li key={i}><CheckCircle size={13} /> {pt}</li>
-                  ))}
-                </ul>
-              </div>
-            )}
-
-            {settings.packagesEnabled && settings.packages.length > 0 && (
-              <div className="awu-sidebar-card">
-                <h3>Ad Packages</h3>
-                <div className="awu-pkg-list">
-                  {settings.packages.map((p: { label: string; price: string }, i: number) => (
-                    <div key={i} className="awu-pkg-row">
-                      <span>{p.label}</span>
-                      <strong>{p.price}</strong>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {settings.contactEnabled && (
-              <div className="awu-sidebar-card">
-                <h3>Quick Contact</h3>
-                {settings.contactNote && (
-                  <p className="awu-contact-note">{settings.contactNote}</p>
-                )}
-                {settings.contactEmail && (
-                  <a href={`mailto:${settings.contactEmail}`} className="awu-contact-link">
-                    <Mail size={13} /> {settings.contactEmail}
-                  </a>
-                )}
-                {settings.contactPhone && (
-                  <a href={`tel:${settings.contactPhone}`} className="awu-contact-link">
-                    <Phone size={13} /> {settings.contactPhone}
-                  </a>
-                )}
-              </div>
-            )}
-          </div>
-        )}
-
       </div>
     </div>
   );

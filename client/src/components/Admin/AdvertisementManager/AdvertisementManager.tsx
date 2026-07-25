@@ -1,20 +1,19 @@
-import React, { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback } from "react";
 import {
-  Mail, Phone, Building, Calendar, Clock, Globe,
-  CheckCircle, XCircle, MessageSquare, Eye, Trash2,
-  ChevronDown, ChevronUp, Send,
-  Image as ImageIcon, Link as LinkIcon, BarChart2,
-  ArrowLeft, MonitorPlay, X, Filter, Settings,
-  Plus, ToggleLeft, ToggleRight, Loader2,
+  Calendar, MessageSquare, XCircle,
+  Link as LinkIcon, MonitorPlay, X, Send, RefreshCw, Loader2,
+  ChevronLeft, ChevronRight, Ban, History,
 } from "lucide-react";
 import { apiClient } from "../../../api/client";
 import "./AdvertisementManager.css";
 
-/* ─── Types ─────────────────────────────────────────────────────────────────── */
-type InquiryStatus = "pending" | "contacted" | "deal_done" | "published" | "rejected";
+/* ─── Types ─────────────────────────────────────────────── */
+type AdType = "card" | "strip";
+type InquiryStatus = "pending" | "published" | "rejected";
+type PublishedStatus = "active" | "expired" | "ended";
 
 interface AdInquiry {
-  id: string;
+  _id: string;
   submittedAt: string;
   status: InquiryStatus;
   name: string;
@@ -22,18 +21,11 @@ interface AdInquiry {
   phone: string;
   company?: string;
   targetPage: string;
-  duration: string;
-  customDays?: string;
-  adType: string;
-  budget?: string;
-  message?: string;
-  imageUrl?: string;
+  adType: AdType;
+  imageUrl: string;
   linkUrl?: string;
-  adTitle?: string;
-  adminNote?: string;
-  publishedAt?: string;
-  expiresAt?: string;
-  publishedAd?: PublishedAd | null;
+  message?: string;
+  rejectionReason?: string;
 }
 
 interface PublishedAd {
@@ -43,34 +35,18 @@ interface PublishedAd {
   linkUrl: string;
   altText: string;
   targetPage: string;
-  publishedAt: string;
-  expiresAt: string;
-  isActive: boolean;
-  adTitle: string;
+  adType: AdType;
   advertiser: string;
+  status: PublishedStatus;
+  durationDays?: number;
+  publishNotes?: string;
+  submittedAt?: string;
+  publishedAt: string;
+  expiresAt?: string;
+  renewedAt?: string;
+  endedAt?: string;
+  endReason?: string;
 }
-
-interface AdPackage { label: string; price: string; }
-
-interface AdPageSettings {
-  whyEnabled: boolean;
-  whyPoints: string[];
-  packagesEnabled: boolean;
-  packages: AdPackage[];
-  contactEnabled: boolean;
-  contactEmail: string;
-  contactPhone: string;
-  contactNote: string;
-}
-
-/* ─── Constants ──────────────────────────────────────────────────────────────── */
-const STATUS_CONFIG: Record<InquiryStatus, { label: string; color: string; icon: React.ReactNode }> = {
-  pending:   { label: "Pending",   color: "#f59e0b", icon: <Clock size={12} /> },
-  contacted: { label: "Contacted", color: "#3b82f6", icon: <MessageSquare size={12} /> },
-  deal_done: { label: "Deal Done", color: "#8b5cf6", icon: <CheckCircle size={12} /> },
-  published: { label: "Published", color: "#22c55e", icon: <MonitorPlay size={12} /> },
-  rejected:  { label: "Rejected",  color: "#ef4444", icon: <XCircle size={12} /> },
-};
 
 const PAGE_LABEL: Record<string, string> = {
   home: "Home Page", all: "Sitewide (All Pages)", politics: "Politics",
@@ -78,109 +54,196 @@ const PAGE_LABEL: Record<string, string> = {
   entertainment: "Entertainment", health: "Health & Wellness",
 };
 
-const DEFAULT_SETTINGS: AdPageSettings = {
-  whyEnabled: false,
-  whyPoints: ["Hyper-local audience across 18+ Indian cities", "Flexible campaign durations", "Real-time performance analytics"],
-  packagesEnabled: false,
-  packages: [
-    { label: "7 Days", price: "₹2,999" },
-    { label: "14 Days", price: "₹4,999" },
-    { label: "30 Days", price: "₹8,999" },
-    { label: "3 Months", price: "₹19,999" },
-  ],
-  contactEnabled: false,
-  contactEmail: "ads@localnewz.in",
-  contactPhone: "+91 99999 99999",
-  contactNote: "Prefer to talk first? Reach our ads team directly:",
-};
+const PAGE_SIZE = 10;
 
-/* ─── Helpers ────────────────────────────────────────────────────────────────── */
-function fmtDate(iso: string) {
-  return new Date(iso).toLocaleDateString("en-IN", {
-    day: "numeric", month: "short", year: "numeric",
-    hour: "2-digit", minute: "2-digit",
-  });
+function fmtDate(iso?: string) {
+  if (!iso) return "—";
+  return new Date(iso).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" });
 }
 
-/* ─── Sub-components ─────────────────────────────────────────────────────────── */
-function StatusBadge({ status }: { status: InquiryStatus }) {
-  const { label, color, icon } = STATUS_CONFIG[status];
+function daysLeft(expiresAt?: string): number | null {
+  if (!expiresAt) return null;
+  const diffMs = new Date(expiresAt).getTime() - Date.now();
+  return Math.ceil(diffMs / (1000 * 60 * 60 * 24));
+}
+
+function daysLeftLabel(expiresAt?: string) {
+  const d = daysLeft(expiresAt);
+  if (d === null) return "No expiry";
+  if (d <= 0) return "Expires today";
+  if (d === 1) return "1 Day Left";
+  return `${d} Days Left`;
+}
+
+function daysLeftTone(expiresAt?: string): "ok" | "warn" | "danger" {
+  const d = daysLeft(expiresAt);
+  if (d === null) return "ok";
+  if (d <= 0) return "danger";
+  if (d <= 7) return "warn";
+  return "ok";
+}
+
+/* ─── Pagination Controls ────────────────────────────────── */
+function PaginationControls({
+  page, totalItems, onPageChange,
+}: { page: number; totalItems: number; onPageChange: (p: number) => void }) {
+  const totalPages = Math.max(1, Math.ceil(totalItems / PAGE_SIZE));
+  if (totalPages <= 1) return null;
+
+  const startItem = (page - 1) * PAGE_SIZE + 1;
+  const endItem = Math.min(page * PAGE_SIZE, totalItems);
+
   return (
-    <span className="adm-status-badge" style={{ background: color + "20", color, borderColor: color + "50" }}>
-      {icon} {label}
-    </span>
+    <div className="adm-pagination">
+      <span className="adm-pagination-info">
+        Showing {startItem}–{endItem} of {totalItems}
+      </span>
+      <div className="adm-pagination-btns">
+        <button
+          className="adm-pg-btn"
+          disabled={page <= 1}
+          onClick={() => onPageChange(page - 1)}
+        >
+          <ChevronLeft size={14} /> Previous
+        </button>
+        <span className="adm-pagination-page">Page {page} of {totalPages}</span>
+        <button
+          className="adm-pg-btn"
+          disabled={page >= totalPages}
+          onClick={() => onPageChange(page + 1)}
+        >
+          Next <ChevronRight size={14} />
+        </button>
+      </div>
+    </div>
   );
 }
 
-function Toggle({ on, onToggle }: { on: boolean; onToggle: () => void }) {
+/* ─── Timeline ────────────────────────────────────────────── */
+function Timeline({ entries }: { entries: { label: string; date?: string }[] }) {
+  const valid = entries.filter(e => !!e.date);
+  if (valid.length === 0) return null;
   return (
-    <button className={`adm-toggle ${on ? "adm-toggle--on" : ""}`} onClick={onToggle}>
-      {on ? <ToggleRight size={22} /> : <ToggleLeft size={22} />}
-      <span>{on ? "Visible on site" : "Hidden from site"}</span>
-    </button>
+    <div className="adm-timeline">
+      <div className="adm-timeline-title"><History size={13} /> Timeline</div>
+      <div className="adm-timeline-list">
+        {valid.map((e, i) => (
+          <div className="adm-timeline-item" key={i}>
+            <span className="adm-timeline-dot" />
+            <div>
+              <div className="adm-timeline-label">{e.label}</div>
+              <div className="adm-timeline-date">{fmtDate(e.date)}</div>
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
   );
 }
 
-/* ─── Publish Modal ──────────────────────────────────────────────────────────── */
-interface PublishModalProps {
-  inquiry: AdInquiry;
-  onClose: () => void;
-  onPublish: (ad: PublishedAd) => void;
+/* ─── Inquiry Detail Modal ───────────────────────────────── */
+function InquiryDetailModal({
+  inquiry, onClose, onPublish, rejectingId, setRejectingId, rejectNote, setRejectNote, onConfirmReject, busyId,
+}: {
+  inquiry: AdInquiry; onClose: () => void; onPublish: (iq: AdInquiry) => void;
+  rejectingId: string | null; setRejectingId: (id: string | null) => void;
+  rejectNote: string; setRejectNote: (v: string) => void;
+  onConfirmReject: (id: string) => void; busyId: string | null;
+}) {
+  const isRejecting = rejectingId === inquiry._id;
+  return (
+    <div className="adm-modal-overlay" onClick={onClose}>
+      <div className="adm-modal" onClick={e => e.stopPropagation()}>
+        <div className="adm-modal-header">
+          <div>
+            <h2>{inquiry.company || inquiry.name}</h2>
+            <p>{inquiry.name} · {PAGE_LABEL[inquiry.targetPage] || inquiry.targetPage} · {inquiry.adType === "card" ? "Card" : "Strip / Banner"}</p>
+          </div>
+          <button className="adm-modal-close" onClick={onClose}><X size={18} /></button>
+        </div>
+        <div className="adm-modal-body">
+          <div className="adm-expand-grid">
+            <div className="adm-expand-img"><img src={inquiry.imageUrl} alt="Ad creative" /></div>
+            <div className="adm-expand-info">
+              <div className="adm-iq-detail-row"><span>{inquiry.email}</span></div>
+              <div className="adm-iq-detail-row"><span>{inquiry.phone}</span></div>
+              <div className="adm-iq-detail-row"><span>Submitted {fmtDate(inquiry.submittedAt)}</span></div>
+              {inquiry.linkUrl && (
+                <div className="adm-iq-detail-row">
+                  <LinkIcon size={13} />
+                  <a href={inquiry.linkUrl} target="_blank" rel="noreferrer">{inquiry.linkUrl}</a>
+                </div>
+              )}
+            </div>
+          </div>
+          {inquiry.message && <div className="adm-iq-message" style={{ marginBottom: 16 }}><p>"{inquiry.message}"</p></div>}
+
+          {isRejecting ? (
+            <div className="adm-reject-box">
+              <label>Reason for rejection</label>
+              <textarea
+                rows={2}
+                value={rejectNote}
+                onChange={e => setRejectNote(e.target.value)}
+                placeholder="Let the advertiser know why this was rejected…"
+              />
+              <div className="adm-reject-actions">
+                <button className="adm-btn-cancel" onClick={() => { setRejectingId(null); setRejectNote(""); }}>Cancel</button>
+                <button
+                  className="adm-btn-reject-confirm"
+                  disabled={!rejectNote.trim() || busyId === inquiry._id}
+                  onClick={() => onConfirmReject(inquiry._id)}
+                >
+                  {busyId === inquiry._id ? <Loader2 size={13} className="spin" /> : <XCircle size={13} />} Confirm Reject
+                </button>
+              </div>
+            </div>
+          ) : (
+            <div className="adm-expand-actions">
+              <button className="adm-btn-publish-now" onClick={() => onPublish(inquiry)}>
+                <Send size={14} /> Publish
+              </button>
+              <button className="adm-btn-reject" onClick={() => { setRejectingId(inquiry._id); setRejectNote(""); }}>
+                <XCircle size={14} /> Reject
+              </button>
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
 }
 
-function PublishModal({ inquiry, onClose, onPublish }: PublishModalProps) {
-  const [step, setStep] = useState<"edit" | "preview">("edit");
+/* ─── Publish Modal (Duration + Notes only) ──────────────── */
+function PublishModal({
+  inquiry, onClose, onPublish,
+}: { inquiry: AdInquiry; onClose: () => void; onPublish: (ad: PublishedAd) => void }) {
+  const [durationDays, setDurationDays] = useState("30");
+  const [publishNotes, setPublishNotes] = useState("");
   const [loading, setLoading] = useState(false);
-  const [form, setForm] = useState({
-    imageUrl: inquiry.imageUrl || "",
-    linkUrl: inquiry.linkUrl || "",
-    altText: inquiry.adTitle || inquiry.company || "Advertisement",
-    targetPage: inquiry.targetPage || "home",
-    durationDays: inquiry.duration === "custom"
-      ? (parseInt(inquiry.customDays || "30") || 30)
-      : (parseInt(inquiry.duration) || 30),
-    startDate: new Date().toISOString().split("T")[0],
-  });
-  const [errors, setErrors] = useState<Partial<Record<string, string>>>({});
-
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
-    const { name, value } = e.target;
-    setForm(prev => ({ ...prev, [name]: name === "durationDays" ? parseInt(value) || 0 : value }));
-  };
-
-  const validate = () => {
-    const errs: Record<string, string> = {};
-    if (!form.imageUrl.trim()) errs.imageUrl = "Image URL is required";
-    if (!form.linkUrl.trim()) errs.linkUrl = "Destination URL is required";
-    if (!form.durationDays || form.durationDays < 1) errs.durationDays = "Duration must be at least 1 day";
-    setErrors(errs);
-    return Object.keys(errs).length === 0;
-  };
+  const [error, setError] = useState<string | null>(null);
 
   const handlePublish = async () => {
-    const start = new Date(form.startDate);
-    const expires = new Date(start);
-    expires.setDate(expires.getDate() + form.durationDays);
-
-    setLoading(true);
+    const parsedDuration = parseInt(durationDays, 10);
+    if (!durationDays || isNaN(parsedDuration) || parsedDuration <= 0) {
+      setError("Duration is required");
+      return;
+    }
+    setLoading(true); setError(null);
     try {
+      console.log("Inquiry:", inquiry);
+console.log("Inquiry ID:", inquiry._id);
       const ad: PublishedAd = await apiClient("/api/advertisement/published-ads", {
         method: "POST",
         body: JSON.stringify({
-          inquiryId: inquiry.id,
-          imageUrl: form.imageUrl,
-          linkUrl: form.linkUrl,
-          altText: form.altText,
-          targetPage: form.targetPage,
-          adTitle: form.altText,
-          advertiser: inquiry.company || inquiry.name,
-          publishedAt: start.toISOString(),
-          expiresAt: expires.toISOString(),
+          inquiryId: inquiry._id,
+          durationDays: parsedDuration,
+          publishNotes: publishNotes.trim() || undefined,
         }),
       });
       onPublish(ad);
     } catch (err: any) {
-      alert("Failed to publish: " + err.message);
+      setError(err.message || "Failed to publish");
     } finally {
       setLoading(false);
     }
@@ -191,281 +254,290 @@ function PublishModal({ inquiry, onClose, onPublish }: PublishModalProps) {
       <div className="adm-modal" onClick={e => e.stopPropagation()}>
         <div className="adm-modal-header">
           <div>
-            <h2>{step === "edit" ? "Publish Advertisement" : "Preview Before Publishing"}</h2>
-            <p>{inquiry.company || inquiry.name} · {PAGE_LABEL[inquiry.targetPage] || inquiry.targetPage}</p>
+            <h2>Publish Advertisement</h2>
+            <p>{inquiry.company || inquiry.name} · {PAGE_LABEL[inquiry.targetPage] || inquiry.targetPage} · {inquiry.adType === "card" ? "Card" : "Strip / Banner"}</p>
           </div>
           <button className="adm-modal-close" onClick={onClose}><X size={18} /></button>
         </div>
-
-        {step === "edit" ? (
-          <div className="adm-modal-body">
-            <div className="adm-publish-grid">
-              <div className="adm-pf-group">
-                <label>Ad Image URL *</label>
-                <input name="imageUrl" value={form.imageUrl} onChange={handleChange} placeholder="https://cdn.example.com/banner.jpg" />
-                {errors.imageUrl && <span className="adm-err">{errors.imageUrl}</span>}
-                <span className="adm-field-hint"><ImageIcon size={11} /> Recommended: 1200×300px</span>
-              </div>
-              {form.imageUrl && (
-                <div className="adm-img-preview-wrap">
-                  <span>Image Preview:</span>
-                  <div className="adm-img-preview">
-                    <img src={form.imageUrl} alt="preview" onError={e => { (e.target as HTMLImageElement).alt = "Invalid image URL"; }} />
-                  </div>
-                </div>
-              )}
-              <div className="adm-pf-group">
-                <label>Ad Title / Alt Text *</label>
-                <input name="altText" value={form.altText} onChange={handleChange} placeholder="e.g. Mega Sale — 50% Off Electronics" />
-              </div>
-              <div className="adm-pf-group">
-                <label>Destination URL *</label>
-                <input name="linkUrl" value={form.linkUrl} onChange={handleChange} placeholder="https://advertiser.com/landing" />
-                {errors.linkUrl && <span className="adm-err">{errors.linkUrl}</span>}
-              </div>
-              <div className="adm-pf-row">
-                <div className="adm-pf-group">
-                  <label>Target Page *</label>
-                  <select name="targetPage" value={form.targetPage} onChange={handleChange}>
-                    {Object.entries(PAGE_LABEL).map(([v, l]) => <option key={v} value={v}>{l}</option>)}
-                  </select>
-                </div>
-                <div className="adm-pf-group">
-                  <label>Start Date *</label>
-                  <input name="startDate" type="date" value={form.startDate} onChange={handleChange} min={new Date().toISOString().split("T")[0]} />
-                </div>
-                <div className="adm-pf-group">
-                  <label>Duration (Days) *</label>
-                  <input name="durationDays" type="number" min={1} value={form.durationDays} onChange={handleChange} />
-                  {errors.durationDays && <span className="adm-err">{errors.durationDays}</span>}
-                </div>
-              </div>
-              <div className="adm-expiry-info">
-                <Calendar size={13} />
-                <span>Runs from <strong>{new Date(form.startDate).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" })}</strong> for <strong>{form.durationDays} days</strong></span>
-              </div>
-            </div>
+        <div className="adm-modal-body">
+          {error && <div className="adm-err" style={{ marginBottom: 12 }}>{error}</div>}
+          <div className="adm-img-preview" style={{ marginBottom: 16 }}>
+            <img src={inquiry.imageUrl} alt="Ad creative" />
           </div>
-        ) : (
-          <div className="adm-modal-body">
-            <div className="adm-preview-notice"><Eye size={14} /> Preview of how the ad will appear on site</div>
-            <div className="adm-live-preview">
-              <div className="adm-preview-navbar">
-                <div className="adm-preview-logo">LOCAL NEWZ</div>
-                <div className="adm-preview-nav-links"><span>Home</span><span>Politics</span><span>Sports</span></div>
-              </div>
-              <div className="adm-preview-content">
-                <div className="adm-preview-ad-slot">
-                  <div className="adm-preview-ad-label">Advertisement</div>
-                  <a href={form.linkUrl} target="_blank" rel="noopener noreferrer" className="adm-preview-ad-link">
-                    {form.imageUrl
-                      ? <img src={form.imageUrl} alt={form.altText} className="adm-preview-ad-img" />
-                      : <div className="adm-preview-ad-placeholder"><ImageIcon size={28} /><span>No image</span></div>
-                    }
-                  </a>
-                </div>
-              </div>
-            </div>
-            <div className="adm-preview-summary">
-              <div className="adm-ps-row"><span>Target Page</span><strong>{PAGE_LABEL[form.targetPage]}</strong></div>
-              <div className="adm-ps-row"><span>Duration</span><strong>{form.durationDays} days from {new Date(form.startDate).toLocaleDateString("en-IN")}</strong></div>
-              <div className="adm-ps-row"><span>Advertiser</span><strong>{inquiry.company || inquiry.name}</strong></div>
-              <div className="adm-ps-row"><span>Landing URL</span><a href={form.linkUrl} target="_blank" rel="noopener noreferrer">{form.linkUrl}</a></div>
-            </div>
+          <div className="adm-pf-group">
+            <label>Duration in Days (Required)</label>
+            <input type="number" min={1} value={durationDays} onChange={e => setDurationDays(e.target.value)} placeholder="e.g. 30" />
           </div>
-        )}
-
+          <div className="adm-pf-group">
+            <label>Publish Notes (Optional)</label>
+            <textarea
+              rows={3}
+              value={publishNotes}
+              onChange={e => setPublishNotes(e.target.value)}
+              placeholder="Any internal notes about this placement…"
+            />
+          </div>
+        </div>
         <div className="adm-modal-footer">
-          {step === "preview" && (
-            <button className="adm-btn-back" onClick={() => setStep("edit")}><ArrowLeft size={14} /> Edit</button>
-          )}
-          <div style={{ flex: 1 }} />
           <button className="adm-btn-cancel" onClick={onClose}>Cancel</button>
-          {step === "edit" ? (
-            <button className="adm-btn-preview" onClick={() => { if (validate()) setStep("preview"); }}>
-              <Eye size={14} /> Preview
-            </button>
-          ) : (
-            <button className="adm-btn-publish" onClick={handlePublish} disabled={loading}>
-              {loading ? <Loader2 size={14} className="spin" /> : <Send size={14} />}
-              {loading ? "Publishing…" : "Publish Now"}
-            </button>
-          )}
+          <button className="adm-btn-publish" onClick={handlePublish} disabled={loading}>
+            {loading ? <Loader2 size={14} className="spin" /> : <Send size={14} />} {loading ? "Publishing…" : "Publish"}
+          </button>
         </div>
       </div>
     </div>
   );
 }
 
-/* ─── Page Settings Tab ───────────────────────────────────────────────────────── */
-function PageSettings() {
-  const [settings, setSettings] = useState<AdPageSettings>(DEFAULT_SETTINGS);
-  const [loading, setLoading] = useState(true);
-  const [saving, setSaving] = useState(false);
-  const [saved, setSaved] = useState(false);
+/* ─── Renew Modal (Duration + Notes) ─────────────────────── */
+function RenewModal({
+  ad, onClose, onConfirm, busy,
+}: { ad: PublishedAd; onClose: () => void; onConfirm: (id: string, durationDays: number, notes: string) => void; busy: boolean }) {
+  const [durationDays, setDurationDays] = useState(String(ad.durationDays || 30));
+  const [notes, setNotes] = useState("");
+  const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    apiClient("/api/advertisement/page-settings")
-      .then((data: any) => setSettings({
-        whyEnabled: data.whyEnabled,
-        whyPoints: data.whyPoints,
-        packagesEnabled: data.packagesEnabled,
-        packages: data.packages as AdPackage[],
-        contactEnabled: data.contactEnabled,
-        contactEmail: data.contactEmail,
-        contactPhone: data.contactPhone,
-        contactNote: data.contactNote,
-      }))
-      .catch(() => {})
-      .finally(() => setLoading(false));
-  }, []);
-
-  const update = (patch: Partial<AdPageSettings>) => {
-    setSettings(prev => ({ ...prev, ...patch }));
-    setSaved(false);
-  };
-
-  const handleSave = async () => {
-    setSaving(true);
-    try {
-      await apiClient("/api/advertisement/page-settings", {
-        method: "PUT",
-        body: JSON.stringify(settings),
-      });
-      setSaved(true);
-      setTimeout(() => setSaved(false), 2500);
-    } catch (err: any) {
-      alert("Save failed: " + err.message);
-    } finally {
-      setSaving(false);
+  const handleConfirm = () => {
+    const parsedDuration = parseInt(durationDays, 10);
+    if (!durationDays || isNaN(parsedDuration) || parsedDuration <= 0) {
+      setError("Duration is required");
+      return;
     }
+    setError(null);
+    onConfirm(ad.id, parsedDuration, notes.trim());
   };
-
-  const updatePoint = (i: number, val: string) => {
-    const pts = [...settings.whyPoints]; pts[i] = val; update({ whyPoints: pts });
-  };
-  const addPoint = () => update({ whyPoints: [...settings.whyPoints, ""] });
-  const removePoint = (i: number) => update({ whyPoints: settings.whyPoints.filter((_, idx) => idx !== i) });
-
-  const updatePkg = (i: number, field: "label" | "price", val: string) => {
-    const pkgs = [...settings.packages]; pkgs[i] = { ...pkgs[i], [field]: val }; update({ packages: pkgs });
-  };
-  const addPkg = () => update({ packages: [...settings.packages, { label: "", price: "" }] });
-  const removePkg = (i: number) => update({ packages: settings.packages.filter((_, idx) => idx !== i) });
-
-  if (loading) return <div className="adm-content adm-loading"><Loader2 size={28} className="spin" /></div>;
 
   return (
-    <div className="adm-content">
-      <div className="adm-ps-header">
-        <p className="adm-ps-desc">
-          Control which informational sections appear on the <strong>Advertise With Us</strong> page.
-          Toggle each section on or off, and edit its content. Changes only go live after clicking <strong>Save Changes</strong>.
-        </p>
-      </div>
-
-      {/* WHY ADVERTISE */}
-      <div className="adm-settings-card">
-        <div className="adm-settings-card-header">
+    <div className="adm-modal-overlay" onClick={onClose}>
+      <div className="adm-modal" onClick={e => e.stopPropagation()}>
+        <div className="adm-modal-header">
           <div>
-            <h3>"Why Advertise With Us?" Section</h3>
-            <p>A bullet list of reasons to advertise shown in the sidebar.</p>
+            <h2>Renew Advertisement</h2>
+            <p>{ad.advertiser} · {PAGE_LABEL[ad.targetPage] || ad.targetPage}</p>
           </div>
-          <Toggle on={settings.whyEnabled} onToggle={() => update({ whyEnabled: !settings.whyEnabled })} />
+          <button className="adm-modal-close" onClick={onClose}><X size={18} /></button>
         </div>
-        {settings.whyEnabled && (
-          <div className="adm-settings-card-body">
-            <label className="adm-sub-label">BULLET POINTS</label>
-            <div className="adm-points-list">
-              {settings.whyPoints.map((pt, i) => (
-                <div key={i} className="adm-point-row">
-                  <input value={pt} onChange={e => updatePoint(i, e.target.value)} placeholder="Add a reason…" />
-                  <button className="adm-point-remove" onClick={() => removePoint(i)}><span>−</span></button>
-                </div>
-              ))}
-            </div>
-            <button className="adm-add-point-btn" onClick={addPoint}><Plus size={13} /> Add Point</button>
+        <div className="adm-modal-body">
+          {error && <div className="adm-err" style={{ marginBottom: 12 }}>{error}</div>}
+          <div className="adm-pf-group">
+            <label>Duration in Days (Required)</label>
+            <input type="number" min={1} value={durationDays} onChange={e => setDurationDays(e.target.value)} placeholder="e.g. 30" />
           </div>
-        )}
-      </div>
-
-      {/* AD PACKAGES */}
-      <div className="adm-settings-card">
-        <div className="adm-settings-card-header">
-          <div>
-            <h3>"Ad Packages" Section</h3>
-            <p>A pricing table shown in the sidebar for quick reference.</p>
+          <div className="adm-pf-group">
+            <label>Notes (Optional)</label>
+            <textarea
+              rows={3}
+              value={notes}
+              onChange={e => setNotes(e.target.value)}
+              placeholder="Any internal notes about this renewal…"
+            />
           </div>
-          <Toggle on={settings.packagesEnabled} onToggle={() => update({ packagesEnabled: !settings.packagesEnabled })} />
         </div>
-        {settings.packagesEnabled && (
-          <div className="adm-settings-card-body">
-            <div className="adm-pkg-list">
-              {settings.packages.map((pkg, i) => (
-                <div key={i} className="adm-pkg-row">
-                  <input value={pkg.label} onChange={e => updatePkg(i, "label", e.target.value)} placeholder="Duration label" />
-                  <input value={pkg.price} onChange={e => updatePkg(i, "price", e.target.value)} placeholder="₹ Price" />
-                  <button className="adm-point-remove" onClick={() => removePkg(i)}><span>−</span></button>
-                </div>
-              ))}
-            </div>
-            <button className="adm-add-point-btn" onClick={addPkg}><Plus size={13} /> Add Package</button>
-          </div>
-        )}
-      </div>
-
-      {/* QUICK CONTACT */}
-      <div className="adm-settings-card">
-        <div className="adm-settings-card-header">
-          <div>
-            <h3>"Quick Contact" Section</h3>
-            <p>Contact details shown in the sidebar for direct inquiries.</p>
-          </div>
-          <Toggle on={settings.contactEnabled} onToggle={() => update({ contactEnabled: !settings.contactEnabled })} />
+        <div className="adm-modal-footer">
+          <button className="adm-btn-cancel" onClick={onClose}>Cancel</button>
+          <button className="adm-btn-publish" onClick={handleConfirm} disabled={busy}>
+            {busy ? <Loader2 size={14} className="spin" /> : <RefreshCw size={14} />} {busy ? "Renewing…" : "Renew"}
+          </button>
         </div>
-        {settings.contactEnabled && (
-          <div className="adm-settings-card-body">
-            <div className="adm-contact-fields">
-              <div className="adm-pf-group">
-                <label>Short Note (optional)</label>
-                <input value={settings.contactNote} onChange={e => update({ contactNote: e.target.value })} placeholder="e.g. Prefer to talk first? Reach us directly:" />
-              </div>
-              <div className="adm-pf-row">
-                <div className="adm-pf-group">
-                  <label>Email</label>
-                  <input value={settings.contactEmail} onChange={e => update({ contactEmail: e.target.value })} placeholder="ads@localnewz.in" />
-                </div>
-                <div className="adm-pf-group">
-                  <label>Phone</label>
-                  <input value={settings.contactPhone} onChange={e => update({ contactPhone: e.target.value })} placeholder="+91 99999 99999" />
-                </div>
-              </div>
-            </div>
-          </div>
-        )}
-      </div>
-
-      <div className="adm-settings-save-row">
-        <button className={`adm-save-btn ${saved ? "adm-save-btn--saved" : ""}`} onClick={handleSave} disabled={saving}>
-          {saving ? <Loader2 size={15} className="spin" /> : saved ? <CheckCircle size={15} /> : <Send size={14} />}
-          {saving ? "Saving…" : saved ? "Saved!" : "Save Changes"}
-        </button>
-        {saved && <span className="adm-saved-note">Changes are now live on the Advertise With Us page.</span>}
       </div>
     </div>
   );
 }
 
-/* ─── Main Component ─────────────────────────────────────────────────────────── */
+/* ─── End Advertisement Modal ────────────────────────────── */
+function EndAdvertisementModal({
+  ad, onClose, onConfirm, busy,
+}: { ad: PublishedAd; onClose: () => void; onConfirm: (id: string, note: string) => void; busy: boolean }) {
+  const [note, setNote] = useState("");
+  return (
+    <div className="adm-modal-overlay" onClick={onClose}>
+      <div className="adm-modal" onClick={e => e.stopPropagation()}>
+        <div className="adm-modal-header">
+          <div>
+            <h2>End Advertisement</h2>
+            <p>{ad.advertiser} · {PAGE_LABEL[ad.targetPage] || ad.targetPage}</p>
+          </div>
+          <button className="adm-modal-close" onClick={onClose}><X size={18} /></button>
+        </div>
+        <div className="adm-modal-body">
+          <div className="adm-reject-box">
+            <label>Notes (Optional)</label>
+            <textarea
+              rows={3}
+              value={note}
+              onChange={e => setNote(e.target.value)}
+              placeholder="Reason…"
+            />
+          </div>
+        </div>
+        <div className="adm-modal-footer">
+          <button className="adm-btn-cancel" onClick={onClose}>Cancel</button>
+          <button className="adm-btn-reject-confirm" onClick={() => onConfirm(ad.id, note.trim())} disabled={busy}>
+            {busy ? <Loader2 size={13} className="spin" /> : <Ban size={13} />} {busy ? "Ending…" : "End"}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ─── Live Ad Detail Modal ───────────────────────────────── */
+function LiveAdDetailModal({
+  ad, onClose, onRenew, onEnd, busyId,
+}: { ad: PublishedAd; onClose: () => void; onRenew: (ad: PublishedAd) => void; onEnd: (ad: PublishedAd) => void; busyId: string | null }) {
+  return (
+    <div className="adm-modal-overlay" onClick={onClose}>
+      <div className="adm-modal" onClick={e => e.stopPropagation()}>
+        <div className="adm-modal-header">
+          <div>
+            <h2>{ad.advertiser}</h2>
+            <p>{PAGE_LABEL[ad.targetPage] || ad.targetPage} · {ad.adType === "card" ? "Card" : "Strip / Banner"}</p>
+          </div>
+          <button className="adm-modal-close" onClick={onClose}><X size={18} /></button>
+        </div>
+        <div className="adm-modal-body">
+          <div className="adm-expand-grid">
+            <div className="adm-expand-img"><img src={ad.imageUrl} alt={ad.altText} /></div>
+            <div className="adm-expand-info">
+              <div className="adm-iq-detail-row"><LinkIcon size={13} /><a href={ad.linkUrl} target="_blank" rel="noreferrer">{ad.linkUrl}</a></div>
+              <div className="adm-iq-detail-row"><Calendar size={13} /><span>Published {fmtDate(ad.publishedAt)}</span></div>
+              <div className="adm-iq-detail-row"><span>{ad.durationDays ? `Duration: ${ad.durationDays} Days` : "No duration set"}</span></div>
+              <div className="adm-iq-detail-row"><span>{daysLeftLabel(ad.expiresAt)}</span></div>
+              <div className="adm-iq-detail-row"><span className="adm-pub-badge adm-pub-badge--live">● Live</span></div>
+            </div>
+          </div>
+          {ad.publishNotes && <div className="adm-iq-message" style={{ marginBottom: 16 }}><p>"{ad.publishNotes}"</p></div>}
+
+          <Timeline entries={[
+            { label: "Submitted", date: ad.submittedAt },
+            { label: "Published", date: ad.publishedAt },
+            { label: "Renewed", date: ad.renewedAt },
+            { label: "Expires", date: ad.expiresAt },
+          ]} />
+
+          <div className="adm-expand-actions">
+            <button className="adm-btn-renew" disabled={busyId === ad.id} onClick={() => onRenew(ad)}>
+              {busyId === ad.id ? <Loader2 size={13} className="spin" /> : <RefreshCw size={13} />} Renew
+            </button>
+            <button className="adm-btn-end" disabled={busyId === ad.id} onClick={() => onEnd(ad)}>
+              <Ban size={13} /> End Advertisement
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ─── Expired / Ended Ad Detail Modal ────────────────────── */
+function ExpiredAdDetailModal({
+  ad, onClose, onRenew, busyId,
+}: { ad: PublishedAd; onClose: () => void; onRenew: (ad: PublishedAd) => void; busyId: string | null }) {
+  const endReason = ad.endReason || (ad.status === "expired" ? "Time Expired" : "Ended by Admin");
+  return (
+    <div className="adm-modal-overlay" onClick={onClose}>
+      <div className="adm-modal" onClick={e => e.stopPropagation()}>
+        <div className="adm-modal-header">
+          <div>
+            <h2>{ad.advertiser}</h2>
+            <p>{PAGE_LABEL[ad.targetPage] || ad.targetPage} · {ad.adType === "card" ? "Card" : "Strip / Banner"}</p>
+          </div>
+          <button className="adm-modal-close" onClick={onClose}><X size={18} /></button>
+        </div>
+        <div className="adm-modal-body">
+          <div className="adm-expand-grid">
+            <div className="adm-expand-img"><img src={ad.imageUrl} alt={ad.altText} /></div>
+            <div className="adm-expand-info">
+              <div className="adm-iq-detail-row"><LinkIcon size={13} /><a href={ad.linkUrl} target="_blank" rel="noreferrer">{ad.linkUrl}</a></div>
+              <div className="adm-iq-detail-row"><span>{ad.durationDays ? `Duration: ${ad.durationDays} Days` : "No duration set"}</span></div>
+              <div className="adm-iq-detail-row">
+                {ad.status === "expired"
+                  ? <span className="adm-pub-badge adm-pub-badge--expired">Expired</span>
+                  : <span className="adm-pub-badge adm-pub-badge--ended">Ended</span>}
+              </div>
+            </div>
+          </div>
+          <div className="adm-reject-box" style={{ marginBottom: 16 }}>
+            <label>End Reason</label>
+            <p style={{ fontSize: 13, color: "#374151", margin: 0 }}>{endReason}</p>
+          </div>
+
+          <Timeline entries={[
+            { label: "Submitted", date: ad.submittedAt },
+            { label: "Published", date: ad.publishedAt },
+            { label: "Renewed", date: ad.renewedAt },
+            { label: ad.status === "expired" ? "Expired" : "Ended", date: ad.endedAt || ad.expiresAt },
+          ]} />
+
+          <div className="adm-expand-actions">
+            <button className="adm-btn-renew" disabled={busyId === ad.id} onClick={() => onRenew(ad)}>
+              {busyId === ad.id ? <Loader2 size={13} className="spin" /> : <RefreshCw size={13} />} Renew
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ─── Rejected Inquiry Detail Modal ──────────────────────── */
+function RejectedDetailModal({ inquiry, onClose }: { inquiry: AdInquiry; onClose: () => void }) {
+  return (
+    <div className="adm-modal-overlay" onClick={onClose}>
+      <div className="adm-modal" onClick={e => e.stopPropagation()}>
+        <div className="adm-modal-header">
+          <div>
+            <h2>{inquiry.company || inquiry.name}</h2>
+            <p>{inquiry.name} · {PAGE_LABEL[inquiry.targetPage] || inquiry.targetPage} · {inquiry.adType === "card" ? "Card" : "Strip / Banner"}</p>
+          </div>
+          <button className="adm-modal-close" onClick={onClose}><X size={18} /></button>
+        </div>
+        <div className="adm-modal-body">
+          <div className="adm-expand-grid">
+            <div className="adm-expand-img"><img src={inquiry.imageUrl} alt="Ad creative" /></div>
+            <div className="adm-expand-info">
+              <div className="adm-iq-detail-row"><span>{inquiry.email}</span></div>
+              <div className="adm-iq-detail-row"><span>{inquiry.phone}</span></div>
+              <div className="adm-iq-detail-row"><span>Submitted {fmtDate(inquiry.submittedAt)}</span></div>
+            </div>
+          </div>
+          {inquiry.message && <div className="adm-iq-message" style={{ marginBottom: 16 }}><p>"{inquiry.message}"</p></div>}
+          {inquiry.rejectionReason && (
+            <div className="adm-reject-box">
+              <label>Reason for rejection</label>
+              <p style={{ fontSize: 13, color: "#374151", margin: 0 }}>{inquiry.rejectionReason}</p>
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ─── Main Component ─────────────────────────────────────── */
 export default function AdvertisementManager() {
   const [inquiries, setInquiries] = useState<AdInquiry[]>([]);
   const [publishedAds, setPublishedAds] = useState<PublishedAd[]>([]);
-  const [activeTab, setActiveTab] = useState<"inquiries" | "published" | "settings">("inquiries");
-  const [expandedId, setExpandedId] = useState<string | null>(null);
+  const [activeTab, setActiveTab] = useState<"pending" | "published" | "expired" | "rejected">("pending");
+
+  const [viewingInquiry, setViewingInquiry] = useState<AdInquiry | null>(null);
+  const [viewingLiveAd, setViewingLiveAd] = useState<PublishedAd | null>(null);
+  const [viewingExpiredAd, setViewingExpiredAd] = useState<PublishedAd | null>(null);
+  const [viewingRejected, setViewingRejected] = useState<AdInquiry | null>(null);
+
   const [publishingInquiry, setPublishingInquiry] = useState<AdInquiry | null>(null);
-  const [filterStatus, setFilterStatus] = useState<InquiryStatus | "all">("all");
-  const [adminNotes, setAdminNotes] = useState<Record<string, string>>({});
+  const [endingAd, setEndingAd] = useState<PublishedAd | null>(null);
+  const [renewingAd, setRenewingAd] = useState<PublishedAd | null>(null);
+
+  const [rejectingId, setRejectingId] = useState<string | null>(null);
+  const [rejectNote, setRejectNote] = useState("");
   const [loading, setLoading] = useState(true);
+  const [busyId, setBusyId] = useState<string | null>(null);
+
+  const [pendingPage, setPendingPage] = useState(1);
+  const [livePage, setLivePage] = useState(1);
+  const [expiredPage, setExpiredPage] = useState(1);
+  const [rejectedPage, setRejectedPage] = useState(1);
 
   const loadData = useCallback(async () => {
     setLoading(true);
@@ -485,61 +557,87 @@ export default function AdvertisementManager() {
 
   useEffect(() => { loadData(); }, [loadData]);
 
-  const updateStatus = async (id: string, status: InquiryStatus, note?: string) => {
-    try {
-      await apiClient(`/api/advertisement/inquiries/${id}/status`, {
-        method: "PATCH",
-        body: JSON.stringify({ status, adminNote: note }),
-      });
-      setInquiries(prev => prev.map(i => i.id === id ? { ...i, status, adminNote: note ?? i.adminNote } : i));
-    } catch (err: any) {
-      alert("Failed to update status: " + err.message);
-    }
-  };
+  const pending = inquiries.filter(i => i.status === "pending");
+  const rejected = inquiries.filter(i => i.status === "rejected");
+  const liveAds = publishedAds.filter(a => a.status === "active");
+  const expiredOnlyAds = publishedAds.filter(a => a.status === "expired");
+  const endedOnlyAds = publishedAds.filter(a => a.status === "ended");
+  const expiredOrEndedAds = [...expiredOnlyAds, ...endedOnlyAds];
 
-  const handleDelete = async (id: string) => {
-    if (!window.confirm("Delete this inquiry?")) return;
-    try {
-      await apiClient(`/api/advertisement/inquiries/${id}`, { method: "DELETE" });
-      setInquiries(prev => prev.filter(i => i.id !== id));
-    } catch (err: any) {
-      alert("Failed to delete: " + err.message);
-    }
+  const pendingPageItems = pending.slice((pendingPage - 1) * PAGE_SIZE, pendingPage * PAGE_SIZE);
+  const livePageItems = liveAds.slice((livePage - 1) * PAGE_SIZE, livePage * PAGE_SIZE);
+  const expiredPageItems = expiredOrEndedAds.slice((expiredPage - 1) * PAGE_SIZE, expiredPage * PAGE_SIZE);
+  const rejectedPageItems = rejected.slice((rejectedPage - 1) * PAGE_SIZE, rejectedPage * PAGE_SIZE);
+
+  const handleTabChange = (tab: "pending" | "published" | "expired" | "rejected") => {
+    setActiveTab(tab);
   };
 
   const handlePublish = (ad: PublishedAd) => {
     setPublishedAds(prev => [ad, ...prev]);
-    setInquiries(prev =>
-      prev.map(i => i.id === ad.inquiryId
-        ? { ...i, status: "published" as InquiryStatus, publishedAt: ad.publishedAt, expiresAt: ad.expiresAt, publishedAd: ad }
-        : i)
-    );
+    setInquiries(prev => prev.map(i => i._id === ad.inquiryId ? { ...i, status: "published" as InquiryStatus } : i));
     setPublishingInquiry(null);
+    setViewingInquiry(null);
+    setLivePage(1);
     setActiveTab("published");
   };
 
-  const toggleAdActive = async (adId: string) => {
+  const confirmReject = async (id: string) => {
+    if (!rejectNote.trim()) return;
+    setBusyId(id);
     try {
-      const updated: PublishedAd = await apiClient(`/api/advertisement/published-ads/${adId}/toggle`, { method: "PATCH" });
+      await apiClient(`/api/advertisement/inquiries/${id}/status`, {
+        method: "PATCH",
+        body: JSON.stringify({ status: "rejected", rejectionReason: rejectNote }),
+      });
+      setInquiries(prev => prev.map(i => i._id === id ? { ...i, status: "rejected", rejectionReason: rejectNote } : i));
+      setRejectingId(null);
+      setRejectNote("");
+      setViewingInquiry(null);
+    } catch (err: any) {
+      alert("Failed to reject: " + err.message);
+    } finally {
+      setBusyId(null);
+    }
+  };
+
+  const handleEndAd = async (adId: string, endReason: string) => {
+    setBusyId(adId);
+    try {
+      const updated: PublishedAd = await apiClient(`/api/advertisement/published-ads/${adId}/end`, {
+        method: "PATCH",
+        body: JSON.stringify({ endReason: endReason || "Ended by Admin" }),
+      });
       setPublishedAds(prev => prev.map(a => a.id === adId ? updated : a));
+      setEndingAd(null);
+      setViewingLiveAd(null);
+      setExpiredPage(1);
     } catch (err: any) {
-      alert("Failed to toggle: " + err.message);
+      alert("Failed to end advertisement: " + err.message);
+    } finally {
+      setBusyId(null);
     }
   };
 
-  const deleteAd = async (adId: string) => {
-    if (!window.confirm("Remove this published advertisement?")) return;
+  const handleRenewAd = async (adId: string, durationDays: number, notes: string) => {
+    setBusyId(adId);
     try {
-      await apiClient(`/api/advertisement/published-ads/${adId}`, { method: "DELETE" });
-      setPublishedAds(prev => prev.filter(a => a.id !== adId));
+      const updated: PublishedAd = await apiClient(`/api/advertisement/published-ads/${adId}/renew`, {
+        method: "PATCH",
+        body: JSON.stringify({ durationDays, publishNotes: notes || undefined }),
+      });
+      setPublishedAds(prev => prev.map(a => a.id === adId ? updated : a));
+      setRenewingAd(null);
+      setViewingLiveAd(null);
+      setViewingExpiredAd(null);
+      setLivePage(1);
+      setActiveTab("published");
     } catch (err: any) {
-      alert("Failed to delete ad: " + err.message);
+      alert("Failed to renew: " + err.message);
+    } finally {
+      setBusyId(null);
     }
   };
-
-  const filtered = filterStatus === "all" ? inquiries : inquiries.filter(i => i.status === filterStatus);
-  const counts = inquiries.reduce((acc, i) => { acc[i.status] = (acc[i.status] || 0) + 1; return acc; }, {} as Record<string, number>);
-  const activeAdsCount = publishedAds.filter(a => a.isActive && new Date(a.expiresAt) > new Date()).length;
 
   return (
     <div className="adm-root">
@@ -547,231 +645,251 @@ export default function AdvertisementManager() {
       <div className="adm-header">
         <div>
           <h1 className="adm-page-title">Advertisement Manager</h1>
-          <p className="adm-page-sub">Manage ad inquiries, publish live ads, and control the Advertise With Us page</p>
+          <p className="adm-page-sub">Review requests, publish ads, and manage what's live on the site</p>
         </div>
         <div className="adm-header-stats">
-          <div className="adm-hstat"><span>{inquiries.length}</span><em>Total Inquiries</em></div>
-          <div className="adm-hstat adm-hstat--warn"><span>{counts["pending"] || 0}</span><em>Pending</em></div>
-          <div className="adm-hstat adm-hstat--purple"><span>{counts["deal_done"] || 0}</span><em>Ready to Publish</em></div>
-          <div className="adm-hstat adm-hstat--green"><span>{activeAdsCount}</span><em>Active Ads</em></div>
+          <div className="adm-hstat adm-hstat--warn"><span>{pending.length}</span><em>Pending</em></div>
+          <div className="adm-hstat adm-hstat--green"><span>{liveAds.length}</span><em>Live</em></div>
+          <div className="adm-hstat"><span>{expiredOnlyAds.length}</span><em>Expired</em></div>
+          <div className="adm-hstat"><span>{rejected.length}</span><em>Rejected</em></div>
         </div>
       </div>
 
       {/* TABS */}
       <div className="adm-tabs">
-        <button className={`adm-tab ${activeTab === "inquiries" ? "adm-tab--active" : ""}`} onClick={() => setActiveTab("inquiries")}>
-          <MessageSquare size={15} /> Inquiries
-          {(counts["pending"] || 0) > 0 && <span className="adm-tab-badge">{counts["pending"]}</span>}
+        <button className={`adm-tab ${activeTab === "pending" ? "adm-tab--active" : ""}`} onClick={() => handleTabChange("pending")}>
+          <MessageSquare size={15} /> Pending
+          {pending.length > 0 && <span className="adm-tab-badge">{pending.length}</span>}
         </button>
-        <button className={`adm-tab ${activeTab === "published" ? "adm-tab--active" : ""}`} onClick={() => setActiveTab("published")}>
-          <MonitorPlay size={15} /> Published Ads
-          {activeAdsCount > 0 && <span className="adm-tab-badge adm-tab-badge--green">{activeAdsCount}</span>}
+        <button className={`adm-tab ${activeTab === "published" ? "adm-tab--active" : ""}`} onClick={() => handleTabChange("published")}>
+          <MonitorPlay size={15} /> Published
+          {liveAds.length > 0 && <span className="adm-tab-badge adm-tab-badge--green">{liveAds.length}</span>}
         </button>
-        <button className={`adm-tab ${activeTab === "settings" ? "adm-tab--active" : ""}`} onClick={() => setActiveTab("settings")}>
-          <Settings size={15} /> Page Settings
+        <button className={`adm-tab ${activeTab === "expired" ? "adm-tab--active" : ""}`} onClick={() => handleTabChange("expired")}>
+          <History size={15} /> Expired
+          {expiredOrEndedAds.length > 0 && <span className="adm-tab-badge adm-tab-badge--gray">{expiredOrEndedAds.length}</span>}
+        </button>
+        <button className={`adm-tab ${activeTab === "rejected" ? "adm-tab--active" : ""}`} onClick={() => handleTabChange("rejected")}>
+          <XCircle size={15} /> Rejected
+          {rejected.length > 0 && <span className="adm-tab-badge adm-tab-badge--gray">{rejected.length}</span>}
         </button>
       </div>
 
-      {/* ── INQUIRIES TAB ── */}
-      {activeTab === "inquiries" && (
-        <div className="adm-content">
-          <div className="adm-filter-bar">
-            <Filter size={14} />
-            {(["all", "pending", "contacted", "deal_done", "published", "rejected"] as const).map(s => (
-              <button key={s} className={`adm-filter-btn ${filterStatus === s ? "adm-filter-btn--active" : ""}`} onClick={() => setFilterStatus(s)}>
-                {s === "all" ? "All" : STATUS_CONFIG[s].label}
-                {s !== "all" && counts[s] ? <span className="adm-filter-count">{counts[s]}</span> : null}
-              </button>
-            ))}
-          </div>
-
-          {loading ? (
-            <div className="adm-empty"><Loader2 size={32} className="spin" /></div>
-          ) : filtered.length === 0 ? (
-            <div className="adm-empty">
-              <MessageSquare size={40} />
-              <h3>No inquiries yet</h3>
-              <p>When users submit ad requests, they'll appear here.</p>
-            </div>
-          ) : (
-            <div className="adm-inquiry-list">
-              {filtered.map(inquiry => (
-                <div key={inquiry.id} className={`adm-inquiry-card ${expandedId === inquiry.id ? "adm-inquiry-card--expanded" : ""}`}>
-                  <div className="adm-iq-header" onClick={() => setExpandedId(expandedId === inquiry.id ? null : inquiry.id)}>
-                    <div className="adm-iq-left">
-                      <div className="adm-iq-avatar">{(inquiry.name || "?")[0].toUpperCase()}</div>
-                      <div>
-                        <div className="adm-iq-name">
-                          {inquiry.name}
-                          {inquiry.company && <span className="adm-iq-company">· {inquiry.company}</span>}
-                        </div>
-                        <div className="adm-iq-meta">
-                          <span><Mail size={11} />{inquiry.email}</span>
-                          <span><Phone size={11} />{inquiry.phone}</span>
-                          <span><Globe size={11} />{PAGE_LABEL[inquiry.targetPage] || inquiry.targetPage}</span>
-                          <span><Clock size={11} />{inquiry.duration === "custom" ? `${inquiry.customDays} days` : `${inquiry.duration} days`}</span>
-                        </div>
-                      </div>
-                    </div>
-                    <div className="adm-iq-right">
-                      <StatusBadge status={inquiry.status} />
-                      <span className="adm-iq-date">{fmtDate(inquiry.submittedAt)}</span>
-                      {expandedId === inquiry.id ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
-                    </div>
-                  </div>
-
-                  {expandedId === inquiry.id && (
-                    <div className="adm-iq-body">
-                      <div className="adm-iq-details-grid">
-                        <div className="adm-iq-detail-col">
-                          <h4>Contact Details</h4>
-                          <div className="adm-iq-detail-row"><Mail size={13} /><span>{inquiry.email}</span></div>
-                          <div className="adm-iq-detail-row"><Phone size={13} /><span>{inquiry.phone}</span></div>
-                          {inquiry.company && <div className="adm-iq-detail-row"><Building size={13} /><span>{inquiry.company}</span></div>}
-                          {inquiry.budget && <div className="adm-iq-detail-row"><BarChart2 size={13} /><span>Budget: {inquiry.budget}</span></div>}
-                        </div>
-                        <div className="adm-iq-detail-col">
-                          <h4>Campaign Request</h4>
-                          <div className="adm-iq-detail-row"><Globe size={13} /><span>{PAGE_LABEL[inquiry.targetPage] || inquiry.targetPage}</span></div>
-                          <div className="adm-iq-detail-row"><Clock size={13} /><span>Duration: {inquiry.duration === "custom" ? `${inquiry.customDays} days` : `${inquiry.duration} days`}</span></div>
-                          <div className="adm-iq-detail-row"><MonitorPlay size={13} /><span>Type: {inquiry.adType}</span></div>
-                          {inquiry.adTitle && <div className="adm-iq-detail-row"><ImageIcon size={13} /><span>Ad Title: {inquiry.adTitle}</span></div>}
-                          {inquiry.linkUrl && (
-                            <div className="adm-iq-detail-row">
-                              <LinkIcon size={13} />
-                              <a href={inquiry.linkUrl} target="_blank" rel="noopener noreferrer">{inquiry.linkUrl}</a>
-                            </div>
-                          )}
-                        </div>
-                      </div>
-
-                      {inquiry.message && (
-                        <div className="adm-iq-message">
-                          <h4>Message from Advertiser</h4>
-                          <p>"{inquiry.message}"</p>
-                        </div>
-                      )}
-
-                      {inquiry.imageUrl && (
-                        <div className="adm-iq-imgwrap">
-                          <h4>Provided Ad Image</h4>
-                          <div className="adm-iq-img-frame">
-                            <img src={inquiry.imageUrl} alt="Advertiser provided" onError={e => { (e.target as HTMLImageElement).style.display = "none"; }} />
-                          </div>
-                        </div>
-                      )}
-
-                      <div className="adm-iq-note">
-                        <label>Internal Admin Note</label>
-                        <textarea
-                          rows={2}
-                          placeholder="Add notes about this deal, agreed price, contact history..."
-                          value={adminNotes[inquiry.id] ?? inquiry.adminNote ?? ""}
-                          onChange={e => setAdminNotes(n => ({ ...n, [inquiry.id]: e.target.value }))}
-                        />
-                      </div>
-
-                      <div className="adm-iq-actions">
-                        <div className="adm-iq-status-btns">
-                          {(["pending", "contacted", "deal_done", "rejected"] as InquiryStatus[]).map(s => (
-                            <button
-                              key={s}
-                              className={`adm-status-btn ${inquiry.status === s ? "adm-status-btn--active" : ""}`}
-                              style={inquiry.status === s ? { background: STATUS_CONFIG[s].color + "20", borderColor: STATUS_CONFIG[s].color, color: STATUS_CONFIG[s].color } : {}}
-                              onClick={() => updateStatus(inquiry.id, s, adminNotes[inquiry.id])}
-                            >
-                              {STATUS_CONFIG[s].icon} {STATUS_CONFIG[s].label}
-                            </button>
-                          ))}
-                        </div>
-                        <div className="adm-iq-right-actions">
-                          <button className="adm-btn-delete" onClick={() => handleDelete(inquiry.id)}><Trash2 size={14} /></button>
-                          {inquiry.status === "deal_done" && (
-                            <button className="adm-btn-publish-now" onClick={() => setPublishingInquiry(inquiry)}>
-                              <Send size={14} /> Publish Ad
-                            </button>
-                          )}
-                        </div>
-                      </div>
-                    </div>
-                  )}
+      {loading ? (
+        <div className="adm-empty"><Loader2 size={32} className="spin" /></div>
+      ) : (
+        <>
+          {/* ── PENDING ── */}
+          {activeTab === "pending" && (
+            <div className="adm-content">
+              {pending.length === 0 ? (
+                <div className="adm-empty"><MessageSquare size={40} /><h3>No pending requests</h3><p>New ad requests will appear here.</p></div>
+              ) : (
+                <div className="adm-table-card">
+                  <table className="adm-data-table">
+                    <thead>
+                      <tr><th>Advertiser</th><th>Contact</th><th>Format</th><th>Target Page</th><th>Submitted</th></tr>
+                    </thead>
+                    <tbody>
+                      {pendingPageItems.map(iq => (
+                        <tr key={iq._id} className="adm-data-row" onClick={() => setViewingInquiry(iq)}>
+                          <td><div className="adm-row-name">{iq.company || iq.name}</div><div className="adm-row-sub">{iq.name}</div></td>
+                          <td><div className="adm-row-sub">{iq.email}</div><div className="adm-row-sub">{iq.phone}</div></td>
+                          <td className="adm-td-cap">{iq.adType === "card" ? "Card" : "Strip"}</td>
+                          <td>{PAGE_LABEL[iq.targetPage] || iq.targetPage}</td>
+                          <td className="adm-row-sub">{fmtDate(iq.submittedAt)}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                  <PaginationControls
+                    page={pendingPage}
+                    totalItems={pending.length}
+                    onPageChange={(p) => setPendingPage(p)}
+                  />
                 </div>
-              ))}
+              )}
             </div>
           )}
-        </div>
-      )}
 
-      {/* ── PUBLISHED ADS TAB ── */}
-      {activeTab === "published" && (
-        <div className="adm-content">
-          {loading ? (
-            <div className="adm-empty"><Loader2 size={32} className="spin" /></div>
-          ) : publishedAds.length === 0 ? (
-            <div className="adm-empty">
-              <MonitorPlay size={40} />
-              <h3>No published ads yet</h3>
-              <p>Mark an inquiry as "Deal Done" and publish it to see live ads here.</p>
-            </div>
-          ) : (
-            <div className="adm-published-grid">
-              {publishedAds.map(ad => {
-                const isExpired = new Date(ad.expiresAt) < new Date();
-                return (
-                  <div key={ad.id} className={`adm-pub-card ${!ad.isActive || isExpired ? "adm-pub-card--inactive" : ""}`}>
-                    <div className="adm-pub-img-wrap">
-                      {ad.imageUrl
-                        ? <img src={ad.imageUrl} alt={ad.altText} className="adm-pub-img" />
-                        : <div className="adm-pub-no-img"><ImageIcon size={24} /><span>No Image</span></div>
-                      }
-                      <div className="adm-pub-overlay-badges">
-                        {isExpired
-                          ? <span className="adm-pub-badge adm-pub-badge--expired">Expired</span>
-                          : ad.isActive
-                            ? <span className="adm-pub-badge adm-pub-badge--live">● Live</span>
-                            : <span className="adm-pub-badge adm-pub-badge--paused">Paused</span>
-                        }
-                        <span className="adm-pub-badge adm-pub-badge--page">{PAGE_LABEL[ad.targetPage] || ad.targetPage}</span>
-                      </div>
-                    </div>
-                    <div className="adm-pub-body">
-                      <div className="adm-pub-title">{ad.adTitle}</div>
-                      <div className="adm-pub-advertiser">{ad.advertiser}</div>
-                      <div className="adm-pub-dates">
-                        <span><Calendar size={11} /> Starts: {new Date(ad.publishedAt).toLocaleDateString("en-IN")}</span>
-                        <span><Calendar size={11} /> Ends: {new Date(ad.expiresAt).toLocaleDateString("en-IN")}</span>
-                      </div>
-                      <a href={ad.linkUrl} target="_blank" rel="noopener noreferrer" className="adm-pub-url">
-                        <LinkIcon size={11} /> {ad.linkUrl}
-                      </a>
-                    </div>
-                    <div className="adm-pub-footer">
-                      <button
-                        className={`adm-pub-toggle ${ad.isActive ? "adm-pub-toggle--pause" : "adm-pub-toggle--activate"}`}
-                        onClick={() => toggleAdActive(ad.id)}
-                        disabled={isExpired}
-                      >
-                        {ad.isActive ? "Pause" : "Activate"}
-                      </button>
-                      <button className="adm-pub-delete" onClick={() => deleteAd(ad.id)}><Trash2 size={13} /></button>
-                    </div>
-                  </div>
-                );
-              })}
+          {/* ── PUBLISHED (LIVE) ── */}
+          {activeTab === "published" && (
+            <div className="adm-content">
+              {liveAds.length === 0 ? (
+                <div className="adm-empty"><MonitorPlay size={40} /><h3>No live ads right now</h3><p>Publish an inquiry to see it here.</p></div>
+              ) : (
+                <div className="adm-table-card">
+                  <table className="adm-data-table">
+                    <thead>
+                      <tr><th>Advertiser</th><th>Format</th><th>Published On</th><th>Expires On</th><th>Days Left</th><th>Status</th></tr>
+                    </thead>
+                    <tbody>
+                      {livePageItems.map(ad => {
+                        const tone = daysLeftTone(ad.expiresAt);
+                        return (
+                          <tr key={ad.id} className="adm-data-row" onClick={() => setViewingLiveAd(ad)}>
+                            <td><div className="adm-row-name">{ad.advertiser}</div></td>
+                            <td className="adm-td-cap">{ad.adType === "card" ? "Card" : "Strip"}</td>
+                            <td className="adm-row-sub">{fmtDate(ad.publishedAt)}</td>
+                            <td className="adm-row-sub">{ad.expiresAt ? fmtDate(ad.expiresAt) : "No expiry"}</td>
+                            <td><span className={`adm-days-badge adm-days-badge--${tone}`}>{daysLeftLabel(ad.expiresAt)}</span></td>
+                            <td><span className="adm-pub-badge adm-pub-badge--live">● Live</span></td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                  <PaginationControls
+                    page={livePage}
+                    totalItems={liveAds.length}
+                    onPageChange={(p) => setLivePage(p)}
+                  />
+                </div>
+              )}
             </div>
           )}
-        </div>
+
+          {/* ── EXPIRED / ENDED ── */}
+          {activeTab === "expired" && (
+            <div className="adm-content">
+              {expiredOrEndedAds.length === 0 ? (
+                <div className="adm-empty"><History size={40} /><h3>Nothing here yet</h3><p>Ads that expire or are ended will show up here.</p></div>
+              ) : (
+                <div className="adm-table-card">
+                  <table className="adm-data-table">
+                    <thead>
+                      <tr><th>Advertiser</th><th>Expired On</th><th>Duration</th><th>End Reason</th><th>Renew</th></tr>
+                    </thead>
+                    <tbody>
+                      {expiredPageItems.map(ad => {
+                        const endReason = ad.endReason || (ad.status === "expired" ? "Time Expired" : "Ended by Admin");
+                        return (
+                          <tr key={ad.id} className="adm-data-row" onClick={() => setViewingExpiredAd(ad)}>
+                            <td><div className="adm-row-name">{ad.advertiser}</div></td>
+                            <td className="adm-row-sub">{fmtDate(ad.endedAt || ad.expiresAt)}</td>
+                            <td className="adm-td-cap">{ad.durationDays ? `${ad.durationDays} Days` : "—"}</td>
+                            <td className="adm-reason-cell">{endReason}</td>
+                            <td>
+                              <button
+                                className="adm-btn-renew-inline"
+                                onClick={(e) => { e.stopPropagation(); setRenewingAd(ad); }}
+                              >
+                                <RefreshCw size={12} /> Renew
+                              </button>
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                  <PaginationControls
+                    page={expiredPage}
+                    totalItems={expiredOrEndedAds.length}
+                    onPageChange={(p) => setExpiredPage(p)}
+                  />
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* ── REJECTED ── */}
+          {activeTab === "rejected" && (
+            <div className="adm-content">
+              {rejected.length === 0 ? (
+                <div className="adm-empty"><XCircle size={40} /><h3>No rejected requests</h3></div>
+              ) : (
+                <div className="adm-table-card">
+                  <table className="adm-data-table">
+                    <thead>
+                      <tr><th>Advertiser</th><th>Contact</th><th>Format</th><th>Submitted</th><th>Reason</th></tr>
+                    </thead>
+                    <tbody>
+                      {rejectedPageItems.map(iq => (
+                        <tr key={iq._id} className="adm-data-row" onClick={() => setViewingRejected(iq)}>
+                          <td><div className="adm-row-name">{iq.company || iq.name}</div></td>
+                          <td><div className="adm-row-sub">{iq.email}</div></td>
+                          <td className="adm-td-cap">{iq.adType === "card" ? "Card" : "Strip"}</td>
+                          <td className="adm-row-sub">{fmtDate(iq.submittedAt)}</td>
+                          <td className="adm-reason-cell">{iq.rejectionReason || "—"}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                  <PaginationControls
+                    page={rejectedPage}
+                    totalItems={rejected.length}
+                    onPageChange={(p) => setRejectedPage(p)}
+                  />
+                </div>
+              )}
+            </div>
+          )}
+        </>
       )}
 
-      {/* ── PAGE SETTINGS TAB ── */}
-      {activeTab === "settings" && <PageSettings />}
+      {viewingInquiry && (
+        <InquiryDetailModal
+          inquiry={viewingInquiry}
+          onClose={() => { setViewingInquiry(null); setRejectingId(null); setRejectNote(""); }}
+          onPublish={(iq) => { setPublishingInquiry(iq); setViewingInquiry(null); }}
+          rejectingId={rejectingId}
+          setRejectingId={setRejectingId}
+          rejectNote={rejectNote}
+          setRejectNote={setRejectNote}
+          onConfirmReject={confirmReject}
+          busyId={busyId}
+        />
+      )}
 
-      {/* PUBLISH MODAL */}
+      {viewingLiveAd && (
+        <LiveAdDetailModal
+          ad={viewingLiveAd}
+          onClose={() => setViewingLiveAd(null)}
+          onRenew={(ad) => setRenewingAd(ad)}
+          onEnd={(ad) => setEndingAd(ad)}
+          busyId={busyId}
+        />
+      )}
+
+      {viewingExpiredAd && (
+        <ExpiredAdDetailModal
+          ad={viewingExpiredAd}
+          onClose={() => setViewingExpiredAd(null)}
+          onRenew={(ad) => setRenewingAd(ad)}
+          busyId={busyId}
+        />
+      )}
+
+      {viewingRejected && (
+        <RejectedDetailModal
+          inquiry={viewingRejected}
+          onClose={() => setViewingRejected(null)}
+        />
+      )}
+
       {publishingInquiry && (
         <PublishModal
           inquiry={publishingInquiry}
           onClose={() => setPublishingInquiry(null)}
           onPublish={handlePublish}
+        />
+      )}
+
+      {endingAd && (
+        <EndAdvertisementModal
+          ad={endingAd}
+          onClose={() => setEndingAd(null)}
+          onConfirm={(id, note) => handleEndAd(id, note)}
+          busy={busyId === endingAd.id}
+        />
+      )}
+
+      {renewingAd && (
+        <RenewModal
+          ad={renewingAd}
+          onClose={() => setRenewingAd(null)}
+          onConfirm={(id, durationDays, notes) => handleRenewAd(id, durationDays, notes)}
+          busy={busyId === renewingAd.id}
         />
       )}
     </div>

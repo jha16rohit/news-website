@@ -11,6 +11,7 @@ import categoryRoutes from "./routes/category.routes";
 import tagsRoutes from "./routes/tags.routes";
 import footerRoutes from "./routes/footer.routes";
 import advertisementRoutes from "./routes/advertisement.routes";
+import advertisementPoolRoutes from "./routes/advertisementPool.routes";
 import contactUsRoutes from "./routes/contactus.routes";
 import siteUserRoutes from "./routes/siteuser.routes";
 import { analyticsPublicRouter, analyticsAdminRouter } from "./routes/analytics.routes"; // ← ADD
@@ -58,6 +59,7 @@ app.use("/api/categories",      categoryRoutes);
 app.use("/api/tags",            tagsRoutes);
 app.use("/api/footer-settings", footerRoutes);
 app.use("/api/advertisement",   advertisementRoutes);
+app.use("/api/advertisement-pool", advertisementPoolRoutes);
 app.use("/api/contact",         contactUsRoutes);
 
 // ── Frontend User section ───────────────────────

@@ -27,7 +27,6 @@ import CreateNewArticle from "./components/Admin/CreateNewArticle/CreateNewArtic
 import LiveStoriesPage from "./components/Admin/Livestories/Livestories";
 import Notifications from "./components/Admin/Notifications/Notifications";
 import TopicProfiles from "./components/Admin/TopicProfiles/TopicProfiles";
-import { NewsProvider } from "./components/Admin/NewsProvider/NewsProvider";
 import UserProfile from "./components/User/UserProfile/UserProfile";
 import FooterManagement from "./components/Admin/FooterManagement/FooterManagement";
 import AdvertisementManager from "./components/Admin/AdvertisementManager/AdvertisementManager";
@@ -35,15 +34,21 @@ import ProtectedRoute from "./routes/protectedroutes";
 import AboutUsAdmin from "./components/Admin/AboutUsAdmin/AboutUsAdmin";
 import ContactUsAdmin from "./components/Admin/ContactUsAdmin/ContactUsAdmin";
 import TagPage from "./components/User/TagPage/TagPage";
+import { AuthProvider } from "./context/AuthContext";
+import UserInsights from "./components/Admin/UserInsights/UserInsights";  
 
 export default function App() {
   return (
-    <NewsProvider>
+    
       <BrowserRouter>
         <Routes>
 
           {/* USER ROUTES */}
-          <Route element={<UserLayout />}>
+          <Route element={
+    <AuthProvider>
+      <UserLayout />
+    </AuthProvider>
+  }>
             <Route path="/" element={<UserDashboard />} />
 
             {/* ArticleDetail — handles both MongoDB ObjectId and URL slugs */}
@@ -59,9 +64,10 @@ export default function App() {
             <Route path="/about" element={<AboutUs />} />
             <Route path="/contact" element={<ContactUs />} />
             <Route path="/tag/:tagSlug" element={<TagPage />} />
+             <Route path="/category/:slug" element={<CategoryTemplate />} />
           </Route>
 
-          <Route path="/category/:slug" element={<CategoryTemplate />} />
+         
 
           {/* ADMIN LOGIN */}
           <Route path="/admin/login-xyzsft" element={<Login />} />
@@ -96,11 +102,11 @@ export default function App() {
             <Route path="advertisement-manager" element={<AdvertisementManager />} />
             <Route path="about-manager" element={<AboutUsAdmin />} />
             <Route path="contact-manager" element={<ContactUsAdmin />} />
+            <Route path="user-insights" element={<UserInsights />} />
           </Route>
 
           <Route path="*" element={<h1>Page Not Found</h1>} />
         </Routes>
       </BrowserRouter>
-    </NewsProvider>
   );
 }
