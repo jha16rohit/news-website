@@ -1,40 +1,63 @@
-// server/src/socket/analyticsSocket.ts
-import { Server as SocketServer } from "socket.io";
+// server/src/socket/analyticssocket.ts
+//
+// Referenced in server.ts as `initAnalyticsSocket(io)`.
+// Admin dashboard clients join the "admin-analytics" room and receive
+// periodic + event-driven live-visitor-count pushes.
+
+import { Server as SocketServer, Socket } from "socket.io";
 import PageView from "../models/Pageview";
 
-const activeSessions = new Map<string, { visitorId: string; newsId?: string }>();
+const ADMIN_ROOM = "admin-analytics";
+const LIVE_WINDOW_MS = 5 * 60 * 1000; // consider a visitor "live" for 5 minutes
+const POLL_INTERVAL_MS = 15_000;
 
-async function broadcastLiveCount(io: SocketServer) {
+let ioRef: SocketServer | null = null;
+let pollTimer: ReturnType<typeof setInterval> | null = null;
+
+async function computeLiveVisitorCount(): Promise<number> {
+  const since = new Date(Date.now() - LIVE_WINDOW_MS);
+  const distinctVisitors = await PageView.distinct("visitorId", {
+    createdAt: { $gte: since },
+  });
+  return distinctVisitors.length;
+}
+
+/**
+ * Push the current live-visitor count to every admin dashboard client.
+ * Safe to call often — it's a lightweight distinct() query.
+ */
+export async function broadcastLiveVisitorCount(): Promise<void> {
+  if (!ioRef) return;
   try {
-    const since = new Date(Date.now() - 5 * 60 * 1000); // last 5 min
-    const dbCount = await PageView.distinct("visitorId", { createdAt: { $gte: since } });
-
-    // FIX: Filter out admins from the socket count!
-    const publicSockets = [...activeSessions.values()].filter(s => !s.visitorId.startsWith("admin-"));
-    const socketCount = new Set(publicSockets.map((s) => s.visitorId)).size;
-
-    const count = Math.max(dbCount.length, socketCount);
-    io.emit("live:visitors", { count });
-  } catch (err) {
-    console.error("broadcastLiveCount error:", err);
+    const count = await computeLiveVisitorCount();
+    ioRef.to(ADMIN_ROOM).emit("analytics:live-visitors", { count });
+  } catch (error) {
+    console.error("broadcastLiveVisitorCount error:", error);
   }
 }
 
-export function initAnalyticsSocket(io: SocketServer) {
-  const interval = setInterval(() => broadcastLiveCount(io), 10_000);
+export function initAnalyticsSocket(io: SocketServer): void {
+  ioRef = io;
 
-  io.on("connection", (socket) => {
-    const visitorId = (socket.handshake.query.visitorId as string) ?? socket.id;
-    const newsId    = (socket.handshake.query.newsId as string) ?? undefined;
+  io.on("connection", (socket: Socket) => {
+    socket.on("admin:subscribe-analytics", () => {
+      socket.join(ADMIN_ROOM);
+      // Send an immediate snapshot on subscribe
+      broadcastLiveVisitorCount().catch(() => {});
+    });
 
-    activeSessions.set(socket.id, { visitorId, newsId });
-    broadcastLiveCount(io);
+    socket.on("admin:unsubscribe-analytics", () => {
+      socket.leave(ADMIN_ROOM);
+    });
 
     socket.on("disconnect", () => {
-      activeSessions.delete(socket.id);
-      broadcastLiveCount(io);
+      socket.leave(ADMIN_ROOM);
     });
   });
 
-  process.on("SIGTERM", () => clearInterval(interval));
+  // Periodic heartbeat so the count stays fresh even with no new pageviews
+  if (pollTimer) clearInterval(pollTimer);
+  pollTimer = setInterval(() => {
+    broadcastLiveVisitorCount().catch(() => {});
+  }, POLL_INTERVAL_MS);
 }

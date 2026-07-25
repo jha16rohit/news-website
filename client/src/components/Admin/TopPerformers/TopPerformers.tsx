@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import "./TopPerformers.css";
 import { TrendingUp, Eye, Clock, RefreshCw, AlertCircle } from "lucide-react";
 import { fetchTopArticles } from "../../../api/analytics";
@@ -76,6 +76,28 @@ const TopPerformers = () => {
   const [error,    setError]    = useState<string | null>(null);
   const [range,    setRange]    = useState(1);
 
+  // ── Match height to the Traffic Overview card next to it ──────────────────
+  const rootRef = useRef<HTMLDivElement>(null);
+  const [matchedHeight, setMatchedHeight] = useState<number | null>(null);
+
+  useEffect(() => {
+    const el = rootRef.current;
+    if (!el) return;
+
+    // Look for the Traffic Overview card as a sibling within the same dashboard row.
+    // Falls back gracefully (no inline height) if it's not found, so this never breaks layout.
+    const row = el.closest(".dashboard-row");
+    const trafficCard = row?.querySelector(".traffic-card") as HTMLElement | null;
+    if (!trafficCard) return;
+
+    const sync = () => setMatchedHeight(trafficCard.offsetHeight);
+    sync();
+
+    const observer = new ResizeObserver(sync);
+    observer.observe(trafficCard);
+    return () => observer.disconnect();
+  }, []);
+
   const load = useCallback(async (r: number) => {
     setLoading(true);
     setError(null);
@@ -94,7 +116,11 @@ const TopPerformers = () => {
   useEffect(() => { load(range); }, [range, load]);
 
   return (
-    <div className="top-performers">
+    <div
+      className="top-performers"
+      ref={rootRef}
+      style={matchedHeight ? { height: matchedHeight } : undefined}
+    >
       {/* HEADER */}
       <div className="tp-header">
         <div className="tp-title">

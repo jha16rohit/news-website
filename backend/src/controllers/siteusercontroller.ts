@@ -6,6 +6,7 @@ import { Request, Response } from "express";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import SiteUser from "../models/SiteUser";
+import LoginLog from "../models/LoginLog";
 
 const JWT_SECRET = process.env.JWT_SECRET || "your_jwt_secret";
 const JWT_EXPIRES = "7d";
@@ -72,6 +73,9 @@ export const registerUser = async (req: Request, res: Response) => {
     const token = signToken(String(user._id));
     setAuthCookie(res, token);
 
+    // Fire-and-forget activity log — never blocks the response
+    LoginLog.create({ userId: user._id, email: user.email, method: "register" }).catch(() => {});
+
     return res.status(201).json({
       message: "Account ban gaya!",
       token,
@@ -119,6 +123,9 @@ export const loginUser = async (req: Request, res: Response) => {
 
     const token = signToken(String(user._id));
     setAuthCookie(res, token);
+
+    // Fire-and-forget activity log — never blocks the response
+    LoginLog.create({ userId: user._id, email: user.email, method: "password" }).catch(() => {});
 
     return res.status(200).json({
       message: "Login successful!",
@@ -193,6 +200,9 @@ profilePic: picture || undefined,
 
     const token = signToken(String(user!._id));
     setAuthCookie(res, token);
+
+    // Fire-and-forget activity log — never blocks the response
+    LoginLog.create({ userId: user!._id, email: user!.email, method: "google" }).catch(() => {});
 
     return res.status(200).json({
       message: "Google login successful!",

@@ -14,6 +14,8 @@
   overflow: hidden;
   display: flex;
   flex-direction: column;
+  height: 560px;     /* fallback only — JS measures & overrides this to match Traffic Overview exactly */
+  min-height: 0;
 }
 
 /* ------------------------------------------------------------------ */
@@ -23,6 +25,7 @@
 .tp-header {
   padding: 22px 22px 16px;
   border-bottom: 1px solid #e5e7eb;
+  flex-shrink: 0;
 }
 
 .tp-title {
@@ -54,6 +57,7 @@
   gap: 8px;
   padding: 14px 22px;
   border-bottom: 1px solid #e5e7eb;
+  flex-shrink: 0;
 }
 
 .tp-range-btn {
@@ -139,6 +143,22 @@
 .tp-list {
   display: flex;
   flex-direction: column;
+  flex: 1;
+  overflow-y: auto;
+  min-height: 0;
+}
+
+.tp-list::-webkit-scrollbar {
+  width: 6px;
+}
+
+.tp-list::-webkit-scrollbar-thumb {
+  background: #d1d5db;
+  border-radius: 3px;
+}
+
+.tp-list::-webkit-scrollbar-track {
+  background: transparent;
 }
 
 .tp-item {
@@ -216,6 +236,7 @@
   text-overflow: ellipsis;
   display: -webkit-box;
   line-clamp: 1;
+  -webkit-line-clamp: 1;
   -webkit-box-orient: vertical;
 }
 

@@ -39,6 +39,12 @@ export async function fetchLiveVisitors() {
   return get("/live-visitors");
 }
 
+export async function fetchUserInsights() {
+  const res = await fetch(`${BASE}/user-insights`, { credentials: "include" });
+  if (!res.ok) throw new Error("Analytics API error: user-insights");
+  return res.json();
+}
+
 export function getExportUrl(range: number) {
   return `${BASE}/export?range=${range}`;
 }

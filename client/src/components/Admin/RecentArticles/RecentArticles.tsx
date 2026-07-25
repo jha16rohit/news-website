@@ -1,21 +1,90 @@
 import "./RecentArticles.css";
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { MoreVertical, Pencil, Trash2, MonitorPlay } from "lucide-react";
+import { fetchAllNews, deleteNews } from "../../../api/news";
 
-const articles = [
-  { id: 1, title: "Tech Giants Report Strong Q4 Earnings...", author: "Priya Sharma", category: "Business", status: "Published", time: "10:45 AM", views: "12.5K" },
-  { id: 2, title: "National Sports Day: Athletes Share...", author: "Rahul Verma", category: "Sports", status: "Published", time: "10:30 AM", views: "8.2K" },
-  { id: 3, title: "New Healthcare Policy: What It Means for...", author: "Dr. Anita Patel", category: "Health", status: "Draft", time: "-", views: "-" },
-  { id: 4, title: "Exclusive: Behind the Scenes of...", author: "Karan Mehta", category: "Entertainment", status: "Scheduled", time: "2:00 PM", views: "-" },
-  { id: 5, title: "Climate Summit: India Announces...", author: "Neha Gupta", category: "Environment", status: "Published", time: "9:15 AM", views: "45.3K" },
-];
+// ── Types ──────────────────────────────────────────────────────────────────
+interface Article {
+  id:       string;
+  title:    string;
+  author:   string;
+  category: string;
+  status:   string;   // "Published" | "Draft" | "Scheduled" | "Expired" | "Deleted"
+  time:     string;
+  views:    string;
+}
+
+interface RawNewsDoc {
+  id:          string;
+  headline:    string;
+  status:      string;
+  publishedAt?: string;
+  createdAt:   string;
+  views?:      number;
+  categoryId?: { name?: string } | string;
+  authorId?:   { name?: string } | string;
+}
+
+// ── Helpers ────────────────────────────────────────────────────────────────
+function formatViews(n?: number): string {
+  if (!n) return "-";
+  if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(1)}M`;
+  if (n >= 1_000)     return `${(n / 1_000).toFixed(1)}K`;
+  return String(n);
+}
+
+function formatTime(dateStr?: string): string {
+  if (!dateStr) return "-";
+  const d = new Date(dateStr);
+  return d.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" });
+}
+
+function toTitleCase(status: string): string {
+  return status.charAt(0).toUpperCase() + status.slice(1).toLowerCase();
+}
+
+function normalize(raw: RawNewsDoc): Article {
+  const category = typeof raw.categoryId === "object" ? raw.categoryId?.name : undefined;
+  const author = typeof raw.authorId === "object" ? raw.authorId?.name : undefined;
+  const isLive = raw.status === "PUBLISHED";
+
+  return {
+    id:       raw.id,
+    title:    raw.headline,
+    author:   author ?? "Unknown",
+    category: category ?? "Uncategorized",
+    status:   toTitleCase(raw.status),
+    time:     isLive ? formatTime(raw.publishedAt) : "-",
+    views:    isLive ? formatViews(raw.views) : "-",
+  };
+}
 
 const RecentArticles = () => {
   const navigate = useNavigate();
-  const [openMenu, setOpenMenu] = useState<number | null>(null);
-  const [deleteId, setDeleteId] = useState<number | null>(null);
+  const [articles, setArticles] = useState<Article[]>([]);
+  const [loading,  setLoading]  = useState(true);
+  const [error,    setError]    = useState<string | null>(null);
+  const [openMenu, setOpenMenu] = useState<string | null>(null);
+  const [deleteId, setDeleteId] = useState<string | null>(null);
+  const [deleting, setDeleting] = useState(false);
   const menuRef = useRef<HTMLTableSectionElement>(null);
+
+  const load = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const data = await fetchAllNews({ limit: 5 });
+      const raw: RawNewsDoc[] = data?.news ?? [];
+      setArticles(raw.map(normalize));
+    } catch {
+      setError("Could not load recent articles.");
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => { load(); }, [load]);
 
   useEffect(() => {
     const handler = (e: MouseEvent) => {
@@ -25,7 +94,21 @@ const RecentArticles = () => {
     return () => document.removeEventListener("mousedown", handler);
   }, []);
 
-  const MenuDropdown = ({ id }: { id: number }) => (
+  const handleConfirmDelete = async () => {
+    if (!deleteId) return;
+    setDeleting(true);
+    try {
+      await deleteNews(deleteId);
+      setArticles((prev) => prev.filter((a) => a.id !== deleteId));
+    } catch {
+      // keep the row if delete failed; a toast/error UI could go here
+    } finally {
+      setDeleting(false);
+      setDeleteId(null);
+    }
+  };
+
+  const MenuDropdown = ({ id }: { id: string }) => (
     <>
       <button className="three-dot-btn" onClick={() => setOpenMenu(openMenu === id ? null : id)}>
         <MoreVertical size={16} />
@@ -66,21 +149,41 @@ const RecentArticles = () => {
           </tr>
         </thead>
         <tbody ref={menuRef}>
-          {articles.map((item) => (
-            <tr key={item.id}>
-              <td>
-                <div className="article-cell">
-                  <strong>{item.title}</strong>
-                  <span>{item.author}</span>
-                </div>
+          {loading ? (
+            <tr>
+              <td colSpan={6} className="muted" style={{ textAlign: "center", padding: "24px" }}>
+                Loading recent articles…
               </td>
-              <td className="muted">{item.category}</td>
-              <td><span className={`status ${item.status.toLowerCase()}`}>{item.status}</span></td>
-              <td className="muted">{item.time}</td>
-              <td className="views">{item.views}</td>
-              <td className="menu-cell"><MenuDropdown id={item.id} /></td>
             </tr>
-          ))}
+          ) : error ? (
+            <tr>
+              <td colSpan={6} style={{ textAlign: "center", padding: "24px", color: "#dc2626" }}>
+                {error} <button onClick={load} style={{ marginLeft: 8 }}>Retry</button>
+              </td>
+            </tr>
+          ) : articles.length === 0 ? (
+            <tr>
+              <td colSpan={6} className="muted" style={{ textAlign: "center", padding: "24px" }}>
+                No articles yet.
+              </td>
+            </tr>
+          ) : (
+            articles.map((item) => (
+              <tr key={item.id}>
+                <td>
+                  <div className="article-cell">
+                    <strong>{item.title}</strong>
+                    <span>{item.author}</span>
+                  </div>
+                </td>
+                <td className="muted">{item.category}</td>
+                <td><span className={`status ${item.status.toLowerCase()}`}>{item.status}</span></td>
+                <td className="muted">{item.time}</td>
+                <td className="views">{item.views}</td>
+                <td className="menu-cell"><MenuDropdown id={item.id} /></td>
+              </tr>
+            ))
+          )}
         </tbody>
       </table>
       </div>
@@ -88,14 +191,16 @@ const RecentArticles = () => {
 
       {/* DELETE MODAL */}
       {deleteId !== null && (
-        <div className="modal-overlay" onClick={() => setDeleteId(null)}>
+        <div className="modal-overlay" onClick={() => !deleting && setDeleteId(null)}>
           <div className="modal" onClick={(e) => e.stopPropagation()}>
             <div className="modal-icon"><Trash2 size={22} /></div>
             <h4>Delete Story?</h4>
             <p>This action cannot be undone. The story will be permanently removed.</p>
             <div className="modal-actions">
-              <button className="modal-cancel" onClick={() => setDeleteId(null)}>Cancel</button>
-              <button className="modal-confirm" onClick={() => setDeleteId(null)}>Yes, Delete</button>
+              <button className="modal-cancel" onClick={() => setDeleteId(null)} disabled={deleting}>Cancel</button>
+              <button className="modal-confirm" onClick={handleConfirmDelete} disabled={deleting}>
+                {deleting ? "Deleting…" : "Yes, Delete"}
+              </button>
             </div>
           </div>
         </div>

@@ -31,7 +31,7 @@ interface KPIData {
   avgReadTime:       KPI;
 }
 
-interface ChartRow   { date: string; views: number; uniqueVisitors: number; }
+interface ChartRow   { label: string; views: number; uniqueVisitors: number; }
 interface Source     { label: string; key: string; pct: number; color: string; icon: string; }
 interface Article    {
   rank: number; newsId: string; title: string;
@@ -151,7 +151,7 @@ const Analytics: React.FC = () => {
       ]);
       setKpis(kpiData);
       setChart(chartData.chart ?? []);
-      setSources(sourceData.sources ?? []);
+      setSources(Array.isArray(sourceData.sources) ? sourceData.sources : []);
       setTotalSessions(sourceData.total ?? 0);
       setArticles(articleData.articles ?? []);
     } catch (err: any) {
@@ -267,10 +267,10 @@ const Analytics: React.FC = () => {
             <span className="aa-stat-label">TOTAL PAGE VIEWS</span>
             <span className="aa-stat-icon aa-stat-icon--blue"><AaEyeIcon /></span>
           </div>
-          {loading ? <Skeleton h={32} /> : <p className="aa-stat-value">{kpis?.totalViews.formatted ?? "—"}</p>}
+          {loading ? <Skeleton h={32} /> : <p className="aa-stat-value">{kpis?.totalViews?.formatted ?? "—"}</p>}
           {loading ? <Skeleton w="60%" h={16} /> : (
-            <p className="aa-stat-change" style={{ color: pctColor(kpis?.totalViews.pct ?? null) }}>
-              {pctArrow(kpis?.totalViews.pct ?? null)} {kpis?.totalViews.pct ? kpis.totalViews.pct + "%" : "No previous data"}
+            <p className="aa-stat-change" style={{ color: pctColor(kpis?.totalViews?.pct ?? null) }}>
+              {pctArrow(kpis?.totalViews?.pct ?? null)} {kpis?.totalViews?.pct ? kpis.totalViews.pct + "%" : "No previous data"}
             </p>
           )}
         </div>
@@ -281,10 +281,10 @@ const Analytics: React.FC = () => {
             <span className="aa-stat-label">UNIQUE VISITORS</span>
             <span className="aa-stat-icon aa-stat-icon--green"><AaUsersIcon /></span>
           </div>
-          {loading ? <Skeleton h={32} /> : <p className="aa-stat-value">{kpis?.uniqueVisitors.formatted ?? "—"}</p>}
+          {loading ? <Skeleton h={32} /> : <p className="aa-stat-value">{kpis?.uniqueVisitors?.formatted ?? "—"}</p>}
           {loading ? <Skeleton w="60%" h={16} /> : (
-            <p className="aa-stat-change" style={{ color: pctColor(kpis?.uniqueVisitors.pct ?? null) }}>
-              {pctArrow(kpis?.uniqueVisitors.pct ?? null)} {kpis?.uniqueVisitors.pct ? kpis.uniqueVisitors.pct + "%" : "No previous data"}
+            <p className="aa-stat-change" style={{ color: pctColor(kpis?.uniqueVisitors?.pct ?? null) }}>
+              {pctArrow(kpis?.uniqueVisitors?.pct ?? null)} {kpis?.uniqueVisitors?.pct ? kpis.uniqueVisitors.pct + "%" : "No previous data"}
             </p>
           )}
         </div>
@@ -295,7 +295,7 @@ const Analytics: React.FC = () => {
             <span className="aa-stat-label">ARTICLES PUBLISHED</span>
             <span className="aa-stat-icon aa-stat-icon--purple"><AaFileIcon /></span>
           </div>
-          {loading ? <Skeleton h={32} /> : <p className="aa-stat-value">{kpis?.articlesPublished.formatted ?? "—"}</p>}
+          {loading ? <Skeleton h={32} /> : <p className="aa-stat-value">{kpis?.articlesPublished?.formatted ?? "—"}</p>}
           {loading ? <Skeleton w="60%" h={16} /> : (
             <p className="aa-stat-change" style={{ color: "#888" }}>in selected period</p>
           )}
@@ -307,10 +307,10 @@ const Analytics: React.FC = () => {
             <span className="aa-stat-label">AVG. READ TIME</span>
             <span className="aa-stat-icon aa-stat-icon--amber"><AaClockIcon /></span>
           </div>
-          {loading ? <Skeleton h={32} /> : <p className="aa-stat-value">{kpis?.avgReadTime.formatted ?? "—"}</p>}
+          {loading ? <Skeleton h={32} /> : <p className="aa-stat-value">{kpis?.avgReadTime?.formatted ?? "—"}</p>}
           {loading ? <Skeleton w="60%" h={16} /> : (
-            <p className="aa-stat-change" style={{ color: pctColor(kpis?.avgReadTime.pct ?? null) }}>
-              {pctArrow(kpis?.avgReadTime.pct ?? null)} {kpis?.avgReadTime.pct ? kpis.avgReadTime.pct + "%" : "No previous data"}
+            <p className="aa-stat-change" style={{ color: pctColor(kpis?.avgReadTime?.pct ?? null) }}>
+              {pctArrow(kpis?.avgReadTime?.pct ?? null)} {kpis?.avgReadTime?.pct ? kpis.avgReadTime.pct + "%" : "No previous data"}
             </p>
           )}
         </div>
@@ -347,7 +347,7 @@ const Analytics: React.FC = () => {
                 </linearGradient>
               </defs>
               <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" vertical={false} />
-              <XAxis dataKey="date" tick={{ fontSize: 11, fill: "#aaa" }} axisLine={false} tickLine={false} />
+              <XAxis dataKey="label" tick={{ fontSize: 11, fill: "#aaa" }} axisLine={false} tickLine={false} />
               <YAxis tickFormatter={aaFmt} tick={{ fontSize: 11, fill: "#aaa" }} axisLine={false} tickLine={false} width={42} />
               <Tooltip content={<AaCustomTooltip />} />
               <Legend verticalAlign="top" align="right" iconType="circle" iconSize={8} wrapperStyle={{ fontSize: 12, paddingBottom: 8 }} />
