@@ -1,6 +1,11 @@
-import React, { useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
+import { io, Socket } from "socket.io-client";
 import "./Notifications.css";
-
+import {
+  fetchNotifications,
+  markAllNotificationsRead,
+} from "../../../api/notification";
+import type { ApiNotification } from "../../../api/notification";
 type FilterTab = "All" | "Breaking" | "Comments" | "Scheduled" | "Trending";
 
 type NotificationType =
@@ -13,86 +18,18 @@ type NotificationType =
   | "reminder"
   | "traffic";
 
-interface Notification {
-  id: number;
-  type: NotificationType;
-  tab: FilterTab;
-  title: string;
-  description: string;
-  time: string;
-  unread?: boolean;
-}
+const SOCKET_URL = "http://localhost:5001";
 
-const notifications: Notification[] = [
-  {
-    id: 1,
-    type: "breaking",
-    tab: "Breaking",
-    title: "Breaking News Pending",
-    description: "A breaking news article is waiting for your approval before going live.",
-    time: "2 minutes ago",
-    unread: true,
-  },
-  {
-    id: 2,
-    type: "comment",
-    tab: "Comments",
-    title: "New Comments",
-    description: "15 new comments on 'Election Results 2025' need moderation.",
-    time: "5 minutes ago",
-    unread: true,
-  },
-  {
-    id: 3,
-    type: "scheduled",
-    tab: "Scheduled",
-    title: "Article Scheduled",
-    description: "'Tech Industry Layoffs Continue' is scheduled to publish at 3:00 PM today.",
-    time: "10 minutes ago",
-    unread: true,
-  },
-  {
-    id: 4,
-    type: "trending",
-    tab: "Trending",
-    title: "Article Trending",
-    description: "'AI Revolution in Healthcare' is trending with 12K views in the last hour.",
-    time: "25 minutes ago",
-    unread: true,
-  },
-  {
-    id: 5,
-    type: "flagged",
-    tab: "Comments",
-    title: "Comment Flagged",
-    description: "A comment on 'Budget Analysis' has been flagged for review.",
-    time: "2 hours ago",
-  },
-  {
-    id: 6,
-    type: "published",
-    tab: "Breaking",
-    title: "Breaking Published",
-    description: "'Major Policy Announcement' has been published as breaking news.",
-    time: "3 hours ago",
-  },
-  {
-    id: 7,
-    type: "reminder",
-    tab: "Scheduled",
-    title: "Publish Reminder",
-    description: "'Weekend Sports Roundup' will auto-publish tomorrow at 8:00 AM.",
-    time: "5 hours ago",
-  },
-  {
-    id: 8,
-    type: "traffic",
-    tab: "Trending",
-    title: "Traffic Spike",
-    description: "Your site is experiencing a 340% traffic spike from social media referrals.",
-    time: "6 hours ago",
-  },
-];
+function timeAgo(iso: string): string {
+  const diffMs = Date.now() - new Date(iso).getTime();
+  const mins = Math.floor(diffMs / 60000);
+  if (mins < 1) return "just now";
+  if (mins < 60) return `${mins} minute${mins === 1 ? "" : "s"} ago`;
+  const hours = Math.floor(mins / 60);
+  if (hours < 24) return `${hours} hour${hours === 1 ? "" : "s"} ago`;
+  const days = Math.floor(hours / 24);
+  return `${days} day${days === 1 ? "" : "s"} ago`;
+}
 
 const tabs: FilterTab[] = ["All", "Breaking", "Comments", "Scheduled", "Trending"];
 
@@ -144,6 +81,41 @@ const getIconConfig = (type: NotificationType): IconConfig => {
 
 const Notifications: React.FC = () => {
   const [activeTab, setActiveTab] = useState<FilterTab>("All");
+  const [notifications, setNotifications] = useState<ApiNotification[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const socketRef = useRef<Socket | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    fetchNotifications()
+      .then(({ notifications: list }) => {
+        if (!cancelled) setNotifications(list);
+      })
+      .catch((err: any) => {
+        if (!cancelled) setError(err?.message || "Failed to load notifications.");
+      })
+      .finally(() => {
+        if (!cancelled) setLoading(false);
+      });
+
+    return () => { cancelled = true; };
+  }, []);
+
+  useEffect(() => {
+    const sock = io(SOCKET_URL, { withCredentials: true });
+    socketRef.current = sock;
+
+    sock.on("connect", () => sock.emit("admin:subscribe-notifications"));
+    sock.on("notifications:new", (n: ApiNotification) => {
+      // Prepend the freshly generated notification, guarding against a rare
+      // double-delivery (e.g. reconnect) by de-duping on _id.
+      setNotifications((prev) => (prev.some((p) => p._id === n._id) ? prev : [n, ...prev]));
+    });
+
+    return () => { sock.disconnect(); };
+  }, []);
 
   const unreadCount = notifications.filter((n) => n.unread).length;
 
@@ -152,15 +124,28 @@ const Notifications: React.FC = () => {
       ? notifications
       : notifications.filter((n) => n.tab === activeTab);
 
+  const handleMarkAllRead = async () => {
+    // Optimistic update — revert isn't strictly necessary since this is a
+    // low-stakes UI action, but we log failures so silent drops are visible.
+    setNotifications((prev) => prev.map((n) => ({ ...n, unread: false })));
+    try {
+      await markAllNotificationsRead();
+    } catch (err) {
+      console.error("Failed to mark notifications read:", err);
+    }
+  };
+
   return (
     <div className="notif-page">
       {/* Header */}
       <div className="notif-header">
         <div>
           <h1 className="notif-title">Notifications</h1>
-          <p className="notif-subtitle">You have {unreadCount} unread notifications</p>
+          <p className="notif-subtitle">
+            {loading ? "Loading…" : `You have ${unreadCount} unread notifications`}
+          </p>
         </div>
-        <button className="notif-mark-all">
+        <button className="notif-mark-all" onClick={handleMarkAllRead} disabled={loading || unreadCount === 0}>
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
             <polyline points="20 6 9 17 4 12" />
           </svg>
@@ -191,15 +176,19 @@ const Notifications: React.FC = () => {
 
       {/* Notifications List */}
       <div className="notif-list">
-        {filtered.length === 0 ? (
+        {error ? (
+          <div className="notif-empty">Couldn't load notifications: {error}</div>
+        ) : loading ? (
+          <div className="notif-empty">Loading notifications…</div>
+        ) : filtered.length === 0 ? (
           <div className="notif-empty">No notifications in this category.</div>
         ) : (
           filtered.map((n) => {
-            const { icon, bgColor, color } = getIconConfig(n.type);
+            const { icon, bgColor, color } = getIconConfig(n.type as NotificationType);
             return (
               <div
                 className={`notif-item${n.unread ? " notif-item--unread" : ""}`}
-                key={n.id}
+                key={n._id}
               >
                 <div className="notif-icon" style={{ background: bgColor, color }}>
                   {icon}
@@ -210,7 +199,7 @@ const Notifications: React.FC = () => {
                     {n.unread && <span className="notif-unread-dot" />}
                   </div>
                   <div className="notif-desc">{n.description}</div>
-                  <div className="notif-time">{n.time}</div>
+                  <div className="notif-time">{timeAgo(n.createdAt)}</div>
                 </div>
               </div>
             );

@@ -7,8 +7,8 @@ import cron from "node-cron";
 
 import app from "./app";
 import connectDB from "./config/db";
-import advertisementPool from "./services/advertisement/AdvertisementPool";
 import { initAnalyticsSocket } from "./socket/analyticssocket";
+import { initNotificationSocket } from "./socket/notificationsocket";
 import { cleanupPendingInquiries } from "./services/cleanup.service";
 
 const PORT = process.env.PORT || 5001;
@@ -17,7 +17,6 @@ async function startServer() {
   try {
     // Connect to MongoDB
     await connectDB();
-
 
     // Create HTTP Server
     const httpServer = http.createServer(app);
@@ -30,11 +29,11 @@ async function startServer() {
       },
     });
 
+    // Initialize sockets
     initAnalyticsSocket(io);
+    initNotificationSocket(io);
 
-    // ===========================
     // Daily Cleanup Job
-    // ===========================
     cron.schedule("0 2 * * *", async () => {
       console.log("Running scheduled cleanup...");
       await cleanupPendingInquiries();
@@ -44,7 +43,7 @@ async function startServer() {
 
     // Start Server
     httpServer.listen(PORT, () => {
-      console.log(`Server running on port ${PORT}`);
+      console.log(`🚀 Server running on port ${PORT}`);
     });
 
   } catch (error) {

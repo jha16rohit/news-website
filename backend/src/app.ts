@@ -14,6 +14,7 @@ import advertisementRoutes from "./routes/advertisement.routes";
 import advertisementPoolRoutes from "./routes/advertisementPool.routes";
 import contactUsRoutes from "./routes/contactus.routes";
 import siteUserRoutes from "./routes/siteuser.routes";
+import notificationRoutes from "./routes/notification.routes";
 import { analyticsPublicRouter, analyticsAdminRouter } from "./routes/analytics.routes"; // ← ADD
 import { startScheduler } from "./scheduler";
 import path from "path";
@@ -62,6 +63,7 @@ app.use("/api/advertisement",   advertisementRoutes);
 app.use("/api/advertisement-pool", advertisementPoolRoutes);
 app.use("/api/contact",         contactUsRoutes);
 
+app.use("/api/notifications", notificationRoutes);
 // ── Frontend User section ───────────────────────
 app.use("/api/users",           siteUserRoutes);
 
