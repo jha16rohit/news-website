@@ -1,272 +1,240 @@
 // server/src/socket/notificationsocket.ts
 //
-// Referenced in server.ts as `initNotificationSocket(io)` — add this call
-// alongside the existing `initAnalyticsSocket(io)` call.
+// Periodically scans News, Comment, and PageView for notification-worthy
+// conditions and upserts rows into Notification, using `dedupeKey` so the
+// same event never creates a second row (see models/Notification.ts).
 //
-// Admin dashboard clients join the "admin-notifications" room and receive
-// a push the moment a new notification-worthy event is detected.
-//
-// There are no direct hooks into News/Comment creation, so instead this
-// periodically SCANS for conditions (pending breaking news, new scheduled
-// articles, flagged/pending comments, view spikes) and upserts a
-// Notification row keyed by `dedupeKey` — the upsert is a no-op if that
-// exact event was already recorded, so nothing is ever double-created.
-// Only genuinely new rows get broadcast.
+// Newly-inserted notifications are pushed in real time to any admin client
+// subscribed via the "admin:subscribe-notifications" event (Notifications.tsx
+// emits this on socket connect).
 
-import { Server as SocketServer, Socket } from "socket.io";
+import { Server as SocketServer } from "socket.io";
 import News from "../models/News";
 import Comment from "../models/Comment";
 import PageView from "../models/Pageview";
-import Notification, { NotificationType, NotificationTab } from "../models/Notification";
+import Notification, { INotification } from "../models/Notification";
 
 const ADMIN_ROOM = "admin-notifications";
-const POLL_INTERVAL_MS = 30_000;
+const SCAN_INTERVAL_MS = 30_000; // how often we scan for new conditions
 
-// Tunable thresholds — picked conservatively since real traffic volume
-// varies by site. Adjust these to match your actual traffic if the
-// trending/spike notifications fire too often or too rarely.
-const TRENDING_MIN_VIEWS_PER_HOUR = 50;
-const TRENDING_MIN_JUMP_MULTIPLIER = 1.5; // must be 1.5x the prior hour
-const TRAFFIC_SPIKE_MIN_PCT = 100; // site-wide views must at least double hour-over-hour
+// ─── Tunables ────────────────────────────────────────────────────────────
+const SCHEDULED_REMINDER_WINDOW_MIN = 30;    // remind when publish is <=30 min away
+const TRAFFIC_SPIKE_MULTIPLIER = 2;          // "spike" = 2x the prior hour
+const TRAFFIC_SPIKE_MIN_PREV_VIEWS = 20;     // ignore noise on low-traffic hours
+const TRENDING_ARTICLE_VIEWS_PER_HOUR = 50;  // per-article "trending" threshold
 
-let ioRef: SocketServer | null = null;
-let pollTimer: ReturnType<typeof setInterval> | null = null;
+type NotificationInput = Pick<
+  INotification,
+  "type" | "tab" | "title" | "description" | "dedupeKey"
+>;
 
-function formatCount(v: number): string {
-  if (v >= 1_000_000) return (v / 1_000_000).toFixed(1) + "M";
-  if (v >= 1000) return (v / 1000).toFixed(1) + "K";
-  return String(v);
-}
+// Upserts a notification by dedupeKey. Only emits the socket event when the
+// row is actually newly created — repeat scans that hit the same event are
+// silent no-ops, which is what keeps "the same event never creates a second
+// row" true and stops the client from getting duplicate toasts.
+async function upsertNotification(io: SocketServer, doc: NotificationInput) {
+  const result: any = await Notification.findOneAndUpdate(
+    { dedupeKey: doc.dedupeKey },
+    { $setOnInsert: doc },
+    { upsert: true, new: true, rawResult: true, setDefaultsOnInsert: true },
+  );
 
-function formatTime(d: Date): string {
-  return d.toLocaleString("en-US", {
-    month: "short", day: "numeric", hour: "numeric", minute: "2-digit",
-  });
-}
-
-interface Candidate {
-  type: NotificationType;
-  tab: NotificationTab;
-  title: string;
-  description: string;
-  dedupeKey: string;
-}
-
-/**
- * Insert a notification if (and only if) `dedupeKey` hasn't been seen before.
- * Returns the doc if it was newly created, or null if it already existed.
- */
-async function tryCreate(c: Candidate) {
-  // Already exists?
-  const existing = await Notification.findOne({
-    dedupeKey: c.dedupeKey,
-  });
-
-  if (existing) {
-    return null;
+  const wasInserted = Boolean(result?.lastErrorObject?.upserted);
+  if (wasInserted && result?.value) {
+    io.to(ADMIN_ROOM).emit("notifications:new", result.value);
   }
-
-  const created = await Notification.create({
-    ...c,
-    unread: true,
-  });
-
-  return created;
 }
 
-async function broadcast(doc: any) {
-  if (!ioRef || !doc) return;
-  ioRef.to(ADMIN_ROOM).emit("notifications:new", doc);
-}
+// ─── Scan: Breaking news published ─────────────────────────────────────────
+async function scanBreakingPublished(io: SocketServer) {
+  const articles = await News.find({ status: "PUBLISHED", articleType: "BREAKING" })
+    .select("_id headline")
+    .lean();
 
-async function scanBreakingNews() {
-  const [pending, published] = await Promise.all([
-    News.find({ articleType: "BREAKING", status: "DRAFT" })
-      .select("_id headline").limit(50).lean(),
-    News.find({ articleType: "BREAKING", status: "PUBLISHED" })
-      .select("_id headline").sort({ publishedAt: -1 }).limit(20).lean(),
-  ]);
-
-  for (const n of pending) {
-    const created = await tryCreate({
-      type: "breaking", tab: "Breaking",
-      title: "Breaking News Pending",
-      description: `"${n.headline}" is waiting for your approval before going live.`,
-      dedupeKey: `breaking-pending-${n._id}`,
-    });
-    await broadcast(created);
-  }
-
-  for (const n of published) {
-    const created = await tryCreate({
-      type: "published", tab: "Breaking",
+  for (const a of articles as any[]) {
+    await upsertNotification(io, {
+      type: "breaking",
+      tab: "Breaking",
       title: "Breaking Published",
-      description: `"${n.headline}" has been published as breaking news.`,
-      dedupeKey: `breaking-published-${n._id}`,
+      description: `"${a.headline}" has been published as breaking news.`,
+      dedupeKey: `breaking-published-${a._id}`,
     });
-    await broadcast(created);
   }
 }
 
-async function scanScheduledNews() {
-  const scheduled = await News.find({ status: "SCHEDULED", scheduledAt: { $ne: null } })
-    .select("_id headline scheduledAt").limit(100).lean();
+// ─── Scan: Scheduled articles nearing publish time ─────────────────────────
+async function scanScheduledReminders(io: SocketServer) {
+  const now = new Date();
+  const windowEnd = new Date(now.getTime() + SCHEDULED_REMINDER_WINDOW_MIN * 60_000);
 
-  for (const n of scheduled) {
-    if (!n.scheduledAt) continue;
+  const articles = await News.find({
+    status: "SCHEDULED",
+    scheduledAt: { $gte: now, $lte: windowEnd },
+  })
+    .select("_id headline scheduledAt")
+    .lean();
 
-    const created = await tryCreate({
-      type: "scheduled", tab: "Scheduled",
-      title: "Article Scheduled",
-      description: `"${n.headline}" is scheduled to publish at ${formatTime(n.scheduledAt)}.`,
-      dedupeKey: `scheduled-${n._id}`,
+  for (const a of articles as any[]) {
+    const mins = Math.max(
+      1,
+      Math.round((new Date(a.scheduledAt).getTime() - now.getTime()) / 60_000),
+    );
+    await upsertNotification(io, {
+      type: "reminder",
+      tab: "Scheduled",
+      title: "Scheduled Article Publishing Soon",
+      description: `"${a.headline}" is scheduled to publish in ${mins} minute${mins === 1 ? "" : "s"}.`,
+      dedupeKey: `scheduled-reminder-${a._id}`,
     });
-    await broadcast(created);
-
-    const hoursUntil = (n.scheduledAt.getTime() - Date.now()) / 3_600_000;
-    if (hoursUntil > 0 && hoursUntil <= 24) {
-      const reminder = await tryCreate({
-        type: "reminder", tab: "Scheduled",
-        title: "Publish Reminder",
-        description: `"${n.headline}" will auto-publish at ${formatTime(n.scheduledAt)}.`,
-        dedupeKey: `reminder-${n._id}`,
-      });
-      await broadcast(reminder);
-    }
   }
 }
 
-async function scanComments() {
-  const [pendingByArticle, flagged] = await Promise.all([
-    Comment.aggregate([
-      { $match: { status: "pending" } },
-      { $group: { _id: "$newsId", count: { $sum: 1 } } },
-    ]),
-    Comment.find({ "reportedBy.0": { $exists: true } })
-      .select("_id newsId").limit(50).lean(),
-  ]);
+// ─── Scan: New comments ─────────────────────────────────────────────────────
+async function scanNewComments(io: SocketServer) {
+  // No time window here on purpose: dedupeKey already guarantees a comment
+  // can only ever produce one notification, so we just look at the most
+  // recent N approved comments each pass instead of a "createdAt >= X"
+  // window. A window-based query silently drops any comment older than the
+  // window at scan time — including everything that existed before this
+  // scanner was ever deployed — and it never gets a notification.
+  const comments = await Comment.find({ status: "approved" })
+    .sort({ createdAt: -1 })
+    .limit(200)
+    .select("_id newsId createdAt")
+    .lean();
 
-  const newsIds = [
-    ...pendingByArticle.map((r) => r._id),
-    ...flagged.map((c) => c.newsId),
-  ];
-  const newsDocs = await News.find({ _id: { $in: newsIds } }).select("headline").lean();
-  const titleMap = Object.fromEntries(newsDocs.map((n: any) => [String(n._id), n.headline]));
+  if (!comments.length) return;
 
-  for (const row of pendingByArticle) {
-    const title = titleMap[row._id] ?? "an article";
-    const created = await tryCreate({
-      type: "comment", tab: "Comments",
-      title: "New Comments",
-      // dedupeKey includes the count so the notification re-fires as the
-      // moderation queue grows for that article, not just on the first comment.
-      description: `${row.count} new comment${row.count === 1 ? "" : "s"} on "${title}" need moderation.`,
-      dedupeKey: `comment-pending-${row._id}-${row.count}`,
+  const headlineMap = await getHeadlineMap(comments.map((c: any) => c.newsId));
+
+  for (const c of comments as any[]) {
+    const headline = headlineMap[String(c.newsId)] || "an article";
+    await upsertNotification(io, {
+      type: "comment",
+      tab: "Comments",
+      title: "New Comment",
+      description: `A new comment was posted on "${headline}".`,
+      dedupeKey: `comment-new-${c._id}`,
     });
-    await broadcast(created);
   }
+}
 
-  for (const c of flagged) {
-    const title = titleMap[c.newsId] ?? "an article";
-    const created = await tryCreate({
-      type: "flagged", tab: "Comments",
+// ─── Scan: Flagged/reported comments ────────────────────────────────────────
+async function scanFlaggedComments(io: SocketServer) {
+  const comments = await Comment.find({ "reportedBy.0": { $exists: true } })
+    .select("_id newsId")
+    .lean();
+
+  if (!comments.length) return;
+
+  const headlineMap = await getHeadlineMap(comments.map((c: any) => c.newsId));
+
+  for (const c of comments as any[]) {
+    const headline = headlineMap[String(c.newsId)] || "an article";
+    await upsertNotification(io, {
+      type: "flagged",
+      tab: "Comments",
       title: "Comment Flagged",
-      description: `A comment on "${title}" has been flagged for review.`,
-      dedupeKey: `flagged-${c._id}`,
+      description: `A comment on "${headline}" was reported and needs review.`,
+      dedupeKey: `flagged-comment-${c._id}`,
     });
-    await broadcast(created);
   }
 }
 
-async function scanTrafficAndTrending() {
-  const now = Date.now();
-  const oneHourAgo = new Date(now - 3_600_000);
-  const twoHoursAgo = new Date(now - 7_200_000);
+// ─── Scan: Site-wide traffic spike ──────────────────────────────────────────
+function hourBucket(d: Date): string {
+  return d.toISOString().slice(0, 13); // e.g. "2026-07-26T15"
+}
 
-  const [currentHourRows, prevHourRows] = await Promise.all([
-    PageView.aggregate([
-      { $match: { createdAt: { $gte: oneHourAgo } } },
-      { $group: { _id: "$newsId", views: { $sum: 1 } } },
-    ]),
-    PageView.aggregate([
-      { $match: { createdAt: { $gte: twoHoursAgo, $lt: oneHourAgo } } },
-      { $group: { _id: "$newsId", views: { $sum: 1 } } },
-    ]),
+async function scanTrafficSpike(io: SocketServer) {
+  const now = new Date();
+  const currentHourStart = new Date(now);
+  currentHourStart.setMinutes(0, 0, 0);
+  const prevHourStart = new Date(currentHourStart.getTime() - 60 * 60_000);
+
+  const [currentCount, prevCount] = await Promise.all([
+    PageView.countDocuments({ createdAt: { $gte: currentHourStart, $lte: now } }),
+    PageView.countDocuments({ createdAt: { $gte: prevHourStart, $lt: currentHourStart } }),
   ]);
 
-  const prevMap = Object.fromEntries(prevHourRows.map((r) => [r._id, r.views]));
-  const hourKey = oneHourAgo.toISOString().slice(0, 13); // "YYYY-MM-DDTHH", one bucket per hour
+  if (prevCount < TRAFFIC_SPIKE_MIN_PREV_VIEWS) return;
+  if (currentCount < prevCount * TRAFFIC_SPIKE_MULTIPLIER) return;
 
-  // ── Per-article trending ──
-  const candidateIds = currentHourRows
-    .filter((r) => r.views >= TRENDING_MIN_VIEWS_PER_HOUR)
-    .map((r) => r._id);
-  const newsDocs = candidateIds.length
-    ? await News.find({ _id: { $in: candidateIds } }).select("headline").lean()
-    : [];
-  const titleMap = Object.fromEntries(newsDocs.map((n: any) => [String(n._id), n.headline]));
+  const pctIncrease = Math.round(((currentCount - prevCount) / prevCount) * 100);
 
-  for (const row of currentHourRows) {
-    if (row.views < TRENDING_MIN_VIEWS_PER_HOUR) continue;
-    const prev = prevMap[row._id] ?? 0;
-    if (prev > 0 && row.views < prev * TRENDING_MIN_JUMP_MULTIPLIER) continue;
+  await upsertNotification(io, {
+    type: "traffic",
+    tab: "Trending",
+    title: "Traffic Spike",
+    description: `Your site is experiencing a ${pctIncrease}% traffic spike compared to the previous hour.`,
+    // Bucketed by hour so a spike that persists across an hour only alerts once,
+    // but a *new* spike the following hour will alert again.
+    dedupeKey: `traffic-spike-${hourBucket(now)}`,
+  });
+}
 
-    const title = titleMap[row._id] ?? "An article";
-    const created = await tryCreate({
-      type: "trending", tab: "Trending",
+// ─── Scan: Per-article trending (views/hour) ────────────────────────────────
+async function scanTrendingArticles(io: SocketServer) {
+  const oneHourAgo = new Date(Date.now() - 60 * 60_000);
+
+  const results = await PageView.aggregate([
+    { $match: { createdAt: { $gte: oneHourAgo } } },
+    { $group: { _id: "$newsId", views: { $sum: 1 } } },
+    { $match: { views: { $gte: TRENDING_ARTICLE_VIEWS_PER_HOUR } } },
+  ]);
+
+  if (!results.length) return;
+
+  const headlineMap = await getHeadlineMap(results.map((r) => r._id));
+
+  for (const r of results) {
+    const headline = headlineMap[String(r._id)] || "An article";
+    await upsertNotification(io, {
+      type: "trending",
+      tab: "Trending",
       title: "Article Trending",
-      description: `"${title}" is trending with ${formatCount(row.views)} views in the last hour.`,
-      dedupeKey: `trending-${row._id}-${hourKey}`,
+      description: `"${headline}" is trending with ${r.views} views in the last hour.`,
+      dedupeKey: `trending-${r._id}-${hourBucket(new Date())}`,
     });
-    await broadcast(created);
-  }
-
-  // ── Site-wide traffic spike ──
-  const totalCurrent = currentHourRows.reduce((s, r) => s + r.views, 0);
-  const totalPrev = prevHourRows.reduce((s, r) => s + r.views, 0);
-  if (totalPrev > 0) {
-    const pctChange = Math.round(((totalCurrent - totalPrev) / totalPrev) * 100);
-    if (pctChange >= TRAFFIC_SPIKE_MIN_PCT) {
-      const created = await tryCreate({
-        type: "traffic", tab: "Trending",
-        title: "Traffic Spike",
-        description: `Your site is experiencing a ${pctChange}% traffic spike compared to the previous hour.`,
-        dedupeKey: `traffic-spike-${hourKey}`,
-      });
-      await broadcast(created);
-    }
   }
 }
 
-async function runScan() {
-  await Promise.all([
-    scanBreakingNews().catch((e) => console.error("scanBreakingNews error:", e)),
-    scanScheduledNews().catch((e) => console.error("scanScheduledNews error:", e)),
-    scanComments().catch((e) => console.error("scanComments error:", e)),
-    scanTrafficAndTrending().catch((e) => console.error("scanTrafficAndTrending error:", e)),
-  ]);
+// ─── Shared helper ───────────────────────────────────────────────────────────
+async function getHeadlineMap(newsIds: string[]): Promise<Record<string, string>> {
+  const uniqueIds = [...new Set(newsIds.filter(Boolean))];
+  if (!uniqueIds.length) return {};
+
+  const docs = await News.find({ _id: { $in: uniqueIds } }).select("headline").lean();
+  const map: Record<string, string> = {};
+  for (const d of docs as any[]) map[String(d._id)] = d.headline;
+  return map;
 }
 
-export function initNotificationSocket(io: SocketServer): void {
-  ioRef = io;
+// ─── Orchestration ───────────────────────────────────────────────────────────
+async function runScan(io: SocketServer) {
+  try {
+    await Promise.all([
+      scanBreakingPublished(io),
+      scanScheduledReminders(io),
+      scanNewComments(io),
+      scanFlaggedComments(io),
+      scanTrafficSpike(io),
+      scanTrendingArticles(io),
+    ]);
+  } catch (err) {
+    console.error("notificationsocket scan error:", err);
+  }
+}
 
-  io.on("connection", (socket: Socket) => {
+export function initNotificationSocket(io: SocketServer) {
+  io.on("connection", (socket) => {
     socket.on("admin:subscribe-notifications", () => {
       socket.join(ADMIN_ROOM);
     });
-
-    socket.on("admin:unsubscribe-notifications", () => {
-      socket.leave(ADMIN_ROOM);
-    });
-
-    socket.on("disconnect", () => {
-      socket.leave(ADMIN_ROOM);
-    });
   });
 
-  if (pollTimer) clearInterval(pollTimer);
-  runScan().catch(() => {}); // immediate scan on boot
-  pollTimer = setInterval(() => {
-    runScan().catch(() => {});
-  }, POLL_INTERVAL_MS);
+  // Run once at boot so notifications aren't stale for up to SCAN_INTERVAL_MS,
+  // then keep scanning on an interval.
+  runScan(io);
+  setInterval(() => runScan(io), SCAN_INTERVAL_MS);
 }
