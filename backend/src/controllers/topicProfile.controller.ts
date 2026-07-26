@@ -2,14 +2,20 @@ import { Request, Response } from "express";
 import TopicProfile from "../models/TopicProfile";
 import News from "../models/News";
 
+// Articles are linked to a topic profile by tag name, not by an ID field —
+// this is the same convention news.controller.ts already uses in
+// getNewsByTopicSlug (`News.find({ tags: topic.name })`). There is no
+// `topicProfileId` field on News, so counting against one always returned 0.
+async function countLinkedArticles(topicName: string): Promise<number> {
+  return News.countDocuments({ tags: topicName });
+}
+
 // ✅ CREATE
 export const createProfile = async (req: Request, res: Response) => {
   try {
     const profile = await TopicProfile.create(req.body);
 
-    const linkedArticles = await News.countDocuments({
-      topicProfileId: String(profile._id),
-    });
+    const linkedArticles = await countLinkedArticles(profile.name);
 
     res.status(201).json({
       ...profile.toObject(),
@@ -28,9 +34,7 @@ export const getProfiles = async (_req: Request, res: Response) => {
 
     const result = await Promise.all(
       profiles.map(async (p) => {
-        const linkedArticles = await News.countDocuments({
-          topicProfileId: String(p._id),
-        });
+        const linkedArticles = await countLinkedArticles(p.name);
         return { ...p.toObject(), linkedArticles };
       })
     );
@@ -54,9 +58,7 @@ export const updateProfile = async (req: Request, res: Response) => {
     if (!updated)
       return res.status(404).json({ message: "Profile not found" });
 
-    const linkedArticles = await News.countDocuments({
-      topicProfileId: id,
-    });
+    const linkedArticles = await countLinkedArticles(updated.name);
 
     res.json({ ...updated.toObject(), linkedArticles });
   } catch (err) {
