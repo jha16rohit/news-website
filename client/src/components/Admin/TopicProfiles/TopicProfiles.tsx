@@ -397,6 +397,11 @@ export default function TopicProfiles() {
   );
 
   const totalLinked = profiles.reduce((s, p) => s + (p.linkedArticles ?? 0), 0);
+  // TopicProfile has no explicit active/inactive status field, so "Active"
+  // is defined as profiles that are actually in use — i.e. linked to at
+  // least one article. Without this, "Active" just duplicated "Total
+  // Profiles" and told you nothing new.
+  const activeCount = profiles.filter((p) => (p.linkedArticles ?? 0) > 0).length;
 
   return (
     <div className="tp-page">
@@ -417,21 +422,57 @@ export default function TopicProfiles() {
         <div className="tp-stat-card">
           <div className="tp-stat-icon tp-icon-blue"><User size={20} /></div>
           <div>
-            <div className="tp-stat-num">{profiles.length}</div>
+            <div
+              className="tp-stat-num"
+              style={{
+                display: "block",
+                visibility: "visible",
+                fontSize: 24,
+                fontWeight: 700,
+                lineHeight: 1.2,
+                color: "#111827",
+              }}
+            >
+              {profiles.length}
+            </div>
             <div className="tp-stat-label">Total Profiles</div>
           </div>
         </div>
         <div className="tp-stat-card">
           <div className="tp-stat-icon tp-icon-green"><User size={20} /></div>
           <div>
-            <div className="tp-stat-num">{profiles.length}</div>
+            <div
+              className="tp-stat-num"
+              style={{
+                display: "block",
+                visibility: "visible",
+                fontSize: 24,
+                fontWeight: 700,
+                lineHeight: 1.2,
+                color: "#111827",
+              }}
+            >
+              {activeCount}
+            </div>
             <div className="tp-stat-label">Active</div>
           </div>
         </div>
         <div className="tp-stat-card">
           <div className="tp-stat-icon tp-icon-yellow"><FileText size={20} /></div>
           <div>
-            <div className="tp-stat-num">{totalLinked}</div>
+            <div
+              className="tp-stat-num"
+              style={{
+                display: "block",
+                visibility: "visible",
+                fontSize: 24,
+                fontWeight: 700,
+                lineHeight: 1.2,
+                color: "#111827",
+              }}
+            >
+              {totalLinked}
+            </div>
             <div className="tp-stat-label">Linked Articles</div>
           </div>
         </div>
