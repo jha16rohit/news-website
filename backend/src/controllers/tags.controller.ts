@@ -118,7 +118,7 @@ export const setTagTrending = async (req: Request, res: Response) => {
     const tag = await Tag.findByIdAndUpdate(
       id,
       { isTrending },
-      { new: true }
+      { returnDocument: 'after' }
     );
 
     if (!tag) return res.status(404).json({ message: "Tag not found" });

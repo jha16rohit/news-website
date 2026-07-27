@@ -36,7 +36,7 @@ async function upsertNotification(io: SocketServer, doc: NotificationInput) {
   const result: any = await Notification.findOneAndUpdate(
     { dedupeKey: doc.dedupeKey },
     { $setOnInsert: doc },
-    { upsert: true, new: true, rawResult: true, setDefaultsOnInsert: true },
+    { upsert: true, returnDocument: 'after', rawResult: true, setDefaultsOnInsert: true },
   );
 
   const wasInserted = Boolean(result?.lastErrorObject?.upserted);

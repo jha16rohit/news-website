@@ -71,7 +71,7 @@ export const updateFooterSettings = async (
       { id: SINGLETON_ID },
       updateData,
       {
-        new: true,
+        returnDocument: 'after',
         upsert: true,
         setDefaultsOnInsert: true,
       }

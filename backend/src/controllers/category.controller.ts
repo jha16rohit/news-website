@@ -228,7 +228,7 @@ export const updateCategory = async (req: Request, res: Response) => {
       updateData.parentId = parentId ? String(parentId) : null;
 
     const updated = await Category.findByIdAndUpdate(id, updateData, {
-      new: true,
+      returnDocument: 'after',
     });
 
     const parent = updated?.parentId
@@ -292,7 +292,7 @@ export const toggleFeatured = async (req: Request, res: Response) => {
     const updated = await Category.findByIdAndUpdate(
       id,
       { featured: !category.featured },
-      { new: true }
+      { returnDocument: 'after' }
     );
     res.json({ success: true, updated });
   } catch (error) {
@@ -312,7 +312,7 @@ export const toggleActive = async (req: Request, res: Response) => {
     const updated = await Category.findByIdAndUpdate(
       id,
       { active: !category.active },
-      { new: true }
+      { returnDocument: 'after' }
     );
     res.json({ success: true, updated });
   } catch (error) {

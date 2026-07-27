@@ -119,7 +119,7 @@ async function bumpAnalyticsBucket(
     await Analytics.findOneAndUpdate(
       { newsId: id, date },
       { $inc: inc },
-      { upsert: true, new: true },
+      { upsert: true, returnDocument: 'after' },
     ).catch(() => {});
   }
 }
@@ -158,7 +158,7 @@ export async function trackReadTime(req: Request, res: Response) {
     const updated = await PageView.findOneAndUpdate(
       { viewId },
       { readTime: seconds },
-      { new: true },
+      { returnDocument: 'after' },
     );
 
     if (updated && newsId) {

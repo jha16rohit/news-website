@@ -321,7 +321,7 @@ export const updateProfile = async (
     const updatedUser = await User.findByIdAndUpdate(
       req.user.id,
       { name, email, phone },
-      { new: true, runValidators: true }
+      { returnDocument: 'after', runValidators: true }
     ).select("name email phone role");
 
     res.json({ message: "Profile updated successfully", user: updatedUser });

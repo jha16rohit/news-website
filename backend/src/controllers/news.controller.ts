@@ -710,7 +710,7 @@ export const updateNews = async (req: AuthRequest, res: Response) => {
       updateData.canonicalUrl = canonicalUrl?.trim() || null;
     if (status !== undefined) updateData.status = status;
 
-    const updated = await News.findByIdAndUpdate(id, updateData, { new: true })
+    const updated = await News.findByIdAndUpdate(id, updateData, { returnDocument: 'after' })
       .populate("authorId", "name")
       .populate("categoryId", "name color");
 
@@ -780,7 +780,7 @@ export const togglePauseBreaking = async (req: AuthRequest, res: Response) => {
     const updated = await News.findByIdAndUpdate(
       id,
       { statusType: newStatus },
-      { new: true },
+      { returnDocument: 'after' },
     );
 
     res.json({ success: true, statusType: newStatus, updated });
@@ -877,7 +877,7 @@ export const addLiveUpdate = async (req: AuthRequest, res: Response) => {
     const updated = await News.findByIdAndUpdate(
       id,
       { liveUpdates: [newUpdate, ...existing] },
-      { new: true },
+      { returnDocument: 'after' },
     );
 
     res.json({ success: true, update: newUpdate, news: updated });

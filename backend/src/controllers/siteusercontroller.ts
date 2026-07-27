@@ -186,7 +186,7 @@ export const googleAuthUser = async (req: Request, res: Response) => {
             googleId,
 profilePic: user.profilePic || picture || undefined,
           },
-          { new: true }
+          { returnDocument: 'after' }
         );
       }
     } else {
@@ -286,7 +286,7 @@ export const updateMe = async (req: Request, res: Response) => {
     if (profilePic !== undefined) updateData.profilePic = profilePic;
 
     const updated = await SiteUser.findByIdAndUpdate(userId, updateData, {
-      new: true,
+      returnDocument: 'after',
     }).select("name email phone profilePic role");
 
     return res.status(200).json({

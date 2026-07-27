@@ -51,7 +51,7 @@ export const updateProfile = async (req: Request, res: Response) => {
     const id = req.params.id as string;
 
     const updated = await TopicProfile.findByIdAndUpdate(id, req.body, {
-      new: true,
+      returnDocument: 'after',
       runValidators: true,
     });
 

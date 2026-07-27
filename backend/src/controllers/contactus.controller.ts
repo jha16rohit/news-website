@@ -144,7 +144,7 @@ export const updateContactUsSettings = async (req: Request, res: Response) => {
         formVisible, formTitle, formSubtitle, formSuccessMsg, subjectOptions,
         faqVisible, faqTitle,
       },
-      { upsert: true, new: true, setDefaultsOnInsert: true }
+      { upsert: true, returnDocument: 'after', setDefaultsOnInsert: true }
     );
 
     // Replace contact info
@@ -243,7 +243,7 @@ export const markMessageRead = async (req: Request, res: Response) => {
     const msg = await ContactMessage.findByIdAndUpdate(
       id,
       { read: true },
-      { new: true }
+      { returnDocument: 'after' }
     );
     res.json(msg);
   } catch (err: any) {
@@ -259,7 +259,7 @@ export const replyToMessage = async (req: Request, res: Response) => {
     const msg = await ContactMessage.findByIdAndUpdate(
       id,
       { replied: true, replyText, read: true },
-      { new: true }
+      { returnDocument: 'after' }
     );
 
     if (!msg) return res.status(404).json({ message: "Message not found" });

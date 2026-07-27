@@ -221,7 +221,7 @@ if (rejectionReason !== undefined) {
     const inquiry = await AdInquiry.findByIdAndUpdate(
       req.params.id,
       update,
-      { new: true }
+      { returnDocument: 'after' }
     );
     if (!inquiry)
       return res.status(404).json({ message: "Inquiry not found" });

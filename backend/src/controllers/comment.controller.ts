@@ -310,7 +310,7 @@ export const adminUpdateComment = async (req: AuthRequest, res: Response) => {
     const comment = await Comment.findByIdAndUpdate(
       String(req.params.id),
       { status, reportedBy: [] },
-      { new: true }
+      { returnDocument: 'after' }
     );
 
     if (!comment) return res.status(404).json({ message: "Comment not found." });
