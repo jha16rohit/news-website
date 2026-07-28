@@ -41,23 +41,6 @@ function toSlug(name: string) {
   return "/tag-" + Math.abs(hash).toString(36);
 }
 
-function toRawSlug(name: string) {
-  const latinSlug = name
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, "")
-    .replace(/^-|-$/g, "");
-    
-  if (latinSlug) {
-    return latinSlug;
-  }
-
-  let hash = 0;
-  for (let i = 0; i < name.length; i++) {
-    hash = (Math.imul(31, hash) + name.charCodeAt(i)) | 0;
-  }
-  return "tag-" + Math.abs(hash).toString(36);
-}
-
 function formatDate(iso: string) {
   return new Date(iso).toLocaleDateString("en-IN", {
     day: "2-digit",

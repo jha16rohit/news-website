@@ -1,4 +1,6 @@
+import { useState, useEffect } from "react"; // 👇 Added useState & useEffect
 import { BrowserRouter, Routes, Route } from "react-router-dom";
+import ScrollToTop from "./components/ScrollToTop";
 import UserLayout from "./components/User/UserLayout/UserLayout";
 import UserDashboard from "./components/User/UserDashboard/UserDashboard";
 import ArticleDetail from "./components/User/ArticalDetails/ArticalDetails";
@@ -37,18 +39,45 @@ import TagPage from "./components/User/TagPage/TagPage";
 import { AuthProvider } from "./context/AuthContext";
 import UserInsights from "./components/Admin/UserInsights/UserInsights";  
 
+// 👇 IMPORTED THE NEW ERROR PAGES 👇
+import NotFound404 from "./components/User/Errors/NotFound404";
+import ServerError500 from "./components/User/Errors/ServerError500";
+import AccessDenied403 from "./components/User/Errors/AccessDenied403";
+import OfflineFallback from "./components/User/Errors/OfflineFallback";
+
 export default function App() {
+  // 👇 ADDED: Internet connection state tracker 👇
+  const [isOnline, setIsOnline] = useState(navigator.onLine);
+
+  useEffect(() => {
+    const handleOnline = () => setIsOnline(true);
+    const handleOffline = () => setIsOnline(false);
+
+    window.addEventListener('online', handleOnline);
+    window.addEventListener('offline', handleOffline);
+
+    return () => {
+      window.removeEventListener('online', handleOnline);
+      window.removeEventListener('offline', handleOffline);
+    };
+  }, []);
+
+  // 👇 ADDED: If internet drops, instantly show the Offline page 👇
+  if (!isOnline) {
+    return <OfflineFallback />;
+  }
+
   return (
-    
       <BrowserRouter>
+      <ScrollToTop/>
         <Routes>
 
           {/* USER ROUTES */}
           <Route element={
-    <AuthProvider>
-      <UserLayout />
-    </AuthProvider>
-  }>
+            <AuthProvider>
+              <UserLayout />
+            </AuthProvider>
+          }>
             <Route path="/" element={<UserDashboard />} />
 
             {/* ArticleDetail — handles both MongoDB ObjectId and URL slugs */}
@@ -66,8 +95,6 @@ export default function App() {
             <Route path="/tag/:tagSlug" element={<TagPage />} />
              <Route path="/category/:slug" element={<CategoryTemplate />} />
           </Route>
-
-         
 
           {/* ADMIN LOGIN */}
           <Route path="/admin/login-xyzsft" element={<Login />} />
@@ -105,7 +132,13 @@ export default function App() {
             <Route path="user-insights" element={<UserInsights />} />
           </Route>
 
-          <Route path="*" element={<h1>Page Not Found</h1>} />
+          {/* 👇 ADDED: EXPLICIT ERROR ROUTES 👇 */}
+          <Route path="/500" element={<ServerError500 />} />
+          <Route path="/403" element={<AccessDenied403 />} />
+
+          {/* 👇 REPLACED: 404 Catch-All Route (Must stay at the bottom!) 👇 */}
+          <Route path="*" element={<NotFound404 />} />
+          
         </Routes>
       </BrowserRouter>
   );

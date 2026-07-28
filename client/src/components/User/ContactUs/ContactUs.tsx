@@ -4,7 +4,7 @@
 // On submit → POST /api/contact/messages → stored in DB → email to admin.
 // Success screen polls GET /api/contact/messages/:id for admin reply.
 
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect } from "react";
 import {
   Phone, Mail, MapPin, Clock, Globe,
   ChevronDown, ChevronUp, Send, CheckCircle,
@@ -84,7 +84,6 @@ const SuccessScreen: React.FC<{
   const [reply,    setReply]    = useState<string | null>(null);
   const [checking, setChecking] = useState(false);
   const [newReply, setNewReply] = useState(false);
-  const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const checkReply = async (): Promise<boolean> => {
     try {
