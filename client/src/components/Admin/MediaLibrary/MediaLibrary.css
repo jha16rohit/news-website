@@ -427,6 +427,92 @@
 }
 .ml-empty p { font-size: 15px; color: #9CA3AF; }
 
+.ml-card-action.upload{
+    background:#2563eb;
+}
+
+.ml-card-action.upload:hover{
+    background:#1d4ed8;
+}
+
+.ml-card-overlay--visible{
+    opacity:1 !important;
+}
+
+.ml-modal-backdrop{
+    position:fixed;
+    inset:0;
+    background:rgba(0,0,0,.55);
+    display:flex;
+    justify-content:center;
+    align-items:center;
+    z-index:9999;
+    backdrop-filter:blur(4px);
+}
+
+.ml-modal{
+    width:420px;
+    background:white;
+    border-radius:18px;
+    padding:28px;
+    text-align:center;
+    animation:popup .25s ease;
+}
+
+.danger-icon{
+    color:#dc2626;
+    margin-bottom:12px;
+}
+
+.ml-modal h3{
+    margin:0;
+    font-size:22px;
+}
+
+.ml-modal p{
+    color:#666;
+    margin:12px 0 24px;
+}
+
+.ml-modal-actions{
+    display:flex;
+    justify-content:flex-end;
+    gap:12px;
+}
+
+.cancel-btn{
+    padding:10px 18px;
+    border:none;
+    border-radius:10px;
+    background:#f3f4f6;
+    cursor:pointer;
+}
+
+.delete-btn{
+    padding:10px 18px;
+    border:none;
+    border-radius:10px;
+    background:#dc2626;
+    color:white;
+    cursor:pointer;
+}
+
+.delete-btn:hover{
+    background:#b91c1c;
+}
+
+@keyframes popup{
+    from{
+        opacity:0;
+        transform:scale(.9);
+    }
+    to{
+        opacity:1;
+        transform:scale(1);
+    }
+}
+
+
 /* ── RESPONSIVE ── */
 @media (max-width: 1024px) {
   .ml-storage-pill { display: none; }

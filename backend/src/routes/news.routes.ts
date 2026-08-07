@@ -13,6 +13,7 @@ import {
   togglePauseBreaking,
   getMediaLibrary,
   deleteMediaImage,
+  uploadMediaImage, 
   getTagsInPublishedNews,
   getPublishedNews,
   getRecentNews,
@@ -30,6 +31,12 @@ const router = Router();
 // ─── Media Library ──────────────────────────────────────────────
 router.get("/media-library", getMediaLibrary);
 router.delete("/media-library/:newsId", protect, deleteMediaImage);
+router.patch(
+  "/media-library/:newsId/upload",
+  protect,
+  uploadToCloudinary,
+  uploadMediaImage
+);
 
 // ─── Specific named GET routes (MUST be before /:id and /:slug) ─
 router.get("/tags-in-use",     getTagsInPublishedNews);

@@ -221,6 +221,31 @@ export const deleteMediaImage = (newsId: string) =>
     method: "DELETE",
   });
 
+
+  // ─── UPLOAD / REPLACE MEDIA IMAGE ─────────────────────────────────────────────
+export const uploadMediaImage = async (
+  newsId: string,
+  file: File
+): Promise<any> => {
+  const formData = new FormData();
+
+  formData.append("image", file);
+
+  const res = await fetch(`/api/news/media-library/${newsId}/upload`, {
+    method: "PATCH",
+    body: formData,
+    credentials: "include",
+  });
+
+  const json = await res.json().catch(() => ({}));
+
+  if (!res.ok) {
+    throw new Error(json?.message || `Server error ${res.status}`);
+  }
+
+  return json;
+};
+
   // ─── BREAKING TICKER NEWS ───────────────────────────────────────
 export const getBreakingTickerNews = async () => {
 

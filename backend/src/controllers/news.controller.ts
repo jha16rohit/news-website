@@ -966,12 +966,8 @@ export const getMediaLibrary = async (req: Request, res: Response) => {
     const skip = (pageNum - 1) * limitNum;
 
     const filter = {
-      $or: [
-        { featuredImage: { $exists: true, $ne: null } },
-        { content: { $regex: "<img" } },
-      ],
-      featuredImage: { $not: /^blob:/ },
-    };
+  featuredImage: { $not: /^blob:/ },
+};
 
     const [items, total] = await Promise.all([
       News.find(filter)
@@ -984,39 +980,39 @@ export const getMediaLibrary = async (req: Request, res: Response) => {
       News.countDocuments(filter),
     ]);
 
-    const formatted = items.flatMap((item) => {
-      const contentImages = extractImagesFromContent(item.content || "");
-      return [
-        ...(item.featuredImage && !item.featuredImage.startsWith("blob:")
-          ? [
-              {
-                newsId: String(item._id),
-                url: item.featuredImage,
-                headline: item.headline,
-                caption: item.imageCaption,
-                credit: item.photoCredit,
-                createdAt: item.createdAt,
-                status: item.status,
-                views: item.views,
-                type: "featured" as const,
-              },
-            ]
-          : []),
-        ...contentImages
-          .filter((url) => !url.startsWith("blob:"))
-          .map((url) => ({
-            newsId: String(item._id),
-            url,
-            headline: item.headline,
-            caption: null,
-            credit: null,
-            createdAt: item.createdAt,
-            status: item.status,
-            views: item.views,
-            type: "content" as const,
-          })),
-      ];
-    });
+   const formatted = items.flatMap((item) => {
+  const contentImages = extractImagesFromContent(item.content || "");
+
+  const featuredItem = {
+    newsId: String(item._id),
+    url: item.featuredImage ?? null,
+    headline: item.headline,
+    caption: item.imageCaption ?? null,
+    credit: item.photoCredit ?? null,
+    createdAt: item.createdAt,
+    status: item.status,
+    views: item.views,
+    type: "featured" as const,
+  };
+
+  return [
+    featuredItem,
+
+    ...contentImages
+      .filter((url) => !url.startsWith("blob:"))
+      .map((url) => ({
+        newsId: String(item._id),
+        url,
+        headline: item.headline,
+        caption: null,
+        credit: null,
+        createdAt: item.createdAt,
+        status: item.status,
+        views: item.views,
+        type: "content" as const,
+      })),
+  ];
+});
 
     res.json({ items: formatted, total, page: pageNum, limit: limitNum });
   } catch (error) {
@@ -1278,6 +1274,68 @@ export const getNewsByTopicSlug = async (req: Request, res: Response) => {
     res.status(500).json({
       success: false,
       message: "Failed to fetch topic news",
+    });
+  }
+};
+
+// ─── UPLOAD / REPLACE FEATURED IMAGE ──────────────────────────────────────────────
+export const uploadMediaImage = async (
+  req: AuthRequest,
+  res: Response
+) => {
+  try {
+    const newsId = String(req.params.newsId);
+
+    const article = await News.findById(newsId);
+
+    if (!article) {
+      return res.status(404).json({
+        success: false,
+        message: "Article not found",
+      });
+    }
+
+    // uploadedImageUrl is already provided by your upload middleware
+    const imageUrl = (req as any).uploadedImageUrl;
+
+    if (!imageUrl) {
+      return res.status(400).json({
+        success: false,
+        message: "Image upload failed.",
+      });
+    }
+
+    // Delete old image from Cloudinary (optional but recommended)
+    if (article.featuredImage) {
+      try {
+        const publicId = article.featuredImage
+          .split("/")
+          .slice(-2)
+          .join("/")
+          .split(".")[0];
+
+        await cloudinary.uploader.destroy(publicId);
+      } catch (err) {
+        console.warn("Old image delete warning:", err);
+      }
+    }
+
+    article.featuredImage = imageUrl;
+
+    await article.save();
+
+    res.json({
+      success: true,
+      message: "Featured image uploaded successfully.",
+      image: imageUrl,
+      article,
+    });
+  } catch (error) {
+    console.error("uploadMediaImage error:", error);
+
+    res.status(500).json({
+      success: false,
+      message: "Error uploading image",
     });
   }
 };

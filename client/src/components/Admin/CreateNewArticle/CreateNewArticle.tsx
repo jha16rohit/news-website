@@ -1197,11 +1197,11 @@ const CreateNewArticle: React.FC = () => {
               className="cna-input"
               placeholder="Write a short summary of the article..."
               value={summary}
-              maxLength={160}
+              maxLength={250}
               onChange={(e) => setSummary(e.target.value)}
             />
             <p className="cna-hint">
-              {summary.length}/160 characters • This will appear below the headline
+              {summary.length}/250 characters • This will appear below the headline
             </p>
           </section>
 
@@ -1279,9 +1279,9 @@ const CreateNewArticle: React.FC = () => {
                 <div className="cna-field-group">
                   <label className="cna-field-label">Meta Title</label>
                   <input className="cna-input" placeholder="SEO-optimized title..."
-                    value={metaTitle} maxLength={60}
+                    value={metaTitle} maxLength={100}
                     onChange={e => setMetaTitle(e.target.value)} />
-                  <p className="cna-hint">{metaTitle.length}/60 characters</p>
+                  <p className="cna-hint">{metaTitle.length}/100 characters</p>
                 </div>
                 <div className="cna-field-group">
                   <label className="cna-field-label">Meta Description</label>

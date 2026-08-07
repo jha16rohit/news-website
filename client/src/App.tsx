@@ -45,6 +45,8 @@ import ServerError500 from "./components/User/Errors/ServerError500";
 import AccessDenied403 from "./components/User/Errors/AccessDenied403";
 import OfflineFallback from "./components/User/Errors/OfflineFallback";
 
+import { Toaster } from "react-hot-toast";
+
 export default function App() {
   // 👇 ADDED: Internet connection state tracker 👇
   const [isOnline, setIsOnline] = useState(navigator.onLine);
@@ -68,6 +70,11 @@ export default function App() {
   }
 
   return (
+    <>
+    <Toaster
+        position="top-right"
+        reverseOrder={false}
+      />
       <BrowserRouter>
       <ScrollToTop/>
         <Routes>
@@ -141,5 +148,6 @@ export default function App() {
           
         </Routes>
       </BrowserRouter>
+      </>
   );
 }

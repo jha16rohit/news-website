@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useMemo, useState } from "react";
 import {
   Area,
   AreaChart,
@@ -12,51 +12,92 @@ import {
   Cell,
 } from "recharts";
 import "./UserInsights.css";
-import { fetchUserInsights } from "../../../api/analytics";
 
 /* ------------------------------------------------------------------ */
-/*  Fallback data — shown briefly while the real data loads            */
+/*  Dummy data                                                         */
 /* ------------------------------------------------------------------ */
 
-const defaultMonthlyData = [
-  { label: "Jan", users: 0 }, { label: "Feb", users: 0 }, { label: "Mar", users: 0 },
-  { label: "Apr", users: 0 }, { label: "May", users: 0 }, { label: "Jun", users: 0 },
-  { label: "Jul", users: 0 }, { label: "Aug", users: 0 }, { label: "Sep", users: 0 },
-  { label: "Oct", users: 0 }, { label: "Nov", users: 0 }, { label: "Dec", users: 0 },
+const monthlyData = [
+  { label: "Jan", users: 120 },
+  { label: "Feb", users: 165 },
+  { label: "Mar", users: 200 },
+  { label: "Apr", users: 260 },
+  { label: "May", users: 340 },
+  { label: "Jun", users: 390 },
+  { label: "Jul", users: 450 },
+  { label: "Aug", users: 410 },
+  { label: "Sep", users: 470 },
+  { label: "Oct", users: 505 },
+  { label: "Nov", users: 540 },
+  { label: "Dec", users: 590 },
 ];
 
-const defaultYearlyData: { label: string; users: number }[] = [];
-
-const defaultGrowthRateStats = [
-  { key: "highest", label: "Highest Growth Month", primary: "—", secondary: "" },
-  { key: "lowest", label: "Lowest Growth Month", primary: "—", secondary: "" },
-  { key: "average", label: "Average Monthly Growth", primary: "—", secondary: "" },
-  { key: "current", label: "Current Growth", primary: "—", secondary: "" },
+const yearlyData = [
+  { label: "2020", users: 1200 },
+  { label: "2021", users: 2400 },
+  { label: "2022", users: 4100 },
+  { label: "2023", users: 6800 },
+  { label: "2024", users: 9500 },
+  { label: "2025", users: 12458 },
 ];
 
-const defaultAdRequestSummary = [
-  { key: "pending", label: "Pending", value: 0, color: "var(--uid-color-warning)" },
-  { key: "approved", label: "Approved", value: 0, color: "var(--uid-color-success)" },
-  { key: "rejected", label: "Rejected", value: 0, color: "var(--uid-color-danger)" },
-  { key: "total", label: "Total", value: 0, color: "var(--uid-color-primary)" },
+const growthRateStats = [
+  { key: "highest", label: "Highest Growth Month", primary: "July", secondary: "+22%" },
+  { key: "lowest", label: "Lowest Growth Month", primary: "February", secondary: "+3%" },
+  { key: "average", label: "Average Monthly Growth", primary: "12.4%", secondary: "" },
+  { key: "current", label: "Current Growth", primary: "+16%", secondary: "" },
 ];
 
-const defaultLoginHeatmapData = [
-  { key: "morning", label: "Morning", range: "6 AM - 12 PM", logins: 0, icon: "sun" },
-  { key: "afternoon", label: "Afternoon", range: "12 PM - 5 PM", logins: 0, icon: "cloud-sun" },
-  { key: "evening", label: "Evening", range: "5 PM - 10 PM", logins: 0, icon: "sunset" },
-  { key: "night", label: "Night", range: "10 PM - 6 AM", logins: 0, icon: "moon" },
+const adRequestSummary = [
+  { key: "pending", label: "Pending", value: 18, color: "var(--uid-color-warning)" },
+  { key: "approved", label: "Approved", value: 95, color: "var(--uid-color-success)" },
+  { key: "rejected", label: "Rejected", value: 13, color: "var(--uid-color-danger)" },
+  { key: "total", label: "Total", value: 126, color: "var(--uid-color-primary)" },
 ];
 
-// Icon per time-of-day period never changes — only the login counts do.
-const heatmapIconByKey: Record<string, string> = {
-  morning: "sun",
-  afternoon: "cloud-sun",
-  evening: "sunset",
-  night: "moon",
-};
+const adPieData = [
+  { name: "Approved", value: 95, color: "var(--uid-color-success)" },
+  { name: "Pending", value: 18, color: "var(--uid-color-warning)" },
+  { name: "Rejected", value: 13, color: "var(--uid-color-danger)" },
+];
 
-const defaultEngagementStats = [
+const loginHeatmapData = [
+  {
+    key: "morning",
+    label: "Morning",
+    range: "6 AM - 12 PM",
+    logins: 2145,
+    icon: "sun",
+  },
+  {
+    key: "afternoon",
+    label: "Afternoon",
+    range: "12 PM - 5 PM",
+    logins: 3210,
+    icon: "cloud-sun",
+  },
+  {
+    key: "evening",
+    label: "Evening",
+    range: "5 PM - 10 PM",
+    logins: 5478,
+    icon: "sunset",
+  },
+  {
+    key: "night",
+    label: "Night",
+    range: "10 PM - 6 AM",
+    logins: 1126,
+    icon: "moon",
+  },
+];
+
+const totalLogins = loginHeatmapData.reduce((sum, item) => sum + item.logins, 0);
+const peakLoginKey = loginHeatmapData.reduce((max, item) =>
+  item.logins > max.logins ? item : max
+).key;
+
+const engagementStats = [
   {
     key: "logins",
     label: "Average Login Per User",
@@ -254,133 +295,18 @@ const CustomPieTooltip: React.FC<any> = ({ active, payload }) => {
 /*  Main component                                                     */
 /* ------------------------------------------------------------------ */
 
-interface UserInsightsData {
-  stats: {
-    totalUsers: { value: number; newThisMonth: number };
-    activeUsers: { value: number; pctActive: number };
-    growthRate: { value: number };
-    newUsers: { value: number };
-    adRequests: { value: number; pending: number };
-    returningUsers: { pct: number };
-  };
-  growthChart: {
-    monthly: { label: string; users: number }[];
-    yearly: { label: string; users: number }[];
-  };
-  growthRateStats: {
-    highest: { month: string; pct: number };
-    lowest: { month: string; pct: number };
-    average: number;
-    current: number;
-  };
-  adRequestSummary: { pending: number; approved: number; rejected: number; total: number };
-  loginActivity: { key: string; label: string; range: string; logins: number }[];
-  engagement: { avgLoginsPerUser: number; avgSessionMinutes: number; avgArticlesRead: number };
-}
-
 const UserInsights: React.FC = () => {
   const [graphMode, setGraphMode] = useState<"monthly" | "yearly">("monthly");
-  const [data, setData] = useState<UserInsightsData | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    let cancelled = false;
-
-    fetchUserInsights()
-      .then((json: UserInsightsData) => {
-        if (!cancelled) setData(json);
-      })
-      .catch((err: any) => {
-        if (!cancelled) setError(err?.message || "Failed to load user insights.");
-      })
-      .finally(() => {
-        if (!cancelled) setLoading(false);
-      });
-
-    return () => { cancelled = true; };
-  }, []);
-
-  // NOTE: the admin API (getUserInsights) is currently a stub that only
-  // returns { activeToday, totalKnownVisitors } — it doesn't yet send
-  // growthChart / growthRateStats / adRequestSummary / loginActivity /
-  // engagement. Each block below falls back to its own default independently
-  // (rather than an all-or-nothing `data ? ... : ...`) so a partial response
-  // renders safely instead of throwing "Cannot read properties of undefined".
-
-  const chartData = graphMode === "monthly"
-    ? (data?.growthChart?.monthly ?? defaultMonthlyData)
-    : (data?.growthChart?.yearly ?? defaultYearlyData);
-
-  const growthRateStats = data?.growthRateStats
-    ? [
-        { key: "highest", label: "Highest Growth Month", primary: data.growthRateStats.highest.month, secondary: `${data.growthRateStats.highest.pct > 0 ? "+" : ""}${data.growthRateStats.highest.pct}%` },
-        { key: "lowest", label: "Lowest Growth Month", primary: data.growthRateStats.lowest.month, secondary: `${data.growthRateStats.lowest.pct > 0 ? "+" : ""}${data.growthRateStats.lowest.pct}%` },
-        { key: "average", label: "Average Monthly Growth", primary: `${data.growthRateStats.average}%`, secondary: "" },
-        { key: "current", label: "Current Growth", primary: `${data.growthRateStats.current > 0 ? "+" : ""}${data.growthRateStats.current}%`, secondary: "" },
-      ]
-    : defaultGrowthRateStats;
-
-  const adRequestSummary = data?.adRequestSummary
-    ? [
-        { key: "pending", label: "Pending", value: data.adRequestSummary.pending, color: "var(--uid-color-warning)" },
-        { key: "approved", label: "Approved", value: data.adRequestSummary.approved, color: "var(--uid-color-success)" },
-        { key: "rejected", label: "Rejected", value: data.adRequestSummary.rejected, color: "var(--uid-color-danger)" },
-        { key: "total", label: "Total", value: data.adRequestSummary.total, color: "var(--uid-color-primary)" },
-      ]
-    : defaultAdRequestSummary;
-
-  const adPieData = data?.adRequestSummary
-    ? [
-        { name: "Approved", value: data.adRequestSummary.approved, color: "var(--uid-color-success)" },
-        { name: "Pending", value: data.adRequestSummary.pending, color: "var(--uid-color-warning)" },
-        { name: "Rejected", value: data.adRequestSummary.rejected, color: "var(--uid-color-danger)" },
-      ]
-    : [
-        { name: "Approved", value: 1, color: "var(--uid-color-success)" },
-        { name: "Pending", value: 0, color: "var(--uid-color-warning)" },
-        { name: "Rejected", value: 0, color: "var(--uid-color-danger)" },
-      ];
-
-  const loginHeatmapData = data?.loginActivity
-    ? data.loginActivity.map((item) => ({ ...item, icon: heatmapIconByKey[item.key] ?? "sun" }))
-    : defaultLoginHeatmapData;
-
-  const totalLogins = useMemo(
-    () => loginHeatmapData.reduce((sum, item) => sum + item.logins, 0),
-    [loginHeatmapData]
-  );
-  const peakLoginKey = useMemo(
-    () =>
-      loginHeatmapData.reduce((max, item) => (item.logins > max.logins ? item : max), loginHeatmapData[0]).key,
-    [loginHeatmapData]
-  );
-
-  const engagementStats = data?.engagement
-    ? [
-        { key: "logins", label: "Average Login Per User", value: String(data.engagement.avgLoginsPerUser), description: "Average logins per user each month", icon: "login" },
-        { key: "session", label: "Average Session Duration", value: `${data.engagement.avgSessionMinutes} Minutes`, description: "Average time spent per session", icon: "clock" },
-        { key: "articles", label: "Average Articles Read", value: String(data.engagement.avgArticlesRead), description: "Articles read per active user", icon: "article" },
-      ]
-    : defaultEngagementStats;
+  const chartData = graphMode === "monthly" ? monthlyData : yearlyData;
 
   const pieDataWithPercent = useMemo(() => {
-    const total = adPieData.reduce((sum, d) => sum + d.value, 0) || 1;
+    const total = adPieData.reduce((sum, d) => sum + d.value, 0);
     return adPieData.map((d) => ({
       ...d,
       percent: Math.round((d.value / total) * 100),
     }));
-  }, [adPieData]);
-
-  if (error) {
-    return (
-      <div className="uid-dashboard">
-        <p style={{ padding: "24px", color: "var(--uid-color-danger, #dc2626)" }}>
-          Couldn't load user insights: {error}
-        </p>
-      </div>
-    );
-  }
+  }, []);
 
   return (
     <div className="uid-dashboard">
@@ -391,39 +317,39 @@ const UserInsights: React.FC = () => {
         <div className="uid-stats-grid">
           <StatCard
             title="Total Users"
-            value={loading ? "…" : (data?.stats?.totalUsers?.value ?? 0).toLocaleString()}
-            bottomText={loading ? "" : `+${data?.stats?.totalUsers?.newThisMonth ?? 0} this month`}
+            value="12,458"
+            bottomText="+245 this month"
             icon={<IconUsers className="uid-icon" />}
             trendPositive
           />
           <StatCard
             title="Active Users"
-            value={loading ? "…" : (data?.stats?.activeUsers?.value ?? 0).toLocaleString()}
-            bottomText={loading ? "" : `${data?.stats?.activeUsers?.pctActive ?? 0}% Active`}
+            value="8,936"
+            bottomText="72% Active"
             icon={<IconActive className="uid-icon" />}
           />
           <StatCard
             title="Growth Rate"
-            value={loading ? "…" : `${(data?.stats?.growthRate?.value ?? 0) > 0 ? "+" : ""}${data?.stats?.growthRate?.value ?? 0}%`}
+            value="+12.4%"
             bottomText="Compared to last month"
             icon={<IconGrowth className="uid-icon" />}
-            trendPositive={(data?.stats?.growthRate?.value ?? 0) >= 0}
+            trendPositive
           />
           <StatCard
             title="New Users"
-            value={loading ? "…" : String(data?.stats?.newUsers?.value ?? 0)}
+            value="354"
             bottomText="Joined this month"
             icon={<IconNewUser className="uid-icon" />}
           />
           <StatCard
             title="Advertisement Requests"
-            value={loading ? "…" : String(data?.stats?.adRequests?.value ?? 0)}
-            bottomText={loading ? "" : `${data?.stats?.adRequests?.pending ?? 0} Pending`}
+            value="126"
+            bottomText="18 Pending"
             icon={<IconAd className="uid-icon" />}
           />
           <StatCard
             title="Returning Users"
-            value={loading ? "…" : `${data?.stats?.returningUsers?.pct ?? 0}%`}
+            value="68%"
             bottomText="Logged in multiple times"
             icon={<IconReturning className="uid-icon" />}
           />
@@ -589,7 +515,7 @@ const UserInsights: React.FC = () => {
           <div className="uid-heatmap-grid">
             {loginHeatmapData.map((item) => {
               const HeatIcon = heatmapIconMap[item.icon];
-              const percent = totalLogins > 0 ? Math.round((item.logins / totalLogins) * 100) : 0;
+              const percent = Math.round((item.logins / totalLogins) * 100);
               const isPeak = item.key === peakLoginKey;
               return (
                 <div
