@@ -68,6 +68,9 @@ export default function MediaLibrary(): React.ReactElement {
   const [view,     setView]     = useState<ViewType>("grid");
   const [search,   setSearch]   = useState<string>("");
   const [sort,     setSort]     = useState<SortType>("Newest");
+  const [filterType, setFilterType] = useState<
+  "all" | "uploaded" | "empty"
+>("all");
   const [sortOpen, setSortOpen] = useState<boolean>(false);
 
   const [items,   setItems]   = useState<MediaItem[]>([]);
@@ -187,23 +190,35 @@ const handleDelete = async () => {
   };
 
   // ── Derived / filtered list ─────────────────────────────────────────────────
-  const filtered: MediaItem[] = items
-    .filter(m =>
-      m.headline.toLowerCase().includes(search.toLowerCase()) ||
-      getFilename(m.url).toLowerCase().includes(search.toLowerCase())
-    )
-    .sort((a, b) => {
-      switch (sort) {
-        case "Name A–Z": return a.headline.localeCompare(b.headline);
-        case "Name Z–A": return b.headline.localeCompare(a.headline);
-        case "Oldest":   return new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
-        default:         return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
-      }
-    });
+ const filtered = items
+  .filter(item => {
+    if (filterType === "uploaded") return !!item.url;
+    if (filterType === "empty") return !item.url;
+    return true;
+  })
+  .filter(item =>
+    item.headline.toLowerCase().includes(search.toLowerCase()) ||
+    getFilename(item.url).toLowerCase().includes(search.toLowerCase())
+  )
+  .sort((a, b) => {
+    switch (sort) {
+      case "Name A–Z":
+        return a.headline.localeCompare(b.headline);
+      case "Name Z–A":
+        return b.headline.localeCompare(a.headline);
+      case "Oldest":
+        return new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
+      default:
+        return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+    }
+  });
 
   // ── Stats ───────────────────────────────────────────────────────────────────
-  const totalImages   = items.length;
-  const inPublished   = items.filter(i => i.status === "PUBLISHED").length;
+ const totalSlots = items.length;
+
+const uploadedImages = items.filter(item => item.url).length;
+
+const emptySlots = items.filter(item => !item.url).length;
 
   // ── Render ──────────────────────────────────────────────────────────────────
 
@@ -248,25 +263,34 @@ const handleDelete = async () => {
 
         {/* Stats */}
         <div className="ml-stats">
-          <div className="ml-stat-card">
+          <div
+  className={`ml-stat-card ${filterType==="all" ? "active" : ""}`}
+  onClick={() => setFilterType("all")}
+>
             <div className="ml-stat-icon red"><Image size={20} /></div>
             <div>
-              <div className="ml-stat-num">{totalImages}</div>
-              <div className="ml-stat-label">Total Images</div>
+              <div className="ml-stat-num">{totalSlots}</div>
+              <div className="ml-stat-label">Total Slots</div>
             </div>
           </div>
-          <div className="ml-stat-card">
+          <div
+  className={`ml-stat-card ${filterType==="uploaded" ? "active" : ""}`}
+  onClick={() => setFilterType("uploaded")}
+>
             <div className="ml-stat-icon gray"><HardDrive size={20} /></div>
             <div>
-              <div className="ml-stat-num">{filtered.length}</div>
-              <div className="ml-stat-label">Shown</div>
+              <div className="ml-stat-num">{uploadedImages}</div>
+              <div className="ml-stat-label">Images Uploaded</div>
             </div>
           </div>
-          <div className="ml-stat-card">
+          <div
+  className={`ml-stat-card ${filterType==="empty" ? "active" : ""}`}
+  onClick={() => setFilterType("empty")}
+>
             <div className="ml-stat-icon green"><Check size={20} /></div>
             <div>
-              <div className="ml-stat-num">{inPublished}</div>
-              <div className="ml-stat-label">In Published Articles</div>
+              <div className="ml-stat-num">{emptySlots}</div>
+              <div className="ml-stat-label">Empty Slots</div>
             </div>
           </div>
         </div>

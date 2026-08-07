@@ -501,6 +501,20 @@
     background:#b91c1c;
 }
 
+.ml-stat-card{
+    cursor:pointer;
+    transition:.25s;
+}
+
+.ml-stat-card:hover{
+    transform:translateY(-3px);
+}
+
+.ml-stat-card.active{
+    border:2px solid #ec1c1c;
+    background:#eff6ff;
+}
+
 @keyframes popup{
     from{
         opacity:0;
