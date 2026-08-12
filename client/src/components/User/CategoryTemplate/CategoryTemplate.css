@@ -153,7 +153,6 @@
   display: flex;
   flex-direction: column;
   gap: 16px;
-  justify-content: space-between;
 }
 
 .ct-stack {
@@ -164,7 +163,7 @@
   overflow: hidden;
   box-shadow: var(--ct-shadow-sm);
   cursor: pointer;
-  height: calc(33.333% - 11px);
+  flex: 1; 
   transition: var(--ct-transition);
   border: 1px solid var(--ct-border);
 }
@@ -633,9 +632,8 @@
   display: block;
 }
 
-
 /* ══════════════════════════════════════════════════════════════
-   RESPONSIVE BREAKPOINTS (5-Tier Professional System)
+   RESPONSIVE BREAKPOINTS (6-Tier Professional System)
 ══════════════════════════════════════════════════════════════ */
 
 /* 1. Large Desktop - 1440px */
@@ -671,62 +669,86 @@
 
 /* 3. Standard Tablet - 768px */
 @media (max-width: 768px) {
-  /* Stack the Hero Left section (Hero Card top, Stacks bottom) */
   .ct-hero-left {
     grid-template-columns: 1fr;
     gap: 24px;
   }
 
-  /* Make stacks horizontal on tablet so they fill the width */
   .ct-stacks {
-    flex-direction: row; 
+    flex-direction: column;
     height: auto;
   }
   
+  /* 👇 THE FIX: Beautiful mobile list cards 👇 */
   .ct-stack {
     height: auto;
-    flex: 1;
-    flex-direction: column; /* Image on top, text on bottom */
+    flex: none;
+    flex-direction: row; 
+    align-items: center; /* Prevents vertical stretching */
+    padding: 12px; /* Adds premium padding around the whole card */
   }
   
   .ct-stack__imgwrap {
-    width: 100%;
-    height: 140px;
+    width: 140px; 
+    height: 100px; /* Locks the image to a perfect landscape rectangle */
+    border-radius: 8px; /* Softens inner corners */
+    flex-shrink: 0;
+  }
+
+  .ct-stack__body {
+    padding: 0 0 0 16px; /* Spaces text away from image */
   }
 
   .ct-news-title { font-size: 2rem; }
   .ct-hero__title { font-size: 1.6rem; }
 }
 
-/* 4. Mobile Large - 425px */
-@media (max-width: 425px) {
+/* 4. Large Mobile / Phablet - 640px */
+@media (max-width: 640px) {
   .ct-grid { grid-template-columns: 1fr; }
-  
-  /* Stacks revert to vertical lists on small phones */
-  .ct-stacks { flex-direction: column; }
-  .ct-stack { flex-direction: row; }
-  .ct-stack__imgwrap { width: 120px; height: auto; }
-
-  /* Sidebar widgets drop to a single column */
   .ct-news-sidebar { grid-template-columns: 1fr; }
+  
+  .ct-stack__imgwrap { 
+    width: 120px; 
+    height: 90px;
+  }
+}
 
+/* 5. Mobile Normal - 425px */
+@media (max-width: 425px) {
+  .ct-stack__imgwrap { 
+    width: 100px; 
+    height: 80px;
+  }
+  .ct-stack__body {
+    padding: 0 0 0 12px;
+  }
+  .ct-stack__title { 
+    font-size: 0.95rem; 
+  }
+  
   .ct-hero__title { font-size: 1.4rem; }
   .ct-news-title { font-size: 1.6rem; }
   .ct-weather__temp { font-size: 2.8rem; }
 }
 
-/* 5. Mobile Medium & Small - 375px to 320px */
-@media (max-width: 375px) {
-  .ct-stack__imgwrap { width: 100px; }
-  .ct-gcard__body { padding: 16px; }
-  .ct-recent-panel { padding: 16px; }
-}
-
+/* 6. Mobile Small - 320px */
 @media (max-width: 320px) {
   .ct-hero__title { font-size: 1.2rem; }
   .ct-news-title { font-size: 1.4rem; }
   
-  /* For tiny screens, drop the stack image to the top to preserve text space */
-  .ct-stack { flex-direction: column; }
-  .ct-stack__imgwrap { width: 100%; height: 120px; }
+  /* On extremely tiny screens, drop back to image on top to save horizontal space */
+  .ct-stack { 
+    flex-direction: column; 
+    padding: 0;
+    align-items: stretch;
+  }
+  .ct-stack__imgwrap { 
+    width: 100%; 
+    height: 160px; 
+    border-radius: 0;
+  }
+  .ct-stack__body {
+    padding: 16px;
+  }
 }

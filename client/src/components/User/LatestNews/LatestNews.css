@@ -210,17 +210,24 @@
   }
 }
 
-/* 4. Mobile L - 425px */
-@media (max-width: 425px) {
+/* 👇 THE CRITICAL FIX: Large Mobile / Phablet - 640px 👇 */
+@media (max-width: 640px) {
   .news-grid {
-    grid-template-columns: 1fr; /* Drops to 1 column */
+    grid-template-columns: 1fr; /* Safely drops to 1 column before it gets squished! */
     gap: 24px;
   }
+  .news-img-wrapper {
+    height: 240px; /* Gives the single-column image a nice cinematic width */
+  }
+}
+
+/* 4. Mobile L - 425px */
+@media (max-width: 425px) {
   .latest-news-section {
     padding: 32px 0;
   }
   .news-img-wrapper {
-    height: 220px; /* Make image slightly taller since it spans full width */
+    height: 220px; 
   }
   .section-header h2 {
     font-size: 24px;

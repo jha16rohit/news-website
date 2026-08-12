@@ -215,14 +215,14 @@
   flex: 1.2; 
   display: grid !important;
   grid-template-columns: repeat(2, 1fr) !important; 
-  grid-template-rows: repeat(2, 1fr) !important; /* Forces the 2 rows to stretch perfectly */
+  grid-template-rows: repeat(2, 1fr) !important; 
   gap: 20px !important;
 }
 
 /* The Mini-Cards inside the 2x2 Grid */
 .cs-list-item, .cs-split-sub-card {
   display: flex !important;
-  flex-direction: column !important; /* Image on top, Text on bottom */
+  flex-direction: column !important; 
   padding: 0 !important;
   background-color: #ffffff !important; 
   border-radius: 6px !important; 
@@ -316,7 +316,7 @@
 }
 
 /* ══════════════════════════════════════════════════════════════
-   RESPONSIVE BREAKPOINTS (5-Tier Device System)
+   RESPONSIVE BREAKPOINTS (6-Tier Professional System)
 ══════════════════════════════════════════════════════════════ */
 
 /* 1. Large Desktop - 1440px */
@@ -328,14 +328,11 @@
 
 /* 2. Laptop & Large Tablet - 1024px */
 @media (max-width: 1024px) {
-  .cs-layout-grid-4 {
+  .cs-layout-grid-4, .cs-layout-grid-3 {
     grid-template-columns: repeat(2, 1fr);
     gap: 20px;
   }
-  .cs-layout-grid-3 {
-    gap: 20px;
-  }
-  .cs-hero-col, .cs-split-col {
+  .cs-hero-col, .cs-split-col, .cs-sidebar-reversed {
     padding-right: 20px;
   }
   .cs-sidebar-col {
@@ -349,25 +346,30 @@
 
 /* 3. Standard Tablet - 768px */
 @media (max-width: 768px) {
-  .cs-layout-hero-sidebar, .cs-layout-split-sidebar {
+  /* 👇 THE CRITICAL FIX: Stacks columns vertically so they don't squish */
+  .cs-layout {
     flex-direction: column;
+    gap: 30px;
   }
   
-  .cs-layout-grid-3 {
-    grid-template-columns: repeat(2, 1fr);
-  }
-
   .cs-hero-col, .cs-split-col, .cs-sidebar-reversed {
-    border-right: none;
+    border-right: none !important;
+    padding-right: 0 !important;
     border-bottom: 2px solid #e2e8f0;
-    padding-right: 0;
     padding-bottom: 30px;
-    margin-bottom: 10px;
+    width: 100%;
   }
 
-  /* Sidebars can still display as a 2x2 grid on Tablets */
+  /* Releases the locked heights so text can breathe vertically */
+  .cs-dark-card, .cs-list-item, .cs-split-sub-card {
+    height: auto !important; 
+  }
+
+  /* On tablet, sidebar grid safely remains 2 columns side-by-side */
   .cs-sidebar-col {
     grid-template-columns: repeat(2, 1fr) !important;
+    grid-template-rows: auto !important; 
+    width: 100%;
   }
 }
 
@@ -385,8 +387,8 @@
     flex-direction: column !important; 
   }
   
-  .cs-split-sub-card .cs-list-img { 
-    height: 200px !important; 
+  .cs-list-item .cs-list-img, .cs-split-sub-card .cs-list-img { 
+    height: 220px !important; 
   }
 
   .cs-card-body {
@@ -398,12 +400,16 @@
     min-height: auto;
   }
 
+  .cs-list-title {
+    font-size: 18px !important;
+  }
+
   .cs-list-content {
     padding: 16px !important;
   }
 }
 
-/* 5. Mobile Medium & Small - 375px to 320px */
+/* 5. Mobile Medium - 375px */
 @media (max-width: 375px) {
   .cs-title {
     font-size: 22px;
@@ -412,10 +418,14 @@
     font-size: 20px;
   }
   .cs-list-title {
-    font-size: 14px !important;
+    font-size: 16px !important;
+  }
+  .cs-list-item .cs-list-img, .cs-split-sub-card .cs-list-img { 
+    height: 200px !important; 
   }
 }
 
+/* 6. Mobile Small - 320px */
 @media (max-width: 320px) {
   .cs-title {
     font-size: 20px;
@@ -426,7 +436,10 @@
   .cs-card-body, .cs-list-content {
     padding: 12px !important;
   }
+  .cs-list-title {
+    font-size: 14px !important;
+  }
   .cs-list-item .cs-list-img, .cs-split-sub-card .cs-list-img {
-    height: 160px !important;
+    height: 180px !important;
   }
 }

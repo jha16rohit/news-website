@@ -11,7 +11,7 @@
   margin: auto;
   display: flex;
   flex-direction: column; 
-  gap: 5px;
+  gap: 15px;
 }
 
 /* ===== TOP ROW ===== */
@@ -23,16 +23,17 @@
 
 /* ===== LEFT SIDE: FEATURED ARTICLE ===== */
 .featured-article {
-  flex: 2; 
+  flex: 2.2; 
   position: relative;
   border-radius: 12px;
   overflow: hidden;
   width: 100%; 
-  min-height: 470px; /* Replaced hardcoded height with fluid min-height */
+  min-height: 480px; 
   display: flex;
   flex-direction: column;
   justify-content: flex-end;
   cursor: pointer;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.05);
 }
 
 .featured-bg-img {
@@ -44,69 +45,62 @@
   transition: transform 0.6s ease; 
 }
 
+.featured-article:hover .featured-bg-img {
+  transform: scale(1.03);
+}
+
 .featured-overlay {
   position: relative; 
   z-index: 2;
-  background: linear-gradient(to top, rgba(0, 0, 0, 0.95) 0%, rgba(0, 0, 0, 0.6) 60%, transparent 100%);
+  background: linear-gradient(to top, rgba(0, 0, 0, 0.95) 0%, rgba(0, 0, 0, 0.5) 60%, transparent 100%);
   padding: 40px 30px;
   color: white;
-}
-
-.featured-save-btn {
-  position: absolute;
-  bottom: 35px; 
-  right: 30px;  
-  padding: 8px;
-  border-radius: 50%;
-  background-color: rgba(255, 255, 255, 0.1); 
-  backdrop-filter: blur(4px);
-  z-index: 10;
-  transition: all 0.2s ease;
-  border: none;
-  cursor: pointer;
   display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.featured-save-btn:hover {
-  background-color: rgba(255, 255, 255, 0.2);
-  transform: scale(1.1);
+  flex-direction: column;
+  align-items: flex-start;
 }
 
 .category-badge {
   display: inline-block;
-  padding: 4px 12px;
+  padding: 5px 14px;
   border-radius: 20px;
-  font-size: 12px;
-  font-weight: 700;
+  font-size: 11px;
+  font-weight: 800;
   margin-bottom: 15px;
   text-transform: uppercase;
-  letter-spacing: 0.5px;
+  letter-spacing: 0.8px;
 }
 
 .category-badge.politics { background-color: #e60000; color: white; }
 
 .featured-title {
+  font-family: 'Playfair Display', "Georgia", serif;
   font-size: 38px;
   font-weight: 800;
   line-height: 1.25;
-  margin: 0 0 15px 0;
+  margin: 0 0 12px 0;
+  text-shadow: 0 2px 4px rgba(0,0,0,0.3);
 }
 
 .featured-excerpt {
-  font-size: 16px;
+  font-size: 15px;
   line-height: 1.6;
-  color: #e2e8f0;
+  color: rgba(255, 255, 255, 0.85);
   margin: 0 0 20px 0;
-  max-width: 95%;
+  max-width: 90%;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
 }
 
 .featured-meta {
   display: flex;
   gap: 20px;
-  font-size: 14px;
-  color: #cbd5e1;
+  font-size: 13px;
+  color: rgba(255, 255, 255, 0.7);
+  font-weight: 500;
 }
 
 .featured-meta span { display: flex; align-items: center; gap: 6px; }
@@ -118,31 +112,53 @@
   flex-direction: column;
 }
 
+.section-header {
+  margin-bottom: 16px;
+}
+
+.section-header h2 {
+  font-family: 'Playfair Display', "Georgia", serif;
+  font-size: 22px;
+  font-weight: 800;
+  color: #0b1423;
+  margin: 0 0 8px 0;
+}
+
+.header-underline {
+  height: 3px;
+  width: 40px;
+  background-color: #e60000;
+  border-radius: 2px;
+}
+
 .trending-list {
   display: flex;
   flex-direction: column;
-  gap: 15px;
+  gap: 16px;
 }
 
 .trending-card {
   display: flex;
-  gap: 15px;
+  flex-direction: row;
+  gap: 16px;
   background-color: white;
   padding: 12px;
   border-radius: 12px;
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.03);
-  border: 1px solid #f1f5f9;
-  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+  border: 1px solid #e2e8f0;
+  transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
   cursor: pointer;
 }
 
 .trending-card:hover {
   transform: translateY(-3px);
-  box-shadow: 0 8px 15px rgba(0, 0, 0, 0.08);
+  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.08);
+  border-color: #cbd5e1;
 }
 
 .trending-img {
-  width: 100px; height: 90px;
+  width: 110px; 
+  height: 90px;
   border-radius: 8px;
   object-fit: cover;
   flex-shrink: 0;
@@ -171,43 +187,107 @@
   margin-bottom: 0; 
 }
 
-.save-btn {
-  background: none;
-  border: none;
-  cursor: pointer;
-  padding: 4px; 
+.trending-title {
+  font-size: 14px; 
+  font-weight: 700; 
+  line-height: 1.4;
+  color: #0f172a; 
+  margin: 0 0 8px 0;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.trending-time { 
+  font-size: 12px; 
+  color: #94a3b8; 
+  font-weight: 500;
+}
+
+/* ========================================= */
+/* ===== TRENDING TAGS SCROLL BAR ===== */
+/* ========================================= */
+.trending-tags-container {
+  display: flex;
+  align-items: center;
+  position: relative;
+  width: 100%;
+  margin-bottom: 15px;
+}
+
+.tags-scroll-wrapper {
+  display: flex;
+  gap: 12px;
+  overflow-x: auto;
+  scroll-behavior: smooth;
+  padding: 5px 0; 
+  margin: 0 10px; 
+  -ms-overflow-style: none;  
+  scrollbar-width: none;  
+}
+
+.tags-scroll-wrapper::-webkit-scrollbar {
+  display: none;
+}
+
+.tag-pill {
+  white-space: nowrap;
+  padding: 8px 18px;
+  background-color: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 25px; 
+  color: #0f172a;
+  font-size: 13px;
+  font-weight: 600;
+  transition: all 0.2s ease;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.02);
+}
+
+.tag-pill:hover {
+  background-color: #f8fafc;
+  border-color: #cbd5e1;
+  transform: translateY(-1px);
+}
+
+.tag-scroll-btn {
+  background: white;
+  border: 1px solid #e2e8f0;
+  border-radius: 50%;
+  width: 36px;
+  height: 36px;
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: transform 0.1s ease;
-}
-
-.save-btn:hover {
-  transform: scale(1.1); 
-}
-
-.save-btn svg {
+  color: #64748b;
+  cursor: pointer;
+  box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+  z-index: 10;
+  flex-shrink: 0;
   transition: all 0.2s ease;
 }
 
-.trending-title {
-  font-size: 14px; font-weight: 700; line-height: 1.4;
-  color: #0f172a; margin: 0 0 8px 0;
+.tag-scroll-btn:hover {
+  background: #f8fafc;
+  color: #0f172a;
+  box-shadow: 0 4px 8px rgba(0,0,0,0.1);
 }
 
-.trending-time { font-size: 12px; color: #64748b; }
+.text-decoration-none {
+  text-decoration: none !important;
+  color: inherit !important;
+}
 
 /* ========================================= */
 /* ===== NEW BOTTOM ROW STYLES (IMAGE) ===== */
 /* ========================================= */
-
 .hero-bottom-row {
   display: flex;
   gap: 30px;
   width: 100%;
 }
 
-/* White Card Containers */
 .live-updates-card,
 .trending-numbered-card {
   background: white;
@@ -220,31 +300,12 @@
 .live-updates-card { flex: 2; }
 .trending-numbered-card { flex: 1; }
 
-/* Section Headers */
-.section-header {
-  display: inline-flex;
-  align-items: center;
-  gap: 10px;
-}
-.aa1{
-  margin-bottom: 12px !important;
-}
-
-.section-header h2 {
-  font-size: 18px;
-  font-weight: 800;
-  color: #0f172a;
-  margin: 0;
-  letter-spacing: 0.5px;
-}
-
 .live-dot {
   width: 12px; height: 12px;
   background-color: #fca5a5;
   border-radius: 50%;
 }
 
-/* Live List Items */
 .live-item {
   display: flex;
   gap: 20px;
@@ -269,7 +330,6 @@
   line-height: 1.5;
 }
 
-/* Numbered Trending Items */
 .numbered-item {
   display: flex;
   gap: 16px;
@@ -279,10 +339,7 @@
   transition: transform 0.2s ease;
 }
 
-.numbered-item:hover {
-  transform: translateX(4px);
-}
-
+.numbered-item:hover { transform: translateX(4px); }
 .numbered-item:last-child { border-bottom: none; padding-bottom: 0; }
 
 .trend-rank {
@@ -316,80 +373,6 @@
   font-weight: 500;
 }
 
-.text-decoration-none {
-  text-decoration: none !important;
-  color: inherit !important;
-}
-
-/* ========================================= */
-/* ===== TRENDING TAGS SCROLL BAR ===== */
-/* ========================================= */
-.trending-tags-container {
-  display: flex;
-  align-items: center;
-  position: relative;
-  width: 100%;
-  margin-bottom: 10px;
-}
-
-.tags-scroll-wrapper {
-  display: flex;
-  gap: 12px;
-  overflow-x: auto;
-  scroll-behavior: smooth;
-  padding: 5px 0; 
-  margin: 0 10px; 
-  -ms-overflow-style: none;  
-  scrollbar-width: none;  
-}
-
-.tags-scroll-wrapper::-webkit-scrollbar {
-  display: none;
-}
-
-.tag-pill {
-  white-space: nowrap;
-  padding: 8px 18px;
-  background-color: #ffffff;
-  border: 1px solid #e2e8f0;
-  border-radius: 25px; 
-  color: #0f172a;
-  font-size: 14px;
-  font-weight: 700;
-  transition: all 0.2s ease;
-  box-shadow: 0 1px 3px rgba(0,0,0,0.02);
-}
-
-.tag-pill:hover {
-  background-color: #f1f5f9;
-  border-color: #cbd5e1;
-  transform: translateY(-1px);
-}
-
-.tag-scroll-btn {
-  background: white;
-  border: 1px solid #e2e8f0;
-  border-radius: 50%;
-  width: 36px;
-  height: 36px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: #64748b;
-  cursor: pointer;
-  box-shadow: 0 2px 5px rgba(0,0,0,0.05);
-  z-index: 10;
-  flex-shrink: 0;
-  transition: all 0.2s ease;
-}
-
-.tag-scroll-btn:hover {
-  background: #f8fafc;
-  color: #0f172a;
-  box-shadow: 0 4px 8px rgba(0,0,0,0.1);
-}
-
-
 /* ══════════════════════════════════════════════════════════════
    RESPONSIVE BREAKPOINTS (6-Tier Professional System)
 ══════════════════════════════════════════════════════════════ */
@@ -403,32 +386,57 @@
 
 /* 2. Laptop / Large Tablet - 1024px */
 @media (max-width: 1024px) {
-  /* Stack the main rows */
-  .hero-top-row,
-  .hero-bottom-row {
-    flex-direction: column;
-    gap: 24px;
+  /* 👇 FIX: Keep side-by-side on laptops! Prevents 100% width stretch 👇 */
+  .hero-top-row, .hero-bottom-row {
+    flex-direction: row;
+    gap: 20px;
   }
 
-  /* Since Trending moves to the bottom, make it a 2-col grid so it isn't too tall */
-  .trending-list {
-    display: grid;
-    grid-template-columns: repeat(2, 1fr);
-    gap: 16px;
-  }
+  /* Scale fonts and heights slightly to fit perfectly side-by-side */
+  .featured-title { font-size: 28px; line-height: 1.25; }
+  .featured-article { min-height: 380px; }
+  .featured-excerpt { font-size: 14px; margin-bottom: 12px; -webkit-line-clamp: 2; line-clamp: 2;}
 
-  .featured-article {
-    min-height: 440px;
-  }
+  /* Shrink the sidebar images slightly to fit the narrower column */
+  .trending-img { width: 90px; height: 80px; }
+  .trending-title { font-size: 13px; }
 }
 
 /* 3. Standard Tablet - 768px */
 @media (max-width: 768px) {
+  /* 👇 NOW we stack vertically because the screen is actually narrow 👇 */
+  .hero-top-row, .hero-bottom-row {
+    flex-direction: column;
+    gap: 32px;
+  }
+
+  /* Make Trending a 2-col grid when it drops to the bottom */
+  .trending-list {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 20px;
+  }
+
+  /* Image on top, text on bottom */
+  .trending-card {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .trending-img {
+    width: 100%;
+    height: 180px;
+    border-radius: 8px 8px 0 0;
+  }
+
+  .trending-info {
+    padding: 4px 4px 8px 4px;
+  }
+
   .featured-title { font-size: 32px; }
   .featured-excerpt { font-size: 15px; }
   .featured-article { min-height: 400px; }
 
-  /* Tags scroll arrows handled natively by swipe on tablets */
   .tag-scroll-btn { display: none; }
   .tags-scroll-wrapper { margin: 0; padding-left: 5px; padding-right: 5px; }
 }
@@ -437,26 +445,36 @@
 @media (max-width: 425px) {
   /* Return Trending List back to a single column for phones */
   .trending-list {
-    grid-template-columns: 1fr;
+    display: flex;
+    flex-direction: column;
     gap: 12px;
   }
 
+  /* Safely return to Row Layout for mobile list */
+  .trending-card {
+    flex-direction: row;
+    align-items: center;
+  }
+
+  .trending-img {
+    width: 110px;
+    height: 90px;
+    border-radius: 6px;
+  }
+
+  .trending-info {
+    padding: 0;
+  }
+
   .featured-overlay { padding: 24px 20px; }
-  .featured-save-btn { bottom: 20px; right: 20px; }
-  
   .featured-title { font-size: 26px; line-height: 1.3; }
   .featured-excerpt { font-size: 14px; margin-bottom: 12px; }
   .featured-article { min-height: 320px; }
-
-  /* Stack Live items */
+  
   .live-item { flex-direction: column; gap: 8px; }
   .live-time { font-size: 12px; }
   .live-text { font-size: 14px; }
-
-  .live-updates-card, 
-  .trending-numbered-card { 
-    padding: 20px 16px; 
-  }
+  .live-updates-card, .trending-numbered-card { padding: 20px 16px; }
 }
 
 /* 5. Mobile M - 375px */
@@ -464,21 +482,22 @@
   .featured-title { font-size: 22px; }
   .featured-article { min-height: 280px; }
 
-  /* Flip Trending Card so image is on top to give text room to breathe */
+  /* Screens are too small for side-by-side text, flip back to column */
   .trending-card {
     flex-direction: column;
-    align-items: flex-start;
+    align-items: stretch;
   }
+
   .trending-img {
     width: 100%;
     height: 160px;
+    border-radius: 8px 8px 0 0;
   }
 }
 
 /* 6. Mobile S - 320px */
 @media (max-width: 320px) {
   .featured-title { font-size: 20px; }
-  /* Hide the excerpt on tiny screens to preserve visual hierarchy */
   .featured-excerpt { display: none; } 
   .featured-article { min-height: 240px; }
   
@@ -489,9 +508,5 @@
   }
 
   .trending-img { height: 140px; }
-  
-  .live-updates-card, 
-  .trending-numbered-card { 
-    padding: 16px 12px; 
-  }
+  .live-updates-card, .trending-numbered-card { padding: 16px 12px; }
 }
