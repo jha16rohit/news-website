@@ -80,27 +80,7 @@
   opacity: 0.92;
 }
 
-/* ── Responsive ── */
-@media (max-width: 768px) {
-  .ad-image-wrapper {
-    height: 90px;
-    border-radius: 8px;
-  }
-}
-
-@media (max-width: 480px) {
-  .ad-image-wrapper {
-    height: 72px;
-    border-radius: 6px;
-  }
-  .advertisement-section {
-    padding: 10px 0;
-  }
-}
-
-
 /* ---------- STRIP ---------- */
-
 .ad-image-wrapper--strip {
   width: 100%;
   max-width: 960px;
@@ -114,7 +94,6 @@
 }
 
 /* ---------- CARD ---------- */
-
 .ad-image-wrapper--card {
   width: 300px;
   height: 250px;
@@ -128,4 +107,97 @@
   width: 100%;
   height: 100%;
   object-fit: cover;
+}
+
+
+/* ──────────────────────────────────────────────
+   RESPONSIVE BREAKPOINTS
+────────────────────────────────────────────── */
+
+/* 1. Large Desktop - 1440px */
+@media (max-width: 1440px) {
+  .ad-image-wrapper, 
+  .ad-image-wrapper--strip {
+    max-width: 1000px; 
+  }
+}
+
+/* 2. Laptop - 1024px */
+@media (max-width: 1024px) {
+  .ad-image-wrapper, 
+  .ad-image-wrapper--strip {
+    max-width: 800px;
+    height: 110px;
+  }
+  .ad-image-wrapper--card {
+    width: 280px;
+    height: 233px;
+  }
+}
+
+/* 3. Tablet - 768px */
+@media (max-width: 768px) {
+  .ad-image-wrapper, 
+  .ad-image-wrapper--strip {
+    height: 90px;
+    border-radius: 8px;
+  }
+  .ad-image-wrapper--card {
+    width: 100%;
+    max-width: 300px;
+    height: 250px;
+    margin: 0 auto;
+  }
+}
+
+/* 4. Mobile L - 425px */
+@media (max-width: 425px) {
+  .advertisement-section {
+    padding: 12px 0;
+  }
+  .ad-image-wrapper, 
+  .ad-image-wrapper--strip {
+    height: 72px;
+    border-radius: 6px;
+  }
+  .ad-image-wrapper--card {
+    max-width: 100%;
+    height: 220px;
+  }
+}
+
+/* 5. Mobile M - 375px */
+@media (max-width: 375px) {
+  .advertisement-section {
+    padding: 10px 0;
+  }
+  .ad-image-wrapper, 
+  .ad-image-wrapper--strip {
+    height: 64px;
+  }
+  .ad-image-wrapper--card {
+    height: 200px;
+  }
+  .ad-label {
+    font-size: 9px;
+  }
+}
+
+/* 6. Mobile S - 320px */
+@media (max-width: 320px) {
+  .advertisement-section {
+    padding: 8px 0;
+  }
+  .ad-image-wrapper, 
+  .ad-image-wrapper--strip {
+    height: 54px;
+    border-radius: 4px;
+  }
+  .ad-image-wrapper--card {
+    height: 180px;
+  }
+  .ad-label {
+    font-size: 8px;
+    letter-spacing: 0.5px;
+  }
 }

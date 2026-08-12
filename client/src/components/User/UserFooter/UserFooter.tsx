@@ -202,7 +202,7 @@ const Footer: React.FC = () => {
 
           {/* ── BOTTOM BAR ── */}
           <div className="footer-bottom-bar">
-            <p>&copy; Copyright-2026, All Rights Reserved | Local Newz | WebWala Studio</p>
+            <p>&copy; Copyright-2026, All Rights Reserved | Local Newz | ShidroTech Solutions</p>
           </div>
 
         </div>

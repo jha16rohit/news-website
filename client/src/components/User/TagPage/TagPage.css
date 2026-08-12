@@ -872,88 +872,6 @@
   font-family: "Times New Roman", Times, serif;
 }
 
-/* =============================================
-   RESPONSIVE
-   ============================================= */
-
-@media (max-width: 1100px) {
-  .tp-layout {
-    grid-template-columns: 1fr 300px;
-    gap: 36px;
-  }
-}
-
-@media (max-width: 900px) {
-  .tp-layout {
-    grid-template-columns: 1fr;
-    gap: 48px;
-  }
-
-  .tp-sidebar {
-    position: static;
-    border-top: 1px solid #e2e8f0;
-    padding-top: 40px;
-  }
-
-  .tp-hero-stats {
-    display: none;
-  }
-
-  .tp-hero {
-    padding: 28px 24px;
-  }
-
-  .tp-hero-title {
-    font-size: 36px;
-  }
-}
-
-@media (max-width: 768px) {
-  .tp-tag-scroll-btn {
-    display: none;
-  }
-
-  .tp-featured-img-wrap {
-    height: 220px;
-  }
-
-  .tp-featured-title {
-    font-size: 20px;
-  }
-
-  .tp-mini-grid {
-    grid-template-columns: 1fr 1fr;
-  }
-
-  .tp-list-img-wrap {
-    width: 110px;
-    height: 78px;
-  }
-}
-
-@media (max-width: 480px) {
-  .tp-hero {
-    padding: 24px 20px;
-  }
-
-  .tp-hero-title {
-    font-size: 28px;
-  }
-
-  .tp-featured-img-wrap {
-    height: 190px;
-  }
-
-  .tp-mini-grid {
-    grid-template-columns: 1fr;
-  }
-
-  .tp-list-img-wrap {
-    width: 90px;
-    height: 68px;
-  }
-}
-
 /* Card Advertisement Widget (static placeholder) */
 .tp-card-ad {
   display: flex;
@@ -978,4 +896,131 @@
   height: auto;
   border-radius: 9px;
   display: block;
+}
+
+/* ══════════════════════════════════════════════════════════════
+   RESPONSIVE BREAKPOINTS (6-Tier Professional System)
+══════════════════════════════════════════════════════════════ */
+
+/* 1. Large Desktop - 1440px */
+@media (max-width: 1440px) {
+  .tp-container {
+    max-width: 1100px;
+  }
+}
+
+/* 2. Laptop - 1024px */
+@media (max-width: 1024px) {
+  .tp-layout {
+    grid-template-columns: 1fr;
+    gap: 48px;
+  }
+  
+  /* Sidebar drops below main content and forms a 2-column grid */
+  .tp-sidebar {
+    position: static;
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 24px;
+    padding-top: 40px;
+    border-top: 1px solid #e2e8f0;
+  }
+  
+  .tp-hero-title {
+    font-size: 40px;
+  }
+}
+
+/* 3. Standard Tablet - 768px */
+@media (max-width: 768px) {
+  .tp-hero-stats {
+    display: none; /* Hide stats to save space on tablets */
+  }
+  
+  .tp-tag-scroll-btn {
+    display: none; /* Rely on native swipe scrolling */
+  }
+  
+  .tp-featured-img-wrap {
+    height: 240px;
+  }
+  
+  .tp-list-img-wrap {
+    width: 110px;
+    height: 80px;
+  }
+}
+
+/* 4. Mobile Phones (Bulletproof Stack) - 640px and below */
+@media (max-width: 640px) {
+  /* Kills the sidebar grid for all phones, forces single column */
+  .tp-sidebar {
+    display: flex !important;
+    flex-direction: column !important;
+    width: 100% !important;
+    gap: 32px !important;
+  }
+  
+  .tp-mini-grid {
+    grid-template-columns: 1fr; 
+  }
+  
+  .tp-hero {
+    flex-direction: column;
+    align-items: flex-start;
+    padding: 32px 24px;
+  }
+  
+  .tp-hero-title {
+    font-size: 32px;
+  }
+  
+  .tp-featured-title {
+    font-size: 20px;
+  }
+}
+
+/* 5. Mobile M - 375px */
+@media (max-width: 375px) {
+  .tp-hero {
+    padding: 24px 20px;
+  }
+  
+  .tp-hero-title {
+    font-size: 28px;
+  }
+  
+  .tp-featured-img-wrap {
+    height: 200px;
+  }
+  
+  .tp-list-img-wrap {
+    width: 90px;
+    height: 70px;
+  }
+  
+  .tp-list-title {
+    font-size: 16px;
+  }
+}
+
+/* 6. Mobile S - 320px */
+@media (max-width: 320px) {
+  .tp-hero-title {
+    font-size: 24px;
+  }
+  
+  .tp-featured-img-wrap {
+    height: 180px;
+  }
+  
+  /* Hide thumbnail on tiny screens to give text more horizontal space */
+  .tp-list-img-wrap {
+    display: none; 
+  }
+  
+  .tp-view-more-btn {
+    width: 100%;
+    padding: 12px 20px;
+  }
 }

@@ -1,5 +1,8 @@
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Playfair+Display:wght@700;800&display=swap');
 
+/* ══════════════════════════════════════════════════════════════
+   BASE STYLES
+══════════════════════════════════════════════════════════════ */
 .error-page-wrapper {
   display: flex;
   align-items: center;
@@ -19,6 +22,7 @@
   max-width: 500px;
   width: 100%;
   border-top: 4px solid #e60000;
+  box-sizing: border-box;
 }
 
 .error-icon-wrap {
@@ -31,6 +35,7 @@
   color: #e60000;
   border-radius: 50%;
   margin: 0 auto 24px auto;
+  transition: all 0.3s ease;
 }
 
 .error-code {
@@ -40,6 +45,7 @@
   color: #0f172a;
   margin: 0 0 10px 0;
   line-height: 1;
+  transition: font-size 0.3s ease;
 }
 
 .error-title {
@@ -47,6 +53,7 @@
   font-weight: 700;
   color: #0f172a;
   margin: 0 0 16px 0;
+  transition: font-size 0.3s ease;
 }
 
 .error-desc {
@@ -59,6 +66,7 @@
 .error-btn {
   display: inline-flex;
   align-items: center;
+  justify-content: center;
   gap: 8px;
   background-color: #e60000;
   color: #ffffff;
@@ -88,4 +96,103 @@
   background-color: #f1f5f9;
   box-shadow: none;
   border-color: #cbd5e1;
+}
+
+/* ══════════════════════════════════════════════════════════════
+   RESPONSIVE BREAKPOINTS (6-Tier Professional System)
+══════════════════════════════════════════════════════════════ */
+
+/* 1. Large Desktop - 1440px */
+@media (max-width: 1440px) {
+  /* Base styles apply smoothly here */
+}
+
+/* 2. Laptop - 1024px */
+@media (max-width: 1024px) {
+  .error-container {
+    padding: 50px 36px;
+  }
+}
+
+/* 3. Standard Tablet - 768px */
+@media (max-width: 768px) {
+  .error-container {
+    padding: 48px 32px;
+  }
+  .error-code {
+    font-size: 48px;
+  }
+  .error-title {
+    font-size: 20px;
+  }
+  .error-icon-wrap {
+    width: 70px;
+    height: 70px;
+    margin-bottom: 20px;
+  }
+}
+
+/* 4. Mobile L - 425px */
+@media (max-width: 425px) {
+  .error-container {
+    padding: 40px 24px;
+    border-width: 3px;
+  }
+  .error-code {
+    font-size: 42px;
+  }
+  .error-title {
+    font-size: 18px;
+  }
+  .error-desc {
+    font-size: 14px;
+    margin-bottom: 24px;
+  }
+  .error-icon-wrap {
+    width: 60px;
+    height: 60px;
+    margin-bottom: 16px;
+  }
+  .error-btn {
+    width: 100%; /* Makes buttons full-width on mobile */
+    padding: 12px 20px;
+  }
+}
+
+/* 5. Mobile M - 375px */
+@media (max-width: 375px) {
+  .error-container {
+    padding: 32px 20px;
+  }
+  .error-code {
+    font-size: 38px;
+  }
+  .error-icon-wrap {
+    width: 54px;
+    height: 54px;
+  }
+}
+
+/* 6. Mobile S - 320px */
+@media (max-width: 320px) {
+  .error-page-wrapper {
+    padding: 12px;
+  }
+  .error-container {
+    padding: 24px 16px;
+  }
+  .error-code {
+    font-size: 32px;
+    margin-bottom: 8px;
+  }
+  .error-title {
+    font-size: 16px;
+    margin-bottom: 12px;
+  }
+  .error-desc {
+    font-size: 13px;
+  }
+  .error-btn {
+    font-size: 14px;
+  }
 }

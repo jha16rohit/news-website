@@ -292,19 +292,31 @@
   color: #94a3b8;
 }
 
-/* ===== RESPONSIVE — TABLET (≤1024px) ===== */
+/* ══════════════════════════════════════════════════════════════
+   RESPONSIVE BREAKPOINTS (6-Tier Professional System)
+══════════════════════════════════════════════════════════════ */
+
+/* 1. Large Desktop - 1440px */
+@media (max-width: 1440px) {
+  .footer-container {
+    max-width: 1100px;
+    width: 95%;
+  }
+}
+
+/* 2. Laptop - 1024px */
 @media (max-width: 1024px) {
   .footer-main-grid {
-    grid-template-columns: 1fr 1fr;
-    gap: 36px;
+    grid-template-columns: repeat(2, 1fr); /* 2x2 grid instead of 4 in a row */
+    gap: 40px;
   }
-
+  
   .f-brand-col { padding-right: 0; }
 
   .footer-subscribe-banner {
     flex-direction: column;
     align-items: flex-start;
-    gap: 14px;
+    gap: 16px;
   }
 
   .fsb-right {
@@ -320,54 +332,40 @@
   }
 }
 
-/* ===== RESPONSIVE — MINI TABLET (≤768px) ===== */
+/* 3. Standard Tablet - 768px */
 @media (max-width: 768px) {
   .footer-overlay {
-    padding: 40px 0 16px;
+    padding: 48px 0 20px;
   }
-
-  .footer-container {
-    width: 92%;
-  }
-
-  .footer-subscribe-banner {
-    margin-bottom: 40px;
-    padding: 16px 18px;
-  }
-
+  
   .footer-main-grid {
-    grid-template-columns: 1fr 1fr;
-    gap: 28px;
-    margin-bottom: 36px;
+    gap: 32px;
   }
-
+  
   .fsb-desc {
-    font-size: 14px;
+    white-space: normal;
   }
-}
-
-/* ===== RESPONSIVE — MOBILE (≤600px) ===== */
-@media (max-width: 600px) {
-  .footer-main-grid {
-    grid-template-columns: 1fr;
-    gap: 28px;
+  
+  .fsb-divider { 
+    display: none; 
   }
-
-  .f-trending-grid {
-    grid-template-columns: 1fr 1fr;
-  }
-
+  
   .fsb-left {
     flex-direction: column;
     align-items: flex-start;
     gap: 8px;
   }
+}
 
-  .fsb-divider { display: none; }
+/* 4. Mobile L - 425px */
+@media (max-width: 425px) {
+  .footer-main-grid {
+    grid-template-columns: 1fr; /* Full single column stack for all phones */
+    gap: 36px;
+  }
 
-  .fsb-desc {
-    white-space: normal;
-    font-size: 14px;
+  .f-trending-grid {
+    grid-template-columns: repeat(2, 1fr); /* Keep tags 2-wide so they don't get too tall */
   }
 
   .fsb-right {
@@ -376,29 +374,46 @@
   }
 
   .fsb-btn {
+    width: 100%;
     text-align: center;
+    padding: 14px;
   }
 
   .footer-subscribe-banner {
-    margin-bottom: 32px;
+    margin-bottom: 40px;
   }
 }
 
-/* ===== RESPONSIVE — SMALL MOBILE (≤400px) ===== */
-@media (max-width: 400px) {
-  .footer-container {
-    width: 94%;
+/* 5. Mobile M - 375px */
+@media (max-width: 375px) {
+  .footer-subscribe-banner {
+    padding: 20px 16px;
   }
-
-  .f-trending-grid {
-    grid-template-columns: 1fr;
+  
+  .fsb-title {
+    font-size: 15px;
   }
-
+  
   .f-logo img {
     height: 50px;
   }
+  
+  .f-trending-grid {
+    grid-template-columns: 1fr; /* Stack tags on very narrow screens */
+  }
+}
 
-  .fsb-title {
+/* 6. Mobile S - 320px */
+@media (max-width: 320px) {
+  .footer-overlay {
+    padding: 32px 0 16px;
+  }
+  
+  .f-trusted-text {
+    font-size: 14px;
+  }
+  
+  .f-links a {
     font-size: 14px;
   }
 }

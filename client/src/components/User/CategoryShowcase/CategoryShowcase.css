@@ -91,14 +91,11 @@
 }
 
 .cs-list-item, .cs-split-sub-card {
-  position: relative; /* 👇 Required for the floating save icon */
+  position: relative; /* Required for the floating save icon */
   display: flex !important;
   flex-direction: column !important; 
-  
-  /* ... rest of your existing css ... */
 }
 
-/* 👇 PASTE THIS ANYWHERE IN YOUR CSS FILE 👇 */
 .category-save-btn {
   position: absolute;
   top: 12px;
@@ -123,7 +120,6 @@
 
 .cs-dark-card:hover {
   transform: translateY(-4px);
-  
 }
 
 /* LOCKS THE IMAGE AREA SO IT NEVER SHRINKS OR GROWS */
@@ -141,8 +137,6 @@
   display: block;
   transition: transform 0.5s ease;
 }
-
-
 
 .cs-card-body {
   padding: 20px;
@@ -189,8 +183,6 @@
   min-height: 46px; 
 }
 
-
-
 /* LOCKS THE SUBTITLE TO EXACTLY 2 LINES */
 .cs-card-sub {
   color: #64748b;
@@ -232,17 +224,17 @@
   display: flex !important;
   flex-direction: column !important; /* Image on top, Text on bottom */
   padding: 0 !important;
-  background-color: #ffffff !important; /* Dark blue background */
+  background-color: #ffffff !important; 
   border-radius: 6px !important; 
   overflow: hidden !important; 
   height: 100% !important;
   box-shadow: 6px 7px 15px -3px rgba(0, 0, 0, 0.4);
   color: black !important;
 }
-.cs-list-item:hover{
+
+.cs-list-item:hover {
   transform: translateY(-4px) !important;
 }
-
 
 /* Images in the side cards */
 .cs-list-item .cs-list-img, .cs-split-sub-card .cs-list-img {
@@ -257,19 +249,19 @@
   display: flex !important;
   flex-direction: column !important;
   flex: 1 !important; 
-  padding: 16px !important; /* Adds padding inside the dark box */
+  padding: 16px !important; 
   align-items: flex-start !important;
 }
 
-/* 👇 THIS IS THE NEW RED CATEGORY BADGE FOR THE SIDE CARDS 👇 */
+/* RED CATEGORY BADGE FOR THE SIDE CARDS */
 .cs-list-cat {
-  background-color: #e60000 !important; /* Red background */
-  color: #ffffff !important; /* White text */
+  background-color: #e60000 !important; 
+  color: #ffffff !important; 
   font-size: 10px !important;
   font-weight: 800 !important;
   text-transform: uppercase !important;
-  padding: 4px 8px !important; /* Padding makes it a box */
-  border-radius: 3px !important; /* Slightly rounded corners */
+  padding: 4px 8px !important; 
+  border-radius: 3px !important; 
   margin-bottom: 10px !important;
   display: inline-block !important; 
   letter-spacing: 0.5px;
@@ -280,14 +272,11 @@
   font-family: 'Inter', system-ui, sans-serif !important; 
   font-size: 15px !important; 
   font-weight: 800 !important; 
-  color: black !important; /* White text for dark background */
+  color: black !important; 
   line-height: 1.4 !important;
   margin: 0 0 10px 0 !important;
   transition: color 0.2s ease;
-  
 }
-
-
 
 /* ===== LAYOUT CONFIGURATIONS ===== */
 .cs-layout-hero-sidebar, .cs-layout-split-sidebar {
@@ -326,43 +315,118 @@
   padding-right: 0 !important;
 }
 
-/* ===== RESPONSIVE FIXES (Cleaned up!) ===== */
-@media (max-width: 900px) {
+/* ══════════════════════════════════════════════════════════════
+   RESPONSIVE BREAKPOINTS (5-Tier Device System)
+══════════════════════════════════════════════════════════════ */
+
+/* 1. Large Desktop - 1440px */
+@media (max-width: 1440px) {
+  .cs-wrapper {
+    width: 95%;
+  }
+}
+
+/* 2. Laptop & Large Tablet - 1024px */
+@media (max-width: 1024px) {
+  .cs-layout-grid-4 {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 20px;
+  }
+  .cs-layout-grid-3 {
+    gap: 20px;
+  }
+  .cs-hero-col, .cs-split-col {
+    padding-right: 20px;
+  }
+  .cs-sidebar-col {
+    gap: 16px !important;
+  }
+  .cs-card-title {
+    font-size: 18px;
+    min-height: 46px;
+  }
+}
+
+/* 3. Standard Tablet - 768px */
+@media (max-width: 768px) {
   .cs-layout-hero-sidebar, .cs-layout-split-sidebar {
     flex-direction: column;
   }
   
-  .cs-layout-grid-3, .cs-layout-grid-4 {
+  .cs-layout-grid-3 {
     grid-template-columns: repeat(2, 1fr);
   }
-  
-  .cs-hero-col, .cs-split-col { 
-    margin-bottom: 25px; 
-    border-right: none; 
-    border-bottom: 2px solid #e2e8f0; 
+
+  .cs-hero-col, .cs-split-col, .cs-sidebar-reversed {
+    border-right: none;
+    border-bottom: 2px solid #e2e8f0;
     padding-right: 0;
-    padding-bottom: 25px;
+    padding-bottom: 30px;
+    margin-bottom: 10px;
   }
 
-  .cs-sidebar-reversed {
-    border-right: none;
-    padding-right: 0;
-    margin-bottom: 25px;
-    border-bottom: 2px solid #e2e8f0;
-    padding-bottom: 25px;
+  /* Sidebars can still display as a 2x2 grid on Tablets */
+  .cs-sidebar-col {
+    grid-template-columns: repeat(2, 1fr) !important;
   }
 }
 
-@media (max-width: 600px) {
-  .cs-layout-grid-3, .cs-layout-grid-4 {
-    grid-template-columns: 1fr;
+/* 4. Mobile Large - 425px */
+@media (max-width: 425px) {
+  /* Forces absolutely everything into a single vertical column */
+  .cs-layout-grid-3, 
+  .cs-layout-grid-4, 
+  .cs-sidebar-col {
+    grid-template-columns: 1fr !important;
+    gap: 24px !important;
   }
   
-  /* Stacks sidecards to 1 column on tiny screens */
-  .cs-sidebar-col {
-    grid-template-columns: 1fr !important; 
+  .cs-split-sub-card { 
+    flex-direction: column !important; 
+  }
+  
+  .cs-split-sub-card .cs-list-img { 
+    height: 200px !important; 
   }
 
-  .cs-split-sub-card { flex-direction: column !important; }
-  .cs-split-sub-card .cs-list-img { width: 100% !important; height: 180px !important; }
+  .cs-card-body {
+    padding: 16px;
+  }
+  
+  .cs-card-title {
+    font-size: 22px;
+    min-height: auto;
+  }
+
+  .cs-list-content {
+    padding: 16px !important;
+  }
+}
+
+/* 5. Mobile Medium & Small - 375px to 320px */
+@media (max-width: 375px) {
+  .cs-title {
+    font-size: 22px;
+  }
+  .cs-card-title {
+    font-size: 20px;
+  }
+  .cs-list-title {
+    font-size: 14px !important;
+  }
+}
+
+@media (max-width: 320px) {
+  .cs-title {
+    font-size: 20px;
+  }
+  .cs-card-title {
+    font-size: 18px;
+  }
+  .cs-card-body, .cs-list-content {
+    padding: 12px !important;
+  }
+  .cs-list-item .cs-list-img, .cs-split-sub-card .cs-list-img {
+    height: 160px !important;
+  }
 }

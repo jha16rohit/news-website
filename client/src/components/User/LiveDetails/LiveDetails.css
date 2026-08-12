@@ -1,6 +1,6 @@
 /* ===== PAGE WRAPPER ===== */
 .live-page {
-  background-color: #f8fafc; /* Slightly different gray than standard articles to differentiate */
+  background-color: #f8fafc; 
   padding: 40px 0 80px 0;
   width: 100%;
 }
@@ -17,6 +17,7 @@
 /* ===== MAIN LEFT COLUMN ===== */
 .live-main {
   flex: 2.5;
+  min-width: 0; /* Prevents flexbox blowout */
 }
 
 .live-header-box {
@@ -31,6 +32,7 @@
   display: flex;
   gap: 10px;
   margin-bottom: 15px;
+  flex-wrap: wrap;
 }
 
 /* Pulsing Live Badge */
@@ -85,6 +87,7 @@
   color: #64748b;
   font-size: 14px;
   font-weight: 500;
+  flex-wrap: wrap;
 }
 
 .live-meta span {
@@ -124,6 +127,12 @@
   justify-content: center;
   font-size: 24px;
   cursor: pointer;
+  transition: transform 0.2s ease, background 0.2s ease;
+}
+
+.play-button-overlay:hover {
+  transform: translate(-50%, -50%) scale(1.1);
+  background: #e60000;
 }
 
 /* ===== TIMELINE FEED ===== */
@@ -174,6 +183,7 @@
   flex-direction: column;
   align-items: center;
   width: 20px;
+  flex-shrink: 0;
 }
 
 .timeline-dot {
@@ -247,6 +257,9 @@
   flex: 1;
   position: sticky;
   top: 90px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
 }
 
 .sidebar-widget {
@@ -254,7 +267,6 @@
   padding: 25px;
   border-radius: 12px;
   border: 1px solid #e2e8f0;
-  margin-bottom: 20px;
 }
 
 .widget-title {
@@ -284,16 +296,111 @@
   line-height: 2;
 }
 
-/* RESPONSIVE */
+/* ══════════════════════════════════════════════════════════════
+   RESPONSIVE BREAKPOINTS (6-Tier Professional System)
+══════════════════════════════════════════════════════════════ */
+
+/* 1. Large Desktop - 1440px */
+@media (max-width: 1440px) {
+  .live-container {
+    max-width: 1100px;
+  }
+}
+
+/* 2. Laptop & Large Tablet - 1024px */
 @media (max-width: 1024px) {
   .live-container {
     flex-direction: column;
+    gap: 32px;
   }
-  .live-main, .live-sidebar {
+  
+  .live-main {
     width: 100%;
     flex: none;
   }
-  .live-media-player {
-    height: 300px;
+  
+  /* Sidebar drops to bottom and splits into 2-column grid */
+  .live-sidebar {
+    width: 100%;
+    position: static;
+    flex: none;
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 24px;
   }
+  
+  .sidebar-widget {
+    margin-bottom: 0; /* Let grid handle the gap */
+  }
+
+  .live-headline { font-size: 32px; }
+  .live-media-player { height: 350px; }
+}
+
+/* 3. Standard Tablet - 768px */
+@media (max-width: 768px) {
+  .live-headline { font-size: 28px; }
+  .live-media-player { height: 300px; }
+  
+  .live-header-box,
+  .timeline-container {
+    padding: 24px;
+  }
+}
+
+/* 4. Mobile L - 425px */
+@media (max-width: 640px) {
+  /* Kills the 2-column sidebar grid for mobile phones */
+  .live-sidebar {
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 20px;
+  }
+
+  .live-headline { font-size: 24px; }
+  .live-media-player { height: 240px; }
+  
+  .live-header-box,
+  .timeline-container {
+    padding: 20px 16px;
+  }
+  
+  .timeline-item { gap: 14px; }
+  .update-title { font-size: 16px; }
+  .update-text { font-size: 14px; }
+  
+  .play-button-overlay {
+    width: 50px;
+    height: 50px;
+    font-size: 20px;
+  }
+}
+
+/* 5. Mobile M - 375px */
+@media (max-width: 375px) {
+  .live-headline { font-size: 22px; }
+  .live-media-player { height: 210px; }
+  
+  .live-badges { gap: 8px; }
+  .live-indicator { font-size: 11px; padding: 4px 10px; }
+  .live-category { font-size: 11px; padding: 4px 10px; }
+  
+  .sidebar-widget { padding: 20px 16px; }
+}
+
+/* 6. Mobile S - 320px */
+@media (max-width: 320px) {
+  .live-page { padding: 20px 0 60px 0; }
+  
+  .live-headline { font-size: 20px; margin-bottom: 12px; }
+  .live-meta { flex-direction: column; gap: 8px; font-size: 12px; }
+  .live-media-player { height: 180px; }
+  
+  .timeline-item { padding-bottom: 24px; }
+  .update-title { font-size: 15px; margin-bottom: 6px; }
+  .update-text { font-size: 13px; }
+  .update-time { font-size: 12px; }
+  
+  .widget-title { font-size: 16px; }
+  .widget-text { font-size: 13px; }
 }

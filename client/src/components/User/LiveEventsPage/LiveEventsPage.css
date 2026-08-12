@@ -175,24 +175,91 @@
   color: #0f172a;
 }
 
-/* Fix link styling */
 .text-decoration-none {
   text-decoration: none !important;
   color: inherit !important;
 }
 
-/* ===== RESPONSIVE ===== */
-@media (max-width: 1024px) {
-  .live-events-grid {
-    grid-template-columns: repeat(2, 1fr);
+/* ══════════════════════════════════════════════════════════════
+   RESPONSIVE BREAKPOINTS (6-Tier Professional System)
+══════════════════════════════════════════════════════════════ */
+
+/* 1. Large Desktop - 1440px */
+@media (max-width: 1440px) {
+  .live-events-container {
+    max-width: 1100px;
   }
 }
 
-@media (max-width: 600px) {
+/* 2. Laptop & Large Tablet - 1024px */
+@media (max-width: 1024px) {
+  .live-events-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 24px;
+  }
+}
+
+/* 3. Standard Tablet - 768px */
+@media (max-width: 768px) {
+  .live-events-page {
+    padding: 40px 0;
+  }
+  .header-title-wrapper h1 {
+    font-size: 32px;
+  }
+  .live-events-grid {
+    gap: 20px;
+  }
+}
+
+/* 4. Mobile L - 425px */
+@media (max-width: 425px) {
+  .live-events-page {
+    padding: 30px 0;
+  }
   .live-events-grid {
     grid-template-columns: 1fr;
+    gap: 24px;
   }
   .header-title-wrapper h1 {
     font-size: 28px;
+  }
+  .header-subtitle {
+    font-size: 15px;
+  }
+  .card-image-wrapper {
+    height: 200px;
+  }
+}
+
+/* 5. Mobile M - 375px */
+@media (max-width: 375px) {
+  .header-title-wrapper h1 {
+    font-size: 24px;
+  }
+  .card-title {
+    font-size: 17px;
+  }
+  .card-image-wrapper {
+    height: 180px;
+  }
+  .card-footer {
+    padding: 12px 16px;
+  }
+}
+
+/* 6. Mobile S - 320px */
+@media (max-width: 320px) {
+  .header-title-wrapper h1 {
+    font-size: 22px;
+  }
+  .header-subtitle {
+    font-size: 14px;
+  }
+  .card-title {
+    font-size: 16px;
+  }
+  .card-overlay {
+    padding: 16px;
   }
 }
