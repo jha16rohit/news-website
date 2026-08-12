@@ -169,6 +169,33 @@ setArticles((data.news || []).map(mapNewsItem));
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activeType, search]);
 
+  // Keep the table live: view counts (and anything else) change on the public
+  // site while this admin tab just sits open, but the fetch above only ever
+  // runs once on mount / on filter change — nothing was refreshing the data
+  // afterwards, so numbers here went stale until a hard reload. Poll quietly
+  // in the background, and also refetch the moment the tab regains focus
+  // (covers "switched away, came back" without waiting for the interval).
+  useEffect(() => {
+    const POLL_MS = 20_000;
+
+    const refresh = () => loadData(activeType, search);
+
+    const interval = setInterval(refresh, POLL_MS);
+
+    const onVisible = () => {
+      if (document.visibilityState === "visible") refresh();
+    };
+    document.addEventListener("visibilitychange", onVisible);
+    window.addEventListener("focus", refresh);
+
+    return () => {
+      clearInterval(interval);
+      document.removeEventListener("visibilitychange", onVisible);
+      window.removeEventListener("focus", refresh);
+    };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeType, search]);
+
   // Close dropdown on outside click
   useEffect(() => {
     const handler = (e: MouseEvent) => {

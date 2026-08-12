@@ -522,8 +522,14 @@ export const getNewsBySlug = async (req: Request, res: Response) => {
 
     if (!news) return res.status(404).json({ message: "News not found" });
 
-    // Increment view count asynchronously — don't await
-    News.findByIdAndUpdate(news._id, { $inc: { views: 1 } }).catch(() => {});
+    // View counting is NOT done here. It happens exclusively in
+    // analytics.controller.ts's trackPageView -> bumpAnalyticsBucket, which
+    // is called by the public article page and is properly deduped against
+    // the PageView collection. That same function now also increments
+    // News.views, so this route stays a pure read and the two counters
+    // (this table's News.views, and the Dashboard's Analytics-backed
+    // numbers) can never fall out of sync — there's only one place a view
+    // is ever recorded.
 
     res.json(news);
   } catch (error) {

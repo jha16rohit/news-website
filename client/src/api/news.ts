@@ -253,3 +253,34 @@ export const getBreakingTickerNews = async () => {
     "/api/news/breaking-ticker"
   );
 };
+
+// ─── VIEW TRACKING ───────────────────────────────────────────────────────────
+// One sessionId per browser tab (survives re-renders/StrictMode double-mounts,
+// resets on a fresh tab). The server dedupes on newsId+sessionId+5s window,
+// so calling trackPageView more than once for the same visit is harmless —
+// only the first call actually increments the view count.
+const SESSION_KEY = "ln_session_id";
+
+function getSessionId(): string {
+  let id = sessionStorage.getItem(SESSION_KEY);
+  if (!id) {
+    id = crypto.randomUUID();
+    sessionStorage.setItem(SESSION_KEY, id);
+  }
+  return id;
+}
+
+export const trackPageView = (
+  newsId: string,
+  source: "direct" | "google" | "social" | "other" = "direct"
+): Promise<{ success: boolean; counted: boolean; viewId: string }> =>
+  apiClient("/api/news/track-view", {
+    method: "POST",
+    body: JSON.stringify({ newsId, sessionId: getSessionId(), source }),
+  });
+
+export const trackReadTime = (viewId: string, readTime: number) =>
+  apiClient("/api/news/track-read-time", {
+    method: "POST",
+    body: JSON.stringify({ viewId, readTime }),
+  });
