@@ -8,40 +8,19 @@ import "./UserNavbar.css";
 import { NavLink, useLocation, useNavigate } from "react-router-dom";
 import { Bell, User, Menu, X, Search, ChevronDown, LogOut } from "lucide-react";
 import logo from "../../../assets/Logo.png";
-import { useCategories }
-from "../../../hooks/useCategories";
+import { useCategories } from "../../../hooks/useCategories";
 import { useAuth } from "../../../context/AuthContext";
 
-import type { Category }
-from "../../../types/category";
-// import SignIn from "./SignIn/SignIn";
-// import {
-//   getMe,
-//   logoutUser,
-//   setMemoryToken,
-// } from "../../../api/user/userauth";
-// import type { AuthUser } from "../../../api/user/userauth";
+import type { Category } from "../../../types/category";
 import { getBreakingTickerNews } from "../../../api/news";
-
-// ── helper ──────────────────────────────────────────────────────
-
-// function computeInitials(name: string): string {
-//   const words = name.trim().split(" ");
-//   if (words.length > 1) return (words[0][0] + words[words.length - 1][0]).toUpperCase();
-//   return name.substring(0, 2).toUpperCase();
-// }
-
-// ── component ───────────────────────────────────────────────────
 
 const UserNavbar: React.FC = () => {
   const {
-  user,
-  // loginOpen,
-  openLogin,
-  // closeLogin,
-  // login,
-  logout,
-} = useAuth();
+    user,
+    openLogin,
+    logout,
+  } = useAuth();
+  
   const [isProfileOpen, setIsProfileOpen] = useState(false);
   const profileDropdownRef = useRef<HTMLDivElement>(null);
 
@@ -61,33 +40,18 @@ const UserNavbar: React.FC = () => {
   const [headlines, setHeadlines] = useState<string[]>([]);
 
   useEffect(() => {
-
-  const fetchTickerNews =
-    async () => {
-
+    const fetchTickerNews = async () => {
       try {
-
-        const data =
-          await getBreakingTickerNews();
-
-        setHeadlines(
-          data.headlines || []
-        );
-
+        const data = await getBreakingTickerNews();
+        setHeadlines(data.headlines || []);
       } catch (error) {
-
-        console.error(
-          "Failed to fetch ticker news:",
-          error
-        );
+        console.error("Failed to fetch ticker news:", error);
       }
     };
+    fetchTickerNews();
+  }, []);
 
-  fetchTickerNews();
-
-}, []);
   // ── Date ────────────────────────────────────────────────────
-
   useEffect(() => {
     const now = new Date();
     setWeekday(now.toLocaleDateString("en-US", { weekday: "long" }));
@@ -95,13 +59,13 @@ const UserNavbar: React.FC = () => {
   }, []);
 
   // ── Focus search ─────────────────────────────────────────────
-
   useEffect(() => {
-    if (isSearchOpen && searchInputRef.current) searchInputRef.current.focus();
+    if (isSearchOpen && searchInputRef.current) {
+      setTimeout(() => searchInputRef.current?.focus(), 100);
+    }
   }, [isSearchOpen]);
 
   // ── Click outside profile dropdown ───────────────────────────
-
   useEffect(() => {
     const handle = (e: MouseEvent) => {
       if (profileDropdownRef.current && !profileDropdownRef.current.contains(e.target as Node)) {
@@ -113,13 +77,10 @@ const UserNavbar: React.FC = () => {
   }, []);
 
   // ── Mobile category highlight ────────────────────────────────
-
   useEffect(() => {
     const currentSlug = location.pathname.split("/").pop();
     if (currentSlug && location.pathname.includes("/category/")) {
-      const activeCategory = categories.find(
-        c => c.slug === currentSlug
-      );
+      const activeCategory = categories.find(c => c.slug === currentSlug);
       if (activeCategory) {
         setExpandedMobileCat(
           activeCategory.parentId != null
@@ -130,41 +91,14 @@ const UserNavbar: React.FC = () => {
     }
   }, [location.pathname, categories]);
 
-  // ── Rehydrate user from backend on mount ─────────────────────
-  // The httpOnly cookie is sent automatically with credentials: "include".
-  // If getMe() succeeds, user is already logged in from a previous session.
-
-  // useEffect(() => {
-  //   getMe()
-  //     .then(({ user }) => setUser({ ...user, initials: computeInitials(user.name) }))
-  //     .catch(() => {
-  //       // Not logged in — that's fine, stay null
-  //       setUser(null);
-  //     });
-  // }, []);
-
-  // ── Called by SignIn modal on successful login / register ─────
-
-  // const handleLoginSuccess = (authUser: AuthUser, token: string) => {
-  //   setMemoryToken(token);
-  //   setUser({ ...authUser, initials: computeInitials(authUser.name) });
-  //   setIsSignInOpen(false);
-  // };
-
   // ── Logout ───────────────────────────────────────────────────
-
   const handleLogout = async () => {
-  setIsProfileOpen(false);
-
-  await logout();
-
-  navigate("/");
-};
+    setIsProfileOpen(false);
+    await logout();
+    navigate("/");
+  };
 
   // ── Nav helpers ───────────────────────────────────────────────
-
-  
-
   const childrenOf = (parentId: string): Category[] =>
     categories.filter(c => String(c.parentId) === parentId && c.enabled);
 
@@ -202,8 +136,15 @@ const UserNavbar: React.FC = () => {
     window.open("/profile", "_blank", "noopener,noreferrer");
   };
 
-  // ── RENDER ────────────────────────────────────────────────────
+  // 👇 EXPERT FIX: Function to inject tag text into search bar 👇
+  const handleTagClick = (tagText: string) => {
+    if (searchInputRef.current) {
+      searchInputRef.current.value = tagText; // Injects the text
+      searchInputRef.current.focus(); // Places cursor in the box
+    }
+  };
 
+  // ── RENDER ────────────────────────────────────────────────────
   return (
     <div className="navbar-wrapper">
 
@@ -354,22 +295,15 @@ const UserNavbar: React.FC = () => {
 
           {/* ── RIGHT ACTIONS ─────────────────── */}
           <div className="nav-actions">
-            {/* Search */}
-            <div className="search-container">
-              <button
-                className="open-search-btn"
-                onClick={() => setIsSearchOpen(true)}
-                style={{ opacity: isSearchOpen ? 0 : 1, pointerEvents: isSearchOpen ? "none" : "auto" }}
-              >
-                <Search size={20} />
-              </button>
-              <div className={`search-bar-expandable${isSearchOpen ? " open" : ""}`}>
-                <input type="text" placeholder="Search news..." ref={searchInputRef} />
-                <button className="close-search-btn" onClick={() => setIsSearchOpen(false)}>
-                  <X size={18} />
-                </button>
-              </div>
-            </div>
+            
+            {/* ── SEARCH TOGGLE BUTTON ── */}
+            <button
+              className="open-search-btn"
+              onClick={() => setIsSearchOpen(!isSearchOpen)}
+              title="Search"
+            >
+              {isSearchOpen ? <X size={24} /> : <Search size={22} />}
+            </button>
 
             {/* Bell */}
             <div className="notification-wrapper">
@@ -424,14 +358,37 @@ const UserNavbar: React.FC = () => {
             )}
           </div>
         </div>
-      </header>
 
-      {/* {isSignInOpen && (
-        <SignIn
-          onClose={() => setIsSignInOpen(false)}
-          onSuccess={handleLoginSuccess}
-        />
-      )} */}
+        {/* ── MEGA SEARCH DROP-DOWN PANEL ── */}
+        <div className={`search-mega-panel ${isSearchOpen ? "open" : ""}`}>
+          <div className="smp-container">
+            <div className="smp-input-group">
+              <div className="smp-input-wrapper">
+                <Search size={20} className="smp-icon" />
+                <input 
+                  type="text" 
+                  placeholder="Search for latest news, topics, or events..." 
+                  ref={searchInputRef}
+                />
+              </div>
+              <button className="smp-submit-btn">Search</button>
+            </div>
+            
+            <div className="smp-trending">
+              <span className="smp-trending-label">Trending:</span>
+              <div className="smp-tags">
+                {/* 👇 Added onClick handlers to all tags 👇 */}
+                <span className="smp-tag" onClick={() => handleTagClick("Jharkhand Weather")}>Jharkhand Weather</span>
+                <span className="smp-tag" onClick={() => handleTagClick("Stock Market Update")}>Stock Market Update</span>
+                <span className="smp-tag" onClick={() => handleTagClick("Elections 2026")}>Elections 2026</span>
+                <span className="smp-tag" onClick={() => handleTagClick("Technology")}>Technology</span>
+                <span className="smp-tag" onClick={() => handleTagClick("Bollywood")}>Bollywood</span>
+              </div>
+            </div>
+          </div>
+        </div>
+        
+      </header>
     </div>
   );
 };

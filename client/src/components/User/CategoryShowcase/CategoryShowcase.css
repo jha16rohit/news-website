@@ -1,11 +1,16 @@
 /* ===== OVERALL WRAPPER ===== */
 .cs-wrapper {
-  /* Guarantees it stretches perfectly to align with LatestNews */
-  width: 100%;
+  /* 👇 CRITICAL FIX: Restored to 95% so it perfectly aligns with the sections above and below it! 👇 */
+  width: 95%; 
   max-width: 1400px; 
   margin: 50px auto;
   font-family: 'Inter', system-ui, sans-serif;
   color: #0f172a;
+  box-sizing: border-box;
+}
+
+.cs-wrapper *, .cs-wrapper *::before, .cs-wrapper *::after {
+  box-sizing: border-box;
 }
 
 .cs-section {
@@ -68,6 +73,7 @@
 .cs-layout {
   display: flex;
   gap: 30px;
+  width: 100%;
 }
 
 .cs-layout a {
@@ -76,7 +82,7 @@
 }
 
 /* =========================================
-   THE NEW CINEMATIC DARK CARD (LOCKED SIZES)
+   THE CINEMATIC DARK CARD
 ========================================= */
 .cs-dark-card {
   position: relative;
@@ -85,22 +91,16 @@
   flex-direction: column;
   border-radius: 8px;
   overflow: hidden;
-  height: 100% !important; /* Forces all cards in a row to be identical height */
+  height: 100%; 
   transition: transform 0.3s ease, box-shadow 0.3s ease;
   box-shadow: 6px 7px 15px -3px rgba(0, 0, 0, 0.4);
-}
-
-.cs-list-item, .cs-split-sub-card {
-  position: relative; /* Required for the floating save icon */
-  display: flex !important;
-  flex-direction: column !important; 
 }
 
 .category-save-btn {
   position: absolute;
   top: 12px;
   right: 12px;
-  background-color: rgba(0, 0, 0, 0.4); /* Dark translucent background */
+  background-color: rgba(0, 0, 0, 0.4);
   border: none;
   border-radius: 50%;
   padding: 8px;
@@ -122,10 +122,9 @@
   transform: translateY(-4px);
 }
 
-/* LOCKS THE IMAGE AREA SO IT NEVER SHRINKS OR GROWS */
 .cs-img-wrap {
   width: 100%;
-  aspect-ratio: 16/9 !important; /* Perfect widescreen ratio forever */
+  aspect-ratio: 16/9;
   overflow: hidden;
   flex-shrink: 0; 
 }
@@ -133,7 +132,7 @@
 .cs-dark-card img {
   width: 100%;
   height: 100%; 
-  object-fit: cover !important; 
+  object-fit: cover; 
   display: block;
   transition: transform 0.5s ease;
 }
@@ -158,7 +157,6 @@
   letter-spacing: 0.5px;
 }
 
-/* LOCKS THE TITLE SO IT DOESN'T PUSH THE CARD TALLER */
 .cs-card-title {
   font-family: 'Georgia', serif;
   font-size: 20px;
@@ -166,9 +164,7 @@
   color: black;
   line-height: 1.3;
   margin: 0 0 12px 0;
-  transition: color 0.2s ease;
   
-  /* Limits title to exactly 2 lines! */
   display: -webkit-box;
   -webkit-line-clamp: 2; 
   line-clamp: 2;
@@ -183,7 +179,6 @@
   min-height: 46px; 
 }
 
-/* LOCKS THE SUBTITLE TO EXACTLY 2 LINES */
 .cs-card-sub {
   color: #64748b;
   font-size: 14px;
@@ -213,69 +208,70 @@
 ========================================= */
 .cs-sidebar-col {
   flex: 1.2; 
-  display: grid !important;
-  grid-template-columns: repeat(2, 1fr) !important; 
-  grid-template-rows: repeat(2, 1fr) !important; 
-  gap: 20px !important;
+  min-width: 0; 
+  display: grid;
+  grid-template-columns: repeat(2, 1fr); 
+  grid-template-rows: repeat(2, 1fr); 
+  gap: 20px;
 }
 
-/* The Mini-Cards inside the 2x2 Grid */
 .cs-list-item, .cs-split-sub-card {
-  display: flex !important;
-  flex-direction: column !important; 
-  padding: 0 !important;
-  background-color: #ffffff !important; 
-  border-radius: 6px !important; 
-  overflow: hidden !important; 
-  height: 100% !important;
+  position: relative;
+  display: flex;
+  flex-direction: column; 
+  padding: 0;
+  background-color: #ffffff; 
+  border-radius: 6px; 
+  overflow: hidden; 
+  height: 100%;
   box-shadow: 6px 7px 15px -3px rgba(0, 0, 0, 0.4);
-  color: black !important;
+  color: black;
 }
 
 .cs-list-item:hover {
-  transform: translateY(-4px) !important;
+  transform: translateY(-4px);
 }
 
-/* Images in the side cards */
 .cs-list-item .cs-list-img, .cs-split-sub-card .cs-list-img {
-  width: 100% !important; 
-  height: 150px !important; 
-  border-radius: 0 !important; 
-  object-fit: cover !important;
+  width: 100%; 
+  height: 140px; 
+  object-fit: cover;
 }
 
-/* Text Content Wrapper */
 .cs-list-content {
-  display: flex !important;
-  flex-direction: column !important;
-  flex: 1 !important; 
-  padding: 16px !important; 
-  align-items: flex-start !important;
+  display: flex;
+  flex-direction: column;
+  flex: 1; 
+  padding: 16px; 
+  align-items: flex-start;
 }
 
-/* RED CATEGORY BADGE FOR THE SIDE CARDS */
 .cs-list-cat {
-  background-color: #e60000 !important; 
-  color: #ffffff !important; 
-  font-size: 10px !important;
-  font-weight: 800 !important;
-  text-transform: uppercase !important;
-  padding: 4px 8px !important; 
-  border-radius: 3px !important; 
-  margin-bottom: 10px !important;
-  display: inline-block !important; 
+  background-color: #e60000; 
+  color: #ffffff; 
+  font-size: 10px;
+  font-weight: 800;
+  text-transform: uppercase;
+  padding: 4px 8px; 
+  border-radius: 3px; 
+  margin-bottom: 10px;
+  display: inline-block; 
   letter-spacing: 0.5px;
 }
 
-/* Side Card Title */
 .cs-list-title {
-  font-family: 'Inter', system-ui, sans-serif !important; 
-  font-size: 15px !important; 
-  font-weight: 800 !important; 
-  color: black !important; 
-  line-height: 1.4 !important;
-  margin: 0 0 10px 0 !important;
-  transition: color 0.2s ease;
+  font-family: 'Inter', system-ui, sans-serif; 
+  font-size: 14px; 
+  font-weight: 800; 
+  color: black; 
+  line-height: 1.4;
+  margin: 0 0 10px 0;
+  
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
 }
 
 /* ===== LAYOUT CONFIGURATIONS ===== */
@@ -286,6 +282,7 @@
 
 .cs-hero-col, .cs-split-col {
   flex: 1.4; 
+  min-width: 0; 
   border-right: 1px solid #e2e8f0; 
   padding-right: 30px;
   display: flex;
@@ -311,135 +308,60 @@
 }
 
 .cs-hero-reversed {
-  border-right: none !important; 
-  padding-right: 0 !important;
+  border-right: none; 
+  padding-right: 0;
 }
 
-/* ══════════════════════════════════════════════════════════════
-   RESPONSIVE BREAKPOINTS (6-Tier Professional System)
-══════════════════════════════════════════════════════════════ */
+/* =========================================
+   RESPONSIVE BREAKPOINTS (Professional Scale)
+========================================= */
 
-/* 1. Large Desktop - 1440px */
-@media (max-width: 1440px) {
-  .cs-wrapper {
-    width: 95%;
-  }
-}
-
-/* 2. Laptop & Large Tablet - 1024px */
 @media (max-width: 1024px) {
-  .cs-layout-grid-4, .cs-layout-grid-3 {
-    grid-template-columns: repeat(2, 1fr);
-    gap: 20px;
-  }
-  .cs-hero-col, .cs-split-col, .cs-sidebar-reversed {
-    padding-right: 20px;
-  }
-  .cs-sidebar-col {
-    gap: 16px !important;
-  }
-  .cs-card-title {
-    font-size: 18px;
-    min-height: 46px;
-  }
-}
-
-/* 3. Standard Tablet - 768px */
-@media (max-width: 768px) {
-  /* 👇 THE CRITICAL FIX: Stacks columns vertically so they don't squish */
-  .cs-layout {
+  .cs-layout-hero-sidebar, .cs-layout-split-sidebar {
     flex-direction: column;
-    gap: 30px;
   }
   
-  .cs-hero-col, .cs-split-col, .cs-sidebar-reversed {
-    border-right: none !important;
-    padding-right: 0 !important;
-    border-bottom: 2px solid #e2e8f0;
-    padding-bottom: 30px;
-    width: 100%;
+  .cs-layout-grid-3 {
+    grid-template-columns: repeat(2, 1fr);
   }
 
-  /* Releases the locked heights so text can breathe vertically */
-  .cs-dark-card, .cs-list-item, .cs-split-sub-card {
-    height: auto !important; 
+  .cs-layout-grid-4 {
+    grid-template-columns: repeat(2, 1fr);
   }
-
-  /* On tablet, sidebar grid safely remains 2 columns side-by-side */
-  .cs-sidebar-col {
-    grid-template-columns: repeat(2, 1fr) !important;
-    grid-template-rows: auto !important; 
+  
+  .cs-hero-col, .cs-split-col, .cs-sidebar-reversed { 
+    margin-bottom: 25px; 
+    border-right: none; 
+    border-bottom: 2px solid #e2e8f0; 
+    padding-right: 0;
+    padding-bottom: 25px;
     width: 100%;
   }
 }
 
-/* 4. Mobile Large - 425px */
-@media (max-width: 425px) {
-  /* Forces absolutely everything into a single vertical column */
-  .cs-layout-grid-3, 
-  .cs-layout-grid-4, 
-  .cs-sidebar-col {
-    grid-template-columns: 1fr !important;
-    gap: 24px !important;
+@media (max-width: 768px) {
+  .cs-layout-grid-3, .cs-layout-grid-4 {
+    grid-template-columns: 1fr;
   }
   
+  /* On tablets/mobiles, change sidebar grid to single column or clean stack */
+  .cs-sidebar-col {
+    grid-template-columns: repeat(2, 1fr); 
+    grid-template-rows: auto;
+  }
+}
+
+@media (max-width: 480px) {
+  .cs-sidebar-col {
+    grid-template-columns: 1fr; 
+  }
+
   .cs-split-sub-card { 
-    flex-direction: column !important; 
+    flex-direction: column; 
   }
   
-  .cs-list-item .cs-list-img, .cs-split-sub-card .cs-list-img { 
-    height: 220px !important; 
-  }
-
-  .cs-card-body {
-    padding: 16px;
-  }
-  
-  .cs-card-title {
-    font-size: 22px;
-    min-height: auto;
-  }
-
-  .cs-list-title {
-    font-size: 18px !important;
-  }
-
-  .cs-list-content {
-    padding: 16px !important;
-  }
-}
-
-/* 5. Mobile Medium - 375px */
-@media (max-width: 375px) {
-  .cs-title {
-    font-size: 22px;
-  }
-  .cs-card-title {
-    font-size: 20px;
-  }
-  .cs-list-title {
-    font-size: 16px !important;
-  }
-  .cs-list-item .cs-list-img, .cs-split-sub-card .cs-list-img { 
-    height: 200px !important; 
-  }
-}
-
-/* 6. Mobile Small - 320px */
-@media (max-width: 320px) {
-  .cs-title {
-    font-size: 20px;
-  }
-  .cs-card-title {
-    font-size: 18px;
-  }
-  .cs-card-body, .cs-list-content {
-    padding: 12px !important;
-  }
-  .cs-list-title {
-    font-size: 14px !important;
-  }
-  .cs-list-item .cs-list-img, .cs-split-sub-card .cs-list-img {
-    height: 180px !important;
+  .cs-split-sub-card .cs-list-img { 
+    width: 100%; 
+    height: 180px; 
   }
 }

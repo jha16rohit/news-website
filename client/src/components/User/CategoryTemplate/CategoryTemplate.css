@@ -98,6 +98,7 @@
   cursor: pointer;
   background: #111;
   min-height: 440px;
+  height: 100%;
   box-shadow: var(--ct-shadow-sm);
   isolation: isolate;
 }
@@ -158,6 +159,7 @@
 .ct-stack {
   position: relative; 
   display: flex;
+  flex-direction: row;
   background: var(--ct-white);
   border-radius: var(--ct-radius);
   overflow: hidden;
@@ -177,8 +179,10 @@
 .ct-stack__imgwrap {
   position: relative; 
   width: 140px;
+  height: 100%;
   flex-shrink: 0;
   overflow: hidden;
+  
 }
 
 .ct-stack__img {
@@ -196,6 +200,7 @@
   flex-direction: column;
   justify-content: center;
   gap: 8px;
+  overflow: hidden; /* Prevents text from pushing height boundaries */
 }
 
 .ct-stack__title {

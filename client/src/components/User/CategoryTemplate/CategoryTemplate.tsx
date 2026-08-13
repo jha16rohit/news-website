@@ -13,7 +13,7 @@ import { getCategoryNews } from "../../../api/user/categoryNews";
 import Preloader from "../../Admin/Preloader/Preloder";
 
 import { getRecentNews } from "../../../api/user/recentNews";
-import {getAdvertisementPool,  type Advertisement as AdType,} from "../../../api/user/advertisementPool";
+import { getAdvertisementPool, type Advertisement as AdType } from "../../../api/user/advertisementPool";
 
 // ─── Static placeholder data ──────────────────────────────────────────────────
 const STATIC_ARTICLES = [
@@ -29,8 +29,6 @@ const STATIC_ARTICLES = [
   { id: 1010, title: "Tennis Legend Announces Retirement After Glorious Career", subtitle: "Fans around the world bid farewell to a player who defined an era with grace and unparalleled skill.", category: "Sports", published: "10 hours ago", views: "20.1K", img: "https://images.unsplash.com/photo-1508264165352-258a9bfc09c4?w=600&q=80" },
   { id: 1011, title: "NBA Finals MVP Delivers Emotional Speech Amidst Championship Glory", subtitle: "Tears and triumph as the star player reflects on the journey to the title and thanks fans worldwide.", category: "Sports", published: "11 hours ago", views: "25.3K", img: "https://images.unsplash.com/photo-1517649763962-0c623066013b?w=600&q=80" },
 ];
-
-
 
 const FORECAST = [
   { day: "Fri", icon: <Sun size={14} />, hi: 36, lo: 29 },
@@ -184,26 +182,21 @@ export default function CategoryTemplate() {
 
   const [visible, setVisible] = useState(INITIAL_VISIBLE);
 
-  const [categoryNews, setCategoryNews] =
-    useState<any[]>([]);
-
-  const [recentNews, setRecentNews] =
-  useState<any[]>([]);  
-
-  const [loading, setLoading] =
-    useState(true);
+  const [categoryNews, setCategoryNews] = useState<any[]>([]);
+  const [recentNews, setRecentNews] = useState<any[]>([]);  
+  const [loading, setLoading] = useState(true);
 
   const [ads, setAds] = useState<{
-  cards: AdType[];
-  strips: AdType[];
-}>({
-  cards: [],
-  strips: [],
-});  
+    cards: AdType[];
+    strips: AdType[];
+  }>({
+    cards: [],
+    strips: [],
+  });  
 
-const category = categories.find(
-  (c) => c.slug === slug
-);
+  const category = categories.find(
+    (c) => c.slug === slug
+  );
   
   const parentCategory = category?.parentId 
     ? categories.find((c) => c.id === category.parentId) ?? null
@@ -216,35 +209,31 @@ const category = categories.find(
       try {
         setLoading(true);
 
-        const data =
-          await getCategoryNews(slug!);
+        const data = await getCategoryNews(slug!);
 
         if (data.success) {
           setCategoryNews(data.news || []);
-          const recent =
-  await getRecentNews();
+          const recent = await getRecentNews();
 
-if (recent.success) {
-  setRecentNews(
-    recent.news || []
-  );
-}
+          if (recent.success) {
+            setRecentNews(recent.news || []);
+          }
 
-// Load advertisements
-      const adResponse = await getAdvertisementPool({
-        cards: 1,
-        strips: 2,
-      });
+          // Load advertisements
+          const adResponse = await getAdvertisementPool({
+            cards: 1,
+            strips: 2,
+          });
 
-      setAds(adResponse);
+          // Safely set ads array to guarantee UI always renders
+          setAds({
+            cards: adResponse?.cards || [],
+            strips: adResponse?.strips || []
+          });
         }
 
       } catch (error) {
-        console.error(
-          "Category news fetch error:",
-          error
-        );
-
+        console.error("Category news fetch error:", error);
       } finally {
         setLoading(false);
       }
@@ -256,45 +245,24 @@ if (recent.success) {
 
   }, [slug]);
 
-  const source: Article[] =
-  categoryNews.map((a: any) => ({
+  const source: Article[] = categoryNews.map((a: any) => ({
     id: a._id,
-
-    title:
-  a.shortTitle ||
-  a.headline,
-
-    subtitle:
-      a.excerpt ||
-      "Read full article for more details.",
-
-    category:
-      a.categoryName ||
-      category?.name ||
-      "News",
-
-    published:
-      a.publishedAt
-        ? new Date(
-            a.publishedAt
-          ).toLocaleDateString()
-        : "Recently",
-
+    title: a.shortTitle || a.headline,
+    subtitle: a.excerpt || "Read full article for more details.",
+    category: a.categoryName || category?.name || "News",
+    published: a.publishedAt
+      ? new Date(a.publishedAt).toLocaleDateString()
+      : "Recently",
     views: String(a.views || 0),
-
-    img:
-      a.featuredImage ||
-      "https://via.placeholder.com/600x400",
+    img: a.featuredImage || "https://via.placeholder.com/600x400",
   }));
-const hero = source[0];
 
-const stacks = source.slice(1, 4);
+  const hero = source[0];
+  const stacks = source.slice(1, 4);
 
-const allGrid = [...source].sort(
-  () => Math.random() - 0.5
-);
+  const allGrid = [...source].sort(() => Math.random() - 0.5);
+  const grid = allGrid.slice(0, visible);
 
-const grid = allGrid.slice(0, visible);
   const canShowMore = visible < allGrid.length;
   const canShowLess = visible > INITIAL_VISIBLE;
 
@@ -310,28 +278,13 @@ const grid = allGrid.slice(0, visible);
     setVisible(INITIAL_VISIBLE);
   }
 
-if (loading) {
-  return (
-  <>
-  
-  <Preloader />
-  </>
-  );
-}
-
-
-  // if (!category) {
-  //   return (
-  //     <>
-  //       <UserNavbar />
-  //       <div className="ct-notfound">
-  //         <TrendingUp size={48} color="#ccc" />
-  //         <h2>Category not found</h2> 
-  //         <Link to="/">Return to Home</Link>
-  //       </div>
-  //     </>
-  //   );
-  // }
+  if (loading) {
+    return (
+      <>
+        <Preloader />
+      </>
+    );
+  }
 
   return (
     <>
@@ -358,17 +311,12 @@ if (loading) {
                     <li key={item.id} className="ct-recent-item">
                       <div className="ct-recent-icon"><ChevronRight size={14} style={{ color }} /></div>
                       <div>
-                        <p className="ct-recent-title">{
-  item.shortTitle ||
-  item.headline
-}</p>
+                        <p className="ct-recent-title">{item.shortTitle || item.headline}</p>
                         <span className="ct-recent-date">{
-  item.publishedAt
-    ? new Date(
-        item.publishedAt
-      ).toLocaleDateString()
-    : "Recently"
-}</span>
+                          item.publishedAt
+                            ? new Date(item.publishedAt).toLocaleDateString()
+                            : "Recently"
+                        }</span>
                       </div>
                     </li>
                   ))}
@@ -377,9 +325,8 @@ if (loading) {
             </div>
           </div>
         </section>
-        <Advertisement
-  adData={ads.strips[0] ?? null}
-/>
+        
+        <Advertisement adData={ads.strips[0] ?? null} />
 
         {/* ── LATEST NEWS: Grid cards LEFT | Weather + Calendar RIGHT ── */}
         <section className="ct-section ct-section--gray">
@@ -389,8 +336,6 @@ if (loading) {
               <div className="ct-news-line" style={{ background: color }} />
             </div>
 
-            {/* KEY FIX: ct-news-main comes FIRST in DOM = LEFT side
-                        ct-news-sidebar comes SECOND in DOM = RIGHT side */}
             <div className="ct-news-layout">
 
               <div className="ct-news-main">
@@ -421,21 +366,18 @@ if (loading) {
 
               <aside className="ct-news-sidebar">
                 <WeatherWidget color={color} />
-                 <Advertisement
-    adData={ads.cards[0] ?? null}
-    variant="card"
-  />
+                <Advertisement
+                  adData={ads.cards[0] ?? null}
+                  variant="card"
+                />
                 <CalendarWidget />
-                
               </aside>
 
             </div>
           </div>
         </section>
 
-        <Advertisement
-            adData={ads.strips[1] ?? null}
-            />
+        <Advertisement adData={ads.strips[1] ?? null} />
 
       </div>
     </>
