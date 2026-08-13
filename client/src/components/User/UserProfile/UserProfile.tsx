@@ -1,13 +1,13 @@
 // client/src/components/User/UserProfile/UserProfile.tsx
 // ──────────────────────────────────────────────────────────────
-// All data comes from the real backend.  No localStorage anywhere.
+// All data comes from the real backend. No localStorage, no static arrays.
 
 import React, { useState, useEffect, useRef } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import {
   History, BarChart2, Edit2, Eye,
   Share2, Clock, X, User, Mail, Phone,
-  Image as ImageIcon, ArrowRight, TrendingUp, Loader2, Lock,
+  Image as ImageIcon, ArrowRight,  Loader2, Lock,
 } from "lucide-react";
 import "./UserProfile.css";
 import {
@@ -15,41 +15,36 @@ import {
   updateProfile,
   changePassword,
   logoutUser,
+  getReadingHistory,
+  getAnalytics,
 } from "../../../api/user/userauth";
-import type { AuthUser } from "../../../api/user/userauth";
+import type {
+  AuthUser,
+  ReadingHistoryItem,
+  AnalyticsData,
+} from "../../../api/user/userauth";
+
 // ─────────────────────────────────────────────
-// STATIC DEMO DATA  (replace with real API data when ready)
+// COLOR PALETTES (data is real, colors are just cosmetic cycling)
 // ─────────────────────────────────────────────
 
-const HISTORY_ARTICLES = [
-  { id: 4, category: "Sports",     title: "India Clinches Historic Test Series Win Against Australia 3-1",        time: "3 hours ago", read: "4 min", img: "https://images.unsplash.com/photo-1540747913346-19e32dc3e97e?w=400&q=80" },
-  { id: 5, category: "Business",   title: "Sensex Surges 800 Points as FIIs Pour Record Capital Into Markets",   time: "4 hours ago", read: "5 min", img: "https://images.unsplash.com/photo-1611974789855-9c2a0a7236a3?w=400&q=80" },
-  { id: 6, category: "Politics",   title: "PM Modi At G20 Summit: Key Trade Deals Signed With 7 Nations",       time: "7 hours ago", read: "6 min", img: "https://images.unsplash.com/photo-1523995462485-3d171b5c8fa9?w=400&q=80" },
-  { id: 7, category: "Technology", title: "AI Revolution: How Indian Tech Giants Are Leading the Global Race",  time: "1 day ago",   read: "8 min", img: "https://images.unsplash.com/photo-1519389950473-47ba0277781c?w=400&q=80" },
-  { id: 8, category: "Health",     title: "Indian Scientists Develop Breakthrough Vaccine for Dengue Fever",    time: "1 day ago",   read: "3 min", img: "https://images.unsplash.com/photo-1559757175-5700dde675bc?w=400&q=80" },
-];
+const CATEGORY_COLORS = ["#0d1f3c", "#e60000", "#2563eb", "#64748b", "#94a3b8", "#16a34a", "#9333ea"];
 
-const CATEGORY_DATA = [
-  { label: "Politics",   value: 38, color: "#0d1f3c" },
-  { label: "Sports",     value: 27, color: "#e60000" },
-  { label: "Business",   value: 19, color: "#2563eb" },
-  { label: "Technology", value: 11, color: "#64748b" },
-  { label: "Health",     value:  5, color: "#94a3b8" },
-];
+const PLATFORM_COLORS: Record<string, string> = {
+  whatsapp: "#25D366",
+  facebook: "#1877F2",
+  twitter: "#0d1f3c",
+  linkedin: "#0A66C2",
+  other: "#94a3b8",
+};
 
-const WEEKLY_DATA = [
-  { day: "M", reads: 12 }, { day: "T", reads: 19 }, { day: "W", reads: 8  },
-  { day: "T", reads: 25 }, { day: "F", reads: 17 }, { day: "S", reads: 31 }, { day: "S", reads: 22 },
-];
-
-const PLATFORM_DATA = [
-  { name: "WhatsApp",  pct: 47, color: "#25D366" },
-  { name: "Facebook",  pct: 28, color: "#1877F2" },
-  { name: "X/Twitter", pct: 14, color: "#0d1f3c" },
-  { name: "LinkedIn",  pct: 11, color: "#0A66C2" },
-];
-
-const maxReads = Math.max(...WEEKLY_DATA.map(d => d.reads));
+const PLATFORM_LABELS: Record<string, string> = {
+  whatsapp: "WhatsApp",
+  facebook: "Facebook",
+  twitter: "X/Twitter",
+  linkedin: "LinkedIn",
+  other: "Other",
+};
 
 // ─────────────────────────────────────────────
 // HELPERS
@@ -59,6 +54,17 @@ function computeInitials(name: string): string {
   const words = name.trim().split(" ");
   if (words.length > 1) return (words[0][0] + words[words.length - 1][0]).toUpperCase();
   return name.substring(0, 2).toUpperCase();
+}
+
+function timeAgo(dateStr: string): string {
+  const diffMs = Date.now() - new Date(dateStr).getTime();
+  const mins = Math.floor(diffMs / 60000);
+  if (mins < 1) return "just now";
+  if (mins < 60) return `${mins} min${mins !== 1 ? "s" : ""} ago`;
+  const hours = Math.floor(mins / 60);
+  if (hours < 24) return `${hours} hour${hours !== 1 ? "s" : ""} ago`;
+  const days = Math.floor(hours / 24);
+  return `${days} day${days !== 1 ? "s" : ""} ago`;
 }
 
 // ─────────────────────────────────────────────
@@ -77,6 +83,16 @@ const UserProfile: React.FC = () => {
   // ── User state (source of truth = backend) ───────────────────
 
   const [user, setUser] = useState<AuthUser | null>(null);
+
+  // ── Reading history (last 7 days) ─────────────────────────────
+
+  const [history,        setHistory]        = useState<ReadingHistoryItem[]>([]);
+  const [historyLoading, setHistoryLoading] = useState(true);
+
+  // ── Analytics ──────────────────────────────────────────────────
+
+  const [analytics,        setAnalytics]        = useState<AnalyticsData | null>(null);
+  const [analyticsLoading, setAnalyticsLoading] = useState(true);
 
   // ── Edit profile form state ───────────────────────────────────
 
@@ -97,7 +113,7 @@ const UserProfile: React.FC = () => {
   const [passError,    setPassError]    = useState<string | null>(null);
   const [passSuccess,  setPassSuccess]  = useState<string | null>(null);
 
-  // ── Load user on mount ───────────────────────────────────────
+  // ── Load user + history + analytics on mount ──────────────────
 
   useEffect(() => {
     getMe()
@@ -107,6 +123,17 @@ const UserProfile: React.FC = () => {
         setEditEmail(user.email || "");
         setEditPhone(user.phone || "");
         setEditProfilePic(user.profilePic || null);
+
+        // Fire both in parallel once we know we're authenticated
+        getReadingHistory()
+          .then(({ history }) => setHistory(history))
+          .catch(() => setHistory([]))
+          .finally(() => setHistoryLoading(false));
+
+        getAnalytics()
+          .then((data) => setAnalytics(data))
+          .catch(() => setAnalytics(null))
+          .finally(() => setAnalyticsLoading(false));
       })
       .catch(() => {
         // Not authenticated → redirect to home
@@ -160,18 +187,18 @@ const UserProfile: React.FC = () => {
     setPassSuccess(null);
 
     if (newPass.length < 6) {
-      setPassError("New password kam se kam 6 characters ka hona chahiye.");
+      setPassError("The new password must be at least 6 characters long.");
       return;
     }
     if (newPass !== confirmPass) {
-      setPassError("Passwords match nahi kar rahe.");
+      setPassError("The passwords do not matched.");
       return;
     }
 
     setPassLoading(true);
     try {
       const res = await changePassword({ currentPassword: currentPass, newPassword: newPass });
-      setPassSuccess(res.message || "Password badal gaya!");
+      setPassSuccess(res.message || "Password changed successfully!");
       setCurrentPass(""); setNewPass(""); setConfirmPass("");
       setTimeout(() => setIsPassModalOpen(false), 1500);
     } catch (err: any) {
@@ -215,6 +242,14 @@ const UserProfile: React.FC = () => {
 
   const initials = computeInitials(user.name);
 
+  const heroReads = analytics ? analytics.totals.reads : "—";
+  const heroShares = analytics ? analytics.totals.shares : "—";
+  const heroTime = analytics ? analytics.totals.timeLabel : "—";
+
+  const maxDailyReads = analytics
+    ? Math.max(1, ...analytics.dailyReading.map((d) => d.reads))
+    : 1;
+
   // ── RENDER ────────────────────────────────────────────────────
 
   return (
@@ -233,11 +268,11 @@ const UserProfile: React.FC = () => {
               </div>
             </div>
             <div className="up-hero-stats">
-              <div className="up-hstat"><span className="up-hstat-num">142</span><span className="up-hstat-lbl">Read</span></div>
+              <div className="up-hstat"><span className="up-hstat-num">{heroReads}</span><span className="up-hstat-lbl">Read</span></div>
               <div className="up-hstat-div" />
-              <div className="up-hstat"><span className="up-hstat-num">746</span><span className="up-hstat-lbl">Shared</span></div>
+              <div className="up-hstat"><span className="up-hstat-num">{heroShares}</span><span className="up-hstat-lbl">Shared</span></div>
               <div className="up-hstat-div" />
-              <div className="up-hstat"><span className="up-hstat-num">38h</span><span className="up-hstat-lbl">Time</span></div>
+              <div className="up-hstat"><span className="up-hstat-num">{heroTime}</span><span className="up-hstat-lbl">Time</span></div>
             </div>
           </div>
 
@@ -277,97 +312,136 @@ const UserProfile: React.FC = () => {
         {/* ══ CONTENT ═══════════════════════════════ */}
         <div className="up-content">
 
-          {/* HISTORY */}
+          {/* HISTORY — last 7 days only, real data */}
           {activeTab === "history" && (
             <div className="up-pane fade-up" key="h">
               <div className="up-pane-title">
                 <h2>Recently Read</h2>
-                <span className="up-badge">{HISTORY_ARTICLES.length} articles</span>
+                <span className="up-badge">{history.length} article{history.length !== 1 ? "s" : ""}</span>
               </div>
-              <div className="up-history-grid">
-                {HISTORY_ARTICLES.map((a, i) => (
-                  <Link to={`/article/${a.id}`} key={a.id} className="up-hcard" style={{ "--i": i } as React.CSSProperties}>
-                    <div className="up-hcard-img">
-                      <img src={a.img} alt={a.title} />
-                      <span className="up-hcard-tag">{a.category}</span>
-                    </div>
-                    <div className="up-hcard-body">
-                      <h4>{a.title}</h4>
-                      <p className="up-hcard-meta"><Clock size={11} />{a.time}<span className="up-dot" />{a.read} read</p>
-                    </div>
-                    <div className="up-hcard-cta"><span>Read</span><ArrowRight size={13} /></div>
-                  </Link>
-                ))}
-              </div>
+
+              {historyLoading ? (
+                <div className="up-empty-state">
+                  <Loader2 size={20} className="spin-icon" />
+                  <p>Loading your reading history...</p>
+                </div>
+              ) : history.length === 0 ? (
+                <div className="up-empty-state">
+                  <History size={28} />
+                  <p>No articles read in the last 7 days.</p>
+                  <Link to="/" className="up-edit-btn">Browse News</Link>
+                </div>
+              ) : (
+                <div className="up-history-grid">
+                  {history.map((a, i) => (
+                    <Link to={`/article/${a.slug}`} key={a.id} className="up-hcard" style={{ "--i": i } as React.CSSProperties}>
+                      <div className="up-hcard-img">
+                        {a.image
+                          ? <img src={a.image} alt={a.headline} />
+                          : <div className="up-hcard-img-fallback" />}
+                        <span className="up-hcard-tag">{a.category}</span>
+                      </div>
+                      <div className="up-hcard-body">
+                        <h4>{a.headline}</h4>
+                        <p className="up-hcard-meta"><Clock size={11} />{timeAgo(a.readAt)}</p>
+                      </div>
+                      <div className="up-hcard-cta"><span>Read</span><ArrowRight size={13} /></div>
+                    </Link>
+                  ))}
+                </div>
+              )}
             </div>
           )}
 
-          {/* ANALYTICS */}
+          {/* ANALYTICS — real data */}
           {activeTab === "analytics" && (
             <div className="up-pane fade-up" key="a">
               <div className="up-pane-title">
                 <h2>Your Analytics</h2>
-                <span className="up-badge up-badge-green"><TrendingUp size={11} /> +24% this week</span>
               </div>
-              <div className="up-analytics-grid">
 
-                {/* Weekly chart */}
-                <div className="up-acard up-acard-wide">
-                  <div className="up-acard-hd"><h3>Daily Reading</h3><p>Articles read per day</p></div>
-                  <div className="up-chart">
-                    {WEEKLY_DATA.map((d, i) => (
-                      <div key={i} className="up-chart-col" style={{ "--i": i } as React.CSSProperties}>
-                        <span className="up-chart-val">{d.reads}</span>
-                        <div className="up-chart-track">
-                          <div className="up-chart-bar" style={{ "--h": `${(d.reads / maxReads) * 100}%` } as React.CSSProperties} />
-                        </div>
-                        <span className="up-chart-day">{d.day}</span>
-                      </div>
-                    ))}
-                  </div>
+              {analyticsLoading ? (
+                <div className="up-empty-state">
+                  <Loader2 size={20} className="spin-icon" />
+                  <p>Loading your analytics...</p>
                 </div>
-
-                {/* Category */}
-                <div className="up-acard">
-                  <div className="up-acard-hd"><h3>Categories</h3><p>Reading distribution</p></div>
-                  <div className="up-cat-list">
-                    {CATEGORY_DATA.map(c => (
-                      <div key={c.label} className="up-cat-row">
-                        <div className="up-cat-hd">
-                          <span className="up-cat-dot" style={{ background: c.color }} />
-                          <span className="up-cat-name">{c.label}</span>
-                          <span className="up-cat-val">{c.value}%</span>
-                        </div>
-                        <div className="up-track">
-                          <div className="up-track-fill" style={{ "--w": `${c.value}%`, "--c": c.color } as React.CSSProperties} />
-                        </div>
-                      </div>
-                    ))}
-                  </div>
+              ) : !analytics ? (
+                <div className="up-empty-state">
+                  <BarChart2 size={28} />
+                  <p>Analytics not available right now.</p>
                 </div>
+              ) : (
+                <div className="up-analytics-grid">
 
-                {/* Platforms */}
-                <div className="up-acard">
-                  <div className="up-acard-hd"><h3>Share Platforms</h3><p>Where stories travel</p></div>
-                  <div className="up-plat-list">
-                    {PLATFORM_DATA.map(p => (
-                      <div key={p.name} className="up-plat-row">
-                        <span className="up-plat-dot" style={{ background: p.color }} />
-                        <span className="up-plat-name">{p.name}</span>
-                        <div className="up-plat-track">
-                          <div className="up-plat-fill" style={{ "--w": `${p.pct}%`, "--c": p.color } as React.CSSProperties} />
+                  {/* Weekly chart */}
+                  <div className="up-acard up-acard-wide">
+                    <div className="up-acard-hd"><h3>Daily Reading</h3><p>Articles read per day (this week)</p></div>
+                    <div className="up-chart">
+                      {analytics.dailyReading.map((d, i) => (
+                        <div key={d.date} className="up-chart-col" style={{ "--i": i } as React.CSSProperties}>
+                          <span className="up-chart-val">{d.reads}</span>
+                          <div className="up-chart-track">
+                            <div className="up-chart-bar" style={{ "--h": `${(d.reads / maxDailyReads) * 100}%` } as React.CSSProperties} />
+                          </div>
+                          <span className="up-chart-day">{d.day}</span>
                         </div>
-                        <span className="up-plat-num">{p.pct}%</span>
-                      </div>
-                    ))}
+                      ))}
+                    </div>
                   </div>
-                  <div className="up-summary-row">
-                    <div className="up-summary-item"><Eye size={15} className="up-sum-icon" /><strong>142</strong><span>Reads</span></div>
-                    <div className="up-summary-item"><Share2 size={15} className="up-sum-icon" /><strong>746</strong><span>Shares</span></div>
-                  </div>
-                </div>
 
-              </div>
+                  {/* Category */}
+                  <div className="up-acard">
+                    <div className="up-acard-hd"><h3>Categories</h3><p>Reading distribution</p></div>
+                    {analytics.categories.length === 0 ? (
+                      <p className="up-empty-inline">No reading data yet.</p>
+                    ) : (
+                      <div className="up-cat-list">
+                        {analytics.categories.map((c, i) => {
+                          const color = CATEGORY_COLORS[i % CATEGORY_COLORS.length];
+                          return (
+                            <div key={c.label} className="up-cat-row">
+                              <div className="up-cat-hd">
+                                <span className="up-cat-dot" style={{ background: color }} />
+                                <span className="up-cat-name">{c.label}</span>
+                                <span className="up-cat-val">{c.value}%</span>
+                              </div>
+                              <div className="up-track">
+                                <div className="up-track-fill" style={{ "--w": `${c.value}%`, "--c": color } as React.CSSProperties} />
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Platforms */}
+                  <div className="up-acard">
+                    <div className="up-acard-hd"><h3>Share Platforms</h3><p>Where stories travel</p></div>
+                    {analytics.platforms.length === 0 ? (
+                      <p className="up-empty-inline">No shares yet.</p>
+                    ) : (
+                      <div className="up-plat-list">
+                        {analytics.platforms.map((p) => (
+                          <div key={p.name} className="up-plat-row">
+                            <span className="up-plat-dot" style={{ background: PLATFORM_COLORS[p.name] || "#94a3b8" }} />
+                            <span className="up-plat-name">{PLATFORM_LABELS[p.name] || p.name}</span>
+                            <div className="up-plat-track">
+                              <div className="up-plat-fill" style={{ "--w": `${p.pct}%`, "--c": PLATFORM_COLORS[p.name] || "#94a3b8" } as React.CSSProperties} />
+                            </div>
+                            <span className="up-plat-num">{p.pct}%</span>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                    <div className="up-summary-row">
+                      <div className="up-summary-item"><Eye size={15} className="up-sum-icon" /><strong>{analytics.totals.reads}</strong><span>Reads</span></div>
+                      <div className="up-summary-item"><Share2 size={15} className="up-sum-icon" /><strong>{analytics.totals.shares}</strong><span>Shares</span></div>
+                    </div>
+                  </div>
+
+                </div>
+              )}
             </div>
           )}
         </div>

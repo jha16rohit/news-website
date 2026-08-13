@@ -1,4 +1,3 @@
-// server/src/routes/siteUser.routes.ts
 import { Router } from "express";
 import {
   registerUser,
@@ -8,20 +7,29 @@ import {
   getMe,
   updateMe,
   changePassword,
+  trackRead,
+  trackShare,
+  getReadingHistory,
+  getAnalytics,
 } from "../controllers/siteusercontroller";
 import { protectSiteUser } from "../middleware/Siteuserauth.middleware";
 
 const router = Router();
 
-// ── Public routes ─────────────────────────────────────────────────────────────
-router.post("/register", registerUser);    // POST /api/users/register
-router.post("/login",    loginUser);       // POST /api/users/login
-router.post("/google",   googleAuthUser);  // POST /api/users/google  ← Google OAuth
-router.post("/logout",   logoutUser);      // POST /api/users/logout
+// Public
+router.post("/register", registerUser);
+router.post("/login", loginUser);
+router.post("/google", googleAuthUser);
+router.post("/logout", logoutUser);
 
-// ── Protected routes (JWT required) ──────────────────────────────────────────
-router.get("/me",               protectSiteUser, getMe);           // GET  /api/users/me
-router.put("/me",               protectSiteUser, updateMe);        // PUT  /api/users/me
-router.put("/change-password",  protectSiteUser, changePassword);  // PUT  /api/users/change-password
+// Protected
+router.get("/me", protectSiteUser, getMe);
+router.put("/me", protectSiteUser, updateMe);
+router.put("/change-password", protectSiteUser, changePassword);
+
+router.post("/track-read", protectSiteUser, trackRead);
+router.post("/track-share", protectSiteUser, trackShare);
+router.get("/reading-history", protectSiteUser, getReadingHistory);
+router.get("/analytics", protectSiteUser, getAnalytics);
 
 export default router;

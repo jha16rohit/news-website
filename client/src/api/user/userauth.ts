@@ -132,3 +132,52 @@ export async function changePassword(data: {
     body: JSON.stringify(data),
   });
 }
+// ─────────────────────────────────────────────
+// READING HISTORY (last 7 days)
+// ─────────────────────────────────────────────
+
+export interface ReadingHistoryItem {
+  id: string;
+  slug: string;
+  headline: string;
+  category: string;
+  image: string | null;
+  readAt: string;
+}
+
+export async function getReadingHistory(): Promise<{ history: ReadingHistoryItem[] }> {
+  return apiClient("/api/users/reading-history");
+}
+
+// ─────────────────────────────────────────────
+// ANALYTICS
+// ─────────────────────────────────────────────
+
+export interface AnalyticsData {
+  totals: { reads: number; shares: number; timeLabel: string };
+  dailyReading: { day: string; date: string; reads: number }[];
+  categories: { label: string; value: number }[];
+  platforms: { name: string; pct: number }[];
+}
+
+export async function getAnalytics(): Promise<AnalyticsData> {
+  return apiClient("/api/users/analytics");
+}
+
+// ─────────────────────────────────────────────
+// TRACK READ / SHARE — call these from the article page
+// ─────────────────────────────────────────────
+
+export async function trackRead(newsId: string, durationSeconds = 0): Promise<void> {
+  await apiClient("/api/users/track-read", {
+    method: "POST",
+    body: JSON.stringify({ newsId, durationSeconds }),
+  }).catch(() => {});
+}
+
+export async function trackShare(newsId: string, platform: string): Promise<void> {
+  await apiClient("/api/users/track-share", {
+    method: "POST",
+    body: JSON.stringify({ newsId, platform }),
+  }).catch(() => {});
+}

@@ -3,11 +3,15 @@
 // Frontend users: Register, Login, Google OAuth, Get Profile, Update Profile, Change Password
 
 import { Request, Response } from "express";
+import mongoose from "mongoose";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import SiteUser from "../models/SiteUser";
 import LoginLog from "../models/LoginLog";
-
+import UserReadHistory from "../models/UserReadHistory";
+import ShareLog from "../models/ShareLog";
+import News from "../models/News";
+import Category from "../models/Category";
 const JWT_SECRET = process.env.JWT_SECRET || "your_jwt_secret";
 const JWT_EXPIRES = "7d";
 const GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID || "";
@@ -32,6 +36,19 @@ function signToken(userId: string) {
   });
 }
 
+// ── helper: resolve News.categoryId values -> Category.name, in bulk ──────────
+// `categoryId` on News stores the Category document's _id (as a string), not a
+// display name. Given a set of News docs, build a { categoryId -> name } map
+// with a single query so callers can turn raw IDs into readable labels.
+async function resolveCategoryNames(categoryIds: string[]): Promise<Map<string, string>> {
+  const uniqueIds = Array.from(new Set(categoryIds.filter(Boolean)));
+  if (uniqueIds.length === 0) return new Map();
+
+  const validIds = uniqueIds.filter((id) => mongoose.Types.ObjectId.isValid(id));
+  const cats = await Category.find({ _id: { $in: validIds } }).select("name").lean();
+  return new Map(cats.map((c) => [String(c._id), c.name]));
+}
+
 // ── helper: set httpOnly cookie ───────────────────────────────────────────────
 function setAuthCookie(res: Response, token: string) {
   res.cookie("site_token", token, {
@@ -52,14 +69,14 @@ export const registerUser = async (req: Request, res: Response) => {
     if (!name || !email || !password) {
       return res
         .status(400)
-        .json({ message: "Name, email aur password zaroori hai." });
+        .json({ message: "Name, email, and password are required." });
     }
 
     const existing = await SiteUser.findOne({ email });
     if (existing) {
       return res
         .status(409)
-        .json({ message: "Yeh email already registered hai." });
+        .json({ message: "This email is already registered." });
     }
 
     const hashed = await bcrypt.hash(password, 10);
@@ -227,7 +244,7 @@ profilePic: picture || undefined,
 // ══════════════════════════════════════════════════════════════
 export const logoutUser = (_req: Request, res: Response) => {
   res.clearCookie("site_token");
-  return res.status(200).json({ message: "Logout ho gaye." });
+  return res.status(200).json({ message: "You have been logged out successfully." });
 };
 
 // ══════════════════════════════════════════════════════════════
@@ -241,7 +258,7 @@ export const getMe = async (req: Request, res: Response) => {
       "name email phone profilePic role createdAt"
     );
 
-    if (!user) return res.status(404).json({ message: "User nahi mila." });
+    if (!user) return res.status(404).json({ message: "User not found ." });
     return res.status(200).json({
       user: {
         id: String(user._id),
@@ -275,7 +292,7 @@ export const updateMe = async (req: Request, res: Response) => {
       if (emailTaken) {
         return res
           .status(409)
-          .json({ message: "Yeh email already kisi aur ka hai." });
+          .json({ message: "This email is already registered to another account." });
       }
     }
 
@@ -317,26 +334,26 @@ export const changePassword = async (req: Request, res: Response) => {
     if (!currentPassword || !newPassword) {
       return res
         .status(400)
-        .json({ message: "Current aur new password dono chahiye." });
+        .json({ message: "Both current and new passwords are required." });
     }
 
     if (newPassword.length < 6) {
       return res.status(400).json({
         message:
-          "New password kam se kam 6 characters ka hona chahiye.",
+          "The new password must be at least 6 characters long.",
       });
     }
 
     const user = await SiteUser.findById(userId);
 
     if (!user) {
-      return res.status(404).json({ message: "User nahi mila." });
+      return res.status(404).json({ message: "User not found." });
     }
 
     if (!user.password) {
       return res.status(400).json({
         message:
-          "Aapka account Google se linked hai. Password change nahi ho sakta.",
+          "Your account is linked to Google, so the password cannot be changed here.",
       });
     }
 
@@ -344,15 +361,210 @@ export const changePassword = async (req: Request, res: Response) => {
     if (!isMatch) {
       return res
         .status(401)
-        .json({ message: "Current password galat hai." });
+        .json({ message: "The current password is incorrect." });
     }
 
     user.password = await bcrypt.hash(newPassword, 10);
     await user.save();
 
-    return res.status(200).json({ message: "Password badal gaya!" });
+    return res.status(200).json({ message: "Password changed successfully!" });
   } catch (err) {
     console.error("changePassword error:", err);
+    return res.status(500).json({ message: "Server error" });
+  }
+};
+// ══════════════════════════════════════════════════════════════
+//  POST /api/users/track-read  (protected) — call this from the article page
+// ══════════════════════════════════════════════════════════════
+export const trackRead = async (req: Request, res: Response) => {
+  try {
+    const userId = (req as any).userId as string;
+    const { newsId, durationSeconds } = req.body;
+
+    if (!newsId) {
+      return res.status(400).json({ message: "newsId zaroori hai." });
+    }
+
+    await UserReadHistory.findOneAndUpdate(
+      { userId, newsId },
+      {
+        $set: { readAt: new Date() },
+        $inc: { durationSeconds: Number(durationSeconds) > 0 ? Number(durationSeconds) : 0 },
+      },
+      { upsert: true, new: true }
+    );
+
+    return res.status(200).json({ message: "Read tracked." });
+  } catch (err) {
+    console.error("trackRead error:", err);
+    return res.status(500).json({ message: "Server error" });
+  }
+};
+
+// ══════════════════════════════════════════════════════════════
+//  POST /api/users/track-share  (protected) — call this from the share buttons
+// ══════════════════════════════════════════════════════════════
+export const trackShare = async (req: Request, res: Response) => {
+  try {
+    const userId = (req as any).userId as string;
+    const { newsId, platform } = req.body;
+
+    if (!newsId || !platform) {
+      return res.status(400).json({ message: "newsId aur platform zaroori hai." });
+    }
+
+    await ShareLog.create({ userId, newsId, platform });
+    return res.status(201).json({ message: "Share tracked." });
+  } catch (err) {
+    console.error("trackShare error:", err);
+    return res.status(500).json({ message: "Server error" });
+  }
+};
+
+// ══════════════════════════════════════════════════════════════
+//  GET /api/users/reading-history  (protected) — LAST 7 DAYS ONLY
+// ══════════════════════════════════════════════════════════════
+export const getReadingHistory = async (req: Request, res: Response) => {
+  try {
+    const userId = (req as any).userId as string;
+    const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
+
+    const rows = await UserReadHistory.find({
+      userId,
+      readAt: { $gte: sevenDaysAgo },
+    })
+      .sort({ readAt: -1 })
+      .limit(20)
+      .lean();
+
+    if (rows.length === 0) {
+      return res.status(200).json({ history: [] });
+    }
+
+    const newsIds = rows.map((r) => r.newsId);
+    const newsDocs = await News.find({ _id: { $in: newsIds } })
+      .select("headline shortTitle slug featuredImage categories categoryId")
+      .lean();
+
+    const newsMap = new Map(newsDocs.map((n) => [String(n._id), n]));
+    const categoryNames = await resolveCategoryNames(newsDocs.map((n) => n.categoryId));
+
+    const history = rows
+      .map((r) => {
+        const news = newsMap.get(r.newsId);
+        if (!news) return null; // article deleted since — skip it
+        return {
+          id: String(news._id),
+          slug: news.slug,
+          headline: news.shortTitle || news.headline,
+          category: news.categories?.[0] || categoryNames.get(news.categoryId) || "General",
+          image: news.featuredImage || null,
+          readAt: r.readAt,
+        };
+      })
+      .filter(Boolean);
+
+    return res.status(200).json({ history });
+  } catch (err) {
+    console.error("getReadingHistory error:", err);
+    return res.status(500).json({ message: "Server error" });
+  }
+};
+
+// ══════════════════════════════════════════════════════════════
+//  GET /api/users/analytics  (protected)
+// ══════════════════════════════════════════════════════════════
+export const getAnalytics = async (req: Request, res: Response) => {
+  try {
+    const userId = (req as any).userId as string;
+
+    // Start of the current calendar week (Sunday, 00:00). getDay() returns
+    // 0 for Sunday ... 6 for Saturday, so subtracting that many days from
+    // today always lands on this week's Sunday.
+    const now = new Date();
+    const weekStart = new Date(now);
+    weekStart.setDate(now.getDate() - now.getDay());
+    weekStart.setHours(0, 0, 0, 0);
+
+    // ── All-time totals (hero stats) ──
+    const [totalReads, totalShares, totalTimeAgg] = await Promise.all([
+      UserReadHistory.countDocuments({ userId }),
+      ShareLog.countDocuments({ userId }),
+      UserReadHistory.aggregate([
+        { $match: { userId } },
+        { $group: { _id: null, total: { $sum: "$durationSeconds" } } },
+      ]),
+    ]);
+
+    const totalSeconds = totalTimeAgg[0]?.total || 0;
+    const totalHours = Math.floor(totalSeconds / 3600);
+    const totalMinutes = Math.round((totalSeconds % 3600) / 60);
+    const timeLabel = totalHours > 0 ? `${totalHours}h` : `${totalMinutes}m`;
+
+    // ── Daily reading, current calendar week (Sun → Sat) ──
+    const dailyRaw = await UserReadHistory.aggregate([
+      { $match: { userId, readAt: { $gte: weekStart } } },
+      {
+        $group: {
+          _id: { $dateToString: { format: "%Y-%m-%d", date: "$readAt" } },
+          count: { $sum: 1 },
+        },
+      },
+    ]);
+    const dailyMap = new Map(dailyRaw.map((d) => [d._id, d.count]));
+
+    const dailyReading = [];
+    for (let i = 0; i < 7; i++) {
+      const d = new Date(weekStart);
+      d.setDate(weekStart.getDate() + i);
+      const key = d.toISOString().split("T")[0];
+      dailyReading.push({
+        day: d.toLocaleDateString("en-US", { weekday: "short" }), // "Sun", "Mon", ... "Sat"
+        date: key,
+        reads: dailyMap.get(key) || 0,
+      });
+    }
+
+    // ── Category breakdown (all-time) ──
+    // NOTE: `categories` (string[]) is left empty on every article at creation
+    // time — the field that's actually populated is `categoryId`, which stores
+    // a Category._id, not a readable name. Resolve those IDs to Category.name
+    // via resolveCategoryNames() so the chart shows real category labels
+    // instead of raw IDs (falling back to "categories[0]" first, in case that
+    // array is populated going forward, and to "General" if nothing resolves).
+    const allHistory = await UserReadHistory.find({ userId }).select("newsId").lean();
+    const newsDocsAll = await News.find({ _id: { $in: allHistory.map((h) => h.newsId) } })
+      .select("categories categoryId")
+      .lean();
+    const categoryNames = await resolveCategoryNames(newsDocsAll.map((n) => n.categoryId));
+    const catCounts: Record<string, number> = {};
+    newsDocsAll.forEach((n) => {
+      const cat = n.categories?.[0] || categoryNames.get(n.categoryId) || "General";
+      catCounts[cat] = (catCounts[cat] || 0) + 1;
+    });
+    const catTotal = Object.values(catCounts).reduce((a, b) => a + b, 0) || 1;
+    const categories = Object.entries(catCounts)
+      .map(([label, count]) => ({ label, value: Math.round((count / catTotal) * 100) }))
+      .sort((a, b) => b.value - a.value);
+
+    // ── Platform breakdown (all-time) ──
+    const platformRaw = await ShareLog.aggregate([
+      { $match: { userId } },
+      { $group: { _id: "$platform", count: { $sum: 1 } } },
+    ]);
+    const platTotal = platformRaw.reduce((a, p) => a + p.count, 0) || 1;
+    const platforms = platformRaw
+      .map((p) => ({ name: p._id, pct: Math.round((p.count / platTotal) * 100) }))
+      .sort((a, b) => b.pct - a.pct);
+
+    return res.status(200).json({
+      totals: { reads: totalReads, shares: totalShares, timeLabel },
+      dailyReading,
+      categories,
+      platforms,
+    });
+  } catch (err) {
+    console.error("getAnalytics error:", err);
     return res.status(500).json({ message: "Server error" });
   }
 };
