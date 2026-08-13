@@ -1,4 +1,3 @@
-
 // ─── controllers/advertisement.controller.ts ─────────────────────────────────
 import { Request, Response } from "express";
 import { Resend } from "resend";
@@ -157,8 +156,10 @@ export const createInquiry = async (req: Request, res: Response) => {
 
     const imageUrl = (req as any).uploadedImageUrl;
 const imagePublicId = (req as any).uploadedImagePublicId;
+const userId = (req as any).userId as string | undefined; // set by protectSiteUser
 
     const inquiry = await AdInquiry.create({
+      userId,
       name,
       email,
       phone,
@@ -191,6 +192,7 @@ const imagePublicId = (req as any).uploadedImagePublicId;
 
     return res.status(201).json({
   id: String(inquiry._id),
+  userId: inquiry.userId,
   name: inquiry.name,
   email: inquiry.email,
   phone: inquiry.phone,
@@ -203,6 +205,24 @@ const imagePublicId = (req as any).uploadedImagePublicId;
   status: inquiry.status,
   submittedAt: inquiry.submittedAt,
 });
+  } catch (err: any) {
+    res.status(500).json({ message: err.message });
+  }
+};
+
+// ── GET /api/advertisement/my-inquiries  (protectSiteUser) ────────────────────
+// Only the logged-in user's own ad requests — this is what the "Advertise
+// With Us" page's "My Ad Requests" table should call, NOT getInquiries
+// (which intentionally returns everyone's inquiries, for the admin panel).
+export const getMyInquiries = async (req: Request, res: Response) => {
+  try {
+    const userId = (req as any).userId as string | undefined;
+    if (!userId) {
+      return res.status(401).json({ message: "Not authorized." });
+    }
+
+    const inquiries = await AdInquiry.find({ userId }).sort({ submittedAt: -1 });
+    res.json(inquiries);
   } catch (err: any) {
     res.status(500).json({ message: err.message });
   }
