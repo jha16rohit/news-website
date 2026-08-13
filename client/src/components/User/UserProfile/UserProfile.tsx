@@ -22,6 +22,8 @@ import type {
   ReadingHistoryItem,
   AnalyticsData,
 } from "../../../api/user/userauth";
+import { fetchMyComments } from "../../../api/user/comment";
+import type { MyComment } from "../../../api/user/comment";
 
 // ─────────────────────────────────────────────
 // COLOR PALETTES
@@ -30,12 +32,12 @@ const CATEGORY_COLORS = ["#0b1423", "#e60000", "#2563eb", "#64748b", "#94a3b8", 
 
 // 👇 NEW: Added back for Share Platforms
 const PLATFORM_COLORS: Record<string, string> = {
-  whatsapp: "#25D366", facebook: "#1877F2",Instagram: "#E13060", twitter: "#0b1423",
+  whatsapp: "#25D366", facebook: "#1877F2", instagram: "#E13060", twitter: "#0b1423",
   linkedin: "#0A66C2", other: "#94a3b8",
 };
 
 const PLATFORM_LABELS: Record<string, string> = {
-  whatsapp: "WhatsApp", facebook: "Facebook", Instagram: "Instagram", twitter: "X/Twitter",
+  whatsapp: "WhatsApp", facebook: "Facebook", instagram: "Instagram", twitter: "X/Twitter",
   linkedin: "LinkedIn", other: "Other",
 };
 
@@ -51,6 +53,13 @@ function computeInitials(name: string): string {
 function formatDateMatch(dateStr: string): string {
   const d = new Date(dateStr);
   return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+}
+
+function formatMemberSince(dateStr?: string | null): string {
+  if (!dateStr) return "—";
+  const d = new Date(dateStr);
+  if (isNaN(d.getTime())) return "—";
+  return d.toLocaleDateString('en-US', { month: 'short', year: 'numeric' });
 }
 
 const UserProfile: React.FC = () => {
@@ -72,6 +81,10 @@ const UserProfile: React.FC = () => {
   // ── Analytics ──────────────────────────────────────────────────
   const [analytics, setAnalytics] = useState<AnalyticsData | null>(null);
   const [analyticsLoading, setAnalyticsLoading] = useState(true);
+
+  // ── My comments ────────────────────────────────────────────────
+  const [myComments, setMyComments] = useState<MyComment[]>([]);
+  const [commentsLoading, setCommentsLoading] = useState(true);
 
   // ── Edit profile form state ───────────────────────────────────
   const [editName, setEditName] = useState("");
@@ -108,6 +121,11 @@ const UserProfile: React.FC = () => {
           .then((data) => setAnalytics(data))
           .catch(() => setAnalytics(null))
           .finally(() => setAnalyticsLoading(false));
+
+        fetchMyComments()
+          .then(({ comments }) => setMyComments(comments))
+          .catch(() => setMyComments([]))
+          .finally(() => setCommentsLoading(false));
       })
       .catch(() => navigate("/"))
       .finally(() => {
@@ -204,6 +222,8 @@ const UserProfile: React.FC = () => {
   const heroShares = analytics ? analytics.totals.shares : "—";
   const heroTime = analytics ? analytics.totals.timeLabel : "0m";
   const maxDailyReads = analytics ? Math.max(1, ...analytics.dailyReading.map((d) => d.reads)) : 1;
+  // analytics.categories already comes sorted by % descending from the API
+  const topCategories = analytics ? analytics.categories.slice(0, 3) : [];
 
 
   return (
@@ -244,7 +264,7 @@ const UserProfile: React.FC = () => {
               </div>
 
               <div className="up-left-member">
-                <CalendarDays size={14} /> Member since Jan 2024
+                <CalendarDays size={14} /> Member since {formatMemberSince(user.createdAt)}
               </div>
             </div>
 
@@ -262,9 +282,15 @@ const UserProfile: React.FC = () => {
                   <div className="up-r-interests">
                     <p className="up-r-interests-lbl">Followed Topics</p>
                     <div className="up-r-interests-tags">
-                      <span className="up-interest-tag">Technology</span>
-                      <span className="up-interest-tag">Frontend Web Dev</span>
-                      <span className="up-interest-tag">Education</span>
+                      {topCategories.length > 0 ? (
+                        topCategories.map((c) => (
+                          <span key={c.label} className="up-interest-tag">{c.label}</span>
+                        ))
+                      ) : (
+                        <span className="up-interest-tag up-interest-tag-empty">
+                          {analyticsLoading ? "Loading…" : "Read some articles to see your top topics"}
+                        </span>
+                      )}
                     </div>
                   </div>
                 </div>
@@ -347,11 +373,42 @@ const UserProfile: React.FC = () => {
               </div>
             )}
 
-            {/* COMMENTS TAB (Placeholder) */}
+            {/* COMMENTS TAB */}
             {activeTab === "comments" && (
               <div className="up-pane fade-up" key="c">
                 <div className="up-pane-header"><h2>My Comments</h2></div>
-                <div className="up-empty-state"><MessageSquare size={32} /><p>No comments posted yet.</p></div>
+                {commentsLoading ? (
+                  <div className="up-empty-state"><Loader2 size={24} className="spin-icon" /><p>Loading comments...</p></div>
+                ) : myComments.length === 0 ? (
+                  <div className="up-empty-state"><MessageSquare size={32} /><p>No comments posted yet.</p></div>
+                ) : (
+                  <div className="up-comments-list">
+                    {myComments.map((c) => (
+                      <Link
+                        to={c.newsSlug ? `/article/${c.newsSlug}` : "#"}
+                        key={c.id}
+                        className="up-comment-card"
+                      >
+                        <div className="up-comment-meta">
+                          <span className="up-comment-news">
+                            {c.isReply ? "Reply on: " : ""}{c.newsHeadline}
+                          </span>
+                          <span className="up-comment-date">{formatDateMatch(c.time)}</span>
+                        </div>
+                        <p className="up-comment-text">{c.text}</p>
+                        <div className="up-comment-stats">
+                          <span>👍 {c.likes}</span>
+                          <span>👎 {c.dislikes}</span>
+                          {c.status !== "approved" && (
+                            <span className={`up-comment-status up-comment-status-${c.status}`}>
+                              {c.status}
+                            </span>
+                          )}
+                        </div>
+                      </Link>
+                    ))}
+                  </div>
+                )}
               </div>
             )}
 

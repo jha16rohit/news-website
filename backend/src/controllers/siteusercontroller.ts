@@ -404,6 +404,9 @@ export const trackRead = async (req: Request, res: Response) => {
 // ══════════════════════════════════════════════════════════════
 //  POST /api/users/track-share  (protected) — call this from the share buttons
 // ══════════════════════════════════════════════════════════════
+const KNOWN_SHARE_PLATFORMS = ["whatsapp", "facebook", "twitter", "linkedin", "instagram", "other"] as const;
+type SharePlatform = typeof KNOWN_SHARE_PLATFORMS[number];
+
 export const trackShare = async (req: Request, res: Response) => {
   try {
     const userId = (req as any).userId as string;
@@ -413,7 +416,17 @@ export const trackShare = async (req: Request, res: Response) => {
       return res.status(400).json({ message: "newsId aur platform zaroori hai." });
     }
 
-    await ShareLog.create({ userId, newsId, platform });
+    // Normalize casing (e.g. "Instagram" -> "instagram") and fall back to
+    // "other" for anything not in our known list, instead of letting the
+    // mongoose enum reject the write and silently dropping the share.
+    const normalizedPlatform = String(platform).toLowerCase().trim();
+    const finalPlatform: SharePlatform = (KNOWN_SHARE_PLATFORMS as readonly string[]).includes(
+      normalizedPlatform
+    )
+      ? (normalizedPlatform as SharePlatform)
+      : "other";
+
+    await ShareLog.create({ userId, newsId, platform: finalPlatform });
     return res.status(201).json({ message: "Share tracked." });
   } catch (err) {
     console.error("trackShare error:", err);

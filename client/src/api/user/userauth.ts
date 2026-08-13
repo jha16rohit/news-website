@@ -15,6 +15,7 @@ export interface AuthUser {
   phone?: string | null;
   profilePic?: string | null;
   role: string;
+  createdAt?: string;
 }
 
 export interface AuthResponse {

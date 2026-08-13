@@ -300,3 +300,83 @@
   .up-r-name { font-size: 28px; }
   .up-modal-actions { flex-direction: column; }
 }
+/* Add this block to UserProfile.css — styles the new "My Comments" list */
+
+.up-comments-list {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.up-comment-card {
+  display: block;
+  border: 1px solid #e5e7eb;
+  border-radius: 10px;
+  padding: 14px 16px;
+  text-decoration: none;
+  color: inherit;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.up-comment-card:hover {
+  border-color: #e60000;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+}
+
+.up-comment-meta {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 6px;
+}
+
+.up-comment-news {
+  font-size: 12px;
+  font-weight: 600;
+  color: #e60000;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+}
+
+.up-comment-date {
+  font-size: 12px;
+  color: var(--up-muted, #64748b);
+  white-space: nowrap;
+}
+
+.up-comment-text {
+  font-size: 14px;
+  line-height: 1.5;
+  color: #0b1423;
+  margin: 0 0 8px;
+}
+
+.up-comment-stats {
+  display: flex;
+  gap: 14px;
+  font-size: 12px;
+  color: var(--up-muted, #64748b);
+}
+
+.up-comment-status {
+  border-radius: 999px;
+  padding: 1px 8px;
+  font-weight: 600;
+  text-transform: capitalize;
+}
+
+.up-comment-status-pending {
+  background: #fef3c7;
+  color: #92400e;
+}
+
+.up-comment-status-rejected {
+  background: #fee2e2;
+  color: #991b1b;
+}
+
+.up-interest-tag-empty {
+  opacity: 0.7;
+  font-style: italic;
+}

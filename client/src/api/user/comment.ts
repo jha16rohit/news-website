@@ -58,6 +58,28 @@ export async function reactComment(commentId: string, type: "like" | "dislike") 
   return res.json(); // { likes, dislikes, userVote }
 }
 
+/** Fetch the logged-in user's own comments (for the profile page) */
+export interface MyComment {
+  id: string;
+  text: string;
+  time: string;
+  newsId: string;
+  newsSlug: string | null;
+  newsHeadline: string;
+  status: "pending" | "approved" | "rejected";
+  likes: number;
+  dislikes: number;
+  isReply: boolean;
+}
+
+export async function fetchMyComments(): Promise<{ comments: MyComment[] }> {
+  const res = await fetch(`${BASE}/comments/mine`, {
+    credentials: "include",
+  });
+  if (!res.ok) throw new Error("Failed to fetch your comments");
+  return res.json();
+}
+
 /** Report a comment */
 export async function reportComment(commentId: string) {
   const res = await fetch(`${BASE}/comments/${commentId}/report`, {
