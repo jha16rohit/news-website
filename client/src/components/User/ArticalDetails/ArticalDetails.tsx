@@ -513,10 +513,10 @@ setAds(adResponse);
   // ig/copy/native don't map to a specific network in the schema, so they
   // log as "other". Add a real WhatsApp button + map it here if you want
   // whatsapp to show up in Share Platforms.
-  const SHARE_PLATFORM_MAP: Record<string, "whatsapp" | "facebook" | "twitter" | "linkedin" | "other"> = {
+  const SHARE_PLATFORM_MAP: Record<string, "whatsapp" | "facebook" | "twitter" | "linkedin"| "Instagram" | "other"> = {
     fb: "facebook",
     tw: "twitter",
-    ig: "other",
+    ig: "Instagram",
     copy: "other",
     native: "other",
   };
@@ -526,7 +526,7 @@ setAds(adResponse);
     const title = encodeURIComponent(article?.headline ?? "");
     if (platform === "fb")     window.open(`https://www.facebook.com/sharer/sharer.php?u=${url}`, "_blank");
     if (platform === "tw")     window.open(`https://twitter.com/intent/tweet?url=${url}&text=${title}`, "_blank");
-    if (platform === "ig")     { navigator.clipboard.writeText(window.location.href); alert("Link copied!"); }
+    if (platform === "ig")     window.open(`https://www.instagram.com/?url=${url}`, "_blank");
     if (platform === "copy")   { navigator.clipboard.writeText(window.location.href); alert("Link copied!"); }
     if (platform === "native" && navigator.share) navigator.share({ title: article?.headline, url: window.location.href });
 

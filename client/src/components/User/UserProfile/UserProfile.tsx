@@ -5,9 +5,8 @@ import React, { useState, useEffect, useRef } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import {
   History, BarChart2, Edit2, X, Mail, Image as ImageIcon, 
-  Loader2, Lock, Bookmark, MessageSquare, CalendarDays, Smartphone, 
-  Globe, Mic, LogOut,
-  Phone, Trash2
+  Loader2, Lock, MessageSquare, CalendarDays, Smartphone, 
+  Globe, Mic, LogOut, Phone, Trash2,
 } from "lucide-react";
 import "./UserProfile.css";
 import {
@@ -28,6 +27,17 @@ import type {
 // COLOR PALETTES
 // ─────────────────────────────────────────────
 const CATEGORY_COLORS = ["#0b1423", "#e60000", "#2563eb", "#64748b", "#94a3b8", "#16a34a", "#9333ea"];
+
+// 👇 NEW: Added back for Share Platforms
+const PLATFORM_COLORS: Record<string, string> = {
+  whatsapp: "#25D366", facebook: "#1877F2",Instagram: "#E13060", twitter: "#0b1423",
+  linkedin: "#0A66C2", other: "#94a3b8",
+};
+
+const PLATFORM_LABELS: Record<string, string> = {
+  whatsapp: "WhatsApp", facebook: "Facebook", Instagram: "Instagram", twitter: "X/Twitter",
+  linkedin: "LinkedIn", other: "Other",
+};
 
 // ─────────────────────────────────────────────
 // HELPERS
@@ -249,7 +259,6 @@ const UserProfile: React.FC = () => {
                     {user.phone && <span><Phone size={15} /> {user.phone}</span>}
                   </div>
                   
-                  {/* 👇 NEW: Fills the gap perfectly with elegant Interest tags 👇 */}
                   <div className="up-r-interests">
                     <p className="up-r-interests-lbl">Followed Topics</p>
                     <div className="up-r-interests-tags">
@@ -382,6 +391,27 @@ const UserProfile: React.FC = () => {
                         ))}
                       </div>
                     </div>
+
+                    {/* 👇 NEW: Platforms Card exactly like you asked 👇 */}
+                    <div className="up-acard">
+                      <div className="up-acard-hd"><h3>Share Platforms</h3></div>
+                      {analytics.platforms.length === 0 ? (
+                        <p style={{ fontSize: "13px", color: "var(--up-muted)" }}>No shares yet.</p>
+                      ) : (
+                        <div className="up-plat-list">
+                          {analytics.platforms.map((p) => (
+                            <div key={p.name} className="up-plat-row">
+                              <span className="up-plat-dot" style={{ background: PLATFORM_COLORS[p.name] || "#94a3b8" }} />
+                              <span className="up-plat-name">{PLATFORM_LABELS[p.name] || p.name}</span>
+                              <div className="up-plat-track">
+                                <div className="up-plat-fill" style={{ "--w": `${p.pct}%`, "--c": PLATFORM_COLORS[p.name] || "#94a3b8" } as React.CSSProperties} />
+                              </div>
+                              <span className="up-plat-num">{p.pct}%</span>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
                   </div>
                 )}
               </div>
@@ -396,7 +426,6 @@ const UserProfile: React.FC = () => {
           <div className="up-modal">
             <button className="up-modal-close" onClick={() => setIsEditModalOpen(false)} disabled={editLoading}><X size={17} /></button>
             <div className="up-modal-top">
-              {/* 👇 NEW: Avatar container with Remove Button 👇 */}
               <div className="up-modal-av-container">
                 <div className="up-modal-av" onClick={() => fileInputRef.current?.click()} title="Change photo">
                   {editProfilePic ? <img src={editProfilePic} alt="Preview" className="up-avatar-img" /> : <span>{initials}</span>}
