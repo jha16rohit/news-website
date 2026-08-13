@@ -11,18 +11,7 @@ import { getCategories } from "../../../api/category.api";
 // import { useNews } from "../../Admin/NewsStore/NewsStore";
 import { getFooterSettings } from "../../../api/user/userfooter"; // ← adjust path if needed
 import type { FooterSettingsData } from "../../../api/user/userfooter";
-
-// ─── Static trending tags ─────────────────────────────────────────────────────
-const MOCK_TAGS = [
-  { id: "1", name: "Budget 2026",      slug: "budget-2026"      },
-  { id: "2", name: "Election Results", slug: "election-results"  },
-  { id: "3", name: "IPL Live",         slug: "ipl-live"          },
-  { id: "4", name: "Stock Market",     slug: "stock-market"      },
-  { id: "5", name: "Tech Trends",      slug: "tech-trends"       },
-  { id: "6", name: "Local News",       slug: "local-news"        },
-  { id: "7", name: "Global Affairs",   slug: "global-affairs"    },
-  { id: "8", name: "Health & Wellness",slug: "health-wellness"   },
-];
+import { getTrendingTags, type Tag as TagType } from "../../../api/tags.api";
 
 // ─── Fallback shown before DB responds ───────────────────────────────────────
 const DEFAULT_FOOTER_DATA: FooterSettingsData = {
@@ -46,6 +35,7 @@ const DEFAULT_FOOTER_DATA: FooterSettingsData = {
 const Footer: React.FC = () => {
   const [footerData, setFooterData] = useState<FooterSettingsData>(DEFAULT_FOOTER_DATA);
   const [categories, setCategories] = useState<any[]>([]);
+  const [trendingTags, setTrendingTags] = useState<TagType[]>([]);
   
 
   // ── Fetch from DB on mount ──────────────────────────────────────────────────
@@ -72,6 +62,12 @@ const Footer: React.FC = () => {
         categoryData ||
         []
       );
+
+      // Trending Tags — same source as the admin Tags page and Trending News
+      // page: admin-pinned tags unioned with tags currently trending by
+      // live usage on published articles.
+      const tags = await getTrendingTags();
+      setTrendingTags(Array.isArray(tags) ? tags : []);
 
     } catch (err) {
       console.error("Footer load failed:", err);
@@ -104,6 +100,8 @@ const Footer: React.FC = () => {
       ? featuredCategories
       : categories.filter((c: any) => !c.parentId && c.enabled)
   ).slice(0, 6);
+
+  const displayTags = trendingTags.slice(0, 8);
 
   // ─── Render ─────────────────────────────────────────────────────────────────
   return (
@@ -190,14 +188,18 @@ const Footer: React.FC = () => {
             {/* Trending Topics */}
             <div className="f-col">
               <h3 className="f-heading">TRENDING TOPICS</h3>
-              <div className="f-trending-grid">
-                {MOCK_TAGS.map((tag) => (
-                  <Link key={tag.id} to={`/tag/${tag.slug}`} className="f-trending-tag">
-                    <span>#{tag.name}</span>
-                    <TrendingUp size={13} />
-                  </Link>
-                ))}
-              </div>
+              {displayTags.length > 0 ? (
+                <div className="f-trending-grid">
+                  {displayTags.map((tag: any) => (
+                    <Link key={tag.id ?? tag._id} to={`/tag/${tag.slug}`} className="f-trending-tag">
+                      <span>#{tag.name}</span>
+                      <TrendingUp size={13} />
+                    </Link>
+                  ))}
+                </div>
+              ) : (
+                <p className="f-trending-empty">No trending topics yet.</p>
+              )}
             </div>
 
           </div>
