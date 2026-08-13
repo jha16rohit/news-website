@@ -319,7 +319,6 @@
   margin: 4px 0 2px;
 }
 
-/* Awaiting reply state */
 .cu-awaiting-reply {
   display: flex;
   flex-direction: column;
@@ -377,7 +376,6 @@
   vertical-align: middle;
 }
 
-/* Reply bubble (reply received) */
 .cu-reply-bubble {
   background: #fff;
   border: 1.5px solid #e2e8f0;
@@ -489,20 +487,99 @@
   margin: 0;
 }
 
-/* ── RESPONSIVE ── */
+/* ══════════════════════════════════════════════════════════════
+   RESPONSIVE BREAKPOINTS (6-Tier Professional System)
+══════════════════════════════════════════════════════════════ */
+
+/* 1. Large Desktop - 1440px */
+@media (max-width: 1440px) {
+  .cu-container {
+    max-width: 1100px;
+  }
+}
+
+/* 2. Laptop & Large Tablet - 1024px */
 @media (max-width: 1024px) {
-  .cu-main-grid { grid-template-columns: 1fr; }
-  .cu-info-panel { position: static; }
+  .cu-main-grid {
+    grid-template-columns: 1fr;
+    gap: 32px;
+  }
+  
+  /* Disables sticking and flips the info panel to be horizontal */
+  .cu-info-panel {
+    position: static;
+  }
+  
+  .cu-info-list {
+    flex-direction: row;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    gap: 20px;
+  }
+  
+  .cu-info-item {
+    flex: 1;
+    min-width: 200px;
+  }
 }
 
+/* 3. Standard Tablet - 768px */
 @media (max-width: 768px) {
-  .cu-form-row { grid-template-columns: 1fr; }
-  .cu-hero-content { padding: 32px 20px; }
-  .cu-submit-btn { width: 100%; }
-  .cu-reply-area { max-width: 100%; }
+  .cu-form-row {
+    grid-template-columns: 1fr;
+    gap: 16px;
+  }
+  
+  /* Reverts the info panel back to a vertical list if space gets tight */
+  .cu-info-list {
+    flex-direction: column;
+  }
+  
+  .cu-hero-content {
+    padding: 40px 24px;
+  }
 }
 
-@media (max-width: 480px) {
-  .cu-hero-title { letter-spacing: -0.5px; }
-  .cu-form-panel, .cu-info-panel { padding: 18px 16px; }
+/* 4. Mobile L - 425px */
+@media (max-width: 425px) {
+  .cu-form-panel, 
+  .cu-info-panel {
+    padding: 24px 20px;
+  }
+  
+  .cu-submit-btn {
+    width: 100%;
+    justify-content: center;
+  }
+  
+  .cu-reply-area {
+    max-width: 100%;
+  }
+}
+
+/* 5. Mobile M - 375px */
+@media (max-width: 375px) {
+  .cu-form-panel, 
+  .cu-info-panel {
+    padding: 20px 16px;
+  }
+  
+  .cu-faq-q {
+    font-size: 13px;
+    padding: 14px 16px;
+  }
+}
+
+/* 6. Mobile S - 320px */
+@media (max-width: 320px) {
+  .cu-hero-tag {
+    font-size: 10px;
+  }
+  
+  .cu-form-field input,
+  .cu-form-field textarea,
+  .cu-form-field select {
+    font-size: 12px;
+    padding: 10px 12px;
+  }
 }

@@ -45,14 +45,27 @@ export interface AdvertisementPoolResponse {
 export const getAdvertisementPool = async (
   params: AdvertisementPoolRequest
 ): Promise<AdvertisementPoolData> => {
-  const qs = new URLSearchParams();
+  try {
+    const qs = new URLSearchParams();
+    qs.set("cards", String(params.cards));
+    qs.set("strips", String(params.strips));
 
-  qs.set("cards", String(params.cards));
-  qs.set("strips", String(params.strips));
+    const response: AdvertisementPoolResponse = await apiClient(
+      `/api/advertisement-pool/pool?${qs.toString()}`
+    );
 
-  const response: AdvertisementPoolResponse = await apiClient(
-    `/api/advertisement-pool/pool?${qs.toString()}`
-  );
+    // 👇 UNPACK AND PRINT THE ARRAYS DIRECTLY TO THE CONSOLE
+    console.log("✅ AD DEBUG - Cards Found:", response.data?.cards);
+    console.log("✅ AD DEBUG - Strips Found:", response.data?.strips);
 
-  return response.data;
+    if (response && response.data) {
+      return response.data;
+    }
+
+    return { cards: [], strips: [] };
+
+  } catch (error: any) {
+    console.error("❌ AD DEBUG - API Fetch Failed:", error);
+    return { cards: [], strips: [] };
+  }
 };

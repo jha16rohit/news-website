@@ -184,8 +184,87 @@
 .awu-submit-btn:hover { background: #c00000; transform: translateY(-1px); }
 .awu-submit-btn:disabled, .awu-btn-cancel:disabled { opacity: 0.6; cursor: not-allowed; }
 
-/* RESPONSIVE */
-@media (max-width: 700px) {
-  .awu-row { grid-template-columns: 1fr; }
+/* ──────────────────────────────────────────────
+   RESPONSIVE BREAKPOINTS
+────────────────────────────────────────────── */
+
+/* 1. Large Desktop - 1440px */
+@media (max-width: 1440px) {
+  .awu-hero-inner, .awu-main {
+    max-width: 90%; 
+  }
+}
+
+/* 2. Laptop - 1024px */
+@media (max-width: 1024px) {
+  .awu-hero-inner, .awu-main {
+    max-width: 95%; 
+  }
+  .awu-hero h1 { font-size: 32px; }
+}
+
+/* 3. Tablet - 768px */
+@media (max-width: 768px) {
+  .awu-hero { padding: 40px 0 30px; }
+  .awu-hero h1 { font-size: 28px; }
+  
+  /* Stacks form fields in a single column */
+  .awu-row { grid-template-columns: 1fr; gap: 10px; }
+  
+  .awu-main { margin: 24px auto 40px; }
+  .awu-gate-card { padding: 32px 24px; }
+}
+
+/* 4. Mobile L - 425px */
+@media (max-width: 425px) {
+  .awu-hero h1 { font-size: 24px; }
+  .awu-hero p { font-size: 13px; }
+  
   .awu-form-card, .awu-list-card { padding: 20px 16px; }
+  
+  /* Stacks "My Ad Requests" title and "New Request" button */
+  .awu-list-head { flex-direction: column; align-items: flex-start; }
+  
+  /* Full width buttons */
+  .awu-form-actions { flex-direction: column; width: 100%; }
+  .awu-btn-cancel, .awu-submit-btn, .awu-btn-new, .awu-btn-primary { 
+    width: 100%; 
+    justify-content: center; 
+  }
+  
+  /* Tightens the table to fit small screens */
+  .awu-table th, .awu-table td { font-size: 12px; padding: 10px 8px; }
+  .awu-status-pill { font-size: 10px; padding: 2px 8px; }
+}
+
+/* 5. Mobile M - 375px */
+@media (max-width: 375px) {
+  .awu-hero h1 { font-size: 22px; }
+  .awu-breadcrumb { font-size: 11px; }
+  
+  .awu-gate-card { padding: 24px 16px; }
+  
+  /* Adapt the image upload preview card for narrow screens */
+  .awu-upload-preview { 
+    flex-direction: column; 
+    align-items: flex-start; 
+    position: relative; 
+  }
+  .awu-upload-preview img { 
+    width: 100%; 
+    height: auto; 
+    aspect-ratio: 16/9; 
+  }
+  .awu-upload-remove { 
+    position: absolute; 
+    right: 10px; 
+    top: 10px; 
+  }
+}
+
+/* 6. Mobile S - 320px */
+@media (max-width: 320px) {
+  .awu-hero h1 { font-size: 20px; }
+  .awu-form-card, .awu-list-card { padding: 16px 12px; }
+  .awu-table th, .awu-table td { padding: 8px 6px; font-size: 11px; }
 }

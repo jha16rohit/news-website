@@ -163,17 +163,16 @@
   position: absolute;
   left: 14px;
   color: #94a3b8;
-  pointer-events: none; /* 👇 CRITICAL: Allows clicking the icon to focus the input */
+  pointer-events: none; 
   z-index: 2;
 }
 
 .input-wrapper input {
   width: 100%;
-  box-sizing: border-box !important; /* 👇 Ensures padding is calculated correctly */
+  box-sizing: border-box !important; 
   background-color: #0b1120;
   border: 1px solid #334155;
   color: #ffffff;
-  /* 👇 CRITICAL: !important forces the 44px left padding so text never touches the icon */
   padding: 12px 14px 12px 44px !important; 
   border-radius: 8px;
   font-size: 14px;
@@ -299,4 +298,104 @@
 
 .resend-btn:hover {
   text-decoration: underline;
+}
+
+/* ══════════════════════════════════════════════════════════════
+   RESPONSIVE BREAKPOINTS (6-Tier Professional System)
+══════════════════════════════════════════════════════════════ */
+
+/* 1. Large Desktop - 1440px */
+@media (max-width: 1440px) {
+  /* Modal scales perfectly inside its 420px max-width container */
+}
+
+/* 2. Laptop - 1024px */
+@media (max-width: 1024px) {
+  /* No changes needed for standard laptops */
+}
+
+/* 3. Standard Tablet - 768px */
+@media (max-width: 768px) {
+  .signin-modal {
+    padding: 35px 24px; /* Slightly tighter side padding */
+  }
+}
+
+/* 4. Mobile L - 425px */
+@media (max-width: 425px) {
+  .signin-overlay {
+    padding: 16px;
+  }
+  .signin-modal {
+    padding: 30px 20px;
+  }
+  .signin-header h2 {
+    font-size: 24px;
+  }
+  .otp-box {
+    width: 42px; /* Prevents 6 OTP boxes from overflowing */
+    height: 50px;
+    font-size: 22px;
+  }
+}
+
+/* 5. Mobile M - 375px */
+@media (max-width: 375px) {
+  .signin-modal {
+    padding: 26px 16px;
+  }
+  .signin-header h2 {
+    font-size: 22px;
+  }
+  .google-auth-btn {
+    font-size: 13px;
+    padding: 10px;
+  }
+  .otp-inputs {
+    gap: 6px;
+  }
+  .otp-box {
+    width: 38px;
+    height: 46px;
+    font-size: 20px;
+  }
+}
+
+/* 6. Mobile S - 320px */
+@media (max-width: 320px) {
+  .signin-overlay {
+    padding: 12px;
+  }
+  .signin-modal {
+    padding: 24px 14px;
+  }
+  .signin-header h2 {
+    font-size: 20px;
+  }
+  .signin-header p {
+    font-size: 13px;
+  }
+  .toggle-btn, .method-btn {
+    font-size: 12px;
+    padding: 8px;
+  }
+  .input-wrapper input {
+    font-size: 13px;
+    padding: 10px 12px 10px 40px !important;
+  }
+  .input-icon {
+    left: 12px;
+  }
+  .signin-submit-btn {
+    font-size: 14px;
+    padding: 12px;
+  }
+  .otp-inputs {
+    gap: 4px;
+  }
+  .otp-box {
+    width: 34px;
+    height: 42px;
+    font-size: 18px;
+  }
 }

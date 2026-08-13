@@ -40,8 +40,6 @@
 
 /* ================================================================
    HERO — Split Panel
-   Left: deep navy with pattern
-   Right: clean white with typography
    ================================================================ */
 .up-hero {
   display: grid;
@@ -694,34 +692,141 @@
 }
 .up-btn-primary:hover { background: var(--red-hover); transform: translateY(-1px); }
 
-/* ================================================================
-   RESPONSIVE
-   ================================================================ */
-@media (max-width: 960px) {
-  .up-analytics-grid { grid-template-columns: 1fr; }
-  .up-acard-wide { grid-column: 1; }
-  .up-history-grid { grid-template-columns: repeat(2, 1fr); }
+/* ══════════════════════════════════════════════════════════════
+   RESPONSIVE BREAKPOINTS (6-Tier Professional System)
+══════════════════════════════════════════════════════════════ */
+
+/* 1. Large Desktop - 1440px */
+@media (max-width: 1440px) {
+  .up-content, .up-tabs-inner { 
+    max-width: 1100px; 
+  }
 }
 
-@media (max-width: 740px) {
-  .up-hero { grid-template-columns: 1fr; }
+/* 2. Laptop - 1024px */
+@media (max-width: 1024px) {
+  .up-analytics-grid { 
+    grid-template-columns: 1fr; 
+  }
+  .up-acard-wide { 
+    grid-column: 1; 
+  }
+  .up-history-grid { 
+    grid-template-columns: repeat(2, 1fr); 
+  }
+  .up-hero { 
+    grid-template-columns: 280px 1fr; 
+  }
+}
+
+/* 3. Standard Tablet - 768px */
+@media (max-width: 768px) {
+  .up-hero { 
+    grid-template-columns: 1fr; 
+  }
   .up-hero-navy {
     padding: 40px 24px 36px;
     flex-direction: row;
     gap: 32px;
     justify-content: flex-start;
   }
-  .up-hero-navy::before { top: 0; bottom: auto; left: 0; right: 0; width: auto; height: 4px; }
-  .up-hero-white { padding: 32px 24px 36px; }
-  .up-hero-name { font-size: 32px; }
-  .up-content { padding: 32px 20px 60px; }
-  .up-tabs-inner { padding: 0 20px; }
+  .up-hero-navy::before { 
+    top: 0; bottom: auto; left: 0; right: 0; 
+    width: auto; height: 4px; 
+  }
+  .up-hero-white { 
+    padding: 32px 24px 36px; 
+  }
+  .up-hero-name { 
+    font-size: 32px; 
+  }
+  .up-content { 
+    padding: 32px 20px 60px; 
+  }
+  .up-tabs-inner { 
+    padding: 0 20px; 
+  }
 }
 
-@media (max-width: 520px) {
-  .up-history-grid { grid-template-columns: 1fr; }
-  .up-hero-navy { flex-direction: column; }
-  .up-modal { padding: 24px; border-radius: 12px; }
-  .up-plat-row { grid-template-columns: 10px 70px 1fr 32px; }
-  .up-summary-row { flex-direction: column; }
+/* 4. Mobile L - 425px */
+@media (max-width: 425px) {
+  .up-history-grid { 
+    grid-template-columns: 1fr; 
+  }
+  .up-hero-navy { 
+    flex-direction: column; 
+    text-align: center; 
+  }
+  .up-hero-white { 
+    padding: 24px 20px; 
+  }
+  .up-hero-name { 
+    font-size: 28px; 
+  }
+  .up-modal { 
+    padding: 24px; border-radius: 12px; 
+  }
+  .up-plat-row { 
+    grid-template-columns: 10px 70px 1fr 32px; 
+  }
+  .up-summary-row { 
+    flex-direction: column; 
+  }
+  .up-hero-contacts { 
+    flex-direction: column; gap: 10px; 
+  }
+  /* Enables native swipe scrolling for tabs on mobile */
+  .up-tabs-inner { 
+    overflow-x: auto; 
+    white-space: nowrap; 
+    -ms-overflow-style: none; 
+    scrollbar-width: none; 
+  }
+  .up-tabs-inner::-webkit-scrollbar { 
+    display: none; 
+  }
+}
+
+/* 5. Mobile M - 375px */
+@media (max-width: 375px) {
+  .up-modal-top { 
+    flex-direction: column; align-items: flex-start; gap: 16px; 
+  }
+  .up-acard { 
+    padding: 20px; 
+  }
+  .up-pane-title h2 { 
+    font-size: 26px; 
+  }
+  .up-hstat-num { 
+    font-size: 22px; 
+  }
+  .up-modal-actions { 
+    flex-direction: column; 
+  }
+  .up-btn-ghost, .up-btn-primary { 
+    width: 100%; text-align: center; justify-content: center; 
+  }
+}
+
+/* 6. Mobile S - 320px */
+@media (max-width: 320px) {
+  .up-hero-name { 
+    font-size: 24px; 
+  }
+  .up-avatar { 
+    width: 80px; height: 80px; font-size: 24px; 
+  }
+  .up-hstat-lbl { 
+    font-size: 10px; 
+  }
+  .up-hero-stats { 
+    gap: 12px; 
+  }
+  .up-tab { 
+    padding: 12px 16px; font-size: 12px; 
+  }
+  .up-pane-title h2 { 
+    font-size: 22px; 
+  }
 }

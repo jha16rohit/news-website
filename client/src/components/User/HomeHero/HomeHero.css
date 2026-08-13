@@ -10,8 +10,8 @@
   max-width: 1400px; 
   margin: auto;
   display: flex;
-  flex-direction: column; /* Changed to column to stack the rows */
-  gap: 5px;
+  flex-direction: column; 
+  gap: 15px;
 }
 
 /* ===== TOP ROW ===== */
@@ -23,18 +23,17 @@
 
 /* ===== LEFT SIDE: FEATURED ARTICLE ===== */
 .featured-article {
-  flex: 2; 
+  flex: 2.2; 
   position: relative;
   border-radius: 12px;
   overflow: hidden;
-  min-height: 500px;
+  width: 100%; 
+  min-height: 480px; 
   display: flex;
   flex-direction: column;
   justify-content: flex-end;
   cursor: pointer;
-
-  max-width: 780px;
-  height: 470px;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.05);
 }
 
 .featured-bg-img {
@@ -46,76 +45,62 @@
   transition: transform 0.6s ease; 
 }
 
-/* .featured-article:hover .featured-bg-img {
-  transform: scale(1.05);
-} */
+.featured-article:hover .featured-bg-img {
+  transform: scale(1.03);
+}
 
-/* Ensure the overlay can anchor absolutely positioned items */
 .featured-overlay {
   position: relative; 
   z-index: 2;
-  background: linear-gradient(to top, rgba(0, 0, 0, 0.95) 0%, rgba(0, 0, 0, 0.6) 60%, transparent 100%);
+  background: linear-gradient(to top, rgba(0, 0, 0, 0.95) 0%, rgba(0, 0, 0, 0.5) 60%, transparent 100%);
   padding: 40px 30px;
   color: white;
-}
-
-.featured-meta {
   display: flex;
-  gap: 20px;
-  font-size: 14px;
-  color: #cbd5e1;
-}
-
-/* 👇 THIS LOCKS IT EXACTLY TO THE BLUE DOT 👇 */
-.featured-save-btn {
-  position: absolute;
-  bottom: 35px; /* Lines up perfectly with the bottom padding */
-  right: 30px;  /* Lines up perfectly with the right padding */
-  padding: 8px;
-  border-radius: 50%;
-  background-color: rgba(255, 255, 255, 0.1); /* Subtle background ring so it pops */
-  backdrop-filter: blur(4px);
-  z-index: 10;
-}
-
-.featured-save-btn:hover {
-  background-color: rgba(255, 255, 255, 0.2);
-  transform: scale(1.1);
+  flex-direction: column;
+  align-items: flex-start;
 }
 
 .category-badge {
   display: inline-block;
-  padding: 4px 12px;
+  padding: 5px 14px;
   border-radius: 20px;
-  font-size: 12px;
-  font-weight: 700;
+  font-size: 11px;
+  font-weight: 800;
   margin-bottom: 15px;
   text-transform: uppercase;
-  letter-spacing: 0.5px;
+  letter-spacing: 0.8px;
 }
 
 .category-badge.politics { background-color: #e60000; color: white; }
 
 .featured-title {
+  font-family: 'Playfair Display', "Georgia", serif;
   font-size: 38px;
   font-weight: 800;
   line-height: 1.25;
-  margin: 0 0 15px 0;
+  margin: 0 0 12px 0;
+  text-shadow: 0 2px 4px rgba(0,0,0,0.3);
 }
 
 .featured-excerpt {
-  font-size: 16px;
+  font-size: 15px;
   line-height: 1.6;
-  color: #e2e8f0;
+  color: rgba(255, 255, 255, 0.85);
   margin: 0 0 20px 0;
-  max-width: 95%;
+  max-width: 90%;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
 }
 
 .featured-meta {
   display: flex;
   gap: 20px;
-  font-size: 14px;
-  color: #cbd5e1;
+  font-size: 13px;
+  color: rgba(255, 255, 255, 0.7);
+  font-weight: 500;
 }
 
 .featured-meta span { display: flex; align-items: center; gap: 6px; }
@@ -127,45 +112,65 @@
   flex-direction: column;
 }
 
+.section-header {
+  margin-bottom: 16px;
+}
+
+.section-header h2 {
+  font-family: 'Playfair Display', "Georgia", serif;
+  font-size: 22px;
+  font-weight: 800;
+  color: #0b1423;
+  margin: 0 0 8px 0;
+}
+
+.header-underline {
+  height: 3px;
+  width: 40px;
+  background-color: #e60000;
+  border-radius: 2px;
+}
+
 .trending-list {
   display: flex;
   flex-direction: column;
-  /* gap: 15px; */
+  gap: 16px;
 }
 
 .trending-card {
   display: flex;
-  gap: 15px;
+  flex-direction: row;
+  gap: 16px;
   background-color: white;
   padding: 12px;
   border-radius: 12px;
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.03);
-  border: 1px solid #f1f5f9;
-  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+  border: 1px solid #e2e8f0;
+  transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
   cursor: pointer;
 }
 
 .trending-card:hover {
   transform: translateY(-3px);
-  box-shadow: 0 8px 15px rgba(0, 0, 0, 0.08);
+  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.08);
+  border-color: #cbd5e1;
 }
 
 .trending-img {
-  width: 100px; height: 90px;
+  width: 110px; 
+  height: 90px;
   border-radius: 8px;
   object-fit: cover;
   flex-shrink: 0;
 }
 
-
 .trending-info {
   display: flex; 
   flex-direction: column; 
   justify-content: center;
-  flex: 1; /* Ensures info takes up remaining space */
+  flex: 1; 
 }
 
-/* 👇 NEW: Flex container to push Category left, Icon right */
 .trending-info-header {
   display: flex;
   justify-content: space-between;
@@ -179,52 +184,110 @@
   font-weight: 800;
   text-transform: uppercase; 
   letter-spacing: 0.5px; 
-  margin-bottom: 0; /* Margin handled by parent wrapper now */
-}
-
-/* 👇 NEW: Clean button styling for the save icon */
-.save-btn {
-  background: none;
-  border: none;
-  cursor: pointer;
-  padding: 4px; /* Give it a slightly larger click area */
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: transform 0.1s ease;
-}
-
-.save-btn:hover {
-  transform: scale(1.1); /* Slight pop on hover */
-}
-
-.save-btn svg {
-  transition: all 0.2s ease;
-}
-
-.trending-category {
-  color: #e60000; font-size: 11px; font-weight: 800;
-  text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 6px;
+  margin-bottom: 0; 
 }
 
 .trending-title {
-  font-size: 14px; font-weight: 700; line-height: 1.4;
-  color: #0f172a; margin: 0 0 8px 0;
+  font-size: 14px; 
+  font-weight: 700; 
+  line-height: 1.4;
+  color: #0f172a; 
+  margin: 0 0 8px 0;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
 }
 
-.trending-time { font-size: 12px; color: #64748b; }
+.trending-time { 
+  font-size: 12px; 
+  color: #94a3b8; 
+  font-weight: 500;
+}
+
+/* ========================================= */
+/* ===== TRENDING TAGS SCROLL BAR ===== */
+/* ========================================= */
+.trending-tags-container {
+  display: flex;
+  align-items: center;
+  position: relative;
+  width: 100%;
+  margin-bottom: 15px;
+}
+
+.tags-scroll-wrapper {
+  display: flex;
+  gap: 12px;
+  overflow-x: auto;
+  scroll-behavior: smooth;
+  padding: 5px 0; 
+  margin: 0 10px; 
+  -ms-overflow-style: none;  
+  scrollbar-width: none;  
+}
+
+.tags-scroll-wrapper::-webkit-scrollbar {
+  display: none;
+}
+
+.tag-pill {
+  white-space: nowrap;
+  padding: 8px 18px;
+  background-color: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 25px; 
+  color: #0f172a;
+  font-size: 13px;
+  font-weight: 600;
+  transition: all 0.2s ease;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.02);
+}
+
+.tag-pill:hover {
+  background-color: #f8fafc;
+  border-color: #cbd5e1;
+  transform: translateY(-1px);
+}
+
+.tag-scroll-btn {
+  background: white;
+  border: 1px solid #e2e8f0;
+  border-radius: 50%;
+  width: 36px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #64748b;
+  cursor: pointer;
+  box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+  z-index: 10;
+  flex-shrink: 0;
+  transition: all 0.2s ease;
+}
+
+.tag-scroll-btn:hover {
+  background: #f8fafc;
+  color: #0f172a;
+  box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+}
+
+.text-decoration-none {
+  text-decoration: none !important;
+  color: inherit !important;
+}
 
 /* ========================================= */
 /* ===== NEW BOTTOM ROW STYLES (IMAGE) ===== */
 /* ========================================= */
-
 .hero-bottom-row {
   display: flex;
   gap: 30px;
   width: 100%;
 }
 
-/* White Card Containers */
 .live-updates-card,
 .trending-numbered-card {
   background: white;
@@ -237,32 +300,12 @@
 .live-updates-card { flex: 2; }
 .trending-numbered-card { flex: 1; }
 
-/* Section Headers */
-.section-header {
-  display: inline-flex;
-  align-items: center;
-  gap: 10px;
-  /* margin-bottom: 12px !important; */
-}
-.aa1{
-  margin-bottom: 12px !important;
-}
-
-.section-header h2 {
-  font-size: 18px;
-  font-weight: 800;
-  color: #0f172a;
-  margin: 0;
-  letter-spacing: 0.5px;
-}
-
 .live-dot {
   width: 12px; height: 12px;
   background-color: #fca5a5;
   border-radius: 50%;
 }
 
-/* Live List Items */
 .live-item {
   display: flex;
   gap: 20px;
@@ -287,7 +330,6 @@
   line-height: 1.5;
 }
 
-/* Numbered Trending Items */
 .numbered-item {
   display: flex;
   gap: 16px;
@@ -297,10 +339,7 @@
   transition: transform 0.2s ease;
 }
 
-.numbered-item:hover {
-  transform: translateX(4px);
-}
-
+.numbered-item:hover { transform: translateX(4px); }
 .numbered-item:last-child { border-bottom: none; padding-bottom: 0; }
 
 .trend-rank {
@@ -334,117 +373,140 @@
   font-weight: 500;
 }
 
-/* Add this to prevent React Router links from turning blue and underlined */
-.text-decoration-none {
-  text-decoration: none !important;
-  color: inherit !important;
-}
+/* ══════════════════════════════════════════════════════════════
+   RESPONSIVE BREAKPOINTS (6-Tier Professional System)
+══════════════════════════════════════════════════════════════ */
 
-/* ========================================= */
-/* ===== TRENDING TAGS SCROLL BAR ===== */
-/* ========================================= */
-.trending-tags-container {
-  display: flex;
-  align-items: center;
-  position: relative;
-  width: 100%;
-  margin-bottom: 10px;
-}
-
-.tags-scroll-wrapper {
-  display: flex;
-  gap: 12px;
-  overflow-x: auto;
-  scroll-behavior: smooth;
-  padding: 5px 0; /* Space for hover shadow */
-  margin: 0 10px; /* Buffer from buttons */
-  -ms-overflow-style: none;  /* IE and Edge */
-  scrollbar-width: none;  /* Firefox */
-}
-
-/* Hide scrollbar for Chrome, Safari and Opera */
-.tags-scroll-wrapper::-webkit-scrollbar {
-  display: none;
-}
-
-.tag-pill {
-  white-space: nowrap;
-  padding: 8px 18px;
-  background-color: #ffffff;
-  border: 1px solid #e2e8f0;
-  border-radius: 25px; /* Pill shape */
-  color: #0f172a;
-  font-size: 14px;
-  font-weight: 700;
-  transition: all 0.2s ease;
-  box-shadow: 0 1px 3px rgba(0,0,0,0.02);
-}
-
-.tag-pill:hover {
-  background-color: #f1f5f9;
-  border-color: #cbd5e1;
-  transform: translateY(-1px);
-}
-
-.tag-scroll-btn {
-  background: white;
-  border: 1px solid #e2e8f0;
-  border-radius: 50%;
-  width: 36px;
-  height: 36px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: #64748b;
-  cursor: pointer;
-  box-shadow: 0 2px 5px rgba(0,0,0,0.05);
-  z-index: 10;
-  flex-shrink: 0;
-  transition: all 0.2s ease;
-}
-
-.tag-scroll-btn:hover {
-  background: #f8fafc;
-  color: #0f172a;
-  box-shadow: 0 4px 8px rgba(0,0,0,0.1);
-}
-
-/* Responsive fix for mobile to let users just swipe instead of needing arrows */
-@media (max-width: 768px) {
-  .tag-scroll-btn {
-    display: none;
-  }
-  .tags-scroll-wrapper {
-    margin: 0;
-    padding-left: 5px;
-    padding-right: 5px;
+/* 1. Large Desktop - 1440px */
+@media (max-width: 1440px) {
+  .hero-container {
+    max-width: 1100px;
   }
 }
 
-/* ===== RESPONSIVE DESIGN ===== */
+/* 2. Laptop / Large Tablet - 1024px */
 @media (max-width: 1024px) {
-  .hero-top-row,
-  .hero-bottom-row {
-    flex-direction: column;
+  /* 👇 FIX: Keep side-by-side on laptops! Prevents 100% width stretch 👇 */
+  .hero-top-row, .hero-bottom-row {
+    flex-direction: row;
+    gap: 20px;
   }
-  
-  .featured-article { min-height: 400px; }
+
+  /* Scale fonts and heights slightly to fit perfectly side-by-side */
+  .featured-title { font-size: 28px; line-height: 1.25; }
+  .featured-article { min-height: 380px; }
+  .featured-excerpt { font-size: 14px; margin-bottom: 12px; -webkit-line-clamp: 2; line-clamp: 2;}
+
+  /* Shrink the sidebar images slightly to fit the narrower column */
+  .trending-img { width: 90px; height: 80px; }
+  .trending-title { font-size: 13px; }
 }
 
+/* 3. Standard Tablet - 768px */
 @media (max-width: 768px) {
-  .featured-title { font-size: 28px; }
-  .featured-excerpt { font-size: 14px; }
-}
+  /* 👇 NOW we stack vertically because the screen is actually narrow 👇 */
+  .hero-top-row, .hero-bottom-row {
+    flex-direction: column;
+    gap: 32px;
+  }
 
-@media (max-width: 480px) {
-  .featured-overlay { padding: 20px 15px; }
-  .featured-title { font-size: 22px; }
-  
+  /* Make Trending a 2-col grid when it drops to the bottom */
+  .trending-list {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 20px;
+  }
+
+  /* Image on top, text on bottom */
   .trending-card {
     flex-direction: column;
-    align-items: flex-start;
+    align-items: stretch;
   }
-  .trending-img { width: 100%; height: 160px; }
+
+  .trending-img {
+    width: 100%;
+    height: 180px;
+    border-radius: 8px 8px 0 0;
+  }
+
+  .trending-info {
+    padding: 4px 4px 8px 4px;
+  }
+
+  .featured-title { font-size: 32px; }
+  .featured-excerpt { font-size: 15px; }
+  .featured-article { min-height: 400px; }
+
+  .tag-scroll-btn { display: none; }
+  .tags-scroll-wrapper { margin: 0; padding-left: 5px; padding-right: 5px; }
+}
+
+/* 4. Mobile L - 425px */
+@media (max-width: 425px) {
+  /* Return Trending List back to a single column for phones */
+  .trending-list {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  /* Safely return to Row Layout for mobile list */
+  .trending-card {
+    flex-direction: row;
+    align-items: center;
+  }
+
+  .trending-img {
+    width: 110px;
+    height: 90px;
+    border-radius: 6px;
+  }
+
+  .trending-info {
+    padding: 0;
+  }
+
+  .featured-overlay { padding: 24px 20px; }
+  .featured-title { font-size: 26px; line-height: 1.3; }
+  .featured-excerpt { font-size: 14px; margin-bottom: 12px; }
+  .featured-article { min-height: 320px; }
   
-  .live-item { flex-direction: column; gap: 6px; }
+  .live-item { flex-direction: column; gap: 8px; }
+  .live-time { font-size: 12px; }
+  .live-text { font-size: 14px; }
+  .live-updates-card, .trending-numbered-card { padding: 20px 16px; }
+}
+
+/* 5. Mobile M - 375px */
+@media (max-width: 375px) {
+  .featured-title { font-size: 22px; }
+  .featured-article { min-height: 280px; }
+
+  /* Screens are too small for side-by-side text, flip back to column */
+  .trending-card {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .trending-img {
+    width: 100%;
+    height: 160px;
+    border-radius: 8px 8px 0 0;
+  }
+}
+
+/* 6. Mobile S - 320px */
+@media (max-width: 320px) {
+  .featured-title { font-size: 20px; }
+  .featured-excerpt { display: none; } 
+  .featured-article { min-height: 240px; }
+  
+  .featured-meta { 
+    font-size: 12px; 
+    flex-direction: column; 
+    gap: 8px; 
+  }
+
+  .trending-img { height: 140px; }
+  .live-updates-card, .trending-numbered-card { padding: 16px 12px; }
 }

@@ -1143,54 +1143,64 @@ setAds(adResponse);
             </div>
           )}
 
-          {/* TAGS WIDGET */}
-          {article.tags.length > 0 && (
-            <div className="ad-sidebar-widget">
-              <h3 className="ad-widget-title" style={{ color: "#0f172a" }}>
-                <Tag size={14} style={{ display: "inline", marginRight: 6 }} />Tags
-              </h3>
-              <div className="ad-widget-divider" />
-              <div className="ad-sidebar-tags">
-                {article.tags.map((tag) => (
-                  <Link key={tag} to={`/tag/${tag.toLowerCase().replace(/\s+/g, "-")}`} className="ad-sidebar-tag">
-                    #{tag}
-                  </Link>
-                ))}
-              </div>
-            </div>
-          )}
-
           <Advertisement
   adData={ads.cards[0] ?? null}
   variant="card"
 />
 
-          {/* RELATED NEWS WIDGET */}
-          {relatedNews.length > 0 && (
-            <div className="ad-sidebar-widget ad-sticky-widget">
-              <h3 className="ad-widget-title" style={{ color: "#0f172a" }}>Related News</h3>
-              <div className="ad-widget-divider" />
-              {relatedNews.map((item) => {
-                const itemId = String(item._id ?? item.id ?? "");
-                return (
-                  <Link key={itemId} to={`/article/${itemId}`} className="ad-related-item">
-                    {item.featuredImage && (
-                      <img
-                        src={item.featuredImage}
-                        alt={item.headline}
-                        onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }}
-                      />
-                    )}
-                    <div className="ad-related-info">
-                      <h4>{item.shortTitle ?? item.headline}</h4>
-                      <span>{formatDate(item.publishedAt)}</span>
-                    </div>
-                  </Link>
-                );
-              })}
-            </div>
-          )}
+          {/* ── SIDEBAR ── */}
+        <aside className="ad-sidebar">
 
+          {/* ... (Keep your Live Updates, Recent News, and Advertisement code the same here) ... */}
+
+            
+            {/* RELATED NEWS WIDGET */}
+            {relatedNews.length > 0 && (
+              <div className="ad-sidebar-widget">
+                <h3 className="ad-widget-title" style={{ color: "#0f172a" }}>Related News</h3>
+                <div className="ad-widget-divider" />
+                {relatedNews.map((item) => {
+                  const itemId = String(item._id ?? item.id ?? "");
+                  return (
+                    <Link key={itemId} to={`/article/${itemId}`} className="ad-related-item">
+                      {item.featuredImage && (
+                        <img
+                          src={item.featuredImage}
+                          alt={item.headline}
+                          onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }}
+                        />
+                      )}
+                      <div className="ad-related-info">
+                        <h4>{item.shortTitle ?? item.headline}</h4>
+                        <span>{formatDate(item.publishedAt)}</span>
+                      </div>
+                    </Link>
+                  );
+                })}
+              </div>
+            )}
+
+            {/* TAGS WIDGET */}
+            {article.tags.length > 0 && (
+              <div className="ad-sidebar-widget">
+                <h3 className="ad-widget-title" style={{ color: "#0f172a" }}>
+                  <Tag size={14} style={{ display: "inline", marginRight: 6 }} />Tags
+                </h3>
+                <div className="ad-widget-divider" />
+                <div className="ad-sidebar-tags">
+                  {article.tags.map((tag) => (
+                    <Link key={tag} to={`/tag/${tag.toLowerCase().replace(/\s+/g, "-")}`} className="ad-sidebar-tag">
+                      #{tag}
+                    </Link>
+                  ))}
+                </div>
+              </div>
+            )}
+
+          {/* 👆 END OF STICKY WRAPPER 👆 */}
+
+        </aside>
+          
         </aside>
       </div>
     </div>

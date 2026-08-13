@@ -55,7 +55,6 @@
   border-radius: 4px;
 }
 
-
 .sct-description {
   font-size: 1rem;
   color: #64748b;
@@ -251,14 +250,115 @@
   transform: scale(1.1); /* Subtle pop effect */
 }
 
-/* ── RESPONSIVE ── */
-@media (max-width: 1100px) {
-  .sct-grid { grid-template-columns: repeat(3, 1fr); }
+
+/* ══════════════════════════════════════════════════════════════
+   RESPONSIVE BREAKPOINTS (6-Tier Professional System)
+══════════════════════════════════════════════════════════════ */
+
+/* 1. Large Desktop - 1440px */
+@media (max-width: 1440px) {
+  .sct-wrap {
+    max-width: 1100px;
+  }
+  .sct-grid {
+    grid-template-columns: repeat(3, 1fr); /* Step down to 3 columns to prevent squeezing */
+  }
 }
-@media (max-width: 860px) {
-  .sct-grid { grid-template-columns: repeat(2, 1fr); }
-  .sct-title { font-size: 2.2rem; }
+
+/* 2. Laptop - 1024px */
+@media (max-width: 1024px) {
+  .sct-wrap {
+    max-width: 95%;
+  }
+  .sct-grid {
+    grid-template-columns: repeat(3, 1fr);
+    gap: 20px;
+  }
+  .sct-title {
+    font-size: 2.2rem;
+  }
 }
-@media (max-width: 560px) {
-  .sct-grid { grid-template-columns: 1fr; }
+
+/* 3. Standard Tablet - 768px */
+@media (max-width: 768px) {
+  .sct-grid {
+    grid-template-columns: repeat(2, 1fr); /* Drop to 2 columns for tablets */
+    gap: 20px;
+  }
+  .sct-header-banner {
+    padding: 24px 0 0px;
+  }
+  .sct-title {
+    font-size: 2rem;
+  }
+  .sct-description {
+    font-size: 0.95rem;
+  }
+}
+
+/* 4. Mobile L - 425px */
+@media (max-width: 425px) {
+  .sct-grid {
+    grid-template-columns: 1fr; /* Single column stack for all phones */
+    gap: 24px;
+  }
+  .sct-wrap {
+    padding: 0 16px;
+  }
+  .sct-header-banner {
+    padding: 20px 0 0px;
+  }
+  .sct-title-wrapper {
+    gap: 12px;
+  }
+  .sct-title {
+    font-size: 1.75rem;
+  }
+  .sct-description {
+    font-size: 0.9rem;
+  }
+  .sct-actions {
+    flex-direction: column;
+    width: 100%;
+  }
+  /* Force buttons to be full width on mobile for easy tapping */
+  .sct-btn-solid, .sct-btn-outline {
+    width: 100%;
+    display: flex;
+    justify-content: center;
+  }
+}
+
+/* 5. Mobile M - 375px */
+@media (max-width: 375px) {
+  .sct-card-body {
+    padding: 16px;
+  }
+  .sct-card-title {
+    font-size: 1.05rem;
+  }
+  .sct-card-sub {
+    font-size: 0.8rem;
+    -webkit-line-clamp: 2; /* Truncate text shorter to save space */
+    line-clamp: 2;
+  }
+}
+
+/* 6. Mobile S - 320px */
+@media (max-width: 320px) {
+  .sct-title {
+    font-size: 1.5rem;
+  }
+  .sct-card-title {
+    font-size: 1rem;
+  }
+  .sct-card-imgwrap {
+    aspect-ratio: 4/3; /* Make images slightly taller so they don't look like thin slits */
+  }
+  .sct-read-btn {
+    font-size: 0.75rem;
+  }
+  .sct-meta {
+    font-size: 0.7rem;
+  }
 }
