@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useRef, useCallback } from "react";
 import { useParams, Link, useNavigate } from "react-router-dom";
 import {
@@ -482,6 +483,19 @@ setAds(adResponse);
   }, [article?.id, loadComments]);
 
   // ─── Handlers ──────────────────────────────────────────────────────────
+
+  // UI share codes -> ShareLog schema's platform enum
+  // ("whatsapp" | "facebook" | "twitter" | "linkedin" | "other").
+  // ig/copy/native don't map to a specific network in the schema, so they
+  // log as "other". Add a real WhatsApp button + map it here if you want
+  // whatsapp to show up in Share Platforms.
+  const SHARE_PLATFORM_MAP: Record<string, "whatsapp" | "facebook" | "twitter" | "linkedin"| "Instagram" | "other"> = {
+    fb: "facebook",
+    tw: "twitter",
+    ig: "Instagram",
+    copy: "other",
+    native: "other",
+  };
 
   const handleShare = (platform: "fb" | "tw" | "ig" | "copy" | "native") => {
     const url   = encodeURIComponent(window.location.href);
