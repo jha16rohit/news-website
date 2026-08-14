@@ -6,16 +6,42 @@ import slugify from "slugify";
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
 async function buildUniqueSlug(
-  name: string,
+  input: string,
   excludeId?: string
 ): Promise<string> {
-  const raw = slugify(name, { lower: true, strict: true });
+  let raw = input.trim();
+
+  // Generate English-style slug only if the text contains Latin letters
+  if (/[a-zA-Z]/.test(raw)) {
+    raw = slugify(raw, {
+      lower: true,
+      strict: true,
+      trim: true,
+    });
+  }
+
   const query: any = { slug: raw };
-  if (excludeId) query._id = { $ne: excludeId };
+
+  if (excludeId) {
+    query._id = { $ne: excludeId };
+  }
+
   const existing = await Category.findOne(query);
+
   if (!existing) return raw;
-  const suffix = Math.random().toString(36).slice(2, 7);
-  return `${raw}-${suffix}`;
+
+  let counter = 2;
+
+  while (
+    await Category.findOne({
+      slug: `${raw}-${counter}`,
+      ...(excludeId && { _id: { $ne: excludeId } }),
+    })
+  ) {
+    counter++;
+  }
+
+  return `${raw}-${counter}`;
 }
 
 // ─── CREATE ───────────────────────────────────────────────────────────────────

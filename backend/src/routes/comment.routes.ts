@@ -11,6 +11,7 @@ import { protect, isAdmin } from "../middleware/auth.middleware";
 import {
   getComments,
   createComment,
+  getMyComments,
   replyToComment,
   reactToComment,
   reportComment,
@@ -29,6 +30,9 @@ export const commentRouter = Router();
 
 /** GET  /api/comments?newsId=xxx  — fetch approved comments (public, no auth) */
 commentRouter.get("/",             getComments);
+
+/** GET  /api/comments/mine        — the logged-in user's own comments (site user auth required) */
+commentRouter.get("/mine",         protectSiteUser, getMyComments);
 
 /** POST /api/comments             — post a comment (site user auth required) */
 commentRouter.post("/",            protectSiteUser, createComment);

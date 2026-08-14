@@ -24,6 +24,7 @@ import {
   deleteComment,
 } from "../../../api/user/comment";
 import { trackPageView, trackReadTime } from "../../../api/analytics";
+import { trackRead, trackShare } from "../../../api/user/userauth";
 import { useAuth } from "../../../context/AuthContext";
 // ─── Types ────────────────────────────────────────────────────────────────────
 type VoteType = "like" | "dislike" | null;
@@ -275,6 +276,10 @@ const ArticleDetail: React.FC = () => {
   const activeSecsRef      = useRef(0);
   // Wall-clock timestamp of when the tab last became visible.
   const visibleSinceRef    = useRef<number | null>(null);
+  // How many of activeSecsRef's seconds have already been sent to the
+  // personal reading-history endpoint (trackRead uses $inc, so we only
+  // ever send the delta since the last report).
+  const lastReportedPersonalSecsRef = useRef(0);
 
   const [ads, setAds] = useState<{
   cards: AdType[];
@@ -299,6 +304,7 @@ const ArticleDetail: React.FC = () => {
     activeSecsRef.current   = 0;
     viewIdRef.current       = null;
     visibleSinceRef.current = document.visibilityState === "visible" ? Date.now() : null;
+    lastReportedPersonalSecsRef.current = 0;
 
     let sessionId = localStorage.getItem("news_session_id");
     if (!sessionId) {
@@ -313,6 +319,14 @@ const ArticleDetail: React.FC = () => {
     trackPageView(article.id, sessionId, userEmail).then((id) => {
       viewIdRef.current = id;
     });
+
+    // Personal "reading history" tracking (per logged-in site user).
+    // Fired once on load (duration 0) so the article shows up in the
+    // profile's Reading History even on a very short visit; sendReadTime()
+    // below tops up the accumulated duration as the user stays on the page.
+    if (currentUser) {
+      trackRead(article.id, 0);
+    }
 
     // ── Active time tracking ──────────────────────────────────────────────────
     // We only count seconds where the tab is visible and the user is on the page.
@@ -332,6 +346,17 @@ const ArticleDetail: React.FC = () => {
       const vid    = viewIdRef.current;
       if (secs > 0 && vid) {
         trackReadTime(article.id, vid, secs);
+      }
+      // Personal reading-history duration — the backend does $inc on
+      // durationSeconds, so we must send only the NEW seconds since the
+      // last report, not the running total (activeSecsRef is cumulative
+      // and shared with trackReadTime above, so we track our own delta).
+      if (currentUser) {
+        const delta = secs - lastReportedPersonalSecsRef.current;
+        if (delta > 0) {
+          trackRead(article.id, delta);
+          lastReportedPersonalSecsRef.current = secs;
+        }
       }
     };
 
@@ -502,9 +527,14 @@ setAds(adResponse);
     const title = encodeURIComponent(article?.headline ?? "");
     if (platform === "fb")     window.open(`https://www.facebook.com/sharer/sharer.php?u=${url}`, "_blank");
     if (platform === "tw")     window.open(`https://twitter.com/intent/tweet?url=${url}&text=${title}`, "_blank");
-    if (platform === "ig")     { navigator.clipboard.writeText(window.location.href); alert("Link copied!"); }
+    if (platform === "ig")     window.open(`https://www.instagram.com/?url=${url}`, "_blank");
     if (platform === "copy")   { navigator.clipboard.writeText(window.location.href); alert("Link copied!"); }
     if (platform === "native" && navigator.share) navigator.share({ title: article?.headline, url: window.location.href });
+
+    // Personal share tracking (per logged-in site user)
+    if (article && currentUser) {
+      trackShare(article.id, SHARE_PLATFORM_MAP[platform] ?? "other");
+    }
   };
 
   const handlePollVote = async (updateId: string, optionId: string) => {

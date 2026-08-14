@@ -1,6 +1,38 @@
 import { Request, Response } from "express";
 import Tag from "../models/Tag";
+import News from "../models/News";
 import slugify from "slugify";
+
+// How many top-by-usage tags count as "trending" automatically (in addition
+// to whatever the admin has manually pinned with isTrending).
+const USAGE_TRENDING_LIMIT = 10;
+
+
+async function getLiveArticleCountsByTagName(
+  statusFilter: Record<string, any> = { status: { $ne: "DELETED" } }
+): Promise<Map<string, number>> {
+  const rows = await News.aggregate([
+    { $match: statusFilter },
+    { $unwind: "$tags" },
+    { $group: { _id: "$tags", count: { $sum: 1 } } },
+  ]);
+
+  // Case-insensitive lookup map, since tag names are stored normalized but
+  // we key defensively in case of any casing drift.
+  const counts = new Map<string, number>();
+  for (const row of rows) {
+    if (row._id) counts.set(String(row._id).toLowerCase(), row.count);
+  }
+  return counts;
+}
+
+function attachCount(tag: any, counts: Map<string, number>) {
+  return {
+    ...tag.toObject(),
+    id: String(tag._id),
+    _count: { articles: counts.get(tag.name.toLowerCase()) ?? 0 },
+  };
+}
 
 // ─── Helper: Normalize Tag ────────────────────────────────────────────────────
 function normalizeTagName(name: string): string {
@@ -77,13 +109,13 @@ export const createTag = async (req: Request, res: Response) => {
 // ─── GET ALL TAGS ─────────────────────────────────────────────────────────────
 export const getAllTags = async (req: Request, res: Response) => {
   try {
-    const tags = await Tag.find().sort({ createdAt: -1 });
-    // Map to include _count.articles shape that the frontend Tags page expects
-    const mapped = tags.map((t) => ({
-      ...t.toObject(),
-      id: String(t._id),
-      _count: { articles: t.usageCount ?? 0 },
-    }));
+    const [tags, counts] = await Promise.all([
+      Tag.find().sort({ createdAt: -1 }),
+      getLiveArticleCountsByTagName(),
+    ]);
+    // Map to include _count.articles shape that the frontend Tags page expects,
+    // computed live from the News collection (see getLiveArticleCountsByTagName).
+    const mapped = tags.map((t) => attachCount(t, counts));
     res.json(mapped);
   } catch (error) {
     console.error("getAllTags error:", error);
@@ -92,15 +124,41 @@ export const getAllTags = async (req: Request, res: Response) => {
 };
 
 // ─── TRENDING TAGS ────────────────────────────────────────────────────────────
+// A tag counts as "trending" if EITHER:
+//   1. An admin has manually pinned it (isTrending: true), OR
+//   2. It's currently one of the most-used tags among published articles
+//      (usage-based, fully automatic — no admin action required).
+// Both sets are unioned so trending news / trending tag UI on the user side
+// reflects both sources, exactly as intended.
 export const getTrendingTags = async (req: Request, res: Response) => {
   try {
-    const tags = await Tag.find({ isTrending: true }).sort({ usageCount: -1 });
-    const mapped = tags.map((t) => ({
-      ...t.toObject(),
-      id: String(t._id),
-      _count: { articles: t.usageCount ?? 0 },
-    }));
-    res.json(mapped);
+    const [adminTrending, publishedCounts, allCounts] = await Promise.all([
+      Tag.find({ isTrending: true }),
+      getLiveArticleCountsByTagName({ status: "PUBLISHED" }),
+      getLiveArticleCountsByTagName(),
+    ]);
+
+    const byId = new Map<string, any>();
+    for (const t of adminTrending) byId.set(String(t._id), t);
+
+    // Top N tags by live published-article usage, regardless of manual flag.
+    const usageRanked = [...publishedCounts.entries()]
+      .filter(([, count]) => count > 0)
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, USAGE_TRENDING_LIMIT)
+      .map(([name]) => name);
+
+    if (usageRanked.length) {
+      const usageTags = await Tag.find({
+        name: { $in: usageRanked.map((n) => new RegExp(`^${n}$`, "i")) },
+      });
+      for (const t of usageTags) byId.set(String(t._id), t);
+    }
+
+    const merged = [...byId.values()].map((t) => attachCount(t, allCounts));
+    merged.sort((a, b) => (b._count.articles ?? 0) - (a._count.articles ?? 0));
+
+    res.json(merged);
   } catch (error) {
     console.error("getTrendingTags error:", error);
     res.status(500).json({ message: "Error fetching trending tags" });

@@ -4,6 +4,7 @@ import mongoose, {
 } from "mongoose";
 
 export interface IAdInquiry extends Document {
+  userId?: string;   // site user who submitted this (missing on legacy pre-fix records)
   name: string;
   email: string;
   phone?: string;
@@ -31,6 +32,11 @@ adTitle?: string;
 }
 
 const AdInquirySchema = new Schema<IAdInquiry>({
+  userId: {
+    type: String,
+    index: true,
+  },
+
   name: {
     type: String,
     required: true,

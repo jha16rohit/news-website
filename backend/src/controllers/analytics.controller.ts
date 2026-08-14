@@ -20,6 +20,7 @@ import PageView, { TrafficSource } from "../models/Pageview";
 import Analytics from "../models/Analytics";
 import News from "../models/News";
 import AdInquiry from "../models/AdInquiry";
+import LoginLog from "../models/LoginLog";
 import { broadcastLiveVisitorCount } from "../socket/analyticssocket";
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
@@ -98,6 +99,10 @@ function formatDayLabel(dateStr: string, range: number): string {
 }
 
 // Upsert the daily Analytics rollup (per-article + SITE). Fire-and-forget from callers.
+// Also keeps News.views (the lifetime counter shown on the All News admin
+// table) in sync with the exact same deduped event — this is the ONLY place
+// a view is ever counted, so News.views and the Analytics collection (which
+// powers the Dashboard) can never drift apart from each other again.
 async function bumpAnalyticsBucket(
   newsId: string,
   field: "views" | "readTime",
@@ -122,9 +127,30 @@ async function bumpAnalyticsBucket(
       { upsert: true, returnDocument: 'after' },
     ).catch(() => {});
   }
+
+  if (field === "views") {
+    await News.findByIdAndUpdate(newsId, { $inc: { views: amount } }).catch(() => {});
+  }
 }
 
 // ─── PUBLIC: pageview + readtime ─────────────────────────────────────────────
+
+// A single real visit should only ever produce ONE PageView row. In practice
+// trackPageView can get called twice for the same visit — React 18
+// StrictMode double-invoking effects in dev, a component remounting fast,
+// a client retry after a slow/flaky response, etc. Each call used to create
+// its own PageView and increment the Analytics bucket, so one real view
+// could show up as 2 in the totals.
+//
+// IMPORTANT: this can't be fixed with a "find one, then create if none
+// found" check — two near-simultaneous requests for the same visit can both
+// run the find before either has finished the create, so both still pass
+// and both still insert. The fix has to be atomic at the database level:
+// dedupeKey carries a UNIQUE index (see models/Pageview.ts), so only the
+// first insert for a given article+session+time-window can ever succeed;
+// every duplicate is rejected by Mongo itself (error code 11000), and only
+// a successful insert bumps the Analytics counters.
+const PAGEVIEW_DEDUPE_WINDOW_MS = 5000;
 
 export async function trackPageView(req: Request, res: Response) {
   try {
@@ -133,11 +159,28 @@ export async function trackPageView(req: Request, res: Response) {
       return res.status(400).json({ message: "newsId and sessionId are required" });
     }
 
+    const timeBucket = Math.floor(Date.now() / PAGEVIEW_DEDUPE_WINDOW_MS);
+    const dedupeKey = `${newsId}::${sessionId}::${timeBucket}`;
+
     const visitorId = hashVisitor(req);
     const source = classifySource(referrer);
     const viewId = `${sessionId}_${Date.now()}`;
 
-    await PageView.create({ newsId, visitorId, source, sessionId, viewId });
+    try {
+      await PageView.create({ newsId, visitorId, source, sessionId, viewId, dedupeKey });
+    } catch (err: any) {
+      if (err?.code === 11000) {
+        // Same visit already recorded a moment ago (this exact request may
+        // even have lost a race with a concurrent duplicate) — don't count
+        // it again. Hand back the viewId that actually got persisted.
+        const existing = await PageView.findOne({ dedupeKey });
+        return res.json({ ok: true, viewId: existing?.viewId ?? viewId });
+      }
+      throw err;
+    }
+
+    // Only a genuine, newly-inserted view reaches here — so counters can
+    // never be double-incremented for the same visit.
     bumpAnalyticsBucket(newsId, "views", 1, source).catch(() => {});
     broadcastLiveVisitorCount().catch(() => {});
 
@@ -523,8 +566,13 @@ export async function getUserInsights(req: Request, res: Response) {
     const returningPct = totalUsersValue > 0 ? Math.round((returningCount / totalUsersValue) * 100) : 0;
 
     // ── User Growth chart: new visitors bucketed by month (this year) and by year ──
+    // Only include months up to and including the current one. A future
+    // month (e.g. September, when today is in August) has no real data yet —
+    // charting it as a flat 0 would draw a fake drop-to-zero on the graph and
+    // let it get picked up as a fabricated "Lowest Growth Month".
     const currentYear = now.getFullYear();
-    const monthly = MONTH_LABELS.map((label, i) => {
+    const currentMonthIndex = now.getMonth(); // 0 = Jan ... 11 = Dec
+    const monthly = MONTH_LABELS.slice(0, currentMonthIndex + 1).map((label, i) => {
       const bucketStart = new Date(currentYear, i, 1);
       const bucketEnd = new Date(currentYear, i + 1, 1);
       const users = visitorRows.filter((v) => v.firstSeen >= bucketStart && v.firstSeen < bucketEnd).length;
@@ -559,14 +607,17 @@ export async function getUserInsights(req: Request, res: Response) {
       ? Math.round(pctChanges.reduce((s, p) => s + p.pct, 0) / pctChanges.length)
       : 0;
 
-    // ── Login Activity heatmap: page views bucketed by hour of day ──
-    const hourRows = await PageView.aggregate([
+    // ── Login Activity heatmap: REAL logins from LoginLog (register/login/
+    // google events), bucketed by hour of day. Previously this was built
+    // from PageView (article visits) and just labeled "Logins" — it was
+    // showing reading activity, not actual sign-ins.
+    const loginHourRows = await LoginLog.aggregate([
       { $group: { _id: { $hour: "$createdAt" }, count: { $sum: 1 } } },
     ]);
     const bucketFor = (h: number) =>
       h >= 6 && h < 12 ? "morning" : h >= 12 && h < 17 ? "afternoon" : h >= 17 && h < 22 ? "evening" : "night";
     const heatmapCounts: Record<string, number> = { morning: 0, afternoon: 0, evening: 0, night: 0 };
-    hourRows.forEach((r) => { heatmapCounts[bucketFor(r._id)] += r.count; });
+    loginHourRows.forEach((r) => { heatmapCounts[bucketFor(r._id)] += r.count; });
 
     const loginActivity = [
       { key: "morning",   label: "Morning",   range: "6 AM - 12 PM", logins: heatmapCounts.morning },
@@ -575,9 +626,17 @@ export async function getUserInsights(req: Request, res: Response) {
       { key: "night",     label: "Night",     range: "10 PM - 6 AM", logins: heatmapCounts.night },
     ];
 
-    // ── Engagement ──
-    const totalSessions = visitorRows.reduce((s, v) => s + v.sessions.length, 0);
-    const avgLoginsPerUser = totalUsersValue > 0 ? Math.round((totalSessions / totalUsersValue) * 10) / 10 : 0;
+    // ── Engagement: avgLoginsPerUser now comes from real LoginLog events —
+    // total sign-ins divided by how many distinct accounts actually signed
+    // in — instead of counting PageView "sessions" (anonymous visits, not logins).
+    const [totalLoginEvents, distinctLoggedInUsers] = await Promise.all([
+      LoginLog.countDocuments({}),
+      LoginLog.distinct("userId"),
+    ]);
+    const avgLoginsPerUser =
+      distinctLoggedInUsers.length > 0
+        ? Math.round((totalLoginEvents / distinctLoggedInUsers.length) * 10) / 10
+        : 0;
 
     const readAgg = await PageView.aggregate([
       { $match: { readTime: { $gt: 0 } } },

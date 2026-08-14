@@ -522,8 +522,14 @@ export const getNewsBySlug = async (req: Request, res: Response) => {
 
     if (!news) return res.status(404).json({ message: "News not found" });
 
-    // Increment view count asynchronously — don't await
-    News.findByIdAndUpdate(news._id, { $inc: { views: 1 } }).catch(() => {});
+    // View counting is NOT done here. It happens exclusively in
+    // analytics.controller.ts's trackPageView -> bumpAnalyticsBucket, which
+    // is called by the public article page and is properly deduped against
+    // the PageView collection. That same function now also increments
+    // News.views, so this route stays a pure read and the two counters
+    // (this table's News.views, and the Dashboard's Analytics-backed
+    // numbers) can never fall out of sync — there's only one place a view
+    // is ever recorded.
 
     res.json(news);
   } catch (error) {
@@ -966,12 +972,8 @@ export const getMediaLibrary = async (req: Request, res: Response) => {
     const skip = (pageNum - 1) * limitNum;
 
     const filter = {
-      $or: [
-        { featuredImage: { $exists: true, $ne: null } },
-        { content: { $regex: "<img" } },
-      ],
-      featuredImage: { $not: /^blob:/ },
-    };
+  featuredImage: { $not: /^blob:/ },
+};
 
     const [items, total] = await Promise.all([
       News.find(filter)
@@ -984,39 +986,39 @@ export const getMediaLibrary = async (req: Request, res: Response) => {
       News.countDocuments(filter),
     ]);
 
-    const formatted = items.flatMap((item) => {
-      const contentImages = extractImagesFromContent(item.content || "");
-      return [
-        ...(item.featuredImage && !item.featuredImage.startsWith("blob:")
-          ? [
-              {
-                newsId: String(item._id),
-                url: item.featuredImage,
-                headline: item.headline,
-                caption: item.imageCaption,
-                credit: item.photoCredit,
-                createdAt: item.createdAt,
-                status: item.status,
-                views: item.views,
-                type: "featured" as const,
-              },
-            ]
-          : []),
-        ...contentImages
-          .filter((url) => !url.startsWith("blob:"))
-          .map((url) => ({
-            newsId: String(item._id),
-            url,
-            headline: item.headline,
-            caption: null,
-            credit: null,
-            createdAt: item.createdAt,
-            status: item.status,
-            views: item.views,
-            type: "content" as const,
-          })),
-      ];
-    });
+   const formatted = items.flatMap((item) => {
+  const contentImages = extractImagesFromContent(item.content || "");
+
+  const featuredItem = {
+    newsId: String(item._id),
+    url: item.featuredImage ?? null,
+    headline: item.headline,
+    caption: item.imageCaption ?? null,
+    credit: item.photoCredit ?? null,
+    createdAt: item.createdAt,
+    status: item.status,
+    views: item.views,
+    type: "featured" as const,
+  };
+
+  return [
+    featuredItem,
+
+    ...contentImages
+      .filter((url) => !url.startsWith("blob:"))
+      .map((url) => ({
+        newsId: String(item._id),
+        url,
+        headline: item.headline,
+        caption: null,
+        credit: null,
+        createdAt: item.createdAt,
+        status: item.status,
+        views: item.views,
+        type: "content" as const,
+      })),
+  ];
+});
 
     res.json({ items: formatted, total, page: pageNum, limit: limitNum });
   } catch (error) {
@@ -1196,24 +1198,49 @@ export const getNewsByTag = async (req: Request, res: Response) => {
   }
 };
 
+// How many top-by-usage tags count as "trending" automatically, on top of
+// whatever the admin has manually pinned via isTrending. Keep this in sync
+// with USAGE_TRENDING_LIMIT in tags.controller.ts so the two surfaces agree.
+const USAGE_TRENDING_LIMIT = 10;
+
 export const getTrendingNews = async (req: Request, res: Response) => {
   try {
-    // Get all trending tags
-    const trendingTags = await Tag.find({
+    // ── Source 1: tags the admin manually marked as trending ─────────────────
+    const adminTrendingTags = await Tag.find({
       isTrending: true,
     });
+    const tagNameSet = new Set(adminTrendingTags.map((tag) => tag.name));
 
-    const tagNames = trendingTags.map((tag) => tag.name);
+    // ── Source 2: tags that are trending purely by usage (most-tagged among
+    // published articles), independent of any admin action ───────────────────
+    const usageRanked = await News.aggregate([
+      { $match: { status: "PUBLISHED" } },
+      { $unwind: "$tags" },
+      { $group: { _id: "$tags", count: { $sum: 1 } } },
+      { $sort: { count: -1 } },
+      { $limit: USAGE_TRENDING_LIMIT },
+    ]);
+    for (const row of usageRanked) {
+      if (row._id) tagNameSet.add(row._id);
+    }
 
-    // Get all news matching trending tags
-    const news = await News.find({
-      status: "PUBLISHED",
-      tags: {
-        $in: tagNames,
-      },
-    }).sort({
-      createdAt: -1,
-    });
+    const tagNames = [...tagNameSet];
+
+    // Get all news matching either trending source (admin-pinned or
+    // usage-trending tags). If no tags qualify yet, fall back to the most
+    // recent published articles so the section is never empty.
+    const news = tagNames.length
+      ? await News.find({
+          status: "PUBLISHED",
+          tags: {
+            $in: tagNames,
+          },
+        }).sort({
+          createdAt: -1,
+        })
+      : await News.find({ status: "PUBLISHED" })
+          .sort({ createdAt: -1 })
+          .limit(20);
 
     // Random shuffle
     const shuffled = [...news].sort(() => Math.random() - 0.5);
@@ -1278,6 +1305,68 @@ export const getNewsByTopicSlug = async (req: Request, res: Response) => {
     res.status(500).json({
       success: false,
       message: "Failed to fetch topic news",
+    });
+  }
+};
+
+// ─── UPLOAD / REPLACE FEATURED IMAGE ──────────────────────────────────────────────
+export const uploadMediaImage = async (
+  req: AuthRequest,
+  res: Response
+) => {
+  try {
+    const newsId = String(req.params.newsId);
+
+    const article = await News.findById(newsId);
+
+    if (!article) {
+      return res.status(404).json({
+        success: false,
+        message: "Article not found",
+      });
+    }
+
+    // uploadedImageUrl is already provided by your upload middleware
+    const imageUrl = (req as any).uploadedImageUrl;
+
+    if (!imageUrl) {
+      return res.status(400).json({
+        success: false,
+        message: "Image upload failed.",
+      });
+    }
+
+    // Delete old image from Cloudinary (optional but recommended)
+    if (article.featuredImage) {
+      try {
+        const publicId = article.featuredImage
+          .split("/")
+          .slice(-2)
+          .join("/")
+          .split(".")[0];
+
+        await cloudinary.uploader.destroy(publicId);
+      } catch (err) {
+        console.warn("Old image delete warning:", err);
+      }
+    }
+
+    article.featuredImage = imageUrl;
+
+    await article.save();
+
+    res.json({
+      success: true,
+      message: "Featured image uploaded successfully.",
+      image: imageUrl,
+      article,
+    });
+  } catch (error) {
+    console.error("uploadMediaImage error:", error);
+
+    res.status(500).json({
+      success: false,
+      message: "Error uploading image",
     });
   }
 };

@@ -45,4 +45,4 @@ export const submitAdInquiry = (
 
 // Get my advertisement requests
 export const getMyAdInquiries = (): Promise<MyAdInquiry[]> =>
-  apiClient("/api/advertisement/inquiries");
+  apiClient("/api/advertisement/my-inquiries");

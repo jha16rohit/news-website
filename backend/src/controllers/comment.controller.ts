@@ -107,6 +107,64 @@ export const createComment = async (req: SiteUserRequest, res: Response) => {
 };
 
 // ══════════════════════════════════════════════════════════════
+//  PUBLIC: GET /api/comments/mine   (protectSiteUser)
+//  Logged-in user's own comments + replies, newest first, with the
+//  article headline/slug resolved so the profile page can link to them.
+//  NOTE: register this route BEFORE any "/comments/:id" routes so
+//  Express doesn't try to treat "mine" as an :id param.
+// ══════════════════════════════════════════════════════════════
+export const getMyComments = async (req: SiteUserRequest, res: Response) => {
+  try {
+    const userId = req.userId!;
+
+    const docs = await Comment.find({ userId }).sort({ createdAt: -1 }).lean();
+
+    if (docs.length === 0) {
+      return res.status(200).json({ comments: [] });
+    }
+
+    const newsIds = [...new Set(docs.map((d) => d.newsId).filter(Boolean))];
+
+    interface NewsLite {
+      _id: any;
+      headline?: string;
+      shortTitle?: string;
+      slug?: string;
+    }
+
+    const newsArticles: NewsLite[] = await require("../models/News").default
+      .find({ _id: { $in: newsIds } })
+      .select("headline shortTitle slug")
+      .lean();
+
+    const newsMap = new Map<string, NewsLite>(
+      newsArticles.map((n): [string, NewsLite] => [String(n._id), n])
+    );
+
+    const comments = docs.map((c: any) => {
+      const news = newsMap.get(c.newsId);
+      return {
+        id:           String(c._id),
+        text:         c.content,
+        time:         c.createdAt,
+        newsId:       c.newsId,
+        newsSlug:     news?.slug ?? null,
+        newsHeadline: news ? (news.shortTitle || news.headline) : "Story removed",
+        status:       c.status,
+        likes:        (c.reactions as any[]).filter((r) => r.type === "like").length,
+        dislikes:     (c.reactions as any[]).filter((r) => r.type === "dislike").length,
+        isReply:      !!c.parentId,
+      };
+    });
+
+    return res.status(200).json({ comments });
+  } catch (err) {
+    console.error("getMyComments error:", err);
+    return res.status(500).json({ message: "Server error" });
+  }
+};
+
+// ══════════════════════════════════════════════════════════════
 //  PUBLIC: POST /api/comments/:id/reply   (protectSiteUser)
 // ══════════════════════════════════════════════════════════════
 export const replyToComment = async (req: SiteUserRequest, res: Response) => {
