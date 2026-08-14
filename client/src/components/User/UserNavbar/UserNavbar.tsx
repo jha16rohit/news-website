@@ -1,12 +1,13 @@
 // client/src/components/User/UserNavbar/UserNavbar.tsx
 // ──────────────────────────────────────────────────────────────
-// User state is kept in React state only (no localStorage).
-// On mount, getMe() is called with the httpOnly cookie to rehydrate.
 
 import React, { useState, useEffect, useRef } from "react";
 import "./UserNavbar.css";
 import { NavLink, useLocation, useNavigate } from "react-router-dom";
-import { Bell, User, Menu, X, Search, ChevronDown, LogOut } from "lucide-react";
+import { 
+  Bell, User, Menu, X, Search, ChevronDown, LogOut, 
+  Lightbulb, LineChart, Wrench, ShieldCheck
+} from "lucide-react";
 import logo from "../../../assets/Logo.png";
 import { useCategories } from "../../../hooks/useCategories";
 import { useAuth } from "../../../context/AuthContext";
@@ -14,15 +15,25 @@ import { useAuth } from "../../../context/AuthContext";
 import type { Category } from "../../../types/category";
 import { getBreakingTickerNews } from "../../../api/news";
 
+interface AppNotification {
+  id: string;
+  tab: "Today" | "This Week" | "Earlier";
+  timeLabel: string;
+  icon: React.ElementType;
+  isUnread: boolean;
+  title: string;
+  desc: React.ReactNode;
+}
+
 const UserNavbar: React.FC = () => {
-  const {
-    user,
-    openLogin,
-    logout,
-  } = useAuth();
+  const { user, openLogin, logout } = useAuth();
   
   const [isProfileOpen, setIsProfileOpen] = useState(false);
   const profileDropdownRef = useRef<HTMLDivElement>(null);
+
+  const [isNotificationOpen, setIsNotificationOpen] = useState(false);
+  const [hasViewedNotifs, setHasViewedNotifs] = useState(false); 
+  const notificationRef = useRef<HTMLDivElement>(null);
 
   const { categories } = useCategories();
   const location  = useLocation();
@@ -39,6 +50,50 @@ const UserNavbar: React.FC = () => {
   const dropdownTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [headlines, setHeadlines] = useState<string[]>([]);
 
+  // 👇 EXPERT FIX: Added "All" to the valid states so "See All" can trigger it
+  const [notifTab, setNotifTab] = useState<"Today" | "This Week" | "Earlier" | "All">("Today");
+  
+  const [notifications, setNotifications] = useState<AppNotification[]>([
+    {
+      id: "1", tab: "Today", timeLabel: "1h ago", icon: Lightbulb, isUnread: true,
+      title: "Your AI Just Got Smarter",
+      desc: <>Adaptive learning speed increased by <strong>27%</strong>. New feature: AI-driven trend forecasting</>
+    },
+    {
+      id: "2", tab: "Today", timeLabel: "3h ago", icon: LineChart, isUnread: true,
+      title: "Data Analysis Completed",
+      desc: <>Your AI has processed <strong>10,000+</strong> records and identified key trends.</>
+    },
+    {
+      id: "3", tab: "This Week", timeLabel: "2d ago", icon: Wrench, isUnread: false,
+      title: "System Maintenance",
+      desc: <>Performance tuning & security updates will be applied at <strong>2:00 AM UTC</strong></>
+    },
+    {
+      id: "4", tab: "Earlier", timeLabel: "2w ago", icon: ShieldCheck, isUnread: false,
+      title: "Security Update",
+      desc: <>Your account security settings have been successfully updated.</>
+    }
+  ]);
+
+  const unreadCount = notifications.filter(n => n.isUnread).length;
+  
+  // 👇 EXPERT FIX: If "All" is active, show everything. Otherwise, filter by the active tab.
+  const filteredNotifs = notifTab === "All" 
+    ? notifications 
+    : notifications.filter(n => n.tab === notifTab);
+
+  const handleMarkAsRead = (id: string) => {
+    setNotifications(prev => prev.map(n => n.id === id ? { ...n, isUnread: false } : n));
+  };
+
+  const toggleNotification = () => {
+    if (!isNotificationOpen) {
+      setHasViewedNotifs(true);
+    }
+    setIsNotificationOpen(!isNotificationOpen);
+  };
+
   useEffect(() => {
     const fetchTickerNews = async () => {
       try {
@@ -51,32 +106,31 @@ const UserNavbar: React.FC = () => {
     fetchTickerNews();
   }, []);
 
-  // ── Date ────────────────────────────────────────────────────
   useEffect(() => {
     const now = new Date();
     setWeekday(now.toLocaleDateString("en-US", { weekday: "long" }));
     setDate(now.toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" }));
   }, []);
 
-  // ── Focus search ─────────────────────────────────────────────
   useEffect(() => {
     if (isSearchOpen && searchInputRef.current) {
       setTimeout(() => searchInputRef.current?.focus(), 100);
     }
   }, [isSearchOpen]);
 
-  // ── Click outside profile dropdown ───────────────────────────
   useEffect(() => {
     const handle = (e: MouseEvent) => {
       if (profileDropdownRef.current && !profileDropdownRef.current.contains(e.target as Node)) {
         setIsProfileOpen(false);
+      }
+      if (notificationRef.current && !notificationRef.current.contains(e.target as Node)) {
+        setIsNotificationOpen(false);
       }
     };
     document.addEventListener("mousedown", handle);
     return () => document.removeEventListener("mousedown", handle);
   }, []);
 
-  // ── Mobile category highlight ────────────────────────────────
   useEffect(() => {
     const currentSlug = location.pathname.split("/").pop();
     if (currentSlug && location.pathname.includes("/category/")) {
@@ -91,14 +145,12 @@ const UserNavbar: React.FC = () => {
     }
   }, [location.pathname, categories]);
 
-  // ── Logout ───────────────────────────────────────────────────
   const handleLogout = async () => {
     setIsProfileOpen(false);
     await logout();
     navigate("/");
   };
 
-  // ── Nav helpers ───────────────────────────────────────────────
   const childrenOf = (parentId: string): Category[] =>
     categories.filter(c => String(c.parentId) === parentId && c.enabled);
 
@@ -136,15 +188,13 @@ const UserNavbar: React.FC = () => {
     window.open("/profile", "_blank", "noopener,noreferrer");
   };
 
-  // 👇 EXPERT FIX: Function to inject tag text into search bar 👇
   const handleTagClick = (tagText: string) => {
     if (searchInputRef.current) {
-      searchInputRef.current.value = tagText; // Injects the text
-      searchInputRef.current.focus(); // Places cursor in the box
+      searchInputRef.current.value = tagText; 
+      searchInputRef.current.focus(); 
     }
   };
 
-  // ── RENDER ────────────────────────────────────────────────────
   return (
     <div className="navbar-wrapper">
 
@@ -305,10 +355,85 @@ const UserNavbar: React.FC = () => {
               {isSearchOpen ? <X size={24} /> : <Search size={22} />}
             </button>
 
-            {/* Bell */}
-            <div className="notification-wrapper">
-              <Bell size={20} />
-              <span className="notification-dot" />
+            {/* ── NOTIFICATION CENTER ── */}
+            <div className="notification-wrapper" ref={notificationRef}>
+              <button 
+                className="nav-icon-btn" 
+                onClick={toggleNotification}
+              >
+                {isNotificationOpen ? <X size={20} /> : <Bell size={20} />}
+                {!isNotificationOpen && unreadCount > 0 && !hasViewedNotifs && (
+                  <span className="notification-dot" />
+                )}
+              </button>
+
+              <div className={`notif-panel ${isNotificationOpen ? "open" : ""}`}>
+                
+                {/* Header */}
+                <div className="notif-header">
+                  <h3 className="notif-title-main">Notification Center</h3>
+                  {/* 👇 EXPERT FIX: Sets tab to "All" to render everything within the panel 👇 */}
+                  <button 
+                    className={`notif-see-all ${notifTab === "All" ? "active" : ""}`}
+                    onClick={() => setNotifTab("All")}
+                    style={{
+                      background: notifTab === "All" ? "#f8fafc" : "transparent",
+                      color: notifTab === "All" ? "#0f172a" : "#64748b",
+                      borderColor: notifTab === "All" ? "#cbd5e1" : "#e2e8f0"
+                    }}
+                  >
+                    See All
+                  </button>
+                </div>
+
+                {/* Working Tabs */}
+                <div className="notif-tabs-wrapper">
+                  <div className="notif-tabs">
+                    {(["Today", "This Week", "Earlier"] as const).map(tab => (
+                      <button 
+                        key={tab}
+                        className={`notif-tab ${notifTab === tab ? "active" : ""}`}
+                        onClick={() => setNotifTab(tab)}
+                      >
+                        {tab}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Working List Items */}
+                <div className="notif-list">
+                  {filteredNotifs.length === 0 ? (
+                    <div style={{ textAlign: "center", padding: "40px 0", color: "#94a3b8", fontSize: "14px" }}>
+                      No notifications to show.
+                    </div>
+                  ) : (
+                    filteredNotifs.map(notif => {
+                      const Icon = notif.icon;
+                      return (
+                        <div 
+                          key={notif.id} 
+                          className="notif-item" 
+                          onClick={() => handleMarkAsRead(notif.id)}
+                          style={{ cursor: "pointer" }}
+                        >
+                          <div className="notif-icon"><Icon size={20} strokeWidth={1.5} /></div>
+                          <div className="notif-content">
+                            <div className="notif-top">
+                              <span className="notif-subj">
+                                {notif.isUnread && <span className="notif-dot">•</span>} 
+                                {notif.title}
+                              </span>
+                              <span className="notif-time">{notif.timeLabel}</span>
+                            </div>
+                            <p className="notif-desc">{notif.desc}</p>
+                          </div>
+                        </div>
+                      );
+                    })
+                  )}
+                </div>
+              </div>
             </div>
 
             {/* Subscribe */}
@@ -377,7 +502,6 @@ const UserNavbar: React.FC = () => {
             <div className="smp-trending">
               <span className="smp-trending-label">Trending:</span>
               <div className="smp-tags">
-                {/* 👇 Added onClick handlers to all tags 👇 */}
                 <span className="smp-tag" onClick={() => handleTagClick("Jharkhand Weather")}>Jharkhand Weather</span>
                 <span className="smp-tag" onClick={() => handleTagClick("Stock Market Update")}>Stock Market Update</span>
                 <span className="smp-tag" onClick={() => handleTagClick("Elections 2026")}>Elections 2026</span>

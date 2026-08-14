@@ -6,11 +6,7 @@ import { Link, useNavigate } from "react-router-dom";
 import {
   History, BarChart2, Edit2, X, Mail, Image as ImageIcon, 
   Loader2, Lock, MessageSquare, CalendarDays, Smartphone, 
-<<<<<<< HEAD
   Globe, Mic, LogOut, Phone, Trash2
-=======
-  Globe, Mic, LogOut, Phone, Trash2,
->>>>>>> Testing
 } from "lucide-react";
 import "./UserProfile.css";
 
@@ -19,10 +15,7 @@ import {
   updateProfile,
   changePassword,
   logoutUser,
-  getReadingHistory,
-  getAnalytics,
 } from "../../../api/user/userauth";
-<<<<<<< HEAD
 
 import type { AuthUser } from "../../../api/user/userauth";
 
@@ -64,27 +57,6 @@ const PLATFORM_COLORS: Record<string, string> = {
   linkedin: "#0A66C2", other: "#94a3b8",
 };
 
-=======
-import type {
-  AuthUser,
-  ReadingHistoryItem,
-  AnalyticsData,
-} from "../../../api/user/userauth";
-import { fetchMyComments } from "../../../api/user/comment";
-import type { MyComment } from "../../../api/user/comment";
-
-// ─────────────────────────────────────────────
-// COLOR PALETTES
-// ─────────────────────────────────────────────
-const CATEGORY_COLORS = ["#0b1423", "#e60000", "#2563eb", "#64748b", "#94a3b8", "#16a34a", "#9333ea"];
-
-// 👇 NEW: Added back for Share Platforms
-const PLATFORM_COLORS: Record<string, string> = {
-  whatsapp: "#25D366", facebook: "#1877F2", instagram: "#E13060", twitter: "#0b1423",
-  linkedin: "#0A66C2", other: "#94a3b8",
-};
-
->>>>>>> Testing
 const PLATFORM_LABELS: Record<string, string> = {
   whatsapp: "WhatsApp", facebook: "Facebook", instagram: "Instagram", twitter: "X/Twitter",
   linkedin: "LinkedIn", other: "Other",
@@ -103,16 +75,6 @@ function formatDateMatch(dateStr: string): string {
   const d = new Date(dateStr);
   return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
 }
-<<<<<<< HEAD
-=======
-
-function formatMemberSince(dateStr?: string | null): string {
-  if (!dateStr) return "—";
-  const d = new Date(dateStr);
-  if (isNaN(d.getTime())) return "—";
-  return d.toLocaleDateString('en-US', { month: 'short', year: 'numeric' });
-}
->>>>>>> Testing
 
 const UserProfile: React.FC = () => {
   const navigate = useNavigate();
@@ -134,13 +96,6 @@ const UserProfile: React.FC = () => {
   const [analytics, setAnalytics] = useState<AnalyticsData | null>(null);
   const [analyticsLoading, setAnalyticsLoading] = useState(true);
 
-<<<<<<< HEAD
-=======
-  // ── My comments ────────────────────────────────────────────────
-  const [myComments, setMyComments] = useState<MyComment[]>([]);
-  const [commentsLoading, setCommentsLoading] = useState(true);
-
->>>>>>> Testing
   // ── Edit profile form state ───────────────────────────────────
   const [editName, setEditName] = useState("");
   const [editEmail, setEditEmail] = useState("");
@@ -168,29 +123,14 @@ const UserProfile: React.FC = () => {
         setEditProfilePic(user.profilePic || null);
 
         getReadingHistory()
-<<<<<<< HEAD
           .then((res: any) => setHistory(res.history))
-=======
-          .then(({ history }) => setHistory(history))
->>>>>>> Testing
           .catch(() => setHistory([]))
           .finally(() => setHistoryLoading(false));
 
         getAnalytics()
-<<<<<<< HEAD
           .then((data: any) => setAnalytics(data))
           .catch(() => setAnalytics(null))
           .finally(() => setAnalyticsLoading(false));
-=======
-          .then((data) => setAnalytics(data))
-          .catch(() => setAnalytics(null))
-          .finally(() => setAnalyticsLoading(false));
-
-        fetchMyComments()
-          .then(({ comments }) => setMyComments(comments))
-          .catch(() => setMyComments([]))
-          .finally(() => setCommentsLoading(false));
->>>>>>> Testing
       })
       .catch(() => navigate("/"))
       .finally(() => {
@@ -286,14 +226,7 @@ const UserProfile: React.FC = () => {
   const heroReads = analytics ? analytics.totals.reads : "0";
   const heroShares = analytics ? analytics.totals.shares : "—";
   const heroTime = analytics ? analytics.totals.timeLabel : "0m";
-<<<<<<< HEAD
   const maxDailyReads = analytics ? Math.max(1, ...analytics.dailyReading.map((d: any) => d.reads)) : 1;
-=======
-  const maxDailyReads = analytics ? Math.max(1, ...analytics.dailyReading.map((d) => d.reads)) : 1;
-  // analytics.categories already comes sorted by % descending from the API
-  const topCategories = analytics ? analytics.categories.slice(0, 3) : [];
-
->>>>>>> Testing
 
   return (
     <>
@@ -333,11 +266,7 @@ const UserProfile: React.FC = () => {
               </div>
 
               <div className="up-left-member">
-<<<<<<< HEAD
                 <CalendarDays size={14} /> Member since Jan 2024
-=======
-                <CalendarDays size={14} /> Member since {formatMemberSince(user.createdAt)}
->>>>>>> Testing
               </div>
             </div>
 
@@ -355,21 +284,9 @@ const UserProfile: React.FC = () => {
                   <div className="up-r-interests">
                     <p className="up-r-interests-lbl">Followed Topics</p>
                     <div className="up-r-interests-tags">
-<<<<<<< HEAD
                       <span className="up-interest-tag">Technology</span>
                       <span className="up-interest-tag">Frontend Web Dev</span>
                       <span className="up-interest-tag">Education</span>
-=======
-                      {topCategories.length > 0 ? (
-                        topCategories.map((c) => (
-                          <span key={c.label} className="up-interest-tag">{c.label}</span>
-                        ))
-                      ) : (
-                        <span className="up-interest-tag up-interest-tag-empty">
-                          {analyticsLoading ? "Loading…" : "Read some articles to see your top topics"}
-                        </span>
-                      )}
->>>>>>> Testing
                     </div>
                   </div>
                 </div>
@@ -428,11 +345,7 @@ const UserProfile: React.FC = () => {
                   <div className="up-empty-state"><History size={32} /><p>No articles read recently.</p></div>
                 ) : (
                   <div className="up-cards-grid">
-<<<<<<< HEAD
                     {history.map((a: any, i: number) => (
-=======
-                    {history.map((a, i) => (
->>>>>>> Testing
                       <Link to={`/article/${a.slug}`} key={a.id} className="up-news-card" style={{ "--i": i } as React.CSSProperties}>
                         <div className="up-nc-img-wrap">
                           {a.image ? <img src={a.image} alt={a.headline} /> : <div className="up-nc-fallback" />}
@@ -456,50 +369,11 @@ const UserProfile: React.FC = () => {
               </div>
             )}
 
-<<<<<<< HEAD
             {/* COMMENTS TAB (Placeholder) */}
             {activeTab === "comments" && (
               <div className="up-pane fade-up" key="c">
                 <div className="up-pane-header"><h2>My Comments</h2></div>
                 <div className="up-empty-state"><MessageSquare size={32} /><p>No comments posted yet.</p></div>
-=======
-            {/* COMMENTS TAB */}
-            {activeTab === "comments" && (
-              <div className="up-pane fade-up" key="c">
-                <div className="up-pane-header"><h2>My Comments</h2></div>
-                {commentsLoading ? (
-                  <div className="up-empty-state"><Loader2 size={24} className="spin-icon" /><p>Loading comments...</p></div>
-                ) : myComments.length === 0 ? (
-                  <div className="up-empty-state"><MessageSquare size={32} /><p>No comments posted yet.</p></div>
-                ) : (
-                  <div className="up-comments-list">
-                    {myComments.map((c) => (
-                      <Link
-                        to={c.newsSlug ? `/article/${c.newsSlug}` : "#"}
-                        key={c.id}
-                        className="up-comment-card"
-                      >
-                        <div className="up-comment-meta">
-                          <span className="up-comment-news">
-                            {c.isReply ? "Reply on: " : ""}{c.newsHeadline}
-                          </span>
-                          <span className="up-comment-date">{formatDateMatch(c.time)}</span>
-                        </div>
-                        <p className="up-comment-text">{c.text}</p>
-                        <div className="up-comment-stats">
-                          <span>👍 {c.likes}</span>
-                          <span>👎 {c.dislikes}</span>
-                          {c.status !== "approved" && (
-                            <span className={`up-comment-status up-comment-status-${c.status}`}>
-                              {c.status}
-                            </span>
-                          )}
-                        </div>
-                      </Link>
-                    ))}
-                  </div>
-                )}
->>>>>>> Testing
               </div>
             )}
 
@@ -516,11 +390,7 @@ const UserProfile: React.FC = () => {
                     <div className="up-acard up-acard-wide">
                       <div className="up-acard-hd"><h3>Daily Reading</h3></div>
                       <div className="up-chart">
-<<<<<<< HEAD
                         {analytics.dailyReading.map((d: any, i: number) => (
-=======
-                        {analytics.dailyReading.map((d, i) => (
->>>>>>> Testing
                           <div key={d.date} className="up-chart-col" style={{ "--i": i } as React.CSSProperties}>
                             <span className="up-chart-val">{d.reads}</span>
                             <div className="up-chart-track">
@@ -535,11 +405,7 @@ const UserProfile: React.FC = () => {
                     <div className="up-acard">
                       <div className="up-acard-hd"><h3>Categories</h3></div>
                       <div className="up-cat-list">
-<<<<<<< HEAD
                         {analytics.categories.map((c: any, i: number) => (
-=======
-                        {analytics.categories.map((c, i) => (
->>>>>>> Testing
                           <div key={c.label} className="up-cat-row">
                             <span className="up-cat-name"><span className="up-cat-dot" style={{ background: CATEGORY_COLORS[i % CATEGORY_COLORS.length] }}/>{c.label}</span>
                             <span className="up-cat-val">{c.value}%</span>
@@ -548,21 +414,13 @@ const UserProfile: React.FC = () => {
                       </div>
                     </div>
 
-<<<<<<< HEAD
-=======
-                    {/* 👇 NEW: Platforms Card exactly like you asked 👇 */}
->>>>>>> Testing
                     <div className="up-acard">
                       <div className="up-acard-hd"><h3>Share Platforms</h3></div>
                       {analytics.platforms.length === 0 ? (
                         <p style={{ fontSize: "13px", color: "var(--up-muted)" }}>No shares yet.</p>
                       ) : (
                         <div className="up-plat-list">
-<<<<<<< HEAD
                           {analytics.platforms.map((p: any) => (
-=======
-                          {analytics.platforms.map((p) => (
->>>>>>> Testing
                             <div key={p.name} className="up-plat-row">
                               <span className="up-plat-dot" style={{ background: PLATFORM_COLORS[p.name] || "#94a3b8" }} />
                               <span className="up-plat-name">{PLATFORM_LABELS[p.name] || p.name}</span>
