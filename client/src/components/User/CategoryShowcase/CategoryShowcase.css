@@ -132,7 +132,7 @@
 .cs-dark-card img {
   width: 100%;
   height: 100%; 
-  object-fit: cover; 
+  object-fit: fill; 
   display: block;
   transition: transform 0.5s ease;
 }
@@ -235,7 +235,7 @@
 .cs-list-item .cs-list-img, .cs-split-sub-card .cs-list-img {
   width: 100%; 
   height: 140px; 
-  object-fit: cover;
+  object-fit: fill;
 }
 
 .cs-list-content {

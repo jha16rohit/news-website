@@ -252,7 +252,7 @@
 .ad-hero-image {
   width: 100%;
   height: 420px;
-  object-fit: cover;
+  object-fit: fill;
   border-radius: 10px;
   display: block;
 }
@@ -533,7 +533,7 @@
 .ad-live-update-image-wrap img {
   width: 100%;
   max-height: 260px;
-  object-fit: cover;
+  object-fit: fill;
   display: block;
 }
 .ad-live-update-caption {
@@ -878,7 +878,7 @@
 .ad-recent-img {
   width: 64px;
   height: 64px;
-  object-fit: cover;
+  object-fit: fill;
   border-radius: 6px;
   flex-shrink: 0;
 }
@@ -930,7 +930,7 @@
 .ad-related-item img {
   width: 68px;
   height: 68px;
-  object-fit: cover;
+  object-fit: fill;
   border-radius: 6px;
   flex-shrink: 0;
 }

@@ -139,7 +139,7 @@ const TopicPage: React.FC = () => {
 
             {topics.length === 0 && (
               <div style={{ gridColumn: "1 / -1", textAlign: "center", padding: "40px", color: "#64748b" }}>
-                No topics available yet. Create some in the Admin panel!
+                NO TOPIC AVAILABLE NOW
               </div>
             )}
           </div>
