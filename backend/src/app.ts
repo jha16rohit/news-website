@@ -17,6 +17,10 @@ import siteUserRoutes from "./routes/siteuser.routes";
 import notificationRoutes from "./routes/notification.routes";
 import { analyticsPublicRouter, analyticsAdminRouter } from "./routes/analytics.routes"; // ← ADD
 import { startScheduler } from "./scheduler";
+ import newsletterRouter from "./routes/newsletter.routes";
+ import pushRoutes from "./routes/push.routes";
+ import userNotificationRoutes from "./routes/userNotification.routes";
+
 import path from "path";
 
 const app = express();
@@ -62,11 +66,12 @@ app.use("/api/footer-settings", footerRoutes);
 app.use("/api/advertisement",   advertisementRoutes);
 app.use("/api/advertisement-pool", advertisementPoolRoutes);
 app.use("/api/contact",         contactUsRoutes);
-
+app.use("/api/push", pushRoutes);
+app.use("/api/user-notifications", userNotificationRoutes);
 app.use("/api/notifications", notificationRoutes);
 // ── Frontend User section ───────────────────────
 app.use("/api/users",           siteUserRoutes);
-
+app.use("/api/newsletter", newsletterRouter);
 app.use("/uploads", express.static(path.join(process.cwd(), "uploads")));
 
 export default app;

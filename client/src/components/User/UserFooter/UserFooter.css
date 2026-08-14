@@ -417,3 +417,18 @@
     font-size: 14px;
   }
 }
+/* Add to UserFooter.css — feedback text under the Subscribe button */
+
+.fsb-feedback {
+  margin: 8px 0 0;
+  font-size: 12.5px;
+  font-weight: 500;
+}
+
+.fsb-feedback--success {
+  color: #4ade80;
+}
+
+.fsb-feedback--error {
+  color: #f87171;
+}

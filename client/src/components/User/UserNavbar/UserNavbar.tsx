@@ -1,39 +1,146 @@
 // client/src/components/User/UserNavbar/UserNavbar.tsx
 // ──────────────────────────────────────────────────────────────
+// Merged version: keeps the real, API-backed live search (debounced,
+// request-race-safe, trending tags from /api/tags/trending) from the
+// second draft, AND restores the full working Notification Center
+// (tabs, unread dot, mark-as-read, "See All") from the first draft.
+// User state is kept in React state only (no localStorage).
 
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef, useMemo } from "react";
 import "./UserNavbar.css";
 import { NavLink, useLocation, useNavigate } from "react-router-dom";
-import { 
-  Bell, User, Menu, X, Search, ChevronDown, LogOut, 
-  Lightbulb, LineChart, Wrench, ShieldCheck
+import {
+  Bell, User, Menu, X, Search, ChevronDown, LogOut,
+  Newspaper, MessageCircle, Heart, Megaphone
 } from "lucide-react";
 import logo from "../../../assets/Logo.png";
 import { useCategories } from "../../../hooks/useCategories";
 import { useAuth } from "../../../context/AuthContext";
 
 import type { Category } from "../../../types/category";
-import { getBreakingTickerNews } from "../../../api/news";
+import { getBreakingTickerNews, searchNews, type NewsArticle } from "../../../api/user/news";
+import { getTrendingTags } from "../../../api/user/tag";
+import {
+  getMyNotifications,
+  markNotificationRead,
+  type UserNotificationItem,
+} from "../../../api/user/notifications";
 
-interface AppNotification {
+// Shape returned by GET /api/tags/trending (see tags.controller.ts's getTrendingTags)
+interface TrendingTag {
   id: string;
-  tab: "Today" | "This Week" | "Earlier";
-  timeLabel: string;
-  icon: React.ElementType;
-  isUnread: boolean;
-  title: string;
-  desc: React.ReactNode;
+  name: string;
+  slug: string;
+  isTrending?: boolean;
+  _count?: { articles: number };
 }
+
+// ── Notification presentation helpers ─────────────────────────
+// The backend only stores `type` + `createdAt`; the icon, the
+// Today/This Week/Earlier bucket, and the "3h ago" label are all
+// derived on the client so the panel stays live without needing
+// the server to recompute buckets on every request.
+const NOTIF_ICONS: Record<UserNotificationItem["type"], React.ElementType> = {
+  new_article: Newspaper,
+  comment_reply: MessageCircle,
+  comment_like: Heart,
+  ad_response: Megaphone,
+};
+
+type NotifBucket = "Today" | "This Week" | "Earlier";
+
+const getNotifBucket = (createdAt: string): NotifBucket => {
+  const diffMs = Date.now() - new Date(createdAt).getTime();
+  const diffDays = diffMs / (1000 * 60 * 60 * 24);
+  if (diffDays < 1) return "Today";
+  if (diffDays < 7) return "This Week";
+  return "Earlier";
+};
+
+const getTimeLabel = (createdAt: string): string => {
+  const diffMs = Date.now() - new Date(createdAt).getTime();
+  const sec = Math.floor(diffMs / 1000);
+  if (sec < 60) return "just now";
+  const min = Math.floor(sec / 60);
+  if (min < 60) return `${min}m ago`;
+  const hr = Math.floor(min / 60);
+  if (hr < 24) return `${hr}h ago`;
+  const day = Math.floor(hr / 24);
+  if (day < 7) return `${day}d ago`;
+  return `${Math.floor(day / 7)}w ago`;
+};
 
 const UserNavbar: React.FC = () => {
   const { user, openLogin, logout } = useAuth();
-  
+
   const [isProfileOpen, setIsProfileOpen] = useState(false);
   const profileDropdownRef = useRef<HTMLDivElement>(null);
 
+  // ── Notification center state (real, API-backed) ───────────────
   const [isNotificationOpen, setIsNotificationOpen] = useState(false);
-  const [hasViewedNotifs, setHasViewedNotifs] = useState(false); 
   const notificationRef = useRef<HTMLDivElement>(null);
+  const [notifTab, setNotifTab] = useState<"Today" | "This Week" | "Earlier" | "All">("Today");
+
+  const [notifications, setNotifications] = useState<UserNotificationItem[]>([]);
+  const [notifLoading, setNotifLoading] = useState(false);
+  const [notifError, setNotifError] = useState<string | null>(null);
+
+  const unreadCount = useMemo(
+    () => notifications.filter(n => !n.read).length,
+    [notifications]
+  );
+
+  const filteredNotifs = useMemo(
+    () => (notifTab === "All"
+      ? notifications
+      : notifications.filter(n => getNotifBucket(n.createdAt) === notifTab)),
+    [notifications, notifTab]
+  );
+
+  const fetchNotifications = async () => {
+    setNotifLoading(true);
+    setNotifError(null);
+    try {
+      const data = await getMyNotifications();
+      setNotifications(data.notifications || []);
+    } catch (err) {
+      setNotifError(err instanceof Error ? err.message : "Couldn't load notifications.");
+    } finally {
+      setNotifLoading(false);
+    }
+  };
+
+  // Fetch on login, then poll every 60s so the bell stays current
+  // (new article published, someone replied/liked, ad request answered).
+  useEffect(() => {
+    if (!user) {
+      setNotifications([]);
+      return;
+    }
+    fetchNotifications();
+    const interval = setInterval(fetchNotifications, 60000);
+    return () => clearInterval(interval);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user]);
+
+  const handleMarkAsRead = (id: string) => {
+    setNotifications(prev => prev.map(n => n.id === id ? { ...n, read: true } : n));
+    markNotificationRead(id).catch(err => {
+      console.error("Failed to mark notification read:", err);
+      // Revert on failure so the UI doesn't lie about server state.
+      setNotifications(prev => prev.map(n => n.id === id ? { ...n, read: false } : n));
+    });
+  };
+
+  const handleNotificationClick = (notif: UserNotificationItem) => {
+    if (!notif.read) handleMarkAsRead(notif.id);
+    setIsNotificationOpen(false);
+    navigate(notif.link);
+  };
+
+  const toggleNotification = () => {
+    setIsNotificationOpen(prev => !prev);
+  };
 
   const { categories } = useCategories();
   const location  = useLocation();
@@ -50,48 +157,62 @@ const UserNavbar: React.FC = () => {
   const dropdownTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [headlines, setHeadlines] = useState<string[]>([]);
 
-  // 👇 EXPERT FIX: Added "All" to the valid states so "See All" can trigger it
-  const [notifTab, setNotifTab] = useState<"Today" | "This Week" | "Earlier" | "All">("Today");
-  
-  const [notifications, setNotifications] = useState<AppNotification[]>([
-    {
-      id: "1", tab: "Today", timeLabel: "1h ago", icon: Lightbulb, isUnread: true,
-      title: "Your AI Just Got Smarter",
-      desc: <>Adaptive learning speed increased by <strong>27%</strong>. New feature: AI-driven trend forecasting</>
-    },
-    {
-      id: "2", tab: "Today", timeLabel: "3h ago", icon: LineChart, isUnread: true,
-      title: "Data Analysis Completed",
-      desc: <>Your AI has processed <strong>10,000+</strong> records and identified key trends.</>
-    },
-    {
-      id: "3", tab: "This Week", timeLabel: "2d ago", icon: Wrench, isUnread: false,
-      title: "System Maintenance",
-      desc: <>Performance tuning & security updates will be applied at <strong>2:00 AM UTC</strong></>
-    },
-    {
-      id: "4", tab: "Earlier", timeLabel: "2w ago", icon: ShieldCheck, isUnread: false,
-      title: "Security Update",
-      desc: <>Your account security settings have been successfully updated.</>
+  // ── Trending tags state ─────────────────────────────────────
+  const [trendingTags, setTrendingTags] = useState<TrendingTag[]>([]);
+
+  // ── Search state ────────────────────────────────────────────
+  const [searchQuery,     setSearchQuery]     = useState("");
+  const [searchResults,   setSearchResults]   = useState<NewsArticle[]>([]);
+  const [searchLoading,   setSearchLoading]   = useState(false);
+  const [searchError,     setSearchError]     = useState<string | null>(null);
+  const searchDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const searchRequestId   = useRef(0);
+
+  const runSearch = async (query: string) => {
+    const trimmed = query.trim();
+    if (!trimmed) {
+      setSearchResults([]);
+      setSearchError(null);
+      setSearchLoading(false);
+      return;
     }
-  ]);
-
-  const unreadCount = notifications.filter(n => n.isUnread).length;
-  
-  // 👇 EXPERT FIX: If "All" is active, show everything. Otherwise, filter by the active tab.
-  const filteredNotifs = notifTab === "All" 
-    ? notifications 
-    : notifications.filter(n => n.tab === notifTab);
-
-  const handleMarkAsRead = (id: string) => {
-    setNotifications(prev => prev.map(n => n.id === id ? { ...n, isUnread: false } : n));
+    const thisRequest = ++searchRequestId.current;
+    setSearchLoading(true);
+    setSearchError(null);
+    try {
+      const res = await searchNews(trimmed, { limit: 8 });
+      if (thisRequest !== searchRequestId.current) return; // stale response, ignore
+      setSearchResults(res.news || []);
+    } catch (err) {
+      if (thisRequest !== searchRequestId.current) return;
+      setSearchError(err instanceof Error ? err.message : "Search failed. Please try again.");
+      setSearchResults([]);
+    } finally {
+      if (thisRequest === searchRequestId.current) setSearchLoading(false);
+    }
   };
 
-  const toggleNotification = () => {
-    if (!isNotificationOpen) {
-      setHasViewedNotifs(true);
-    }
-    setIsNotificationOpen(!isNotificationOpen);
+  const handleSearchInputChange = (value: string) => {
+    setSearchQuery(value);
+    if (searchDebounceRef.current) clearTimeout(searchDebounceRef.current);
+    searchDebounceRef.current = setTimeout(() => runSearch(value), 350);
+  };
+
+  const handleSearchSubmit = () => {
+    if (searchDebounceRef.current) clearTimeout(searchDebounceRef.current);
+    runSearch(searchQuery);
+  };
+
+  const closeSearch = () => {
+    setIsSearchOpen(false);
+    setSearchQuery("");
+    setSearchResults([]);
+    setSearchError(null);
+  };
+
+  const goToArticle = (slug: string) => {
+    closeSearch();
+    navigate(`/article/${slug}`);
   };
 
   useEffect(() => {
@@ -106,18 +227,34 @@ const UserNavbar: React.FC = () => {
     fetchTickerNews();
   }, []);
 
+  // ── Trending tags (search panel "Trending:" chips) ────────────
+  useEffect(() => {
+    const fetchTrendingTags = async () => {
+      try {
+        const data = await getTrendingTags();
+        setTrendingTags((data || []).slice(0, 4));
+      } catch (error) {
+        console.error("Failed to fetch trending tags:", error);
+      }
+    };
+    fetchTrendingTags();
+  }, []);
+
+  // ── Date ────────────────────────────────────────────────────
   useEffect(() => {
     const now = new Date();
     setWeekday(now.toLocaleDateString("en-US", { weekday: "long" }));
     setDate(now.toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" }));
   }, []);
 
+  // ── Focus search ─────────────────────────────────────────────
   useEffect(() => {
     if (isSearchOpen && searchInputRef.current) {
       setTimeout(() => searchInputRef.current?.focus(), 100);
     }
   }, [isSearchOpen]);
 
+  // ── Click outside profile dropdown & notification panel ──────
   useEffect(() => {
     const handle = (e: MouseEvent) => {
       if (profileDropdownRef.current && !profileDropdownRef.current.contains(e.target as Node)) {
@@ -131,6 +268,7 @@ const UserNavbar: React.FC = () => {
     return () => document.removeEventListener("mousedown", handle);
   }, []);
 
+  // ── Mobile category highlight ────────────────────────────────
   useEffect(() => {
     const currentSlug = location.pathname.split("/").pop();
     if (currentSlug && location.pathname.includes("/category/")) {
@@ -145,12 +283,20 @@ const UserNavbar: React.FC = () => {
     }
   }, [location.pathname, categories]);
 
+  // ── Close search on route change ───────────────────────────────
+  useEffect(() => {
+    closeSearch();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [location.pathname]);
+
+  // ── Logout ───────────────────────────────────────────────────
   const handleLogout = async () => {
     setIsProfileOpen(false);
     await logout();
     navigate("/");
   };
 
+  // ── Nav helpers ───────────────────────────────────────────────
   const childrenOf = (parentId: string): Category[] =>
     categories.filter(c => String(c.parentId) === parentId && c.enabled);
 
@@ -189,12 +335,13 @@ const UserNavbar: React.FC = () => {
   };
 
   const handleTagClick = (tagText: string) => {
-    if (searchInputRef.current) {
-      searchInputRef.current.value = tagText; 
-      searchInputRef.current.focus(); 
-    }
+    setSearchQuery(tagText);
+    if (searchInputRef.current) searchInputRef.current.focus();
+    if (searchDebounceRef.current) clearTimeout(searchDebounceRef.current);
+    runSearch(tagText);
   };
 
+  // ── RENDER ────────────────────────────────────────────────────
   return (
     <div className="navbar-wrapper">
 
@@ -345,11 +492,11 @@ const UserNavbar: React.FC = () => {
 
           {/* ── RIGHT ACTIONS ─────────────────── */}
           <div className="nav-actions">
-            
+
             {/* ── SEARCH TOGGLE BUTTON ── */}
             <button
               className="open-search-btn"
-              onClick={() => setIsSearchOpen(!isSearchOpen)}
+              onClick={() => (isSearchOpen ? closeSearch() : setIsSearchOpen(true))}
               title="Search"
             >
               {isSearchOpen ? <X size={24} /> : <Search size={22} />}
@@ -357,23 +504,22 @@ const UserNavbar: React.FC = () => {
 
             {/* ── NOTIFICATION CENTER ── */}
             <div className="notification-wrapper" ref={notificationRef}>
-              <button 
-                className="nav-icon-btn" 
+              <button
+                className="nav-icon-btn"
                 onClick={toggleNotification}
               >
                 {isNotificationOpen ? <X size={20} /> : <Bell size={20} />}
-                {!isNotificationOpen && unreadCount > 0 && !hasViewedNotifs && (
+                {!isNotificationOpen && unreadCount > 0 && (
                   <span className="notification-dot" />
                 )}
               </button>
 
               <div className={`notif-panel ${isNotificationOpen ? "open" : ""}`}>
-                
+
                 {/* Header */}
                 <div className="notif-header">
                   <h3 className="notif-title-main">Notification Center</h3>
-                  {/* 👇 EXPERT FIX: Sets tab to "All" to render everything within the panel 👇 */}
-                  <button 
+                  <button
                     className={`notif-see-all ${notifTab === "All" ? "active" : ""}`}
                     onClick={() => setNotifTab("All")}
                     style={{
@@ -386,11 +532,11 @@ const UserNavbar: React.FC = () => {
                   </button>
                 </div>
 
-                {/* Working Tabs */}
+                {/* Tabs */}
                 <div className="notif-tabs-wrapper">
                   <div className="notif-tabs">
                     {(["Today", "This Week", "Earlier"] as const).map(tab => (
-                      <button 
+                      <button
                         key={tab}
                         className={`notif-tab ${notifTab === tab ? "active" : ""}`}
                         onClick={() => setNotifTab(tab)}
@@ -401,32 +547,40 @@ const UserNavbar: React.FC = () => {
                   </div>
                 </div>
 
-                {/* Working List Items */}
+                {/* List Items */}
                 <div className="notif-list">
-                  {filteredNotifs.length === 0 ? (
+                  {notifLoading && notifications.length === 0 ? (
+                    <div style={{ textAlign: "center", padding: "40px 0", color: "#94a3b8", fontSize: "14px" }}>
+                      Loading notifications…
+                    </div>
+                  ) : notifError ? (
+                    <div style={{ textAlign: "center", padding: "40px 0", color: "#dc2626", fontSize: "14px" }}>
+                      {notifError}
+                    </div>
+                  ) : filteredNotifs.length === 0 ? (
                     <div style={{ textAlign: "center", padding: "40px 0", color: "#94a3b8", fontSize: "14px" }}>
                       No notifications to show.
                     </div>
                   ) : (
                     filteredNotifs.map(notif => {
-                      const Icon = notif.icon;
+                      const Icon = NOTIF_ICONS[notif.type] || Bell;
                       return (
-                        <div 
-                          key={notif.id} 
-                          className="notif-item" 
-                          onClick={() => handleMarkAsRead(notif.id)}
+                        <div
+                          key={notif.id}
+                          className="notif-item"
+                          onClick={() => handleNotificationClick(notif)}
                           style={{ cursor: "pointer" }}
                         >
                           <div className="notif-icon"><Icon size={20} strokeWidth={1.5} /></div>
                           <div className="notif-content">
                             <div className="notif-top">
                               <span className="notif-subj">
-                                {notif.isUnread && <span className="notif-dot">•</span>} 
+                                {!notif.read && <span className="notif-dot">•</span>}
                                 {notif.title}
                               </span>
-                              <span className="notif-time">{notif.timeLabel}</span>
+                              <span className="notif-time">{getTimeLabel(notif.createdAt)}</span>
                             </div>
-                            <p className="notif-desc">{notif.desc}</p>
+                            <p className="notif-desc">{notif.message}</p>
                           </div>
                         </div>
                       );
@@ -490,28 +644,70 @@ const UserNavbar: React.FC = () => {
             <div className="smp-input-group">
               <div className="smp-input-wrapper">
                 <Search size={20} className="smp-icon" />
-                <input 
-                  type="text" 
-                  placeholder="Search for latest news, topics, or events..." 
+                <input
+                  type="text"
+                  placeholder="Search for latest news, topics, or events..."
                   ref={searchInputRef}
+                  value={searchQuery}
+                  onChange={(e) => handleSearchInputChange(e.target.value)}
+                  onKeyDown={(e) => { if (e.key === "Enter") handleSearchSubmit(); }}
                 />
               </div>
-              <button className="smp-submit-btn">Search</button>
+              <button className="smp-submit-btn" onClick={handleSearchSubmit}>Search</button>
             </div>
-            
-            <div className="smp-trending">
-              <span className="smp-trending-label">Trending:</span>
-              <div className="smp-tags">
-                <span className="smp-tag" onClick={() => handleTagClick("Jharkhand Weather")}>Jharkhand Weather</span>
-                <span className="smp-tag" onClick={() => handleTagClick("Stock Market Update")}>Stock Market Update</span>
-                <span className="smp-tag" onClick={() => handleTagClick("Elections 2026")}>Elections 2026</span>
-                <span className="smp-tag" onClick={() => handleTagClick("Technology")}>Technology</span>
-                <span className="smp-tag" onClick={() => handleTagClick("Bollywood")}>Bollywood</span>
+
+            {/* ── LIVE RESULTS ── */}
+            {searchQuery.trim() !== "" && (
+              <div className="smp-results" role="listbox">
+                {searchLoading && (
+                  <div className="smp-results-status">Searching…</div>
+                )}
+                {!searchLoading && searchError && (
+                  <div className="smp-results-status smp-results-error">{searchError}</div>
+                )}
+                {!searchLoading && !searchError && searchResults.length === 0 && (
+                  <div className="smp-results-status">No articles found for "{searchQuery}".</div>
+                )}
+                {!searchLoading && !searchError && searchResults.map((article) => (
+                  <button
+                    key={article.id}
+                    className="smp-result-item"
+                    onClick={() => goToArticle(article.slug)}
+                  >
+                    {article.featuredImage && (
+                      <img src={article.featuredImage} alt="" className="smp-result-thumb" />
+                    )}
+                    <div className="smp-result-text">
+                      <span className="smp-result-headline">{article.headline}</span>
+                      {article.category?.name && (
+                        <span className="smp-result-category">{article.category.name}</span>
+                      )}
+                    </div>
+                  </button>
+                ))}
               </div>
-            </div>
+            )}
+
+            {/* ── TRENDING TAGS (real data from /api/tags/trending) ── */}
+            {trendingTags.length > 0 && (
+              <div className="smp-trending">
+                <span className="smp-trending-label">Trending:</span>
+                <div className="smp-tags">
+                  {trendingTags.map((tag) => (
+                    <span
+                      key={tag.id}
+                      className="smp-tag"
+                      onClick={() => handleTagClick(tag.name)}
+                    >
+                      {tag.name}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
         </div>
-        
+
       </header>
     </div>
   );

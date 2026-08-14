@@ -6,7 +6,7 @@ import {
   Edit, ExternalLink, Trash2, Zap, MoreVertical, Pin, GripVertical,
 } from "lucide-react";
 import {
-  fetchAllNews, deleteNews as apiDeleteNews, updateNews as apiUpdateNews,
+  fetchAdminNews, deleteNews as apiDeleteNews, updateNews as apiUpdateNews,
 } from "../../../api/news";
 import type { ArticleTypeEnum } from "../../../api/news";
 
@@ -144,7 +144,7 @@ const AllNews: React.FC = () => {
       all:      undefined,
     };
     try {
-      const data = await fetchAllNews({
+      const data = await fetchAdminNews({
         articleType: apiTypeMap[type || "all"],
         search:      q || undefined,
         limit:       100,
@@ -155,7 +155,7 @@ const AllNews: React.FC = () => {
 }
 setArticles((data.news || []).map(mapNewsItem));
     } catch (err) {
-      console.error("fetchAllNews failed:", err);
+      console.error("fetchAdminNews failed:", err);
     }
   };
 

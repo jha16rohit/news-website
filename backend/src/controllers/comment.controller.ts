@@ -3,8 +3,10 @@
 
 import { Response } from "express";
 import Comment from "../models/Comment";
+import News from "../models/News";
 import { SiteUserRequest } from "../middleware/Siteuserauth.middleware";
 import { AuthRequest }     from "../middleware/auth.middleware";
+import { notifyUserOfCommentReply } from "./userNotification.controller";
 
 // ══════════════════════════════════════════════════════════════
 //  HELPERS
@@ -188,6 +190,22 @@ export const replyToComment = async (req: SiteUserRequest, res: Response) => {
       parentId:       parentId, 
       status:         "approved",
     });
+
+    if (parent.userId && parent.userId !== req.userId) {
+      News.findById(newsId)
+        .select("slug")
+        .lean()
+        .then((news: any) => {
+          if (!news?.slug) return;
+          return notifyUserOfCommentReply({
+            recipientUserId: parent.userId,
+            replierName: req.userName!,
+            newsSlug: news.slug,
+            commentId: String(reply._id),
+          });
+        })
+        .catch((err) => console.error("[UserNotification] Comment reply notify failed:", err));
+    }
 
     return res.status(201).json({ comment: formatComment(reply, req.userId) });
   } catch (err) {
@@ -424,6 +442,22 @@ export const adminReplyToComment = async (req: AuthRequest, res: Response) => {
       status:         "approved",
       isVerified:     true,
     });
+
+    if (parent.userId && parent.userId !== String(req.user!.id)) {
+      News.findById(newsId)
+        .select("slug")
+        .lean()
+        .then((news: any) => {
+          if (!news?.slug) return;
+          return notifyUserOfCommentReply({
+            recipientUserId: parent.userId,
+            replierName: "LocalNewz",
+            newsSlug: news.slug,
+            commentId: String(reply._id),
+          });
+        })
+        .catch((err) => console.error("[UserNotification] Comment reply notify failed:", err));
+    }
 
     return res.status(201).json({ comment: formatComment(reply) });
   } catch (err) {

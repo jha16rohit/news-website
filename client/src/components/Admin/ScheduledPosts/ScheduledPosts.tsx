@@ -1,7 +1,7 @@
 import React, { useState, useMemo, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import "./ScheduledPosts.css";
-import { fetchAllNews, deleteNews as apiDeleteNews, updateNews as apiUpdateNews } from "../../../api/news";
+import { fetchAdminNews, deleteNews as apiDeleteNews, updateNews as apiUpdateNews } from "../../../api/news";
 // import { useNewsEvent, useNewsSubscription } from "../../../context/newscontext";
 import {
   CalendarClock, FileText, Clock, ChevronLeft, ChevronRight,
@@ -125,8 +125,8 @@ const ScheduledPosts: React.FC = () => {
     setLoading(true);
     try {
       const [scheduledData, draftData] = await Promise.all([
-        fetchAllNews({ status: "SCHEDULED", limit: 100 }).catch(() => null),
-        fetchAllNews({ status: "DRAFT",     limit: 100 }).catch(() => null),
+        fetchAdminNews({ status: "SCHEDULED", limit: 100 }).catch(() => null),
+        fetchAdminNews({ status: "DRAFT",     limit: 100 }).catch(() => null),
       ]);
 
       const mapArticle = (n: any): RemoteArticle => ({

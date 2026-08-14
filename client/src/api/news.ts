@@ -148,6 +148,36 @@ export const fetchAllNews = (params?: {
   return apiClient(`/api/news?${qs.toString()}`);
 };
 
+// ─── FETCH ALL (ADMIN — every status: draft/scheduled/published/etc.) ─────────
+// The public fetchAllNews() above now hits the public "/api/news" route,
+// which only ever returns PUBLISHED articles (so drafts/scheduled articles
+// never leak onto the live site). The admin dashboard (All News, Scheduled &
+// Drafts) needs to see every status, so it uses this instead, which hits the
+// protected "/api/news/admin/all" route.
+export const fetchAdminNews = (params?: {
+  categoryId?:  string;
+  category?:    string;
+  search?:      string;
+  articleType?: ArticleTypeEnum;
+  status?:      StatusEnum;
+  priority?:    PriorityEnum | "All Priority";
+  page?:        number;
+  limit?:       number;
+}) => {
+  const qs = new URLSearchParams();
+
+  if (params?.categoryId)                                     qs.set("categoryId", params.categoryId);
+  if (params?.category)                                       qs.set("category", params.category);
+  if (params?.search)                                         qs.set("search", params.search);
+  if (params?.articleType)                                    qs.set("articleType", params.articleType);
+  if (params?.status)                                         qs.set("status", params.status);
+  if (params?.priority && params.priority !== "All Priority") qs.set("priority", params.priority);
+  if (params?.page)                                           qs.set("page", String(params.page));
+  if (params?.limit)                                          qs.set("limit", String(params.limit));
+
+  return apiClient(`/api/news/admin/all?${qs.toString()}`);
+};
+
 // ─── GET ───────────────────────────────────────────────────────────────────────
 export const fetchNewsBySlug = (slug: string) =>
   apiClient(`/api/news/slug/${slug}`);

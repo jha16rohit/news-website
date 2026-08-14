@@ -10,6 +10,8 @@ import { extractImagesFromContent } from "../utils/Extractimages";
 import slugify from "slugify";
 import { randomUUID } from "crypto";
 import cloudinary from "../config/cloudinary";
+import { notifySubscribersOfNewArticle } from "./newsletter.controller";
+import { notifyUsersOfNewArticle } from "./userNotification.controller";
 
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -127,6 +129,68 @@ async function upsertTags(tags: string[]): Promise<string[]> {
   }
   return names;
 }
+
+// ─── AUTO-PUBLISH SCHEDULED ARTICLES ───────────────────────────────────────────
+// There was previously NO mechanism that ever moved a "SCHEDULED" article to
+// "PUBLISHED" once its scheduledAt time arrived — the status just sat at
+// SCHEDULED forever unless someone manually hit "Publish Now". This helper
+// finds every SCHEDULED article whose scheduledAt is now in the past and
+// flips it to PUBLISHED (publishedAt = the original scheduledAt, so "Published
+// X ago" labels stay accurate). It's called defensively at the top of every
+// read endpoint (so data is always correct at request time) AND on a
+// background timer (so articles go live on time even with zero traffic).
+let autoPublishRunning = false;
+export async function autoPublishDueScheduled(): Promise<void> {
+  if (autoPublishRunning) return; // avoid overlapping runs
+  autoPublishRunning = true;
+  try {
+    const now = new Date();
+    const due = await News.find({
+      status: "SCHEDULED",
+      scheduledAt: { $lte: now },
+    }).select("_id headline slug excerpt featuredImage scheduledAt");
+
+    if (due.length === 0) return;
+
+    const ids = due.map((d) => d._id);
+
+    await News.updateMany({ _id: { $in: ids } }, [
+      {
+        $set: {
+          status: "PUBLISHED",
+          publishedAt: "$scheduledAt",
+          scheduledAt: null,
+        },
+      },
+    ]);
+
+    for (const article of due) {
+      notifySubscribersOfNewArticle({
+        headline: article.headline,
+        slug: article.slug,
+        shortDescription: article.excerpt ?? undefined,
+        coverImage: article.featuredImage ?? undefined,
+      }).catch((err) => console.error("[Newsletter] Notify failed:", err));
+
+      notifyUsersOfNewArticle({
+        headline: article.headline,
+        slug: article.slug,
+      }).catch((err) => console.error("[UserNotification] Notify failed:", err));
+    }
+  } catch (error) {
+    console.error("autoPublishDueScheduled error:", error);
+  } finally {
+    autoPublishRunning = false;
+  }
+}
+
+// Background safety net: even if nobody hits the API, due articles still
+// flip to PUBLISHED within 30s of their scheduled time.
+setInterval(() => {
+  autoPublishDueScheduled().catch((err) =>
+    console.error("[Scheduler] autoPublishDueScheduled failed:", err),
+  );
+}, 30_000);
 
 // ─── CREATE ───────────────────────────────────────────────────────────────────
 export const createNews = async (req: AuthRequest, res: Response) => {
@@ -314,6 +378,23 @@ export const createNews = async (req: AuthRequest, res: Response) => {
       .populate("categoryId", "name color")
       .populate("authorId", "name role");
 
+    if (resolvedStatus === "PUBLISHED") {
+      notifySubscribersOfNewArticle({
+        headline: news.headline,
+        slug: news.slug,
+        shortDescription: news.excerpt ?? undefined,
+        coverImage: news.featuredImage ?? undefined,
+      }).catch((err) => console.error("[Newsletter] Notify failed:", err));
+
+      // TEMP DEBUG: await + rethrow so the real error shows up in the API
+      // response instead of only (maybe) in server logs. Revert to the
+      // fire-and-forget .catch() version once root cause is found.
+      await notifyUsersOfNewArticle({
+        headline: news.headline,
+        slug: news.slug,
+      });
+    }
+
     res.status(201).json({ success: true, news: populated });
   } catch (error: any) {
     console.error("createNews error:", error);
@@ -324,6 +405,8 @@ export const createNews = async (req: AuthRequest, res: Response) => {
 // ─── GET ALL (admin — no status default filter) ────────────────────────────────
 export const getAllNews = async (req: Request, res: Response) => {
   try {
+    await autoPublishDueScheduled();
+
     const {
       category,
       categoryId,
@@ -427,6 +510,8 @@ export const getAllNews = async (req: Request, res: Response) => {
 // Use this handler for /api/news (public) instead of the admin one.
 export const getPublishedNews = async (req: Request, res: Response) => {
   try {
+    await autoPublishDueScheduled();
+
     const { category, categoryId, search, articleType, page, limit } =
       req.query;
 
@@ -514,6 +599,8 @@ export const getPublishedNews = async (req: Request, res: Response) => {
 // ─── GET BY SLUG ──────────────────────────────────────────────────────────────
 export const getNewsBySlug = async (req: Request, res: Response) => {
   try {
+    await autoPublishDueScheduled();
+
     const news = await News.findOne({
       slug: String(req.params.id),
     })
@@ -541,6 +628,8 @@ export const getNewsBySlug = async (req: Request, res: Response) => {
 // ─── GET BY ID ────────────────────────────────────────────────────────────────
 export const getNewsById = async (req: Request, res: Response) => {
   try {
+    await autoPublishDueScheduled();
+
     const newsDoc = await News.findById(String(req.params.id)).lean();
 
     if (!newsDoc) return res.status(404).json({ message: "News not found" });
@@ -630,7 +719,9 @@ export const updateNews = async (req: AuthRequest, res: Response) => {
     let deletedAt: Date | null = (existing as any).deletedAt ?? null;
     let deleteAfter: Date | null = (existing as any).deleteAfter ?? null;
 
-    if (status === "PUBLISHED" && existing.status !== "PUBLISHED") {
+    const justPublished = status === "PUBLISHED" && existing.status !== "PUBLISHED";
+
+    if (justPublished) {
       publishedAt = new Date();
       scheduledAt = null;
     } else if (status === "SCHEDULED" && publishAt) {
@@ -719,6 +810,22 @@ export const updateNews = async (req: AuthRequest, res: Response) => {
     const updated = await News.findByIdAndUpdate(id, updateData, { returnDocument: 'after' })
       .populate("authorId", "name")
       .populate("categoryId", "name color");
+
+    if (justPublished && updated) {
+      notifySubscribersOfNewArticle({
+        headline: updated.headline,
+        slug: updated.slug,
+        shortDescription: updated.excerpt ?? undefined,
+        coverImage: updated.featuredImage ?? undefined,
+      }).catch((err) => console.error("[Newsletter] Notify failed:", err));
+
+      // TEMP DEBUG: await + rethrow so the real error shows up in the API
+      // response instead of only (maybe) in server logs.
+      await notifyUsersOfNewArticle({
+        headline: updated.headline,
+        slug: updated.slug,
+      });
+    }
 
     res.json({ success: true, updated });
   } catch (error) {
@@ -1094,6 +1201,8 @@ export const getTagsInPublishedNews = async (req: Request, res: Response) => {
 
 export const getRecentNews = async (req: Request, res: Response) => {
   try {
+    await autoPublishDueScheduled();
+
     const news = await News.find({
       status: "PUBLISHED",
     })
@@ -1130,6 +1239,8 @@ export const getRecentNews = async (req: Request, res: Response) => {
 
 export const getBreakingTickerNews = async (req: Request, res: Response) => {
   try {
+    await autoPublishDueScheduled();
+
     const news = await News.find({
       status: "PUBLISHED",
 
@@ -1164,6 +1275,8 @@ export const getBreakingTickerNews = async (req: Request, res: Response) => {
 
 export const getNewsByTag = async (req: Request, res: Response) => {
   try {
+    await autoPublishDueScheduled();
+
     const { slug } = req.params;
 
     const tag = await Tag.findOne({
@@ -1205,6 +1318,8 @@ const USAGE_TRENDING_LIMIT = 10;
 
 export const getTrendingNews = async (req: Request, res: Response) => {
   try {
+    await autoPublishDueScheduled();
+
     // ── Source 1: tags the admin manually marked as trending ─────────────────
     const adminTrendingTags = await Tag.find({
       isTrending: true,
@@ -1273,6 +1388,8 @@ export const getTrendingNews = async (req: Request, res: Response) => {
 
 export const getNewsByTopicSlug = async (req: Request, res: Response) => {
   try {
+    await autoPublishDueScheduled();
+
     const { slug } = req.params;
 
     const topic = await TopicProfile.findOne({

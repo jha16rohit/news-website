@@ -78,6 +78,15 @@ export const getNewsBySlug = async (slug: string): Promise<NewsArticle> =>
 export const getBreakingNews = async (): Promise<NewsResponse> =>
   apiClient("/api/news?articleType=BREAKING");
 
+// ─── BREAKING NEWS TICKER (headline strip) ────────────────────────────────────
+// FIX: this previously only existed in the admin api client (client/src/api/news.ts),
+// so public/user-facing components had no correct place to import it from without
+// reaching into the admin module (which doesn't export searchNews/NewsArticle and
+// caused TS2305 errors in UserNavbar.tsx). It hits the same public, unauthenticated
+// "/api/news/breaking-ticker" route — just exposed from the public client too.
+export const getBreakingTickerNews = async (): Promise<{ success: boolean; headlines: string[] }> =>
+  apiClient("/api/news/breaking-ticker");
+
 // ─── LIVE NEWS ────────────────────────────────────────────────────────────────
 export const getLiveNews = async (): Promise<NewsResponse> =>
   apiClient("/api/news?articleType=LIVE");

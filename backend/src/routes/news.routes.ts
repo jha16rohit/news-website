@@ -47,8 +47,19 @@ router.get("/trending-news",   getTrendingNews);
 router.get("/tag/:slug",       getNewsByTag);
 router.get("/topic/:slug",     getNewsByTopicSlug);
 
-// ─── Root list ──────────────────────────────────────────────────
-router.get("/", getAllNews);
+// ─── Root list (PUBLIC — published articles only) ────────────────
+// FIX: this was previously wired to getAllNews, which returns every
+// article regardless of status (DRAFT / SCHEDULED / PUBLISHED / etc).
+// Since the public site's news list hits this exact route, that meant
+// scheduled and draft articles were visible to visitors immediately,
+// before their scheduled publish time (or even though never published).
+router.get("/", getPublishedNews);
+
+// ─── Admin list (PROTECTED — every status, for the admin dashboard) ─
+// The admin panel (All News, Scheduled & Drafts, etc.) needs to see
+// every article regardless of status, so it gets its own protected
+// route instead of sharing the public "/" route.
+router.get("/admin/all", protect, getAllNews);
 
 // ─── Create ─────────────────────────────────────────────────────
 router.post("/create", uploadToCloudinary, createNews);
