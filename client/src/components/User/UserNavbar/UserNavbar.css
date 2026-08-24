@@ -14,7 +14,6 @@
 .breaking-bar {
   background-color: #ffffff;
   color: black;
-  height: 30px;
   display: flex;
   align-items: center;
   width: 100%;
@@ -81,7 +80,7 @@
 /* ===== MAIN NAVBAR ===== */
 .navbar {
   background-color: #0b1423;
-  height: 60px;
+  height: 50px;
   color: white;
   position: relative;
   z-index: 100;
@@ -116,11 +115,10 @@
 .logo a { display: flex; width: 100%; height: 100%; }
 
 .navbar-logo-img {
-  height: 105px;
-  width: 100%;
+  height: 100px;
   object-fit: contain;
   background-color: #e60000;
-  padding: 10px;
+  padding: 25px 9px 9px;
   position: absolute;
   top: -45px; 
   left: 0;

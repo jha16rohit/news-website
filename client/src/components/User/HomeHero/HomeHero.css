@@ -212,6 +212,7 @@
 .trending-tags-container {
   display: flex;
   align-items: center;
+  justify-content: center;
   position: relative;
   width: 100%;
   margin-bottom: 15px;
@@ -226,6 +227,8 @@
   margin: 0 10px; 
   -ms-overflow-style: none;  
   scrollbar-width: none;  
+  width: max-content; 
+  max-width: 100%;
 }
 
 .tags-scroll-wrapper::-webkit-scrollbar {
