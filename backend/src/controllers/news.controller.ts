@@ -459,7 +459,10 @@ export const getAllNews = async (req: Request, res: Response) => {
 
     const [newsDocs2, total] = await Promise.all([
       News.find(filter)
-        .sort({ createdAt: -1 })
+        .sort({
+  displayOrder: 1,
+  createdAt: -1,
+})
         .skip(skip)
         .limit(limitNum)
         .lean(),
@@ -1484,6 +1487,323 @@ export const uploadMediaImage = async (
     res.status(500).json({
       success: false,
       message: "Error uploading image",
+    });
+  }
+};
+
+// ─── REORDER NEWS ─────────────────────────────────────────────────────────────
+
+export const reorderNews = async (req: AuthRequest, res: Response) => {
+  try {
+    const { orders } = req.body;
+
+    if (!Array.isArray(orders) || orders.length === 0) {
+      return res.status(400).json({
+        success: false,
+        message: "orders must be a non-empty array",
+      });
+    }
+
+    const operations = orders.map(
+      (item: { id: string; order: number }) => ({
+        updateOne: {
+          filter: { _id: item.id },
+          update: {
+            $set: {
+              displayOrder: Number(item.order),
+            },
+          },
+        },
+      })
+    );
+
+    await News.bulkWrite(operations);
+
+    return res.json({
+      success: true,
+      message: "News order updated successfully",
+    });
+  } catch (error) {
+    console.error("reorderNews error:", error);
+
+    return res.status(500).json({
+      success: false,
+      message: "Failed to update news order",
+    });
+  }
+};
+
+// ─── PIN / UNPIN HOMEPAGE ────────────────────────────────────────────────────
+
+// ─── PIN / UNPIN HOMEPAGE ────────────────────────────────────────────────────
+
+// ─── PIN / UNPIN HOMEPAGE ────────────────────────────────────────────────────
+
+export const toggleHomepagePin = async (
+  req: AuthRequest,
+  res: Response
+) => {
+  try {
+    const { id } = req.params;
+
+    const news = await News.findById(id);
+
+    if (!news) {
+      return res.status(404).json({
+        success: false,
+        message: "News article not found",
+      });
+    }
+
+    // ─── UNPIN ───────────────────────────────────────────────────────────────
+    if (news.isPinned) {
+      news.isPinned = false;
+
+      await news.save();
+
+      return res.json({
+        success: true,
+        message: "Article removed from homepage",
+        isPinned: false,
+      });
+    }
+
+    // ─── ONLY PUBLISHED ARTICLES CAN BE PINNED ───────────────────────────────
+    if (news.status !== "PUBLISHED") {
+      return res.status(400).json({
+        success: false,
+        message: "Only published articles can be pinned to homepage",
+      });
+    }
+
+    // ─── GET CURRENT PINNED ARTICLES ────────────────────────────────────────
+    const pinnedArticles = await News.find({
+      isPinned: true,
+      status: "PUBLISHED",
+    })
+      .sort({ displayOrder: 1, createdAt: -1 })
+      .select("_id displayOrder");
+
+    // ─── MAXIMUM 5 PINNED ARTICLES ──────────────────────────────────────────
+    // If 5 are already pinned, remove the lowest ordered pinned article.
+    if (pinnedArticles.length >= 5) {
+      const articleToRemove =
+        pinnedArticles[pinnedArticles.length - 1];
+
+      await News.findByIdAndUpdate(
+        articleToRemove._id,
+        {
+          $set: {
+            isPinned: false,
+          },
+        }
+      );
+    }
+
+    // ─── PIN ARTICLE ─────────────────────────────────────────────────────────
+    // IMPORTANT:
+    // Do NOT change displayOrder.
+    //
+    // This means:
+    // - All News keeps its current order.
+    // - Homepage priority is calculated separately.
+    news.isPinned = true;
+
+    await news.save();
+
+    return res.json({
+      success: true,
+      message: "Article pinned to homepage",
+      isPinned: true,
+    });
+  } catch (error) {
+    console.error("toggleHomepagePin error:", error);
+
+    return res.status(500).json({
+      success: false,
+      message: "Failed to update homepage pin",
+    });
+  }
+};
+// ─── HOMEPAGE NEWS ───────────────────────────────────────────────────────────
+
+// ─── HOMEPAGE NEWS ───────────────────────────────────────────────────────────
+
+// ─── HOMEPAGE NEWS ───────────────────────────────────────────────────────────
+
+// ─── HOMEPAGE NEWS ───────────────────────────────────────────────────────────
+
+export const getHomepageNews = async (
+  req: Request,
+  res: Response
+) => {
+  try {
+    await autoPublishDueScheduled();
+
+    // ───────────────────────────────────────────────────────────────────────
+    // Get ALL published articles first.
+    //
+    // Do NOT use .limit(20) here.
+    // A pinned article may have a large displayOrder and must still be
+    // considered for homepage priority.
+    // ───────────────────────────────────────────────────────────────────────
+
+    const newsDocs = await News.find({
+      status: "PUBLISHED",
+    })
+      .sort({
+        displayOrder: 1,
+        publishedAt: -1,
+        createdAt: -1,
+      })
+      .lean();
+
+    // ───────────────────────────────────────────────────────────────────────
+    // Calculate homepage priority
+    //
+    // 1 = LIVE + PINNED
+    // 2 = BREAKING + PINNED
+    // 3 = PINNED
+    // 4 = LIVE
+    // 5 = BREAKING
+    // 6 = NORMAL
+    // ───────────────────────────────────────────────────────────────────────
+
+    const getHomepagePriority = (article: any): number => {
+      const isPinned = article.isPinned === true;
+      const type = article.articleType;
+
+      if (isPinned && type === "LIVE") {
+        return 1;
+      }
+
+      if (isPinned && type === "BREAKING") {
+        return 2;
+      }
+
+      if (isPinned) {
+        return 3;
+      }
+
+      if (type === "LIVE") {
+        return 4;
+      }
+
+      if (type === "BREAKING") {
+        return 5;
+      }
+
+      return 6;
+    };
+
+    // ───────────────────────────────────────────────────────────────────────
+    // Sort by priority first.
+    //
+    // For articles having the SAME priority:
+    // displayOrder decides the position.
+    //
+    // This means dragging/reordering still works.
+    // ───────────────────────────────────────────────────────────────────────
+
+    const sortedNews = [...newsDocs].sort((a: any, b: any) => {
+      const priorityA = getHomepagePriority(a);
+      const priorityB = getHomepagePriority(b);
+
+      // First: special homepage priority
+      if (priorityA !== priorityB) {
+        return priorityA - priorityB;
+      }
+
+      // Second: manually controlled display order
+      const orderA = Number(a.displayOrder ?? 0);
+      const orderB = Number(b.displayOrder ?? 0);
+
+      if (orderA !== orderB) {
+        return orderA - orderB;
+      }
+
+      // Third: newest published article
+      const publishedA = a.publishedAt
+        ? new Date(a.publishedAt).getTime()
+        : 0;
+
+      const publishedB = b.publishedAt
+        ? new Date(b.publishedAt).getTime()
+        : 0;
+
+      if (publishedA !== publishedB) {
+        return publishedB - publishedA;
+      }
+
+      // Final fallback
+      const createdA = a.createdAt
+        ? new Date(a.createdAt).getTime()
+        : 0;
+
+      const createdB = b.createdAt
+        ? new Date(b.createdAt).getTime()
+        : 0;
+
+      return createdB - createdA;
+    });
+
+    // ───────────────────────────────────────────────────────────────────────
+    // Only five articles are displayed on the homepage.
+    // ───────────────────────────────────────────────────────────────────────
+
+    const homepageDocs = sortedNews.slice(0, 5);
+
+    // ───────────────────────────────────────────────────────────────────────
+    // Resolve categories
+    // ───────────────────────────────────────────────────────────────────────
+
+    const categoryIds = [
+      ...new Set(
+        homepageDocs
+          .map((article: any) => article.categoryId)
+          .filter(Boolean)
+      ),
+    ];
+
+    const categories = await Category.find({
+      _id: { $in: categoryIds },
+    })
+      .select("_id name color")
+      .lean();
+
+    const categoryMap = Object.fromEntries(
+      (categories as any[]).map((category: any) => [
+        String(category._id),
+        category,
+      ])
+    );
+
+    // ───────────────────────────────────────────────────────────────────────
+    // Format response
+    // ───────────────────────────────────────────────────────────────────────
+
+    const news = homepageDocs.map((article: any) => ({
+      ...article,
+
+      id: String(article._id),
+
+      // Frontend expects:
+      // article.categoryId.name
+      categoryId:
+        categoryMap[String(article.categoryId)] ??
+        article.categoryId,
+    }));
+
+    return res.json({
+      success: true,
+      news,
+    });
+  } catch (error) {
+    console.error("getHomepageNews error:", error);
+
+    return res.status(500).json({
+      success: false,
+      message: "Failed to load homepage news",
     });
   }
 };

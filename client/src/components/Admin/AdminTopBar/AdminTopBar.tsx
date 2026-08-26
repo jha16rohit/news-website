@@ -1,9 +1,10 @@
 import React, { useState, useRef, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import "./AdminTopBar.css";
-import { Bell, Plus, Search, ChevronDown, Settings, LogOut, Menu, X } from "lucide-react";
+import { Bell, Plus, ChevronDown, Settings, LogOut, Menu,  } from "lucide-react";
 // import { useNews } from "../NewsStore/NewsStore";
 import { logoutUser } from "../../../api/auth"; // ✅ import logout API call
+import { fetchAdminNews } from "../../../api/news";
 
 interface AdminTopBarProps {
   onMenuClick: () => void;
@@ -11,7 +12,8 @@ interface AdminTopBarProps {
 
 const AdminTopBar: React.FC<AdminTopBarProps> = ({ onMenuClick }) => {
   const [profileOpen, setProfileOpen] = useState(false);
-  const [searchOpen, setSearchOpen]   = useState(false);
+   const [liveCount, setLiveCount] = useState(0);
+  // const [searchOpen, setSearchOpen]   = useState(false);
   const navigate = useNavigate();
   // const { articles } = useNews();
 
@@ -22,12 +24,10 @@ const AdminTopBar: React.FC<AdminTopBarProps> = ({ onMenuClick }) => {
   // ).length;
 
   const profileRef = useRef<HTMLDivElement>(null);
-  const searchRef  = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const handler = (e: MouseEvent) => {
       if (profileRef.current && !profileRef.current.contains(e.target as Node)) setProfileOpen(false);
-      if (searchRef.current  && !searchRef.current.contains(e.target as Node))  setSearchOpen(false);
     };
     document.addEventListener("mousedown", handler);
     return () => document.removeEventListener("mousedown", handler);
@@ -45,6 +45,31 @@ const AdminTopBar: React.FC<AdminTopBarProps> = ({ onMenuClick }) => {
       navigate("/admin/login-xyzsft"); // ✅ redirect to admin login page
     }
   };
+  useEffect(() => {
+  const loadLiveCount = async () => {
+    try {
+      const data = await fetchAdminNews({
+        articleType: "LIVE",
+        limit: 100,
+      });
+
+      const liveArticles = (data?.news ?? []).filter(
+        (article: any) => article.status === "PUBLISHED"
+      );
+
+      setLiveCount(liveArticles.length);
+    } catch (error) {
+      console.error("Failed to load live article count:", error);
+      setLiveCount(0);
+    }
+  };
+
+  loadLiveCount();
+
+  const interval = setInterval(loadLiveCount, 20000);
+
+  return () => clearInterval(interval);
+}, []);
 
   return (
     <div className="admin-topbar">
@@ -54,7 +79,7 @@ const AdminTopBar: React.FC<AdminTopBarProps> = ({ onMenuClick }) => {
       </button>
 
       {/* Search */}
-      <div className={`topbar-search ${searchOpen ? "search-expanded" : ""}`} ref={searchRef}>
+      {/* <div className={`topbar-search ${searchOpen ? "search-expanded" : ""}`} ref={searchRef}>
         {!searchOpen && (
           <button className="search-icon-btn" onClick={() => setSearchOpen(true)}>
             <Search size={18} />
@@ -67,13 +92,14 @@ const AdminTopBar: React.FC<AdminTopBarProps> = ({ onMenuClick }) => {
             <X size={15} />
           </button>
         </div>
-      </div>
+      </div> */}
 
       {/* Actions */}
       <div className="topbar-actions">
         <div className="live-badge">
           <span className="live-dot" />
-          {/* <span className="live-text">{liveCount} Live</span> */}
+  <span className="live-text">Live</span>
+  <span className="live-count">{liveCount}</span>
         </div>
 
         <div className="notification" onClick={() => navigate("/admin/notification")}>

@@ -6,7 +6,11 @@ import {
   Edit, ExternalLink, Trash2, Zap, MoreVertical, Pin, GripVertical,
 } from "lucide-react";
 import {
-  fetchAdminNews, deleteNews as apiDeleteNews, updateNews as apiUpdateNews,
+  fetchAdminNews,
+  deleteNews as apiDeleteNews,
+  updateNews as apiUpdateNews,
+  reorderNews,
+  toggleHomepagePin,
 } from "../../../api/news";
 import type { ArticleTypeEnum } from "../../../api/news";
 
@@ -105,7 +109,7 @@ articleCategory: n.categoryId?.name || "",
     tag:             isBreaking ? "Breaking" : (isLive && !isEnded) ? "Live" : undefined,
     tagType:         tagTypeMap[n.articleType] || undefined,
     leftBorder:      isBreaking ? "breaking-left" : isLive ? "live-left" : undefined,
-    isPinned:        false,
+    isPinned:         Boolean(n.isPinned),
     priority:        isBreaking ? "High" : "Normal",
     priorityType:    isBreaking ? "high"  : "normal",
     liveUpdates:     n.liveUpdates || undefined,
@@ -123,6 +127,10 @@ const AllNews: React.FC = () => {
   const [selectedItems, setSelectedItems] = useState<Set<string>>(new Set());
   const [openDropdown, setOpenDropdown]   = useState<string | null>(null);
   const [deleteModal, setDeleteModal]     = useState<string | null>(null);
+
+  const [page, setPage] = useState(1);
+const [hasMore, setHasMore] = useState(true);
+const [loadingMore, setLoadingMore] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
   
 
@@ -136,65 +144,134 @@ const AllNews: React.FC = () => {
   const [dragOverId, setDragOverId] = useState<string | null>(null);
 
   // ── Fetch ────────────────────────────────────────────────────────────────
-  const loadData = async (type?: string, q?: string) => {
-    const apiTypeMap: Record<string, ArticleTypeEnum | undefined> = {
-      standard: "STANDARD",
-      breaking: "BREAKING",
-      live:     "LIVE",
-      all:      undefined,
-    };
-    try {
-      const data = await fetchAdminNews({
-        articleType: apiTypeMap[type || "all"],
-        search:      q || undefined,
-        limit:       100,
-      });
-  if (!data?.news) {
-  setArticles([]);
-  return;
-}
-setArticles((data.news || []).map(mapNewsItem));
-    } catch (err) {
-      console.error("fetchAdminNews failed:", err);
-    }
+  const loadData = async (
+  type?: string,
+  q?: string,
+  pageNumber: number = 1,
+  append: boolean = false
+) => {
+  const apiTypeMap: Record<string, ArticleTypeEnum | undefined> = {
+    standard: "STANDARD",
+    breaking: "BREAKING",
+    live: "LIVE",
+    all: undefined,
   };
 
-  // Initial load
-  useEffect(() => { loadData(); }, []);
+  try {
+    if (append) {
+      setLoadingMore(true);
+    }
+
+    const data = await fetchAdminNews({
+      articleType: apiTypeMap[type || "all"],
+      search: q || undefined,
+      page: pageNumber,
+      limit: 15,
+    });
+
+    if (!data?.news) {
+      if (!append) {
+        setArticles([]);
+      }
+
+      setHasMore(false);
+      return;
+    }
+
+    const newArticles = data.news.map((item: any, index: number) =>
+      mapNewsItem(
+        item,
+        append
+          ? (pageNumber - 1) * 15 + index
+          : index
+      )
+    );
+
+    if (append) {
+      setArticles(prev => [...prev, ...newArticles]);
+    } else {
+      setArticles(newArticles);
+    }
+
+    // If backend gives total/pages, use them.
+    if (data.pages !== undefined) {
+      setHasMore(pageNumber < data.pages);
+    } else if (data.total !== undefined) {
+      setHasMore(pageNumber * 15 < data.total);
+    } else {
+      // Fallback: if fewer than 15 came back, there is nothing more.
+      setHasMore(data.news.length === 15);
+    }
+  } catch (err) {
+    console.error("fetchAdminNews failed:", err);
+  } finally {
+    setLoadingMore(false);
+  }
+};
+  
+const handleLoadMore = async () => {
+  if (loadingMore || !hasMore) return;
+
+  const nextPage = page + 1;
+
+  await loadData(
+    activeType,
+    search,
+    nextPage,
+    true
+  );
+
+  setPage(nextPage);
+};
+  
 
   // Re-fetch when filter/search changes (debounce search)
   useEffect(() => {
-    const timer = setTimeout(() => loadData(activeType, search), search ? 300 : 0);
-    return () => clearTimeout(timer);
+  const timer = setTimeout(() => {
+    setPage(1);
+    setHasMore(true);
+    setSelectedItems(new Set());
+
+    loadData(activeType, search, 1, false);
+  }, search ? 300 : 0);
+
+  return () => clearTimeout(timer);
+
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [activeType, search]);
+}, [activeType, search]);
 
-  // Keep the table live: view counts (and anything else) change on the public
-  // site while this admin tab just sits open, but the fetch above only ever
-  // runs once on mount / on filter change — nothing was refreshing the data
-  // afterwards, so numbers here went stale until a hard reload. Poll quietly
-  // in the background, and also refetch the moment the tab regains focus
-  // (covers "switched away, came back" without waiting for the interval).
-  useEffect(() => {
-    const POLL_MS = 20_000;
+  
+useEffect(() => {
+  const POLL_MS = 20_000;
 
-    const refresh = () => loadData(activeType, search);
+  const refresh = () => {
+    loadData(
+      activeType,
+      search,
+      page,
+      false
+    );
+  };
 
-    const interval = setInterval(refresh, POLL_MS);
+  const interval = setInterval(refresh, POLL_MS);
 
-    const onVisible = () => {
-      if (document.visibilityState === "visible") refresh();
-    };
-    document.addEventListener("visibilitychange", onVisible);
-    window.addEventListener("focus", refresh);
+  const onVisible = () => {
+    if (document.visibilityState === "visible") {
+      refresh();
+    }
+  };
 
-    return () => {
-      clearInterval(interval);
-      document.removeEventListener("visibilitychange", onVisible);
-      window.removeEventListener("focus", refresh);
-    };
+  document.addEventListener("visibilitychange", onVisible);
+  window.addEventListener("focus", refresh);
+
+  return () => {
+    clearInterval(interval);
+    document.removeEventListener("visibilitychange", onVisible);
+    window.removeEventListener("focus", refresh);
+  };
+
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [activeType, search]);
+}, [activeType, search, page]);
 
   // Close dropdown on outside click
   useEffect(() => {
@@ -228,22 +305,51 @@ setArticles((data.news || []).map(mapNewsItem));
     dragOverIndex.current = index;
     setDragOverId(id);
   };
-  const onDragEnd = () => {
-    if (
-      dragIndex.current !== null &&
-      dragOverIndex.current !== null &&
-      dragIndex.current !== dragOverIndex.current
-    ) {
-      const reordered = [...articles];
-      const [moved] = reordered.splice(dragIndex.current, 1);
-      reordered.splice(dragOverIndex.current, 0, moved);
-      setArticles(reordered);
+const onDragEnd = async () => {
+  if (
+    dragIndex.current !== null &&
+    dragOverIndex.current !== null &&
+    dragIndex.current !== dragOverIndex.current
+  ) {
+    const reordered = [...articles];
+
+    const [moved] = reordered.splice(
+      dragIndex.current,
+      1
+    );
+
+    reordered.splice(
+      dragOverIndex.current,
+      0,
+      moved
+    );
+
+    // Update UI immediately
+    setArticles(reordered);
+
+    try {
+      await reorderNews(
+        reordered.map((article, index) => ({
+          id: article.id,
+          order: index + 1,
+        }))
+      );
+    } catch (error) {
+      console.error(
+        "Failed to save article order:",
+        error
+      );
+
+      // Restore actual backend order
+      await loadData(activeType, search);
     }
-    dragIndex.current     = null;
-    dragOverIndex.current = null;
-    setDraggingId(null);
-    setDragOverId(null);
-  };
+  }
+
+  dragIndex.current = null;
+  dragOverIndex.current = null;
+  setDraggingId(null);
+  setDragOverId(null);
+};
 
   // ── Menu actions ──────────────────────────────────────────────────────────
   const handleMenuAction = async (action: string, id: string) => {
@@ -260,14 +366,26 @@ setArticles((data.news || []).map(mapNewsItem));
 }`);
         break;
 
-      case "view-live":
-        if (item?.tagType === "breaking") navigate("/admin/breaking");
-        else if (item?.tagType === "live") navigate("/admin/live");
-        break;
+     case "view-live":
+  window.open(`/article/${id}`, "_blank", "noopener,noreferrer");
+  break;
 
-      case "pin":
-        setArticles(prev => prev.map(a => a.id === id ? { ...a, isPinned: !a.isPinned } : a));
-        break;
+      case "pin": {
+  try {
+    await toggleHomepagePin(id);
+
+    // Reload from backend so the UI reflects
+    // the actual pinned/unpinned state.
+    await loadData(activeType, search);
+  } catch (error) {
+    console.error(
+      "Failed to update homepage pin:",
+      error
+    );
+  }
+
+  break;
+}
 
       case "mark-breaking": {
         const isBreaking = item?.tagType === "breaking";
@@ -551,14 +669,29 @@ setDeleteModal(null);
                           <button className="dropdown-item" onClick={() => handleMenuAction("edit", news.id)}>
                             <Edit size={15} /> Edit
                           </button>
-                          <button className="dropdown-item" onClick={() => handleMenuAction("view-live", news.id)}>
-                            <ExternalLink size={15} /> View Live
-                          </button>
+                          {news.status === "Published" && (
+  <button
+    className="dropdown-item"
+    onClick={() => handleMenuAction("view-live", news.id)}
+  >
+    <ExternalLink size={15} /> View Live
+  </button>
+)}
                           <div className="dropdown-divider" />
-                          <button className="dropdown-item" onClick={() => handleMenuAction("pin", news.id)}>
-                            <Pin size={15} className={news.isPinned ? "icon-blue" : ""} />
-                            {news.isPinned ? "Unpin from Homepage" : "Pin to Homepage"}
-                          </button>
+                          {news.status === "Published" && (
+  <button
+    className="dropdown-item"
+    onClick={() => handleMenuAction("pin", news.id)}
+  >
+    <Pin
+      size={15}
+      className={news.isPinned ? "icon-blue" : ""}
+    />
+    {news.isPinned
+      ? "Unpin from Homepage"
+      : "Pin to Homepage"}
+  </button>
+)}
                           <button
                             className={`dropdown-item${news.tagType === "breaking" ? " breaking-active" : ""}`}
                             onClick={() => handleMenuAction("mark-breaking", news.id)}
@@ -596,6 +729,17 @@ setDeleteModal(null);
           </tbody>
         </table>
       </div>
+      {hasMore && articles.length > 0 && (
+  <div className="load-more-container">
+    <button
+      className="load-more-btn"
+      onClick={handleLoadMore}
+      disabled={loadingMore}
+    >
+      {loadingMore ? "Loading..." : "Load More"}
+    </button>
+  </div>
+)}
 
       {/* DELETE MODAL */}
       {deleteModal !== null && (

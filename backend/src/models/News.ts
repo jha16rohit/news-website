@@ -47,6 +47,9 @@ export interface INews extends Document {
 
   slug: string;
 
+  displayOrder: number;
+isPinned: boolean;
+
   keywords: string[];
 
   focusKeywords?: string;
@@ -175,6 +178,18 @@ const NewsSchema = new Schema<INews>(
       trim: true,
       index: true,
     },
+
+    displayOrder: {
+  type: Number,
+  default: 0,
+  index: true,
+},
+
+isPinned: {
+  type: Boolean,
+  default: false,
+  index: true,
+},
 
     keywords: {
       type: [String],

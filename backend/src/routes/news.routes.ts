@@ -13,7 +13,7 @@ import {
   togglePauseBreaking,
   getMediaLibrary,
   deleteMediaImage,
-  uploadMediaImage, 
+  uploadMediaImage,
   getTagsInPublishedNews,
   getPublishedNews,
   getRecentNews,
@@ -21,6 +21,11 @@ import {
   getTrendingNews,
   getNewsByTag,
   getNewsByTopicSlug,
+
+  // ─── Homepage / Ordering ──────────────────────────────────────
+  reorderNews,
+  toggleHomepagePin,
+  getHomepageNews,
 } from "../controllers/news.controller";
 
 import { uploadToCloudinary } from "../middleware/Upload.middleware";
@@ -29,8 +34,15 @@ import { protect } from "../middleware/auth.middleware";
 const router = Router();
 
 // ─── Media Library ──────────────────────────────────────────────
+
 router.get("/media-library", getMediaLibrary);
-router.delete("/media-library/:newsId", protect, deleteMediaImage);
+
+router.delete(
+  "/media-library/:newsId",
+  protect,
+  deleteMediaImage
+);
+
 router.patch(
   "/media-library/:newsId/upload",
   protect,
@@ -38,31 +50,76 @@ router.patch(
   uploadMediaImage
 );
 
-// ─── Specific named GET routes (MUST be before /:id and /:slug) ─
-router.get("/tags-in-use",     getTagsInPublishedNews);
-router.get("/published",       getPublishedNews);
-router.get("/recent",          getRecentNews);
-router.get("/breaking-ticker", getBreakingTickerNews);
-router.get("/trending-news",   getTrendingNews);
-router.get("/tag/:slug",       getNewsByTag);
-router.get("/topic/:slug",     getNewsByTopicSlug);
+// ─── Specific named GET routes ──────────────────────────────────
+// MUST be before /:id and /:slug
 
-// ─── Root list (PUBLIC — published articles only) ────────────────
-// FIX: this was previously wired to getAllNews, which returns every
-// article regardless of status (DRAFT / SCHEDULED / PUBLISHED / etc).
-// Since the public site's news list hits this exact route, that meant
-// scheduled and draft articles were visible to visitors immediately,
-// before their scheduled publish time (or even though never published).
-router.get("/", getPublishedNews);
+router.get(
+  "/tags-in-use",
+  getTagsInPublishedNews
+);
 
-// ─── Admin list (PROTECTED — every status, for the admin dashboard) ─
-// The admin panel (All News, Scheduled & Drafts, etc.) needs to see
-// every article regardless of status, so it gets its own protected
-// route instead of sharing the public "/" route.
-router.get("/admin/all", protect, getAllNews);
+router.get(
+  "/published",
+  getPublishedNews
+);
+
+router.get(
+  "/recent",
+  getRecentNews
+);
+
+router.get(
+  "/breaking-ticker",
+  getBreakingTickerNews
+);
+
+router.get(
+  "/trending-news",
+  getTrendingNews
+);
+
+router.get(
+  "/tag/:slug",
+  getNewsByTag
+);
+
+router.get(
+  "/topic/:slug",
+  getNewsByTopicSlug
+);
+
+// ─── Homepage ───────────────────────────────────────────────────
+// Returns maximum 5 pinned published articles
+
+router.get(
+  "/homepage",
+  getHomepageNews
+);
+
+// ─── Root list ──────────────────────────────────────────────────
+// PUBLIC — published articles only
+
+router.get(
+  "/",
+  getPublishedNews
+);
+
+// ─── Admin list ─────────────────────────────────────────────────
+// PROTECTED — every status
+
+router.get(
+  "/admin/all",
+  protect,
+  getAllNews
+);
 
 // ─── Create ─────────────────────────────────────────────────────
-router.post("/create", uploadToCloudinary, createNews);
+
+router.post(
+  "/create",
+  uploadToCloudinary,
+  createNews
+);
 
 router.post(
   "/:newsId/live-update/:updateId/vote",
@@ -70,25 +127,74 @@ router.post(
 );
 
 // ─── Admin mutations ────────────────────────────────────────────
-router.put("/:id",              protect, uploadToCloudinary, updateNews);
-router.delete("/:id",           protect, deleteNews);
-router.patch("/:id/pause-toggle", protect, togglePauseBreaking);
-router.post("/:id/live-update",   protect, addLiveUpdate);
+
+// Save drag-and-drop article order
+router.put(
+  "/reorder",
+  protect,
+  reorderNews
+);
+
+// Pin / unpin article from homepage
+router.put(
+  "/:id/homepage-pin",
+  protect,
+  toggleHomepagePin
+);
+
+// Normal article update
+router.put(
+  "/:id",
+  protect,
+  uploadToCloudinary,
+  updateNews
+);
+
+// Delete article
+router.delete(
+  "/:id",
+  protect,
+  deleteNews
+);
+
+// Pause / resume breaking news
+router.patch(
+  "/:id/pause-toggle",
+  protect,
+  togglePauseBreaking
+);
+
+// Add live update
+router.post(
+  "/:id/live-update",
+  protect,
+  addLiveUpdate
+);
 
 // ─── Purge ──────────────────────────────────────────────────────
-router.delete("/admin/purge-deleted", protect, purgeDeletedNews);
+
+router.delete(
+  "/admin/purge-deleted",
+  protect,
+  purgeDeletedNews
+);
 
 // ─── ID lookup (for ArticleDetail page) ─────────────────────────
-// This catches MongoDB ObjectIds like 6a1c0e0d4629d6c68ebd1c1c
-// and slug strings — checks format to route correctly
-// ─── ID lookup (for ArticleDetail page) ─────────────────────────
-router.get("/:id", (req, res, next) => {
-  const { id } = req.params;
-  // MongoDB ObjectId is exactly 24 hex characters
-  if (/^[a-f\d]{24}$/i.test(id)) {
-    return getNewsById(req, res);
+// This catches MongoDB ObjectIds and slug strings.
+
+router.get(
+  "/:id",
+  (req, res, next) => {
+    const { id } = req.params;
+
+    // MongoDB ObjectId is exactly 24 hex characters
+    if (/^[a-f\d]{24}$/i.test(id)) {
+      return getNewsById(req, res);
+    }
+
+    // Otherwise treat as slug
+    return getNewsBySlug(req, res);
   }
-  // Otherwise treat as slug
-  return getNewsBySlug(req, res);
-});
+);
+
 export default router;

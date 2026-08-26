@@ -70,6 +70,10 @@ export const getAllNews = async (params?: {
   return apiClient(`/api/news${query ? `?${query}` : ""}`);
 };
 
+// Returns maximum 5 pinned published articles.
+export const getHomepageNews = async (): Promise<NewsResponse> =>
+  apiClient("/api/news/homepage");
+
 // ─── GET SINGLE ARTICLE BY SLUG ───────────────────────────────────────────────
 export const getNewsBySlug = async (slug: string): Promise<NewsArticle> =>
   apiClient(`/api/news/${slug}`);

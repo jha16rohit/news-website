@@ -1,7 +1,7 @@
 import React, { useRef, useEffect, useState } from "react";
 import { Clock, Eye, ChevronLeft, ChevronRight } from "lucide-react";
 import { Link } from "react-router-dom";
-import { getAllNews } from "../../../api/user/news";
+import { getHomepageNews } from "../../../api/user/news";
 import { getTrendingTags } from "../../../api/user/tag";
 import "./HomeHero.css";
 
@@ -74,7 +74,7 @@ const HeroSection: React.FC = () => {
   useEffect(() => {
     const fetchNews = async () => {
       try {
-        const data = await getAllNews();
+        const data = await getHomepageNews();
 
         if (data?.news) {
           setArticles(data.news);

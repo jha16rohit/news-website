@@ -314,3 +314,21 @@ export const trackReadTime = (viewId: string, readTime: number) =>
     method: "POST",
     body: JSON.stringify({ viewId, readTime }),
   });
+
+  // ─── HOMEPAGE / ORDERING ─────────────────────────────────────────
+
+export const reorderNews = (
+  orders: { id: string; order: number }[]
+) =>
+  apiClient("/api/news/reorder", {
+    method: "PUT",
+    body: JSON.stringify({ orders }),
+  });
+
+export const toggleHomepagePin = (id: string) =>
+  apiClient(`/api/news/${id}/homepage-pin`, {
+    method: "PUT",
+  });
+
+export const fetchHomepageNews = () =>
+  apiClient("/api/news/homepage");

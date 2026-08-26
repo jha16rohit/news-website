@@ -6,13 +6,12 @@
   border-bottom: 1px solid #e5e7eb;
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  justify-content: flex-end;
   padding: 0 20px;
   box-sizing: border-box;
   font-family: system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
   gap: 12px;
 }
-
 /* ================= HAMBURGER ================= */
 .hamburger-btn {
   display: none;
@@ -23,9 +22,14 @@
   padding: 6px;
   border-radius: 8px;
   flex-shrink: 0;
+  margin-right: auto; /* pushes all other content to the right */
 }
 
-.hamburger-btn:hover { background: #f3f4f6; }
+.hamburger-btn:hover {
+  background: #f3f4f6;
+}
+
+
 
 /* ================= SEARCH ================= */
 .topbar-search {
@@ -291,11 +295,17 @@
   100% { transform: scale(1.8); opacity: 0; }
 }
 
+
+
 /* ===============================
    TABLET  ≤ 1024px
 ================================ */
 @media (max-width: 1024px) {
-  .hamburger-btn { display: flex; }
+  .hamburger-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
 }
 
 /* ===============================

@@ -115,9 +115,15 @@ const RecentArticles = () => {
       </button>
       {openMenu === id && (
         <div className="row-dropdown">
-          <div className="dropdown-item" onClick={() => { navigate(`/admin/news/edit/${id}`); setOpenMenu(null); }}>
-            <Pencil size={15} /> Edit
-          </div>
+          <div
+  className="dropdown-item"
+  onClick={() => {
+    navigate(`/admin/create?edit=${id}&type=standard`);
+    setOpenMenu(null);
+  }}
+>
+  <Pencil size={15} /> Edit
+</div>
           <div className="dropdown-item" onClick={() => { window.open(`/article/${id}`, "_blank"); setOpenMenu(null); }}>
             <MonitorPlay size={15} /> Live Preview
           </div>

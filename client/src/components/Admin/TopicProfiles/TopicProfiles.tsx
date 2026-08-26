@@ -4,7 +4,7 @@ import {
   Plus,
   Search,
   Edit2,
-  Eye,
+
   Trash2,
   X,
   FileText,
@@ -540,9 +540,7 @@ export default function TopicProfiles() {
                 <button className="tp-action-btn" onClick={() => setEditingProfile(profile)}>
                   <Edit2 size={14} /> Edit
                 </button>
-                <button className="tp-action-btn">
-                  <Eye size={14} /> View
-                </button>
+                
                 <button className="tp-action-btn tp-action-delete" onClick={() => setDeletingId(profile.id)}>
                   <Trash2 size={14} /> Delete
                 </button>
