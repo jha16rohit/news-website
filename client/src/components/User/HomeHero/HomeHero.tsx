@@ -31,26 +31,44 @@ const HeroSection: React.FC = () => {
 
   // Backend Articles State
   const [articles, setArticles] = useState<Article[]>([]);
-
   const [trendingTags, setTrendingTags] = useState<Tag[]>([]);
+  
+  // 👇 EXPERT FIX: State to track if tags are overflowing the screen
+  const [isOverflowing, setIsOverflowing] = useState(false);
 
-  useEffect(() => {
-  const fetchTrendingTags = async () => {
-    try {
-      const tags = await getTrendingTags();
-
-      setTrendingTags(tags);
-
-    } catch (error) {
-      console.error(
-        "Failed to fetch trending tags:",
-        error
-      );
+  // Function to check if tags take up more space than the screen allows
+  const checkOverflow = () => {
+    if (tagsScrollRef.current) {
+      const { scrollWidth, clientWidth } = tagsScrollRef.current;
+      // If scrollWidth is strictly greater than clientWidth, we need arrows
+      setIsOverflowing(scrollWidth > clientWidth);
     }
   };
 
-  fetchTrendingTags();
-}, []);
+  useEffect(() => {
+    const fetchTrendingTags = async () => {
+      try {
+        const tags = await getTrendingTags();
+        setTrendingTags(tags);
+      } catch (error) {
+        console.error("Failed to fetch trending tags:", error);
+      }
+    };
+
+    fetchTrendingTags();
+  }, []);
+
+  // 👇 EXPERT FIX: Re-check overflow whenever tags load or window resizes
+  useEffect(() => {
+    // Small timeout ensures the DOM has painted the tags before measuring
+    const timeoutId = setTimeout(checkOverflow, 100);
+    window.addEventListener("resize", checkOverflow);
+    
+    return () => {
+      clearTimeout(timeoutId);
+      window.removeEventListener("resize", checkOverflow);
+    };
+  }, [trendingTags]);
 
   // Fetch News From Backend
   useEffect(() => {
@@ -93,31 +111,38 @@ const HeroSection: React.FC = () => {
 
         {/* ================= TRENDING TAGS TOP BAR ================= */}
         <div className="trending-tags-container">
-          <button
-            className="tag-scroll-btn left"
-            onClick={() => scrollTags("left")}
-          >
-            <ChevronLeft size={20} />
-          </button>
+          
+          {/* 👇 EXPERT FIX: Show Left Arrow ONLY if overflowing 👇 */}
+          {isOverflowing && (
+            <button
+              className="tag-scroll-btn left"
+              onClick={() => scrollTags("left")}
+            >
+              <ChevronLeft size={20} />
+            </button>
+          )}
 
           <div className="tags-scroll-wrapper" ref={tagsScrollRef}>
             {trendingTags.map((tag) => (
-  <Link
-    key={tag._id}
-    to={`/tag/${tag.slug}`}
-    className="tag-pill text-decoration-none"
-  >
-    {tag.name}
-  </Link>
-))}
+              <Link
+                key={tag._id}
+                to={`/tag/${tag.slug}`}
+                className="tag-pill text-decoration-none"
+              >
+                {tag.name}
+              </Link>
+            ))}
           </div>
 
-          <button
-            className="tag-scroll-btn right"
-            onClick={() => scrollTags("right")}
-          >
-            <ChevronRight size={20} />
-          </button>
+          {/* 👇 EXPERT FIX: Show Right Arrow ONLY if overflowing 👇 */}
+          {isOverflowing && (
+            <button
+              className="tag-scroll-btn right"
+              onClick={() => scrollTags("right")}
+            >
+              <ChevronRight size={20} />
+            </button>
+          )}
         </div>
 
         {/* ================= TOP ROW ================= */}
@@ -140,7 +165,7 @@ const HeroSection: React.FC = () => {
 
               <div className="featured-overlay">
                 <span className="category-badge politics">
-              {featuredArticle.categoryId?.name || "NEWS"}
+                  {featuredArticle.categoryId?.name || "NEWS"}
                 </span>
 
                 <h1 className="featured-title">
@@ -155,7 +180,6 @@ const HeroSection: React.FC = () => {
                 <div className="featured-meta">
                   <span>
                     <Clock size={16} />
-
                     {featuredArticle.createdAt
                       ? new Date(
                           featuredArticle.createdAt
@@ -165,7 +189,6 @@ const HeroSection: React.FC = () => {
 
                   <span>
                     <Eye size={16} />
-
                     {featuredArticle.views || 0} views
                   </span>
                 </div>
@@ -201,7 +224,7 @@ const HeroSection: React.FC = () => {
                     {/* Header Row: Category on left */}
                     <div className="trending-info-header">
                       <span className="trending-category">
-{article.categoryId?.name || "NEWS"}
+                        {article.categoryId?.name || "NEWS"}
                       </span>
                     </div>
 
