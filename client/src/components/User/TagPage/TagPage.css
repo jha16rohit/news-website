@@ -6,7 +6,7 @@
   background-color: #ffffff;
   min-height: 100vh;
   padding-bottom: 80px;
-  font-family: "Times New Roman", Times, serif;
+  font-family: var(--font-body);
 }
 
 .text-decoration-none {
@@ -82,7 +82,7 @@
   padding: 6px 14px;
   border-radius: 20px;
   margin-bottom: 16px;
-  font-family: "Times New Roman", Times, serif;
+  font-family: var(--font-body);
 }
 
 .tp-live-dot {
@@ -101,11 +101,11 @@
 
 .tp-hero-title {
   font-size: 48px;
-  font-weight: 800;
+  font-weight: 400;
   color: #ffffff;
   line-height: 1.1;
   margin: 0 0 12px 0;
-  font-family: "Times New Roman", Times, serif;
+  font-family: var(--font-heading);
 }
 
 .tp-hero-subtitle {
@@ -114,7 +114,7 @@
   line-height: 1.65;
   max-width: 480px;
   margin: 0;
-  font-family: "Times New Roman", Times, serif;
+  font-family: var(--font-body);
 }
 
 .tp-hero-subtitle strong {
@@ -137,10 +137,10 @@
 
 .tp-stat-num {
   font-size: 34px;
-  font-weight: 800;
+  font-weight: 400;
   color: #ffffff;
   line-height: 1;
-  font-family: "Times New Roman", Times, serif;
+  font-family: var(--font-heading);
 }
 
 .tp-stat-lbl {
@@ -149,7 +149,7 @@
   text-transform: uppercase;
   letter-spacing: 0.5px;
   margin-top: 4px;
-  font-family: "Times New Roman", Times, serif;
+  font-family: var(--font-body);
 }
 
 /* =============================================
@@ -211,7 +211,7 @@
   font-weight: 700;
   transition: all 0.2s ease;
   cursor: pointer;
-  font-family: "Times New Roman", Times, serif;
+  font-family: var(--font-body);
 }
 
 .tp-tag-pill:hover {
@@ -253,12 +253,12 @@
 
 .tp-section-title {
   font-size: 20px;
-  font-weight: 800;
+  font-weight: 400;
   color: #0f172a;
   display: flex;
   align-items: center;
   gap: 10px;
-  font-family: "Times New Roman", Times, serif;
+  font-family: var(--font-heading);
 }
 
 .tp-section-title::before {
@@ -277,7 +277,7 @@
   color: #e60000;
   cursor: pointer;
   transition: opacity 0.2s;
-  font-family: "Times New Roman", Times, serif;
+  font-family: var(--font-body);
 }
 
 .tp-see-all:hover {
@@ -338,7 +338,7 @@
   text-transform: uppercase;
   padding: 5px 12px;
   border-radius: 20px;
-  font-family: "Times New Roman", Times, serif;
+  font-family: var(--font-body);
 }
 
 .tp-feat-time {
@@ -350,7 +350,7 @@
   display: flex;
   align-items: center;
   gap: 5px;
-  font-family: "Times New Roman", Times, serif;
+  font-family: var(--font-body);
 }
 
 .tp-featured-body {
@@ -359,12 +359,12 @@
 
 .tp-featured-title {
   font-size: 24px;
-  font-weight: 800;
+  font-weight: 400;
   color: #0f172a;
   line-height: 1.35;
   margin: 0 0 10px 0;
   transition: color 0.2s;
-  font-family: "Times New Roman", Times, serif;
+  font-family: var(--font-heading);
 }
 
 .tp-featured-card:hover .tp-featured-title {
@@ -376,7 +376,7 @@
   color: #475569;
   line-height: 1.65;
   margin: 0;
-  font-family: "Times New Roman", Times, serif;
+  font-family: var(--font-body);
 }
 
 /* =============================================
@@ -444,12 +444,12 @@
   letter-spacing: 0.8px;
   text-transform: uppercase;
   margin-bottom: 8px;
-  font-family: "Times New Roman", Times, serif;
+  font-family: var(--font-body);
 }
 
 .tp-list-title {
   font-size: 20px;
-  font-weight: 700;
+  font-weight: 400;
   color: #0f172a;
   line-height: 1.4;
   margin: 0 0 10px 0;
@@ -459,7 +459,7 @@
   line-clamp: 2;
   -webkit-box-orient: vertical;
   overflow: hidden;
-  font-family: "Times New Roman", Times, serif;
+  font-family: var(--font-heading);
 }
 
 .tp-list-card:hover .tp-list-title {
@@ -473,7 +473,7 @@
   display: flex;
   align-items: center;
   gap: 5px;
-  font-family: "Times New Roman", Times, serif;
+  font-family: var(--font-body);
 }
 
 /* =============================================
@@ -503,7 +503,7 @@
   transition: all 0.2s ease;
   box-shadow: 0 4px 16px rgba(230, 0, 0, 0.25);
   margin: 32px auto 0;
-  font-family: "Times New Roman", Times, serif;
+  font-family: var(--font-body);
 }
 
 .tp-view-more-btn:hover {
@@ -585,14 +585,14 @@
 
 .tp-trend-num {
   font-size: 26px;
-  font-weight: 900;
+  font-weight: 400;
   color: #e2e8f0;
   min-width: 30px;
   line-height: 1;
   flex-shrink: 0;
   margin-top: 2px;
   transition: color 0.2s;
-  font-family: "Times New Roman", Times, serif;
+  font-family: var(--font-heading);
 }
 
 .tp-trending-item:hover .tp-trend-num {
@@ -611,12 +611,12 @@
   letter-spacing: 0.6px;
   text-transform: uppercase;
   margin-bottom: 4px;
-  font-family: "Times New Roman", Times, serif;
+  font-family: var(--font-body);
 }
 
 .tp-trend-title {
   font-size: 15px;
-  font-weight: 700;
+  font-weight: 400;
   color: #0f172a;
   line-height: 1.4;
   margin: 0 0 5px 0;
@@ -626,7 +626,7 @@
   line-clamp: 2;
   -webkit-box-orient: vertical;
   overflow: hidden;
-  font-family: "Times New Roman", Times, serif;
+  font-family: var(--font-heading);
 }
 
 .tp-trending-item:hover .tp-trend-title {
@@ -644,7 +644,7 @@
   line-clamp: 2;
   -webkit-box-orient: vertical;
   overflow: hidden;
-  font-family: "Times New Roman", Times, serif;
+  font-family: var(--font-body);
 }
 
 .tp-trend-time {
@@ -653,7 +653,7 @@
   display: flex;
   align-items: center;
   gap: 4px;
-  font-family: "Times New Roman", Times, serif;
+  font-family: var(--font-body);
 }
 
 /* =============================================
@@ -707,12 +707,12 @@
   text-transform: uppercase;
   display: block;
   margin-bottom: 4px;
-  font-family: "Times New Roman", Times, serif;
+  font-family: var(--font-body);
 }
 
 .tp-mini-title {
   font-size: 14px;
-  font-weight: 700;
+  font-weight: 400;
   color: #0f172a;
   line-height: 1.35;
   margin: 0;
@@ -722,7 +722,7 @@
   line-clamp: 3;
   -webkit-box-orient: vertical;
   overflow: hidden;
-  font-family: "Times New Roman", Times, serif;
+  font-family: var(--font-heading);
 }
 
 .tp-mini-card:hover .tp-mini-title {
@@ -747,10 +747,10 @@
 
 .tp-nl-title {
   font-size: 17px;
-  font-weight: 800;
+  font-weight: 400;
   color: #ffffff;
   margin: 0 0 8px 0;
-  font-family: "Times New Roman", Times, serif;
+  font-family: var(--font-heading);
 }
 
 .tp-nl-desc {
@@ -758,7 +758,7 @@
   color: #64748b;
   line-height: 1.55;
   margin: 0 0 16px 0;
-  font-family: "Times New Roman", Times, serif;
+  font-family: var(--font-body);
 }
 
 .tp-nl-input {
@@ -773,7 +773,7 @@
   outline: none;
   transition: border-color 0.2s;
   box-sizing: border-box;
-  font-family: "Times New Roman", Times, serif;
+  font-family: var(--font-body);
 }
 
 .tp-nl-input::placeholder {
@@ -795,7 +795,7 @@
   font-weight: 700;
   cursor: pointer;
   transition: background 0.2s ease;
-  font-family: "Times New Roman", Times, serif;
+  font-family: var(--font-body);
 }
 
 .tp-nl-btn:hover {
@@ -822,7 +822,7 @@
   cursor: pointer;
   transition: all 0.2s ease;
   text-decoration: none !important;
-  font-family: "Times New Roman", Times, serif;
+  font-family: var(--font-body);
 }
 
 .tp-cloud-tag:hover {
@@ -850,15 +850,15 @@
   font-size: 28px;
   color: #0f172a;
   margin: 0 0 12px 0;
-  font-weight: 800;
-  font-family: "Times New Roman", Times, serif;
+  font-weight: 400;
+  font-family: var(--font-heading);
 }
 
 .tp-empty-state p {
   color: #64748b;
   margin: 0 0 24px 0;
   font-size: 16px;
-  font-family: "Times New Roman", Times, serif;
+  font-family: var(--font-body);
 }
 
 .tp-home-btn {
@@ -869,7 +869,7 @@
   border-radius: 6px;
   font-weight: 600;
   font-size: 16px;
-  font-family: "Times New Roman", Times, serif;
+  font-family: var(--font-body);
 }
 
 /* Card Advertisement Widget (static placeholder) */
@@ -887,7 +887,7 @@
   letter-spacing: 0.6px;
   text-transform: uppercase;
   align-self: flex-start;
-  font-family: "Times New Roman", Times, serif;
+  font-family: var(--font-body);
 }
 
 .tp-card-ad__img {

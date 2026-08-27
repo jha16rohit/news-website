@@ -1,12 +1,10 @@
-@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,600;0,700;1,600&family=DM+Sans:wght@400;500;600&display=swap');
-
 /* ──────────────────────────────────────────────
    ABOUT US — User Page
    Brand: Deep Navy #0b1423 + Red #e60000
 ────────────────────────────────────────────── */
 
 .au-page {
-  font-family: 'DM Sans', sans-serif;
+  font-family: var(--font-body); /* 👇 EXPERT FIX: Applied global body font */
   color: #1a1f2e;
   background: #ffffff;
   overflow-x: hidden;
@@ -70,9 +68,9 @@
 }
 
 .au-hero-title {
-  font-family: 'Playfair Display', serif;
+  font-family: var(--font-heading); /* 👇 EXPERT FIX: Applied heading font */
   font-size: 60px;
-  font-weight: 700;
+  font-weight: 400; /* 👇 EXPERT FIX: Changed to 400 for Rozha One */
   color: #ffffff;
   line-height: 1.1;
   margin: 0 0 14px;
@@ -122,9 +120,9 @@
 .au-stat-item:hover { background: rgba(230,0,0,0.06); }
 
 .au-stat-value {
-  font-family: 'Playfair Display', serif;
+  font-family: var(--font-heading); /* 👇 EXPERT FIX: Applied heading font */
   font-size: 44px;
-  font-weight: 700;
+  font-weight: 400; /* 👇 EXPERT FIX: Changed to 400 for Rozha One */
   color: #ffffff;
   line-height: 1;
 }
@@ -181,9 +179,9 @@
 }
 
 .au-mv-title {
-  font-family: 'Playfair Display', serif;
+  font-family: var(--font-heading); /* 👇 EXPERT FIX: Applied heading font */
   font-size: 26px;
-  font-weight: 700;
+  font-weight: 400; /* 👇 EXPERT FIX: Changed to 400 for Rozha One */
   color: #0b1423;
   margin: 0 0 12px;
 }
@@ -219,9 +217,9 @@
 }
 
 .au-section-title {
-  font-family: 'Playfair Display', serif;
+  font-family: var(--font-heading); /* 👇 EXPERT FIX: Applied heading font */
   font-size: 38px;
-  font-weight: 700;
+  font-weight: 400; /* 👇 EXPERT FIX: Changed to 400 for Rozha One */
   color: #0b1423;
   margin: 0 0 8px;
   text-align: center;
@@ -273,9 +271,9 @@
 }
 
 .au-value-title {
-  font-family: 'Playfair Display', serif;
+  font-family: var(--font-heading); /* 👇 EXPERT FIX: Applied heading font */
   font-size: 18px;
-  font-weight: 700;
+  font-weight: 400; /* 👇 EXPERT FIX: Changed to 400 for Rozha One */
   color: #0b1423;
   margin: 0 0 8px;
 }

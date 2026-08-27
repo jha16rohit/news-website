@@ -1,10 +1,7 @@
 /* ================================================================
    LOCAL NEWZ — USER PROFILE  v3.0
    Aesthetic: Luxury Print Magazine — White · Navy · Red
-   Fonts: Cormorant Garamond (display) + Outfit (body)
    ================================================================ */
-
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Playfair+Display:wght@700;800&display=swap');
 
 :root {
   --up-navy:     #0b1423;
@@ -15,12 +12,17 @@
   --up-border:   #e2e8f0;
   --up-text:     #0f172a;
   --up-muted:    #64748b;
-  --up-font-ui:  'Inter', system-ui, sans-serif;
-  --up-font-hd:  'Playfair Display', Georgia, serif;
 }
 
 .up-root *, .up-root *::before, .up-root *::after { box-sizing: border-box; margin: 0; padding: 0; }
-.up-root { font-family: var(--up-font-ui); background: var(--up-bg); color: var(--up-text); min-height: 100vh; padding: 40px 0; }
+
+.up-root { 
+  font-family: var(--font-body); /* 👇 EXPERT FIX: Applied global body font */
+  background: var(--up-bg); 
+  color: var(--up-text); 
+  min-height: 100vh; 
+  padding: 40px 0; 
+}
 .up-root a { text-decoration: none; color: inherit; }
 
 .up-content-wrapper {
@@ -82,7 +84,13 @@
 }
 .up-avatar-img { width: 100%; height: 100%; object-fit: cover; }
 
-.up-left-name { font-size: 22px; font-weight: 700; margin-bottom: 4px; font-family: var(--up-font-hd); letter-spacing: 0.5px; }
+.up-left-name { 
+  font-family: var(--font-heading); /* 👇 EXPERT FIX: Applied heading font */
+  font-size: 22px; 
+  font-weight: 400; /* 👇 EXPERT FIX: Changed to 400 for Rozha One */
+  margin-bottom: 4px; 
+  letter-spacing: 0.5px; 
+}
 .up-left-role { font-size: 13px; font-weight: 700; color: var(--up-red); margin-bottom: 30px; letter-spacing: 0.5px; }
 
 .up-left-stats {
@@ -116,7 +124,14 @@
 .up-r-info-block { max-width: 600px; }
 
 .up-r-eyebrow { font-size: 11px; font-weight: 800; color: var(--up-red); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 8px; }
-.up-r-name { font-size: 36px; font-family: var(--up-font-hd); font-weight: 800; color: var(--up-navy); margin-bottom: 16px; }
+
+.up-r-name { 
+  font-family: var(--font-heading); /* 👇 EXPERT FIX: Applied heading font */
+  font-size: 36px; 
+  font-weight: 400; /* 👇 EXPERT FIX: Changed to 400 for Rozha One */
+  color: var(--up-navy); 
+  margin-bottom: 16px; 
+}
 
 .up-r-contact { display: flex; flex-direction: column; gap: 10px; margin-bottom: 24px; }
 .up-r-contact span { display: flex; align-items: center; gap: 10px; font-size: 14px; color: var(--up-muted); font-weight: 500;}
@@ -124,7 +139,7 @@
 .up-r-bio { font-size: 14px; line-height: 1.6; color: var(--up-text); font-weight: 500; }
 
 .up-hero-btns { display: flex; gap: 12px; margin-top: 30px; flex-wrap: wrap;}
-.up-btn { display: inline-flex; align-items: center; gap: 8px; padding: 10px 20px; border-radius: 6px; font-size: 13px; font-weight: 700; cursor: pointer; transition: all 0.2s; }
+.up-btn { display: inline-flex; align-items: center; gap: 8px; padding: 10px 20px; border-radius: 6px; font-size: 13px; font-weight: 700; cursor: pointer; transition: all 0.2s; font-family: var(--font-body); }
 .up-btn-red { background: var(--up-red); color: white; border: none; }
 .up-btn-red:hover { background: var(--up-red-hover); }
 .up-btn-outline { background: white; color: var(--up-text); border: 1px solid var(--up-border); }
@@ -145,6 +160,7 @@
   display: flex; gap: 30px; border-bottom: 1px solid var(--up-border); margin-top: 10px;
 }
 .up-tab {
+  font-family: var(--font-body);
   display: flex; align-items: center; gap: 8px; padding: 0 0 16px 0; background: none; border: none; font-size: 15px; font-weight: 600; color: var(--up-muted); cursor: pointer; position: relative; transition: color 0.2s;
 }
 .up-tab:hover { color: var(--up-text); }
@@ -157,7 +173,12 @@
    TAB CONTENT & CARDS
    ================================================================ */
 .up-pane-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; }
-.up-pane-header h2 { font-size: 20px; font-weight: 800; color: var(--up-navy); }
+.up-pane-header h2 { 
+  font-family: var(--font-heading); /* 👇 EXPERT FIX */
+  font-size: 20px; 
+  font-weight: 400; /* 👇 EXPERT FIX */
+  color: var(--up-navy); 
+}
 .up-view-all { font-size: 13px; font-weight: 700; color: var(--up-red); }
 .up-view-all:hover { text-decoration: underline; }
 
@@ -174,12 +195,13 @@
 .up-nc-img-wrap { height: 180px; position: relative; overflow: hidden; }
 .up-nc-img-wrap img { width: 100%; height: 100%; object-fit: cover; }
 .up-nc-fallback { width: 100%; height: 100%; background: var(--up-border); }
-.up-nc-badge { position: absolute; top: 12px; left: 12px; background: var(--up-red); color: white; font-size: 10px; font-weight: 800; padding: 4px 10px; border-radius: 4px; text-transform: uppercase;}
+.up-nc-badge { font-family: var(--font-body); position: absolute; top: 12px; left: 12px; background: var(--up-red); color: white; font-size: 10px; font-weight: 800; padding: 4px 10px; border-radius: 4px; text-transform: uppercase;}
 
 .up-nc-body { padding: 20px; display: flex; flex-direction: column; flex-grow: 1;}
 .up-nc-title { 
+  font-family: var(--font-heading); /* 👇 EXPERT FIX */
   font-size: 16px; 
-  font-weight: 700; 
+  font-weight: 400; /* 👇 EXPERT FIX */
   line-height: 1.4; 
   color: var(--up-text); 
   margin-bottom: 12px; 
@@ -203,7 +225,12 @@
 .up-acard { background: var(--up-white); border: 1px solid var(--up-border); border-radius: 12px; padding: 24px; }
 .up-acard-wide { grid-column: 1 / -1; }
 .up-acard-hd { margin-bottom: 24px; }
-.up-acard-hd h3 { font-size: 18px; font-weight: 800; color: var(--up-navy); }
+.up-acard-hd h3 { 
+  font-family: var(--font-heading); /* 👇 EXPERT FIX */
+  font-size: 18px; 
+  font-weight: 400; /* 👇 EXPERT FIX */
+  color: var(--up-navy); 
+}
 
 /* Chart */
 .up-chart { display: flex; align-items: flex-end; gap: 12px; height: 180px; }
@@ -220,7 +247,7 @@
 .up-cat-dot { width: 10px; height: 10px; border-radius: 50%; }
 .up-cat-val { font-size: 14px; font-weight: 800; }
 
-/* 👇 NEW: Platform List added back 👇 */
+/* 👇 Platform List 👇 */
 .up-plat-list { display: flex; flex-direction: column; gap: 14px; margin-bottom: 24px; }
 .up-plat-row { display: grid; grid-template-columns: 10px 90px 1fr 36px; align-items: center; gap: 10px; }
 .up-plat-dot { width: 10px; height: 10px; border-radius: 50%; }
@@ -253,7 +280,14 @@
   border: 1px solid var(--border);
 }
 .up-sum-icon { color: var(--red); flex-shrink: 0; }
-.up-summary-item strong { display: block; font-family: var(--fd); font-size: 22px; font-weight: 700; color: var(--navy); line-height: 1; }
+.up-summary-item strong { 
+  display: block; 
+  font-family: var(--font-heading); /* 👇 EXPERT FIX: Replaced broken var(--fd) */
+  font-size: 22px; 
+  font-weight: 400; /* 👇 EXPERT FIX */
+  color: var(--navy); 
+  line-height: 1; 
+}
 .up-summary-item span { font-size: 11px; color: var(--text-soft); }
 
 /* ================================================================
@@ -315,7 +349,9 @@
   border-radius: 50%;
   background: var(--red);
   display: flex; align-items: center; justify-content: center;
-  font-family: var(--fd); font-size: 24px; font-weight: 700;
+  font-family: var(--font-heading); /* 👇 EXPERT FIX: Replaced broken var(--fd) */
+  font-size: 24px; 
+  font-weight: 400; /* 👇 EXPERT FIX */
   color: #fff;
   overflow: hidden;
   cursor: pointer;
@@ -341,9 +377,9 @@
   margin-bottom: 4px;
 }
 .up-modal-name {
-  font-family: var(--fd);
+  font-family: var(--font-heading); /* 👇 EXPERT FIX: Replaced broken var(--fd) */
   font-size: 22px;
-  font-weight: 700;
+  font-weight: 400; /* 👇 EXPERT FIX */
   color: var(--navy);
   margin-bottom: 4px;
 }
@@ -369,7 +405,7 @@
   border: 1px solid var(--border);
   border-radius: 7px;
   padding: 11px 14px;
-  font-family: var(--fb);
+  font-family: var(--font-body); /* 👇 EXPERT FIX: Replaced broken var(--fb) */
   font-size: 14px;
   color: var(--text);
   outline: none;
@@ -394,7 +430,7 @@
   background: transparent;
   border: 1px solid var(--border-strong);
   color: var(--text-mid);
-  font-family: var(--fb);
+  font-family: var(--font-body); /* 👇 EXPERT FIX */
   font-size: 13px;
   font-weight: 600;
   padding: 10px 20px;
@@ -408,7 +444,7 @@
   background: var(--red);
   border: none;
   color: #fff;
-  font-family: var(--fb);
+  font-family: var(--font-body); /* 👇 EXPERT FIX */
   font-size: 13px;
   font-weight: 600;
   padding: 10px 24px;

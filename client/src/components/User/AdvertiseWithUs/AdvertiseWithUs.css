@@ -5,7 +5,7 @@
 .awu-root {
   background: #f8f9fb;
   min-height: 100vh;
-  font-family: 'Segoe UI', sans-serif;
+  font-family: var(--font-body); /* 👇 EXPERT FIX: Applied global body font */
 }
 
 .spin-icon { animation: awu-spin 0.8s linear infinite; }
@@ -24,7 +24,13 @@
 .awu-breadcrumb a { color: rgba(255,255,255,0.55); text-decoration: none; display: flex; align-items: center; gap: 4px; }
 .awu-breadcrumb a:hover { color: #fff; }
 .awu-breadcrumb span { color: rgba(255,255,255,0.85); }
-.awu-hero h1 { font-size: clamp(24px, 4vw, 34px); font-weight: 800; color: #fff; margin: 0 0 8px; }
+.awu-hero h1 { 
+  font-family: var(--font-heading); /* 👇 EXPERT FIX: Applied heading font */
+  font-size: clamp(24px, 4vw, 34px); 
+  font-weight: 400; /* 👇 EXPERT FIX: Changed to 400 for Rozha One */
+  color: #fff; 
+  margin: 0 0 8px; 
+}
 .awu-hero p { font-size: 14px; color: rgba(255,255,255,0.65); margin: 0; }
 .awu-wave { display: inline-block; }
 
@@ -50,7 +56,13 @@
   margin: 0 auto 20px;
 }
 .awu-gate-icon--success { background: #f0fdf4; color: #22c55e; }
-.awu-gate-card h2 { font-size: 20px; font-weight: 800; color: #0f172a; margin: 0 0 10px; }
+.awu-gate-card h2 { 
+  font-family: var(--font-heading); /* 👇 EXPERT FIX: Applied heading font */
+  font-size: 20px; 
+  font-weight: 400; /* 👇 EXPERT FIX: Changed to 400 for Rozha One */
+  color: #0f172a; 
+  margin: 0 0 10px; 
+}
 .awu-gate-card p { font-size: 14px; color: #64748b; line-height: 1.6; margin: 0 0 22px; }
 .awu-refid {
   display: flex; align-items: center; justify-content: center; gap: 10px;
@@ -75,7 +87,13 @@
   display: flex; align-items: center; justify-content: space-between;
   margin-bottom: 18px; flex-wrap: wrap; gap: 12px;
 }
-.awu-list-head h2 { font-size: 17px; font-weight: 800; color: #0f172a; margin: 0; }
+.awu-list-head h2 { 
+  font-family: var(--font-heading); /* 👇 EXPERT FIX: Applied heading font */
+  font-size: 17px; 
+  font-weight: 400; /* 👇 EXPERT FIX: Changed to 400 for Rozha One */
+  color: #0f172a; 
+  margin: 0; 
+}
 .awu-btn-new {
   display: flex; align-items: center; gap: 6px;
   padding: 9px 18px; background: #e60000; color: #fff; border: none;

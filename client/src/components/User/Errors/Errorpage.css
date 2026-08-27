@@ -8,21 +8,12 @@
   align-items: center;
   justify-content: center;
   min-height: 80vh;
-  background-color: #f8fafc;
-  font-family: 'Inter', sans-serif;
+  font-family: var(--font-body);
   padding: 20px;
 }
 
 .error-container {
-  background: #ffffff;
-  padding: 60px 40px;
-  border-radius: 12px;
-  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.05);
   text-align: center;
-  max-width: 500px;
-  width: 100%;
-  border-top: 4px solid #e60000;
-  box-sizing: border-box;
 }
 
 .error-icon-wrap {
@@ -39,7 +30,7 @@
 }
 
 .error-code {
-  font-family: 'Playfair Display', serif;
+  font-family: var(--font-heading);
   font-size: 56px;
   font-weight: 800;
   color: #0f172a;

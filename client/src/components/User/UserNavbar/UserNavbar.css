@@ -7,7 +7,7 @@
   position: sticky;
   top: 0;
   z-index: 1000;
-  font-family: 'Inter', system-ui, sans-serif;
+  font-family: var(--font-body); /* 👇 EXPERT FIX: Applied global body font to entire navbar */
 }
 
 /* ===== BREAKING BAR ===== */
@@ -737,7 +737,7 @@
   .navbar-logo-img { height: 90px; top: -40px; }
   .nav-actions { gap: 14px; }
   .subscribe-btn { padding: 6px 14px; font-size: 13px; }
-  
+  .ticker-text {  padding: 2px 0;}
   .breaking-label, .breaking-date { display: none; }
   .breaking-container { padding-left: 95px; } 
 
