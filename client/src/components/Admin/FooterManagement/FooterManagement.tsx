@@ -224,7 +224,7 @@ const FooterManagement: React.FC = () => {
               </div>
             </div>
 
-            <div className="fm-card fm-preview-card">
+            {/* <div className="fm-card fm-preview-card">
               <h3 className="fm-card-title">Preview</h3>
               <div
                 className="fm-preview-window"
@@ -253,7 +253,7 @@ const FooterManagement: React.FC = () => {
                   </div>
                 </div>
               </div>
-            </div>
+            </div> */}
           </div>
 
           {/* ── Image Gallery ── */}

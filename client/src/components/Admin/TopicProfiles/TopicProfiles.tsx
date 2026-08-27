@@ -406,7 +406,7 @@ export default function TopicProfiles() {
   return (
     <div className="tp-page">
       {/* Header */}
-      <div className="tp-header">
+      <div className="tp-header haaa">
         <div>
           <h1 className="tp-title">Topic Profiles</h1>
           <p className="tp-subtitle">Create and manage profiles for people and topics linked in articles</p>

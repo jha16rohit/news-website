@@ -516,9 +516,9 @@ const ContactUsAdmin: React.FC = () => {
       </div>
 
       {/* Float Save */}
-      <button className={`cu-float-save ${saved ? "saved" : ""}`} onClick={save} disabled={saving}>
+      {/* <button className={`cu-float-save ${saved ? "saved" : ""}`} onClick={save} disabled={saving}>
         {saving ? <Loader2 size={17} className="spin" /> : saved ? <CheckCircle size={17} /> : <Save size={17} />}
-      </button>
+      </button> */}
 
       {/* Message Modal */}
       {openMsg && (

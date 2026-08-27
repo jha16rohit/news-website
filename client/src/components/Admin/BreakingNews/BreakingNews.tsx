@@ -2,8 +2,8 @@ import React, { useState, useEffect, useCallback } from "react";
 import "./BreakingNews.css";
 import { useNavigate } from "react-router-dom";
 import {
-  Zap, Clock, Eye, TrendingUp, Search, ChevronDown,
-  ExternalLink, MoreHorizontal, ChevronLeft, ChevronRight,
+   Clock, Eye, TrendingUp, Search, ChevronDown,
+  ExternalLink, MoreHorizontal, ChevronDown as LoadMoreIcon,
   Radio, Edit, Trash2, XCircle,
 } from "lucide-react";
 import { fetchAllNews, deleteNews as apiDeleteNews, updateNews as apiUpdateNews } from "../../../api/news";
@@ -52,7 +52,7 @@ const BreakingNews: React.FC = () => {
 
   const [items, setItems]           = useState<BreakingItem[]>([]);
   const [loading, setLoading]       = useState(true);
-  const [currentPage, setCurrentPage] = useState(1);
+  const [visibleCount, setVisibleCount] = useState(7);
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState("All Status");
   const [isStatusOpen, setIsStatusOpen] = useState(false);
@@ -90,6 +90,9 @@ const BreakingNews: React.FC = () => {
 
   useEffect(() => { loadData(); }, [loadData]);
 
+  // Reset how many items are shown whenever the search/filter changes
+  useEffect(() => { setVisibleCount(itemsPerPage); }, [searchQuery, statusFilter]);
+
   // ── Stats ──────────────────────────────────────────────────────────────────
   const liveCount      = items.filter(n => n.status === "live").length;
   const scheduledCount = items.filter(n => n.status === "scheduled").length;
@@ -103,9 +106,12 @@ const BreakingNews: React.FC = () => {
     return matchesSearch && matchesStatus;
   });
 
-  const totalPages  = Math.ceil(filteredNews.length / itemsPerPage);
-  const startIndex  = (currentPage - 1) * itemsPerPage;
-  const currentNews = filteredNews.slice(startIndex, startIndex + itemsPerPage);
+  const currentNews  = filteredNews.slice(0, visibleCount);
+  const hasMore      = visibleCount < filteredNews.length;
+
+  const handleLoadMore = () => {
+    setVisibleCount(prev => Math.min(prev + itemsPerPage, filteredNews.length));
+  };
 
   const formatNumber = (num: number) => num.toLocaleString();
 
@@ -173,7 +179,6 @@ await loadData();
       {/* HEADER */}
       <div className="bn-header">
         <div className="bn-header-left">
-          <div className="bn-header-icon"><Zap size={20} /></div>
           <div>
             <h1 className="bn-title">Breaking News</h1>
             <p className="bn-subtitle">Manage live breaking news and urgent updates</p>
@@ -184,23 +189,31 @@ await loadData();
       {/* STATS */}
       <div className="bn-stats">
         <div className="bn-stat-card">
-          <div className="bn-stat-icon"><Radio size={20} /></div>
-          <div className="bn-stat-label">Live Now</div>
+          <div className="bn-stat-info">
+            <div className="bn-stat-icon"><Radio size={20} /></div>
+            <div className="bn-stat-label">Live Now</div>
+          </div>
           <div className="bn-stat-number">{liveCount}</div>
         </div>
         <div className="bn-stat-card">
-          <div className="bn-stat-icon"><Clock size={20} /></div>
-          <div className="bn-stat-label">Scheduled</div>
+          <div className="bn-stat-info">
+            <div className="bn-stat-icon"><Clock size={20} /></div>
+            <div className="bn-stat-label">Scheduled</div>
+          </div>
           <div className="bn-stat-number">{scheduledCount}</div>
         </div>
         <div className="bn-stat-card">
-          <div className="bn-stat-icon"><Eye size={20} /></div>
-          <div className="bn-stat-label">Total Views</div>
+          <div className="bn-stat-info">
+            <div className="bn-stat-icon"><Eye size={20} /></div>
+            <div className="bn-stat-label">Total Views</div>
+          </div>
           <div className="bn-stat-number">{formatNumber(totalViews)}</div>
         </div>
         <div className="bn-stat-card">
-          <div className="bn-stat-icon"><TrendingUp size={20} /></div>
-          <div className="bn-stat-label">Avg Engagement</div>
+          <div className="bn-stat-info">
+            <div className="bn-stat-icon"><TrendingUp size={20} /></div>
+            <div className="bn-stat-label">Avg Engagement</div>
+          </div>
           <div className="bn-stat-number bn-stat-positive">{avgEngagement}</div>
         </div>
       </div>
@@ -214,7 +227,7 @@ await loadData();
         <div className="bn-live-list">
           {items.filter(n => n.status === "live").slice(0, 3).map(news => (
             <div key={news.id} className="bn-live-item">
-              <span className="bn-live-title">{news.headline}</span>
+              <span className="bn-live-title" title={news.headline}>{news.headline}</span>
               <div className="bn-live-meta">
                 <span className="bn-live-views"><Eye size={14} />{formatNumber(news.views)}</span>
                 <span className="bn-live-time"><Clock size={14} />{news.timeAgo}</span>
@@ -257,7 +270,7 @@ await loadData();
                   <div
                     key={opt}
                     className={`bn-filter-item ${statusFilter === opt ? "active" : ""}`}
-                    onClick={() => { setStatusFilter(opt); setIsStatusOpen(false); setCurrentPage(1); }}
+                    onClick={() => { setStatusFilter(opt); setIsStatusOpen(false); }}
                   >
                     {opt}
                   </div>
@@ -342,39 +355,17 @@ await loadData();
         </table>
       </div>
 
-      {/* PAGINATION */}
-      {totalPages > 1 && (
-        <div className="bn-pagination">
+      {/* LOAD MORE */}
+      {filteredNews.length > 0 && (
+        <div className="bn-load-more-wrap">
           <div className="bn-pagination-info">
-            Showing {startIndex + 1}–{Math.min(startIndex + itemsPerPage, filteredNews.length)} of {filteredNews.length} items
+            Showing {currentNews.length} of {filteredNews.length} items
           </div>
-          <div className="bn-pagination-controls">
-            <button
-              className="bn-pagination-btn"
-              onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
-              disabled={currentPage === 1}
-            >
-              <ChevronLeft size={18} /> Previous
+          {hasMore && (
+            <button className="bn-load-more-btn" onClick={handleLoadMore}>
+              Load More News <LoadMoreIcon size={16} />
             </button>
-            <div className="bn-pagination-pages">
-              {Array.from({ length: totalPages }, (_, i) => i + 1).map(page => (
-                <button
-                  key={page}
-                  className={`bn-pagination-page ${page === currentPage ? "active" : ""}`}
-                  onClick={() => setCurrentPage(page)}
-                >
-                  {page}
-                </button>
-              ))}
-            </div>
-            <button
-              className="bn-pagination-btn"
-              onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
-              disabled={currentPage === totalPages}
-            >
-              Next <ChevronRight size={18} />
-            </button>
-          </div>
+          )}
         </div>
       )}
 

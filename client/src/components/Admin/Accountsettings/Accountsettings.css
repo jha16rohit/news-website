@@ -6,6 +6,7 @@
   background-color: #f5f5f5;
   min-height: 100vh;
   font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  padding-top: 24px
 }
 
 /* Header */
@@ -14,10 +15,11 @@
 }
 
 .settings-title {
-  font-size: 36px;
+  font-size: 28px;
   font-weight: 700;
   color: #111;
   margin: 0 0 8px 0;
+  font-family: times new roman, sans-serif;
 }
 
 .settings-subtitle {

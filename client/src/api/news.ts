@@ -5,7 +5,7 @@ import { apiClient } from "./client";
 export type ArticleTypeEnum = "STANDARD" | "BREAKING" | "LIVE";
 export type StatusEnum      = "DRAFT" | "PUBLISHED" | "SCHEDULED" | "EXPIRED" | "DELETED";
 export type PriorityEnum    = "CRITICAL" | "HIGH" | "MEDIUM";
-export type StatusTypeEnum  = "published" | "paused";
+export type StatusTypeEnum  = "published" | "paused" | "ended";
 export type DeleteModeEnum  = "instant" | "interval";
 
 export interface PollOption {

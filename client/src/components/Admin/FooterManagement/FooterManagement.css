@@ -9,9 +9,10 @@
 }
 
 .fm-header h2 {
-  font-size: 24px;
+  font-size: 28px;
   font-weight: 700;
-  margin: 0 0 8px 0;
+  margin: 0 0 15px 0;
+  font-family: times new roman, sans-serif;
 }
 
 .fm-chevron { font-size: 14px; }

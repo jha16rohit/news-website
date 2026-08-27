@@ -1248,29 +1248,53 @@ const LiveStoriesPage: React.FC = () => {
   };
 
   const handleEndLive = async (storyId: string) => {
-    const now = new Date();
+  const now = new Date();
+
+  setStories(prev =>
+    prev.map(s =>
+      s.id === storyId
+        ? {
+            ...s,
+            status: "ended",
+            endedAt: now.toISOString(),
+            published: formatDate(now.toISOString())
+          }
+        : s
+    )
+  );
+
+  setEndingId(storyId);
+
+  try {
+    // Save ended status to database
+    await apiUpdateNews(storyId, {
+      status: "PUBLISHED",
+      statusType: "ended",
+      articleType: "LIVE",
+    } as any);
+
+    // Reload from database
+    await loadData();
+
+  } catch (err) {
+    console.error("Failed to end live:", err);
+
     setStories(prev =>
       prev.map(s =>
         s.id === storyId
-          ? { ...s, status: "ended", endedAt: now.toISOString(), published: formatDate(now.toISOString()) }
+          ? {
+              ...s,
+              status: "live",
+              endedAt: null,
+              published: "Live"
+            }
           : s
       )
     );
-    setEndingId(storyId);
-    try {
-      await loadData();
-     
-    } catch (err) {
-      console.error("Failed to end live:", err);
-      setStories(prev =>
-        prev.map(s =>
-          s.id === storyId ? { ...s, status: "live", endedAt: null, published: "Live" } : s
-        )
-      );
-    } finally {
-      setEndingId(null);
-    }
-  };
+  } finally {
+    setEndingId(null);
+  }
+};
 
   const handleGoLive = async (storyId: string) => {
     setStories(prev =>
@@ -1315,7 +1339,6 @@ const LiveStoriesPage: React.FC = () => {
         <div className="ls-header">
           <div className="ls-header-left">
             <div className="ls-title-row">
-              <span className="ls-live-icon"><span className="ls-live-dot" /></span>
               <h1 className="ls-title">Live Stories</h1>
             </div>
             <p className="ls-subtitle">Manage real-time live coverage and event updates</p>

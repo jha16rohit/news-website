@@ -307,9 +307,9 @@ const AboutUsAdmin: React.FC = () => {
       </div>
 
       {/* ── Floating Save ── */}
-      <button className={`au-float-save ${saved ? "saved" : ""}`} onClick={save}>
+      {/* <button className={`au-float-save ${saved ? "saved" : ""}`} onClick={save}>
         {saved ? <CheckCircle size={18} /> : <Save size={18} />}
-      </button>
+      </button> */}
 
     </div>
   );
