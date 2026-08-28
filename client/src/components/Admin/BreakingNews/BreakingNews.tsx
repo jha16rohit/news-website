@@ -6,7 +6,16 @@ import {
   ExternalLink, MoreHorizontal, ChevronDown as LoadMoreIcon,
   Radio, Edit, Trash2, XCircle,
 } from "lucide-react";
-import { fetchAllNews, deleteNews as apiDeleteNews, updateNews as apiUpdateNews } from "../../../api/news";
+import {
+  // Breaking News must see every status (DRAFT/SCHEDULED/PUBLISHED/etc.),
+  // not just PUBLISHED — otherwise a scheduled breaking article never shows
+  // up here at all, even though the "Scheduled" stat/filter expects it to.
+  // Use the same admin-only endpoint AllNews.tsx and Livestories.tsx use,
+  // so all three pages agree on what breaking articles exist and their state.
+  fetchAdminNews,
+  deleteNews as apiDeleteNews,
+  updateNews as apiUpdateNews,
+} from "../../../api/news";
 // import { useNewsEvent, useNewsSubscription } from "../../../context/newscontext";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -66,17 +75,28 @@ const BreakingNews: React.FC = () => {
   const loadData = useCallback(async () => {
     setLoading(true);
     try {
-      const data = await fetchAllNews({ articleType: "BREAKING", limit: 100 });
+      const data = await fetchAdminNews({ articleType: "BREAKING", limit: 100 });
       if (!data?.news) { setItems([]); return; }
 
-      const mapped = data.news.map((n: any, idx: number) => ({
+      // This page's status model only understands live/scheduled/expired —
+      // a still-DRAFT (or DELETED/ARCHIVED) breaking article isn't "breaking"
+      // yet, so exclude those rather than let deriveStatus mislabel them live.
+      const relevant = data.news.filter((n: any) =>
+        n.status === "PUBLISHED" || n.status === "SCHEDULED"
+      );
+
+      const mapped = relevant.map((n: any, idx: number) => ({
         id:       n.id,
         localId:  idx + 1,
         headline: n.headline,
-        author:   n.author?.name || "Admin",
+        // Backend enriches list responses with authorId/categoryId replaced
+        // by the populated {name,...} objects — not top-level author/category
+        // fields (matches AllNews.tsx's mapping). Using the wrong field names
+        // silently fell back to "Admin"/"General" for every single article.
+        author:   n.authorId?.name || "Admin",
         timeAgo:  toRelative(n.publishedAt || n.createdAt),
         status:   deriveStatus(n.status, n.expiryTime),
-        category: n.category?.name || "General",
+        category: n.categoryId?.name || "General",
         views:    n.views ?? 0,
       }));
 

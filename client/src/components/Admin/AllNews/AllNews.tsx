@@ -39,6 +39,7 @@ interface NewsItem {
   liveStartedAt?:  string;
   scheduledFor?:   string | null;
   publishedAt?:    string | null;
+  isEnded?:        boolean;   // true once a LIVE article has been ended (see Livestories.tsx)
 }
 
 const articleTypes = [
@@ -64,7 +65,10 @@ const tagTypeMap: Record<string, string> = {
 function mapNewsItem(n: any, idx: number): NewsItem {
   const isBreaking = n.articleType === "BREAKING";
   const isLive     = n.articleType === "LIVE";
-  const isEnded    = n.status !== "PUBLISHED" && isLive;
+  // Ending a live story sets statusType to "ended" but leaves status as
+  // PUBLISHED (see Livestories.tsx handleEndLive), so ended-ness must be
+  // read from statusType — checking n.status here never catches it.
+  const isEnded    = isLive && n.statusType === "ended";
 
   let publishedLabel = "-";
   if (n.status === "PUBLISHED" && n.publishedAt) {
@@ -114,6 +118,7 @@ articleCategory: n.categoryId?.name || "",
     priorityType:    isBreaking ? "high"  : "normal",
     liveUpdates:     n.liveUpdates || undefined,
     liveStartedAt:   isLive ? n.publishedAt : undefined,
+    isEnded,
   };
 }
 
@@ -411,14 +416,36 @@ break;
       case "convert-live": {
         const isLive = item?.tagType === "live";
 
+        // Ending an already-ended live story from here is a no-op — that
+        // state is managed from the Live Stories page.
+        if (isLive && item?.isEnded) break;
+
 try {
-  await apiUpdateNews(
-    id,
-    {
-      articleType: isLive ? "STANDARD" : "LIVE",
-      status: "PUBLISHED",
-    } as any
-  );
+  if (isLive) {
+    // "End Live": mirror Livestories.tsx handleEndLive exactly — keep
+    // articleType LIVE (so the live-updates timeline still renders on
+    // the public site) and just flip statusType to "ended". Previously
+    // this branch converted articleType back to STANDARD, which is a
+    // different, more destructive action and caused the two pages to
+    // disagree about whether a story had ended.
+    await apiUpdateNews(
+      id,
+      {
+        status: "PUBLISHED",
+        statusType: "ended",
+        articleType: "LIVE",
+      } as any
+    );
+  } else {
+    // "Convert to Live": promote a standard/breaking article to a live one.
+    await apiUpdateNews(
+      id,
+      {
+        articleType: "LIVE",
+        status: "PUBLISHED",
+      } as any
+    );
+  }
 
   await loadData(activeType, search);
 
@@ -702,11 +729,18 @@ setDeleteModal(null);
                           <button
                             className={`dropdown-item${news.tagType === "live" ? " breaking-active" : ""}`}
                             onClick={() => handleMenuAction("convert-live", news.id)}
-                            style={news.tagType === "live" ? { color: "#16a34a" } : {}}
+                            disabled={news.tagType === "live" && news.isEnded}
+                            style={
+                              news.tagType === "live"
+                                ? news.isEnded
+                                  ? { color: "#6b7280", opacity: 0.6, cursor: "not-allowed" }
+                                  : { color: "#16a34a" }
+                                : {}
+                            }
                           >
                             <Radio size={15} />
                             {news.tagType === "live"
-                              ? news.statusType === "ended" ? "Ended" : "End Live"
+                              ? news.isEnded ? "Ended" : "End Live"
                               : "Convert to Live"}
                           </button>
                           <div className="dropdown-divider" />

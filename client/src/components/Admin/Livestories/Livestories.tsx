@@ -2,7 +2,11 @@ import React, { useState, useRef, useEffect, useCallback } from "react";
 import "./Livestories.css";
 import { useNavigate } from "react-router-dom";
 import {
-  fetchAllNews,
+  // Live Stories must see every status (DRAFT/SCHEDULED/PUBLISHED/etc.), not
+  // just PUBLISHED, otherwise draft live stories never appear here and the
+  // "Draft (Ready)" stat is permanently stuck at 0 — use the admin-only
+  // endpoint, same one AllNews.tsx uses, so both pages agree on what exists.
+  fetchAdminNews,
   deleteNews      as apiDeleteNews,
   updateNews      as apiUpdateNews,
   appendLiveUpdate as apiAppendLiveUpdate,
@@ -1107,7 +1111,7 @@ const LiveStoriesPage: React.FC = () => {
   const loadData = useCallback(async () => {
     setLoading(true);
     try {
-      const data = await fetchAllNews({ articleType: "LIVE", limit: 100 });
+      const data = await fetchAdminNews({ articleType: "LIVE", limit: 100 });
       if (!data?.news) { setStories([]); return; }
       setStories(data.news.map(mapStory));
     } catch (err) {

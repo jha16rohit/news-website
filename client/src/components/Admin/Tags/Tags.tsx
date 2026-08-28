@@ -1,7 +1,6 @@
 import { useState, useMemo, useEffect, useCallback } from "react";
 import {
   Tag,
-  TrendingUp,
   FileText,
   Plus,
   Search,
@@ -224,16 +223,6 @@ export default function Tags() {
   // ── Derived ────────────────────────────────────────────────────────────────
   const existingNames = allTags.map((t) => t.name);
 
-  // Trending = only tags used in at least 1 article, sorted by usage desc
-  const trendingTagsByUsage = useMemo(
-    () =>
-      allTags
-        .filter((t) => (t._count?.articles ?? 0) > 0)
-        .sort((a, b) => (b._count?.articles ?? 0) - (a._count?.articles ?? 0))
-        .slice(0, 12),
-    [allTags]
-  );
-
   // Admin-marked trending tags
   const adminTrendingTags = useMemo(
     () => allTags.filter((t) => trendingIds.has(t.id)),
@@ -339,13 +328,6 @@ export default function Tags() {
             </div>
           </div>
           <div className="tags-stat-card">
-            <div className="tags-stat-icon bg-blue"><TrendingUp size={20} /></div>
-            <div>
-              <div className="tags-stat-value">{loading ? "—" : trendingTagsByUsage.length}</div>
-              <div className="tags-stat-label">Trending by Usage</div>
-            </div>
-          </div>
-          <div className="tags-stat-card">
             <div className="tags-stat-icon bg-orange"><Flame size={20} /></div>
             <div>
               <div className="tags-stat-value">{loading ? "—" : adminTrendingTags.length}</div>
@@ -405,42 +387,6 @@ export default function Tags() {
                       >
                         <X size={11} />
                       </button>
-                    </span>
-                  ))}
-                </div>
-              )}
-            </div>
-
-            {/* Trending by Usage Panel */}
-            <div className="tags-popular">
-              <div className="tags-section-header">
-                <TrendingUp size={17} />
-                <h2>Trending by Usage</h2>
-                <span className="tags-section-badge">Auto</span>
-              </div>
-
-              {loading ? (
-                <div className="tags-loading">
-                  <Loader2 size={16} className="tags-spin" /> Loading…
-                </div>
-              ) : trendingTagsByUsage.length === 0 ? (
-                <div className="tags-empty-state">
-                  <TrendingUp size={28} className="tags-empty-icon" />
-                  <p className="tags-empty-title">No trending tags yet</p>
-                  <p className="tags-empty-desc">
-                    Tags appear here once they are used in published articles.
-                  </p>
-                </div>
-              ) : (
-                <div className="tags-chip-wrap">
-                  {trendingTagsByUsage.map((t) => (
-                    <span
-                      key={t.id ?? (t as any)._id}
-                      className="tags-chip"
-                      title={`${t._count?.articles} article${(t._count?.articles ?? 0) !== 1 ? "s" : ""}`}
-                    >
-                      {t.name}
-                      <span className="tags-chip-count"> ({t._count?.articles})</span>
                     </span>
                   ))}
                 </div>

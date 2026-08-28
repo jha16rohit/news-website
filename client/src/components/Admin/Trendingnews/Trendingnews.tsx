@@ -55,7 +55,9 @@ function calcScore(views: number, maxViews: number): number {
 // Component
 // ─────────────────────────────────────────────
 export default function TrendingNews() {
-  const [adminTrendingSlugs, setAdminTrendingSlugs] = useState<Set<string>>(new Set());
+  // Full admin-trending Tag objects (id/name/slug) — the only source of
+  // "trending" now. Usage-based tags are no longer part of this list.
+  const [trendingTags,      setTrendingTags]      = useState<TagType[]>([]);
   // Map of lowercase tag name → full Tag object from DB (includes correct slug/id)
   // This is the source of truth — avoids slug regeneration mismatches for Hindi tags
   const [liveTagMap,         setLiveTagMap]         = useState<Map<string, TagType> | null>(null);
@@ -69,11 +71,11 @@ export default function TrendingNews() {
   // ── Load admin-pinned trending tags + full live tag list ───────────────────
   const loadTrendingTags = useCallback(async () => {
     try {
-      const [trendingTags, allTags] = await Promise.all([
+      const [trending, allTags] = await Promise.all([
         getTrendingTags(),
         getAllTags(),
       ]);
-      setAdminTrendingSlugs(new Set(trendingTags.map((t) => t.slug)));
+      setTrendingTags(trending);
       // Build name→Tag map (lowercase key) so article tag strings can be
       // resolved to their real DB slug/id regardless of script (Hindi, etc.)
       const nameMap = new Map<string, TagType>();
@@ -81,7 +83,7 @@ export default function TrendingNews() {
       setLiveTagMap(nameMap);
     } catch (e) {
       console.error("Failed to load tags:", e);
-      // On error, leave liveTagMap null — filter will show all article tags
+      // On error, leave liveTagMap null / trendingTags empty
     }
   }, []);
 
@@ -160,65 +162,61 @@ export default function TrendingNews() {
     loadTrendingTags().then(() => loadArticles());
   }, [loadTrendingTags, loadArticles]);
 
-  // ── Derive filter tags — resolve article tag names via liveTagMap ──────────
-  // Article tags are stored as plain strings. liveTagMap resolves them to their
-  // real DB slug (including hash-slugs for Hindi/non-Latin tags).
-  // Tags deleted from the DB are excluded because they won't be in liveTagMap.
+  // Lowercase name set of admin-trending tags — the only definition of
+  // "trending" now (usage-based auto-trending has been removed).
+  const trendingNameSet = useMemo(
+    () => new Set(trendingTags.map((t) => t.name.toLowerCase().trim())),
+    [trendingTags]
+  );
+
+  // ── Derive filter tags — one entry per admin-trending tag only ─────────────
+  // articleCount is still computed live from loaded articles (for display),
+  // but which tags appear here is driven entirely by admin's isTrending flag.
   const filterTags = useMemo((): FilterTag[] => {
-    const map = new Map<string, FilterTag>();
+    return trendingTags
+      .map((t): FilterTag => {
+        const nameLower = t.name.toLowerCase().trim();
+        const articleCount = articles.reduce(
+          (acc, a) => acc + (a.tags.some((at) => at.name.toLowerCase().trim() === nameLower) ? 1 : 0),
+          0
+        );
+        return {
+          id: t.id,
+          name: t.name,
+          slug: t.slug,
+          articleCount,
+          isAdminTrending: true,
+        };
+      })
+      .sort((a, b) => b.articleCount - a.articleCount);
+  }, [trendingTags, articles]);
 
-    for (const article of articles) {
-      for (const tag of article.tags) {
-        if (!tag.name) continue;
-
-        // If liveTagMap is loaded, resolve to the real DB slug
-        const dbTag   = liveTagMap?.get(tag.name.toLowerCase().trim());
-        // If liveTagMap is loaded and this tag doesn't exist in DB, skip it (deleted)
-        if (liveTagMap !== null && !dbTag) continue;
-
-        const resolvedSlug = dbTag?.slug ?? tag.slug;
-        if (!resolvedSlug) continue;
-
-        const existing = map.get(resolvedSlug);
-        if (existing) {
-          existing.articleCount += 1;
-        } else {
-          map.set(resolvedSlug, {
-            id:              dbTag?.id   ?? tag.id,
-            name:            dbTag?.name ?? tag.name,
-            slug:            resolvedSlug,
-            articleCount:    1,
-            isAdminTrending: adminTrendingSlugs.has(resolvedSlug),
-          });
-        }
-      }
-    }
-
-    return Array.from(map.values()).sort((a, b) => {
-      if (a.isAdminTrending && !b.isAdminTrending) return -1;
-      if (!a.isAdminTrending && b.isAdminTrending)  return 1;
-      return b.articleCount - a.articleCount;
-    });
-  }, [articles, adminTrendingSlugs, liveTagMap]);
-
-  // ── Reset active filter if the selected tag was deleted ───────────────────
+  // ── Reset active filter if the selected tag is no longer trending ─────────
   useEffect(() => {
-    if (activeTagSlug !== "all" && liveTagMap !== null) {
-      const stillExists = Array.from(liveTagMap.values()).some((t) => t.slug === activeTagSlug);
-      if (!stillExists) setActiveTagSlug("all");
+    if (activeTagSlug !== "all") {
+      const stillTrending = trendingTags.some((t) => t.slug === activeTagSlug);
+      if (!stillTrending) setActiveTagSlug("all");
     }
-  }, [liveTagMap, activeTagSlug]);
+  }, [trendingTags, activeTagSlug]);
 
-  // ── Filtered articles — also resolve via liveTagMap ───────────────────────
+  // ── Filtered articles ───────────────────────────────────────────────────────
+  // "Top Trending Articles" only ever shows articles carrying an admin-trending
+  // tag. If no tags are pinned yet, fall back to all published articles
+  // (already sorted by views) so the page isn't empty.
   const filteredArticles = useMemo(() => {
-    if (activeTagSlug === "all") return articles;
-    return articles.filter((a) =>
+    const base = trendingNameSet.size > 0
+      ? articles.filter((a) => a.tags.some((t) => trendingNameSet.has(t.name.toLowerCase().trim())))
+      : articles;
+
+    if (activeTagSlug === "all") return base;
+
+    return base.filter((a) =>
       a.tags.some((t) => {
         const dbTag = liveTagMap?.get(t.name.toLowerCase().trim());
         return (dbTag?.slug ?? t.slug) === activeTagSlug;
       })
     );
-  }, [articles, activeTagSlug, liveTagMap]);
+  }, [articles, activeTagSlug, liveTagMap, trendingNameSet]);
 
   // ── Stats ──────────────────────────────────────────────────────────────────
   const totalViews = filteredArticles.reduce((acc, a) => acc + a.views, 0);
@@ -322,7 +320,7 @@ export default function TrendingNews() {
             {loading ? (
               <span className="tn-tag-loading"><Loader2 size={13} className="tn-spin" /> Loading tags…</span>
             ) : filterTags.length === 0 ? (
-              <span className="tn-tag-empty">No tags in published articles</span>
+              <span className="tn-tag-empty">No trending tags set — mark tags as trending from the Tags panel</span>
             ) : (
               filterTags.map((tag) => (
                 <button

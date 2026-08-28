@@ -54,7 +54,11 @@ const AdminTopBar: React.FC<AdminTopBarProps> = ({ onMenuClick }) => {
       });
 
       const liveArticles = (data?.news ?? []).filter(
-        (article: any) => article.status === "PUBLISHED"
+        // A LIVE article stays status "PUBLISHED" even after it's ended
+        // (see Livestories.tsx handleEndLive) — statusType is what actually
+        // flips to "ended". Checking status alone meant this count never
+        // went down once a story ended, disagreeing with every other page.
+        (article: any) => article.status === "PUBLISHED" && article.statusType !== "ended"
       );
 
       setLiveCount(liveArticles.length);

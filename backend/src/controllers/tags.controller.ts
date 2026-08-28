@@ -3,11 +3,6 @@ import Tag from "../models/Tag";
 import News from "../models/News";
 import slugify from "slugify";
 
-// How many top-by-usage tags count as "trending" automatically (in addition
-// to whatever the admin has manually pinned with isTrending).
-const USAGE_TRENDING_LIMIT = 10;
-
-
 async function getLiveArticleCountsByTagName(
   statusFilter: Record<string, any> = { status: { $ne: "DELETED" } }
 ): Promise<Map<string, number>> {
@@ -124,38 +119,17 @@ export const getAllTags = async (req: Request, res: Response) => {
 };
 
 // ─── TRENDING TAGS ────────────────────────────────────────────────────────────
-// A tag counts as "trending" if EITHER:
-//   1. An admin has manually pinned it (isTrending: true), OR
-//   2. It's currently one of the most-used tags among published articles
-//      (usage-based, fully automatic — no admin action required).
-// Both sets are unioned so trending news / trending tag UI on the user side
-// reflects both sources, exactly as intended.
+// A tag counts as "trending" only if an admin has manually pinned it
+// (isTrending: true). Usage-based auto-trending has been removed — trending
+// status is now entirely admin-controlled.
 export const getTrendingTags = async (req: Request, res: Response) => {
   try {
-    const [adminTrending, publishedCounts, allCounts] = await Promise.all([
+    const [adminTrending, allCounts] = await Promise.all([
       Tag.find({ isTrending: true }),
-      getLiveArticleCountsByTagName({ status: "PUBLISHED" }),
       getLiveArticleCountsByTagName(),
     ]);
 
-    const byId = new Map<string, any>();
-    for (const t of adminTrending) byId.set(String(t._id), t);
-
-    // Top N tags by live published-article usage, regardless of manual flag.
-    const usageRanked = [...publishedCounts.entries()]
-      .filter(([, count]) => count > 0)
-      .sort((a, b) => b[1] - a[1])
-      .slice(0, USAGE_TRENDING_LIMIT)
-      .map(([name]) => name);
-
-    if (usageRanked.length) {
-      const usageTags = await Tag.find({
-        name: { $in: usageRanked.map((n) => new RegExp(`^${n}$`, "i")) },
-      });
-      for (const t of usageTags) byId.set(String(t._id), t);
-    }
-
-    const merged = [...byId.values()].map((t) => attachCount(t, allCounts));
+    const merged = adminTrending.map((t) => attachCount(t, allCounts));
     merged.sort((a, b) => (b._count.articles ?? 0) - (a._count.articles ?? 0));
 
     res.json(merged);

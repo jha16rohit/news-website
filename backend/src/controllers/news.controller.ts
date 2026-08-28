@@ -1314,39 +1314,21 @@ export const getNewsByTag = async (req: Request, res: Response) => {
   }
 };
 
-// How many top-by-usage tags count as "trending" automatically, on top of
-// whatever the admin has manually pinned via isTrending. Keep this in sync
-// with USAGE_TRENDING_LIMIT in tags.controller.ts so the two surfaces agree.
-const USAGE_TRENDING_LIMIT = 10;
-
 export const getTrendingNews = async (req: Request, res: Response) => {
   try {
     await autoPublishDueScheduled();
 
-    // ── Source 1: tags the admin manually marked as trending ─────────────────
+    // Trending is now purely admin-controlled: only tags the admin has
+    // manually pinned via isTrending count as "trending". Usage-based
+    // auto-trending has been removed.
     const adminTrendingTags = await Tag.find({
       isTrending: true,
     });
-    const tagNameSet = new Set(adminTrendingTags.map((tag) => tag.name));
+    const tagNames = adminTrendingTags.map((tag) => tag.name);
 
-    // ── Source 2: tags that are trending purely by usage (most-tagged among
-    // published articles), independent of any admin action ───────────────────
-    const usageRanked = await News.aggregate([
-      { $match: { status: "PUBLISHED" } },
-      { $unwind: "$tags" },
-      { $group: { _id: "$tags", count: { $sum: 1 } } },
-      { $sort: { count: -1 } },
-      { $limit: USAGE_TRENDING_LIMIT },
-    ]);
-    for (const row of usageRanked) {
-      if (row._id) tagNameSet.add(row._id);
-    }
-
-    const tagNames = [...tagNameSet];
-
-    // Get all news matching either trending source (admin-pinned or
-    // usage-trending tags). If no tags qualify yet, fall back to the most
-    // recent published articles so the section is never empty.
+    // Get all news matching an admin-trending tag. If no tags are pinned
+    // yet, fall back to the most recent published articles so the section
+    // is never empty.
     const news = tagNames.length
       ? await News.find({
           status: "PUBLISHED",
