@@ -2,16 +2,9 @@
    TAGS.CSS — Admin Tags Manager
    ═══════════════════════════════════════════════════════════════ */
 
-.tags-root {
-  background: #f8fafc;
-  min-height: 100vh;
-  font-family: Inter, sans-serif;
-}
-
 .tags-container {
-  padding: 28px 32px;
-  max-width: 1400px;
-  margin: 0 auto;
+  padding-top: 24px;
+
 }
 
 /* ── HEADER ─────────────────────────────────────────────────── */
@@ -25,9 +18,10 @@
 }
 
 .tags-title {
-  font-size: 22px;
+  font-size: 28px;
   font-weight: 700;
   margin: 0 0 4px;
+  font-family: times, 'Times New Roman', serif;
 }
 
 .tags-subtitle {
@@ -440,10 +434,32 @@
   color: #ffffff;
 }
 
-.tags-trending-toggle-label {
-  /* hide label on small screens via media query */
+/* ── LOAD MORE ─────────────────────────────────────────────── */
+
+.tags-load-more-wrap {
+  display: flex;
+  justify-content: center;
+  padding-top: 12px;
 }
 
+.tags-load-more {
+  padding: 9px 22px;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  background: #ffffff;
+  color: #334155;
+  font-size: 13px;
+  font-weight: 600;
+  font-family: inherit;
+  cursor: pointer;
+  transition: all 0.18s ease;
+}
+
+.tags-load-more:hover {
+  background: #f8fafc;
+  border-color: #cbd5e1;
+  color: #0f172a;
+}
 /* ── ACTIONS ────────────────────────────────────────────────── */
 .tags-actions { display: flex; gap: 6px; }
 
@@ -727,6 +743,33 @@
 
 .tags-btn-delete:hover { background: #dc2626; }
 
+/* ── LOAD MORE ─────────────────────────────────────────────── */
+
+.tags-load-more-wrap {
+  display: flex;
+  justify-content: center;
+  padding-top: 12px;
+}
+
+.tags-load-more {
+  padding: 9px 22px;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  background: #ffffff;
+  color: #334155;
+  font-size: 13px;
+  font-weight: 600;
+  font-family: inherit;
+  cursor: pointer;
+  transition: all 0.18s ease;
+}
+
+.tags-load-more:hover {
+  background: #f8fafc;
+  border-color: #cbd5e1;
+  color: #0f172a;
+}
+
 /* ══════════════════════════════════════════════════════════════
    RESPONSIVE
    ══════════════════════════════════════════════════════════════ */
@@ -826,8 +869,8 @@
   .tags-row-right { gap: 8px; }
 
   .tags-modal, .tags-delete-modal { max-width: 95vw; }
-  .tags-overlay { align-items: flex-end; padding: 12px; }
-  .tags-modal { border-radius: 14px 14px 0 0; }
+  .tags-overlay { align-items: center; padding: 12px; }
+  .tags-modal { border-radius: 14px; }
 }
 
 /* ── SMALL MOBILE (≤400px) ──────────────────────────────────── */

@@ -426,9 +426,6 @@
   display: block;
 }
 
-.tp-list-card:hover .tp-list-img-wrap img {
-  transform: scale(1.05);
-}
 
 .tp-list-body {
   display: flex;
@@ -450,6 +447,7 @@
 .tp-list-title {
   font-size: 20px;
   font-weight: 400;
+  font-family: Noto sans devanagari; /* 👇 EXPERT FIX: Applied heading font */
   color: #0f172a;
   line-height: 1.4;
   margin: 0 0 10px 0;
@@ -459,10 +457,8 @@
   line-clamp: 2;
   -webkit-box-orient: vertical;
   overflow: hidden;
-  font-family: var(--font-heading);
 }
-
-.tp-list-card:hover .tp-list-title {
+ .tp-list-title:hover {
   color: #e60000;
 }
 
@@ -626,7 +622,7 @@
   line-clamp: 2;
   -webkit-box-orient: vertical;
   overflow: hidden;
-  font-family: var(--font-heading);
+  font-family: Noto Sans Devanagari; /* 👇 EXPERT FIX: Applied heading font */
 }
 
 .tp-trending-item:hover .tp-trend-title {
@@ -644,7 +640,7 @@
   line-clamp: 2;
   -webkit-box-orient: vertical;
   overflow: hidden;
-  font-family: var(--font-body);
+  font-family: Noto Sans Devanagari; /* 👇 EXPERT FIX: Applied body font */
 }
 
 .tp-trend-time {

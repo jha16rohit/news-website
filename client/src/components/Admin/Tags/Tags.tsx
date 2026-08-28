@@ -191,6 +191,7 @@ export default function Tags() {
   const [deleteTagItem, setDeleteTagItem] = useState<TagType | null>(null);
   const [deleting,      setDeleting]      = useState(false);
   const [apiError,      setApiError]      = useState<string | null>(null);
+  const [visibleTagCount, setVisibleTagCount] = useState(6);
 
   // Trending state: set of tag IDs currently marked as trending (from DB isTrending field)
   const [trendingIds, setTrendingIds] = useState<Set<string>>(new Set());
@@ -249,6 +250,11 @@ export default function Tags() {
       ),
     [allTags, search]
   );
+
+  const visibleTags = useMemo(
+  () => filtered.slice(0, visibleTagCount),
+  [filtered, visibleTagCount]
+);
 
   const totalTagged  = allTags.reduce((s, t) => s + (t._count?.articles ?? 0), 0);
 
@@ -492,7 +498,7 @@ export default function Tags() {
                     : "No tags yet — click Add Tag to create one."}
                 </div>
               ) : (
-                filtered.map((t) => {
+               visibleTags.map((t) => {
                   const isTrending = trendingIds.has(t.id);
                   return (
                     <div key={t.id ?? (t as any)._id} className={`tags-row ${isTrending ? "tags-row--trending" : ""}`}>
@@ -550,6 +556,16 @@ export default function Tags() {
                 })
               )}
             </div>
+            {!loading && filtered.length > visibleTagCount && (
+  <div className="tags-load-more-wrap">
+    <button
+      className="tags-load-more"
+      onClick={() => setVisibleTagCount((prev) => prev + 10)}
+    >
+      Load More
+    </button>
+  </div>
+)}
           </div>
         </div>
       </div>

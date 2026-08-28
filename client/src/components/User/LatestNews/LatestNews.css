@@ -75,9 +75,7 @@
   transition: transform 0.5s ease;
 }
 
-.news-card:hover .news-img {
-  transform: scale(1.05);
-}
+
 
 /* ===== TEXT CONTENT ===== */
 .news-content {
@@ -105,7 +103,7 @@
 }
 
 .news-title {
-  font-family: var(--font-heading); /* 👇 EXPERT FIX: Applied heading font */
+  font-family: Noto Sans Devanagari; /* 👇 EXPERT FIX: Applied heading font */
   font-size: 18px;
   font-weight: 400; /* 👇 EXPERT FIX: Changed to 400 for Rozha One */
   color: black;
@@ -115,7 +113,7 @@
 }
 
 .news-excerpt {
-  font-family: var(--font-body); /* 👇 EXPERT FIX: Explicit body font */
+  font-family: Noto Sans Devanagari; /* 👇 EXPERT FIX: Explicit body font */
   font-size: 14px;
   color: #64748b;
   line-height: 1.6;

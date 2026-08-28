@@ -1150,14 +1150,14 @@ setAds(adResponse);
 />
 
           {/* ── SIDEBAR ── */}
-        <aside className="ad-sidebar">
+        <aside className="ad-sidebar ad-abc">
 
           {/* ... (Keep your Live Updates, Recent News, and Advertisement code the same here) ... */}
 
             
             {/* RELATED NEWS WIDGET */}
             {relatedNews.length > 0 && (
-              <div className="ad-sidebar-widget">
+              <div className="ad-sidebar-widget ">
                 <h3 className="ad-widget-title" style={{ color: "#0f172a" }}>Related News</h3>
                 <div className="ad-widget-divider" />
                 {relatedNews.map((item) => {

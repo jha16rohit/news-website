@@ -131,7 +131,7 @@
 }
 
 .sct-card-title {
-  font-family: var(--font-heading); /* 👇 EXPERT FIX: Applied heading font */
+  font-family: Noto Sans Devanagari; /* 👇 EXPERT FIX: Applied heading font */
   font-size: 1.1rem;
   font-weight: 400; /* 👇 EXPERT FIX: Changed to 400 for Rozha One */
   margin: 0 0 8px;
@@ -150,6 +150,7 @@
   -webkit-box-orient: vertical;
   overflow: hidden;
   flex: 1;
+  font-family: Noto Sans Devanagari;
 }
 
 .sct-card-footer {

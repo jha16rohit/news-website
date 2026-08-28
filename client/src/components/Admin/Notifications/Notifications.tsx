@@ -138,7 +138,7 @@ const Notifications: React.FC = () => {
   return (
     <div className="notif-page">
       {/* Header */}
-      <div className="notif-header">
+      <div className="notiff-header">
         <div>
           <h1 className="notif-title">Notifications</h1>
           <p className="notif-subtitle">
@@ -175,7 +175,7 @@ const Notifications: React.FC = () => {
       </div>
 
       {/* Notifications List */}
-      <div className="notif-list">
+      <div className="notiff-list">
         {error ? (
           <div className="notif-empty">Couldn't load notifications: {error}</div>
         ) : loading ? (

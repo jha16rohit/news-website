@@ -10,7 +10,7 @@
   width: 100%;
   max-width: 1280px;
   margin: 0 auto;
-  padding: 32px 24px 48px;
+ padding-top: 24px;
 }
 
 /* ================= HEADER ================= */
@@ -46,6 +46,7 @@
   font-weight: 700;
   margin: 0 0 4px 0;
   line-height: 1.2;
+  font-family: 'Times New Roman', Times, serif;
 }
 
 .tn-subtitle {
@@ -349,10 +350,15 @@
   font-weight: 600;
   margin: 0 0 8px 0;
   line-height: 1.4;
-  display: -webkit-box;
 
-  -webkit-box-orient: vertical;
+  /* Keep title in ONE line */
+  white-space: nowrap;
   overflow: hidden;
+  text-overflow: ellipsis;
+
+  /* Important inside flex/grid layouts */
+  min-width: 0;
+  max-width: 100%;
 }
 
 .tn-article__meta {

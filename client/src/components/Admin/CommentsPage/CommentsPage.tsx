@@ -10,7 +10,8 @@ import {
   Trash2,
   X,
   CornerDownRight,
-  Send
+  Send,
+  ChevronDown
 } from "lucide-react";
 import {
   adminFetchCommentStats,
@@ -43,12 +44,23 @@ interface Stats {
   approvedToday: string | number;
 }
 
-const getInitials = (name: string) => {
-  if (!name) return "?";
-  const parts = name.trim().split(" ");
-  if (parts.length === 1) return parts[0][0].toUpperCase();
-  return parts[0][0].toUpperCase() + parts[parts.length - 1][0].toUpperCase();
+// const getInitials = (name: string) => {
+//   if (!name) return "?";
+//   const parts = name.trim().split(" ");
+//   if (parts.length === 1) return parts[0][0].toUpperCase();
+//   return parts[0][0].toUpperCase() + parts[parts.length - 1][0].toUpperCase();
+// };
+
+// ✅ Column count per breakpoint — mirrors the .comments-grid media queries in CommentsPage.css
+const computeColumns = (width: number) => {
+  if (width < 560) return 1;       // mobile
+  if (width < 860) return 2;       // mini tablet
+  if (width < 1280) return 3;      // tablet
+  if (width < 1800) return 5;      // desktop
+  return Math.max(5, Math.floor(width / 260)); // large screens, auto-adjust
 };
+
+const ROWS_PER_PAGE = 2;
 
 const CommentsPage = () => {
   const [activeTab, setActiveTab] = useState<Status>("all");
@@ -57,9 +69,22 @@ const CommentsPage = () => {
   const [stats, setStats] = useState<Stats>({ total: 0, pending: 0, reported: 0, approvedToday: 0 });
   const [loading, setLoading] = useState(false);
 
-  // Inline admin reply control tokens
-  const [replyingToId, setReplyingToId] = useState<string | null>(null);
+  // ✅ Reply popup (modal) state — replaces the old inline reply box
+  const [replyModalComment, setReplyModalComment] = useState<Comment | null>(null);
   const [adminReplyText, setAdminReplyText] = useState("");
+
+  // ✅ Load-more pagination state, responsive per screen size
+  const [columns, setColumns] = useState<number>(() =>
+    typeof window !== "undefined" ? computeColumns(window.innerWidth) : 5
+  );
+  const [page, setPage] = useState(1);
+  const visibleCount = columns * ROWS_PER_PAGE * page;
+
+  useEffect(() => {
+    const handleResize = () => setColumns(computeColumns(window.innerWidth));
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
+  }, []);
 
   const getAuthHeaders = useCallback(() => {
     const headers: Record<string, string> = { "Content-Type": "application/json" };
@@ -139,6 +164,7 @@ const CommentsPage = () => {
   useEffect(() => {
     loadStats();
     loadComments();
+    setPage(1); // ✅ reset pagination whenever the tab or search filter changes
   }, [loadComments]);
 
   const handleApprove = async (id: string) => {
@@ -163,19 +189,32 @@ const CommentsPage = () => {
     } catch { alert("Failed to delete comment"); }
   };
 
+  // ✅ Opens the reply popup for a given comment
+  const openReplyModal = (c: Comment) => {
+    setAdminReplyText("");
+    setReplyModalComment(c);
+  };
+
+  const closeReplyModal = () => {
+    setReplyModalComment(null);
+    setAdminReplyText("");
+  };
+
   // ✅ 3. DISPATCH OFFICIAL ADMIN REPLY SUBMIT HANDLER
   const handleAdminReplySubmit = async (commentId: string, newsId: string) => {
     if (!adminReplyText.trim()) return;
     try {
       await adminReplyComment(commentId, newsId, adminReplyText.trim());
-      setAdminReplyText("");
-      setReplyingToId(null);
       alert("Official reply posted successfully!");
+      closeReplyModal();
       loadComments();
     } catch (err) {
       alert("Failed to submit official admin reply context.");
     }
   };
+
+  const visibleComments = comments.slice(0, visibleCount);
+  const hasMore = comments.length > visibleCount;
 
   return (
     <div className="comments-page">
@@ -235,108 +274,108 @@ const CommentsPage = () => {
         </div>
       </div>
 
-      {/* RENDER COMMENTS SYSTEM */}
-      <div className="comments-list">
+      {/* RENDER COMMENTS SYSTEM — CARD GRID */}
+      <div className="comments-grid">
         {loading ? (
-          <div style={{ textAlign: "center", padding: "30px", color: "#64748b" }}>⏳ Loading direct database entries…</div>
+          <div className="comments-empty-state">⏳ Loading direct database entries…</div>
         ) : comments.length === 0 ? (
-          <div style={{ textAlign: "center", padding: "40px", color: "#64748b" }}>No comments found in this tab.</div>
+          <div className="comments-empty-state">No comments found in this tab.</div>
         ) : (
-          comments.map((c) => {
-          //  const isPendingMode = c.status === "pending" && !c.isReported;
+          visibleComments.map((c) => {
             const isReportedMode = activeTab === "reported" || c.isReported || c.status === "rejected";
 
-            /* 🟥 CASE 1: DISPLAY REPORTED CARD CONDITION */
+            /* 🟥 CASE 1: REPORTED CARD */
             if (isReportedMode) {
               return (
-                <div key={c.id} className="comment-item reported">
-                  <div className="comment-avatar">{getInitials(c.user)}</div>
-                  <div className="comment-body">
-                    <div className="comment-top">
+                <div key={c.id} className="comment-card-item reported">
+                  <div className="cci-top">
+                    {/* <div className="cci-avatar">{getInitials(c.user)}</div> */}
+                    <div className="cci-identity">
                       <strong>{c.user}</strong>
-                      <span className="time">{c.time}</span>
-                      <span className="status reported">Reported ({c.reportCount} flags)</span>
+                      <span className="cci-time">{c.time}</span>
                     </div>
-                    <p>{c.text}</p>
-                    <div className="report-reason" style={{ margin: "6px 0", padding: "6px 10px", background: "#fff1f1", borderRadius: 6, fontSize: 13, color: "#c53030" }}>
-                      <strong>on Article:</strong> {c.article}
-                    </div>
-                    <div className="actions">
-                      <button className="btn approve" onClick={() => handleApprove(c.id)}><Check size={16} /> Dismiss / Approve</button>
-                      <button className="btn danger" onClick={() => handleDelete(c.id)}><Trash2 size={16} /> Delete Comment</button>
-                    </div>
+                    <span className="status reported">{c.reportCount} flags</span>
+                  </div>
+
+                  <p className="cci-text">{c.text}</p>
+
+                  <div className="cci-report-reason">
+                    <strong>on:</strong> {c.article}
+                  </div>
+
+                  <div className="cci-actions">
+                    <button className="btn approve" onClick={() => handleApprove(c.id)}>
+                      <Check size={14} /> Approve
+                    </button>
+                    <button className="btn danger" onClick={() => handleDelete(c.id)}>
+                      <Trash2 size={14} /> Delete
+                    </button>
                   </div>
                 </div>
               );
             }
 
-            /* 🟩 CASE 2: DISPLAY APPROVED CARD CONDITION */
+            /* 🟩 CASE 2: APPROVED CARD */
             if (c.status === "approved") {
               return (
-                <div key={c.id} className="comment-item approved">
-                  <div className="comment-avatar">{getInitials(c.user)}</div>
-                  <div className="comment-body">
-                    <div className="comment-top">
+                <div key={c.id} className="comment-card-item approved">
+                  <div className="cci-top">
+                    {/* <div className="cci-avatar">{getInitials(c.user)}</div> */}
+                    <div className="cci-identity">
                       <strong>{c.user}</strong>
-                      <span className="time">{c.time}</span>
-                      <span className="status approved">Approved</span>
+                      <span className="cci-time">{c.time}</span>
                     </div>
-                    <p>{c.text}</p>
-                    <span className="article-link" style={{ color: "#2563eb", display: "inline-block", margin: "4px 0", fontSize: 13, fontWeight: 500 }}>
-                      on {c.article} ↗
-                    </span>
-                    <div className="comment-footer" style={{ marginTop: 8, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-                      <span className="likes" style={{ display: "inline-flex", alignItems: "center", gap: 4, fontSize: 13, color: "#64748b" }}>
-                        <ThumbsUp size={15} /> {c.likes} Likes
-                      </span>
-                      <div style={{ display: "flex", gap: 10 }}>
-                        <button className="btn reply-toggle" style={{ border: "1px solid #cbd5e1", padding: "4px 10px", background: "#f8fafc", borderRadius: 6, cursor: "pointer", display: "flex", alignItems: "center", gap: 4, fontSize: 12 }} onClick={() => setReplyingToId(replyingToId === c.id ? null : c.id)}>
-                          <CornerDownRight size={13} /> Official Reply
-                        </button>
-                        <button className="btn reject-revoke-ui" style={{ fontSize: 12, padding: "4px 10px", background: "#fee2e2", color: "#dc2626", border: "1px solid #fecaca", borderRadius: 6, cursor: "pointer" }} onClick={() => handleReject(c.id)}>
-                          Revoke Approval
-                        </button>
-                      </div>
-                    </div>
+                    <span className="status approved">Approved</span>
+                  </div>
 
-                    {/* ADMIN REPLY BOX PLUG */}
-                    {replyingToId === c.id && (
-                      <div className="admin-reply-box-wrap" style={{ marginTop: 12, borderLeft: "3px solid #6366f1", paddingLeft: 12 }}>
-                        <div style={{ display: "flex", gap: 8 }}>
-                          <input type="text" className="cna-input" style={{ flex: 1, padding: "6px 12px", fontSize: 13, border: "1px solid #cbd5e1", borderRadius: 6 }} placeholder="Write official admin reply..." value={adminReplyText} onChange={(e) => setAdminReplyText(e.target.value)} />
-                          <button style={{ padding: "6px 12px", background: "#6366f1", color: "white", border: "none", borderRadius: 6, cursor: "pointer", display: "flex", alignItems: "center", gap: 4, fontSize: 13 }} onClick={() => handleAdminReplySubmit(c.id, c.newsId)}>
-                            <Send size={12} /> Send
-                          </button>
-                        </div>
-                      </div>
-                    )}
+                  <p className="cci-text">{c.text}</p>
+
+                  <a className="cci-article-link" title={c.article}>on {c.article} ↗</a>
+
+                  <div className="cci-footer">
+                    <span className="cci-likes">
+                      <ThumbsUp size={13} /> {c.likes}
+                    </span>
+                    <div className="cci-actions">
+                      <button className="btn reply-toggle" onClick={() => openReplyModal(c)}>
+                        <CornerDownRight size={13} /> Reply
+                      </button>
+                      <button className="btn reject-revoke-ui" onClick={() => handleReject(c.id)}>
+                        Revoke
+                      </button>
+                    </div>
                   </div>
                 </div>
               );
             }
 
-            /* 🟨 CASE 3: DISPLAY PENDING CARD CONDITION */
+            /* 🟨 CASE 3: PENDING CARD */
             return (
-              <div key={c.id} className="comment-item">
-                <div className="comment-avatar">{getInitials(c.user)}</div>
-                <div className="comment-body">
-                  <div className="comment-top">
+              <div key={c.id} className="comment-card-item pending">
+                <div className="cci-top">
+                  {/* <div className="cci-avatar">{getInitials(c.user)}</div> */}
+                  <div className="cci-identity">
                     <strong>{c.user}</strong>
-                    <span className="time">{c.time}</span>
-                    <span className="status pending">Pending</span>
+                    <span className="cci-time">{c.time}</span>
                   </div>
-                  <p>{c.text}</p>
-                  <span className="article-link" style={{ color: "#2563eb", display: "inline-block", margin: "4px 0", fontSize: 13, fontWeight: 500 }}>
-                    on {c.article} ↗
+                  <span className="status pending">Pending</span>
+                </div>
+
+                <p className="cci-text">{c.text}</p>
+
+                <a className="cci-article-link" title={c.article}>on {c.article} ↗</a>
+
+                <div className="cci-footer">
+                  <span className="cci-likes">
+                    <ThumbsUp size={13} /> {c.likes}
                   </span>
-                  <div className="comment-footer" style={{ marginTop: 8, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-                    <span className="likes" style={{ display: "inline-flex", alignItems: "center", gap: 4, fontSize: 13, color: "#64748b" }}>
-                      <ThumbsUp size={15} /> {c.likes} Likes
-                    </span>
-                    <div className="actions" style={{ display: "flex", gap: 8 }}>
-                      <button className="btn approve" onClick={() => handleApprove(c.id)}><Check size={14} /> Approve</button>
-                      <button className="btn reject" onClick={() => handleReject(c.id)}><X size={14} /> Reject</button>
-                    </div>
+                  <div className="cci-actions">
+                    <button className="btn approve" onClick={() => handleApprove(c.id)}>
+                      <Check size={14} /> Approve
+                    </button>
+                    <button className="btn reject" onClick={() => handleReject(c.id)}>
+                      <X size={14} /> Reject
+                    </button>
                   </div>
                 </div>
               </div>
@@ -344,6 +383,56 @@ const CommentsPage = () => {
           })
         )}
       </div>
+
+      {/* ✅ LOAD MORE — reveals the next 2 rows worth of cards for the current screen size */}
+      {!loading && hasMore && (
+        <div className="comments-load-more-wrap">
+          <button className="comments-load-more" onClick={() => setPage((p) => p + 1)}>
+            Load More <ChevronDown size={16} />
+          </button>
+        </div>
+      )}
+
+      {/* ✅ REPLY POPUP — shows the full comment text plus the reply box */}
+      {replyModalComment && (
+        <div className="reply-modal-overlay" onClick={closeReplyModal}>
+          <div className="reply-modal" onClick={(e) => e.stopPropagation()}>
+            <div className="reply-modal-header">
+              <div className="cci-identity">
+                <strong>{replyModalComment.user}</strong>
+                <span className="cci-time">{replyModalComment.time}</span>
+              </div>
+              <button className="reply-modal-close" onClick={closeReplyModal}>
+                <X size={18} />
+              </button>
+            </div>
+
+            <div className="reply-modal-body">
+              <p className="reply-modal-text">{replyModalComment.text}</p>
+              <a className="cci-article-link" title={replyModalComment.article}>
+                on {replyModalComment.article} ↗
+              </a>
+            </div>
+
+            <div className="reply-modal-footer">
+              <textarea
+                className="reply-modal-textarea"
+                placeholder="Write official admin reply..."
+                value={adminReplyText}
+                onChange={(e) => setAdminReplyText(e.target.value)}
+                rows={3}
+                autoFocus
+              />
+              <button
+                className="reply-modal-send"
+                onClick={() => handleAdminReplySubmit(replyModalComment.id, replyModalComment.newsId)}
+              >
+                <Send size={14} /> Send Reply
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

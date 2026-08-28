@@ -237,7 +237,7 @@ export default function TrendingNews() {
         {/* ── HEADER ── */}
         <header className="tn-header">
           <div className="tn-header__left">
-            <div className="tn-header__icon"><TrendingUp size={22} /></div>
+            {/* <div className="tn-header__icon"><TrendingUp size={22} /></div> */}
             <div>
               <h1 className="tn-title">Trending News</h1>
               <p className="tn-subtitle">Real-time trending articles based on engagement metrics</p>

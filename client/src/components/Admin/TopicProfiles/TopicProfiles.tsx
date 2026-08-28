@@ -13,6 +13,7 @@ import {
   Upload,
 } from "lucide-react";
 import "./TopicProfiles.css";
+import Preloader from "../Preloader/Preloder";
 
 import { FaXTwitter } from "react-icons/fa6";
 import {
@@ -112,47 +113,190 @@ function ProfileForm({ initial, onSave, onClose }: ProfileFormProps) {
     window.open(`https://www.google.com/search?q=${query}`, "_blank");
   };
 
-  const handleFetchWiki = async () => {
-    if (!name.trim()) {
-      alert("Please enter the Name first so I know who to search for on Wikipedia!");
+const handleFetchWiki = async () => {
+  if (!name.trim()) {
+    alert("Please enter the Name first.");
+    return;
+  }
+
+  setIsWikiLoading(true);
+
+  try {
+    const searchName = name.trim();
+
+    // Detect whether the name contains Devanagari characters
+    const isHindi = /[\u0900-\u097F]/.test(searchName);
+
+    // Use the appropriate Wikipedia
+    const wikiBase = isHindi
+      ? "https://hi.wikipedia.org/w/api.php"
+      : "https://en.wikipedia.org/w/api.php";
+
+    // ─────────────────────────────────────────────
+    // 1. FIRST: Try exact Wikipedia page title
+    // ─────────────────────────────────────────────
+    const exactUrl =
+      `${wikiBase}?action=query` +
+      `&format=json` +
+      `&formatversion=2` +
+      `&redirects=true` +
+      `&prop=extracts` +
+      `&explaintext=true` +
+      `&exintro=false` +
+      `&titles=${encodeURIComponent(searchName)}` +
+      `&origin=*`;
+
+    const exactResponse = await fetch(exactUrl);
+
+    if (!exactResponse.ok) {
+      throw new Error("Wikipedia request failed");
+    }
+
+    const exactData = await exactResponse.json();
+    const exactPage = exactData?.query?.pages?.[0];
+
+    // If exact page exists, use it
+    if (
+      exactPage &&
+      !exactPage.missing &&
+      exactPage.extract
+    ) {
+      let cleanText = exactPage.extract
+        .replace(/^=+.+?=+$/gm, "")
+        .replace(/\n{3,}/g, "\n\n")
+        .trim();
+
+      // Limit description
+      if (cleanText.length > 6000) {
+        let chopped = cleanText.substring(0, 6000);
+        const lastPeriod = chopped.lastIndexOf(".");
+
+        if (lastPeriod > 0) {
+          chopped = chopped.substring(0, lastPeriod + 1);
+        }
+
+        cleanText = chopped;
+      }
+
+      setDescription(cleanText);
       return;
     }
-    setIsWikiLoading(true);
-    try {
-      const url = `https://en.wikipedia.org/w/api.php?action=query&prop=extracts&explaintext=true&format=json&origin=*&titles=${encodeURIComponent(name)}`;
-      const response = await fetch(url);
-      if (response.ok) {
-        const data = await response.json();
-        const pages = data.query.pages;
-        const pageId = Object.keys(pages)[0];
 
-        if (pageId === "-1") {
-          alert("Could not find a Wikipedia page matching that exact name.");
-        } else if (pages[pageId].extract) {
-          let fullText = pages[pageId].extract;
-          let cleanText = fullText.replace(/^=+.+?=+$/gm, "");
-          cleanText = cleanText.replace(/\n{3,}/g, "\n\n").trim();
+    // ─────────────────────────────────────────────
+    // 2. No exact page → search Wikipedia titles
+    // ─────────────────────────────────────────────
+    const searchUrl =
+      `${wikiBase}?action=query` +
+      `&list=search` +
+      `&srsearch=${encodeURIComponent(searchName)}` +
+      `&srwhat=title` +
+      `&srnamespace=0` +
+      `&srlimit=5` +
+      `&format=json` +
+      `&origin=*`;
 
-          if (cleanText.length > 6000) {
-            let choppedText = cleanText.substring(0, 6000);
-            choppedText = choppedText.substring(0, choppedText.lastIndexOf(".")) + ".";
-            setDescription(choppedText);
-          } else {
-            setDescription(cleanText);
-          }
-        } else {
-          alert("Wikipedia didn't return a description for this name.");
-        }
-      } else {
-        alert("Could not connect to Wikipedia.");
-      }
-    } catch {
-      alert("Failed to connect to Wikipedia.");
-    } finally {
-      setIsWikiLoading(false);
+    const searchResponse = await fetch(searchUrl);
+
+    if (!searchResponse.ok) {
+      throw new Error("Wikipedia search failed");
     }
-  };
 
+    const searchData = await searchResponse.json();
+    const results = searchData?.query?.search ?? [];
+
+    if (results.length === 0) {
+      alert(
+        `No Wikipedia profile found for "${searchName}".`
+      );
+      return;
+    }
+
+    // Normalize strings for comparison
+    const normalizeText = (value: string) =>
+      value
+        .toLowerCase()
+        .normalize("NFD")
+        .replace(/[\u0300-\u036f]/g, "")
+        .replace(/[^\p{L}\p{N}\s]/gu, "")
+        .replace(/\s+/g, " ")
+        .trim();
+
+    const normalizedSearch = normalizeText(searchName);
+
+    // Find the closest title
+    const bestResult =
+      results.find(
+        (item: any) =>
+          normalizeText(item.title) === normalizedSearch
+      ) ??
+      results.find(
+        (item: any) =>
+          normalizeText(item.title).includes(normalizedSearch) ||
+          normalizedSearch.includes(normalizeText(item.title))
+      ) ??
+      results[0];
+
+    const pageTitle = bestResult.title;
+
+    // ─────────────────────────────────────────────
+    // 3. Fetch selected page biography
+    // ─────────────────────────────────────────────
+    const pageUrl =
+      `${wikiBase}?action=query` +
+      `&format=json` +
+      `&formatversion=2` +
+      `&redirects=true` +
+      `&prop=extracts` +
+      `&explaintext=true` +
+      `&titles=${encodeURIComponent(pageTitle)}` +
+      `&origin=*`;
+
+    const pageResponse = await fetch(pageUrl);
+
+    if (!pageResponse.ok) {
+      throw new Error("Could not fetch Wikipedia page");
+    }
+
+    const pageData = await pageResponse.json();
+    const page = pageData?.query?.pages?.[0];
+
+    if (!page || page.missing || !page.extract) {
+      alert(
+        `Could not find a biography for "${searchName}".`
+      );
+      return;
+    }
+
+    let cleanText = page.extract
+      .replace(/^=+.+?=+$/gm, "")
+      .replace(/\n{3,}/g, "\n\n")
+      .trim();
+
+    // ─────────────────────────────────────────────
+    // 4. Limit biography length
+    // ─────────────────────────────────────────────
+    if (cleanText.length > 6000) {
+      let chopped = cleanText.substring(0, 6000);
+      const lastPeriod = chopped.lastIndexOf(".");
+
+      if (lastPeriod > 0) {
+        chopped = chopped.substring(0, lastPeriod + 1);
+      }
+
+      cleanText = chopped;
+    }
+
+    setDescription(cleanText);
+
+  } catch (error) {
+    console.error("Wikipedia fetch error:", error);
+    alert(
+      "Could not fetch information from Wikipedia. Please try again."
+    );
+  } finally {
+    setIsWikiLoading(false);
+  }
+};
   const handleSubmit = async () => {
     if (!name.trim() || !description.trim()) return;
     setIsSaving(true);
@@ -490,7 +634,7 @@ export default function TopicProfiles() {
       </div>
 
       {/* Loading / Error states */}
-      {loading && <div className="tp-empty">Loading profiles...</div>}
+      {loading && <Preloader />}
       {error && <div className="tp-empty" style={{ color: "#ef4444" }}>{error}</div>}
 
       {/* Profile Cards */}

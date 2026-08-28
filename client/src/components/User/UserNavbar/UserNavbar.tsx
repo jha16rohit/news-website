@@ -388,7 +388,7 @@ const UserNavbar: React.FC = () => {
 
             {/* ── DESKTOP NAV ─────────────────── */}
             <nav className="nav-links">
-              <NavLink to="/" end onClick={handleHomeClick}>Home</NavLink>
+              <NavLink to="/" end onClick={handleHomeClick}>होम</NavLink>
 
               {featuredTopLevel.map(cat => {
                 const catId       = String(cat.id);
@@ -435,7 +435,7 @@ const UserNavbar: React.FC = () => {
               </button>
 
               <NavLink to="/" className="mobile-link" onClick={e => { setMobileMenuOpen(false); handleHomeClick(e); }}>
-                Home
+                होम
               </NavLink>
 
               {allTopLevel.map(cat => {

@@ -24,7 +24,7 @@ import Categories from "./components/Admin/Categories/Categories";
 import Tags from "./components/Admin/Tags/Tags";
 import MediaLibrary from "./components/Admin/MediaLibrary/MediaLibrary";
 import AccountSettings from "./components/Admin/Accountsettings/Accountsettings";
-import Analytics from "./components/Admin/Analytics/Analytics";
+// import Analytics from "./components/Admin/Analytics/Analytics";
 import CreateNewArticle from "./components/Admin/CreateNewArticle/CreateNewArticle";
 import LiveStoriesPage from "./components/Admin/Livestories/Livestories";
 import Notifications from "./components/Admin/Notifications/Notifications";
@@ -127,7 +127,7 @@ export default function App() {
             <Route path="categories" element={<Categories />} />
             <Route path="tags" element={<Tags />} />
             <Route path="medialibrary" element={<MediaLibrary />} />
-            <Route path="analytics" element={<Analytics />} />
+            {/* <Route path="analytics" element={<Analytics />} /> */}
             <Route path="setting" element={<AccountSettings />} />
             <Route path="live" element={<LiveStoriesPage />} />
             <Route path="notification" element={<Notifications />} />

@@ -7,14 +7,13 @@ import {
   CartesianGrid,
   Tooltip,
   ResponsiveContainer,
-  PieChart,
-  Pie,
-  Cell,
+
 } from "recharts";
 import "./UserInsights.css";
 // NOTE: adjust this relative path if UserInsights.tsx lives somewhere
 // other than one level below src/api/admin/ in your project structure.
 import { fetchUserInsights } from "../../../api/analytics";
+import Preloader from "../Preloader/Preloder";
 
 /* ------------------------------------------------------------------ */
 /*  Real data — shape returned by GET /api/admin/analytics/user-insights */
@@ -45,13 +44,6 @@ interface UserInsightsResponse {
   loginActivity: { key: string; label: string; range: string; logins: number }[];
   engagement: { avgLoginsPerUser: number; avgSessionMinutes: number; avgArticlesRead: number };
 }
-
-const AD_COLORS: Record<string, string> = {
-  pending: "var(--uid-color-warning)",
-  approved: "var(--uid-color-success)",
-  rejected: "var(--uid-color-danger)",
-  total: "var(--uid-color-primary)",
-};
 
 const HEATMAP_ICON_BY_KEY: Record<string, string> = {
   morning: "sun",
@@ -219,16 +211,7 @@ const CustomChartTooltip: React.FC<any> = ({ active, payload, label }) => {
   );
 };
 
-const CustomPieTooltip: React.FC<any> = ({ active, payload }) => {
-  if (!active || !payload || !payload.length) return null;
-  const item = payload[0];
-  return (
-    <div className="uid-chart-tooltip">
-      <p className="uid-chart-tooltip__label">{item.name}</p>
-      <p className="uid-chart-tooltip__value">{item.value} requests</p>
-    </div>
-  );
-};
+
 
 /* ------------------------------------------------------------------ */
 /*  Main component                                                     */
@@ -266,30 +249,8 @@ const UserInsights: React.FC = () => {
     return graphMode === "monthly" ? data.growthChart.monthly : data.growthChart.yearly;
   }, [data, graphMode]);
 
-  const pieDataWithPercent = useMemo(() => {
-    if (!data) return [];
-    const raw = [
-      { name: "Approved", value: data.adRequestSummary.approved, color: AD_COLORS.approved },
-      { name: "Pending", value: data.adRequestSummary.pending, color: AD_COLORS.pending },
-      { name: "Rejected", value: data.adRequestSummary.rejected, color: AD_COLORS.rejected },
-    ];
-    const total = raw.reduce((sum, d) => sum + d.value, 0);
-    return raw.map((d) => ({
-      ...d,
-      percent: total > 0 ? Math.round((d.value / total) * 100) : 0,
-    }));
-  }, [data]);
 
-  const adRequestSummaryCards = useMemo(() => {
-    if (!data) return [];
-    const s = data.adRequestSummary;
-    return [
-      { key: "pending", label: "Pending", value: s.pending, color: AD_COLORS.pending },
-      { key: "approved", label: "Approved", value: s.approved, color: AD_COLORS.approved },
-      { key: "rejected", label: "Rejected", value: s.rejected, color: AD_COLORS.rejected },
-      { key: "total", label: "Total", value: s.total, color: AD_COLORS.total },
-    ];
-  }, [data]);
+
 
   const growthRateStats = useMemo(() => {
     if (!data) return [];
@@ -350,7 +311,10 @@ const UserInsights: React.FC = () => {
   }, [data]);
 
   if (loading) {
-    return <div className="uid-dashboard uid-state uid-state--loading">Loading user insights…</div>;
+    return <>(
+        <Preloader />
+    )
+    </>;
   }
 
   if (error || !data) {
@@ -365,6 +329,13 @@ const UserInsights: React.FC = () => {
 
   return (
     <div className="uid-dashboard">
+
+       <div className="uid-page-header">
+      <h1 className="uid-page-title">User Insights</h1>
+      <p className="uid-page-subtitle">
+        Understand user growth, activity, and engagement across your platform.
+      </p>
+    </div>
       {/* ---------------------------------------------------------- */}
       {/* 1. Statistic Cards                                         */}
       {/* ---------------------------------------------------------- */}
@@ -497,63 +468,6 @@ const UserInsights: React.FC = () => {
         </div>
       </section>
 
-      {/* ---------------------------------------------------------- */}
-      {/* 4. Advertisement Request Analytics                         */}
-      {/* ---------------------------------------------------------- */}
-      <section className="uid-section" aria-label="Advertisement request analytics">
-        <div className="uid-panel">
-          <div className="uid-panel-header">
-            <div>
-              <h2 className="uid-panel-title">Advertisement Requests</h2>
-              <p className="uid-panel-subtitle">Status breakdown of all submitted requests</p>
-            </div>
-          </div>
-
-          <div className="uid-ad-summary-grid">
-            {adRequestSummaryCards.map((item) => (
-              <div className="uid-ad-summary-card" key={item.key}>
-                <span
-                  className="uid-ad-summary-card__dot"
-                  style={{ backgroundColor: item.color }}
-                />
-                <span className="uid-ad-summary-card__value">{item.value}</span>
-                <span className="uid-ad-summary-card__label">{item.label}</span>
-              </div>
-            ))}
-          </div>
-
-          <div className="uid-ad-pie-wrapper">
-            <ResponsiveContainer width="100%" height={280}>
-              <PieChart>
-                <Pie
-                  data={pieDataWithPercent}
-                  dataKey="value"
-                  nameKey="name"
-                  innerRadius={64}
-                  outerRadius={100}
-                  paddingAngle={3}
-                  label={({ percent }: any) => `${percent}%`}
-                  labelLine={false}
-                >
-                  {pieDataWithPercent.map((entry) => (
-                    <Cell key={entry.name} fill={entry.color} stroke="var(--uid-color-surface)" strokeWidth={2} />
-                  ))}
-                </Pie>
-                <Tooltip content={<CustomPieTooltip />} />
-              </PieChart>
-            </ResponsiveContainer>
-            <ul className="uid-pie-legend">
-              {pieDataWithPercent.map((entry) => (
-                <li className="uid-pie-legend__item" key={entry.name}>
-                  <span className="uid-pie-legend__dot" style={{ backgroundColor: entry.color }} />
-                  <span className="uid-pie-legend__label">{entry.name}</span>
-                  <span className="uid-pie-legend__value">{entry.percent}%</span>
-                </li>
-              ))}
-            </ul>
-          </div>
-        </div>
-      </section>
 
       {/* ---------------------------------------------------------- */}
       {/* 5. Login Activity Heatmap                                  */}
