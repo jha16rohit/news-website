@@ -313,6 +313,13 @@ const UserNavbar: React.FC = () => {
   };
 
   const handleSubscribeClick = () => {
+    // Gate: an unauthenticated visitor must sign in before they can
+    // subscribe. Previously this scrolled straight to the footer for
+    // anyone, signed in or not — no auth check existed at all.
+    if (!user) {
+      openLogin();
+      return;
+    }
     const el = document.querySelector(".site-footer") || document.querySelector("footer");
     if (el) el.scrollIntoView({ behavior: "smooth" });
   };
