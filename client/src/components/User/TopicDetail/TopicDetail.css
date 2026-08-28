@@ -108,9 +108,9 @@
 
 /* --- The Text Content --- */
 .topic-detail-label {
-  font-family: var(--font-body); /* 👇 EXPERT FIX: Explicit body font */
+  font-family: Noto Sans Devanagari; /* 👇 EXPERT FIX: Explicit body font */
   color: #dc2626;
-  font-size: 12px;
+  font-size: 16px;
   font-weight: 800;
   letter-spacing: 1px;
   text-transform: uppercase;
@@ -124,6 +124,7 @@
   font-size: 16px; 
   line-height: 1.8; 
   margin: 0 0 15px 0;
+  font-family: Noto Sans Devanagari; 
 }
 
 .topic-detail-bio.collapsed {
