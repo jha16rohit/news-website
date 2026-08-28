@@ -19,7 +19,7 @@
   position: relative;
   box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5);
   color: #ffffff;
-  font-family: 'Inter', sans-serif;
+  font-family: var(--font-body); /* 👇 EXPERT FIX: Applied global body font */
   border: 1px solid rgba(255, 255, 255, 0.05);
 }
 
@@ -43,9 +43,9 @@
 }
 
 .signin-header h2 {
-  font-family: 'Georgia', serif;
+  font-family: var(--font-heading); /* 👇 EXPERT FIX: Applied heading font */
   font-size: 26px;
-  font-weight: 800;
+  font-weight: 400; /* 👇 EXPERT FIX: Changed to 400 for Rozha One */
   margin: 0 0 8px 0;
 }
 
@@ -69,6 +69,7 @@
 }
 
 .toggle-btn, .method-btn {
+  font-family: var(--font-body); /* 👇 EXPERT FIX: Explicit body font for buttons */
   flex: 1;
   background: transparent;
   border: none;
@@ -89,6 +90,7 @@
 
 /* Google Auth */
 .google-auth-btn {
+  font-family: var(--font-body); /* 👇 EXPERT FIX: Explicit body font */
   width: 100%;
   display: flex;
   align-items: center;
@@ -168,6 +170,7 @@
 }
 
 .input-wrapper input {
+  font-family: var(--font-body); /* 👇 EXPERT FIX: Explicit body font for inputs */
   width: 100%;
   box-sizing: border-box !important; 
   background-color: #0b1120;
@@ -191,6 +194,7 @@
 
 /* Primary Button */
 .signin-submit-btn {
+  font-family: var(--font-body); /* 👇 EXPERT FIX: Explicit body font */
   margin-top: 10px;
   background-color: #e60000;
   color: white;
@@ -220,6 +224,7 @@
 }
 
 .otp-back-btn {
+  font-family: var(--font-body); /* 👇 EXPERT FIX: Explicit body font */
   background: transparent;
   border: none;
   color: #94a3b8;
@@ -239,6 +244,8 @@
 }
 
 .otp-content h3 {
+  font-family: var(--font-heading); /* 👇 EXPERT FIX: Applied heading font */
+  font-weight: 400; /* 👇 EXPERT FIX: Changed to 400 for Rozha One */
   font-size: 20px;
   margin: 0 0 10px 0;
   color: #ffffff;
@@ -259,6 +266,7 @@
 }
 
 .otp-box {
+  font-family: var(--font-body); /* 👇 EXPERT FIX: Explicit body font */
   width: 48px;
   height: 56px;
   background-color: #0b1120;
@@ -288,6 +296,7 @@
 }
 
 .resend-btn {
+  font-family: var(--font-body); /* 👇 EXPERT FIX: Explicit body font */
   background: none;
   border: none;
   color: #e60000;

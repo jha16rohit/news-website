@@ -3,6 +3,7 @@
   padding: 50px 0;
   background-color: #ffffff; 
   width: 100%;
+  font-family: var(--font-body); /* 👇 EXPERT FIX: Applied global body font */
 }
 
 .latest-news-container {
@@ -19,8 +20,9 @@
 }
 
 .section-header h2 {
+  font-family: var(--font-heading); /* 👇 EXPERT FIX: Applied heading font */
   font-size: 28px;
-  font-weight: 800;
+  font-weight: 400; /* 👇 EXPERT FIX: Changed to 400 for Rozha One */
   color: #0b1423;
   margin: 0 0 8px 0;
   letter-spacing: -0.5px;
@@ -88,6 +90,7 @@
 
 /* Red Badge, White Text */
 .card-badge {
+  font-family: var(--font-body); /* 👇 EXPERT FIX: Explicit body font */
   background-color: #e60000; 
   color: #ffffff; 
   font-size: 11px;
@@ -102,8 +105,9 @@
 }
 
 .news-title {
+  font-family: var(--font-heading); /* 👇 EXPERT FIX: Applied heading font */
   font-size: 18px;
-  font-weight: 800;
+  font-weight: 400; /* 👇 EXPERT FIX: Changed to 400 for Rozha One */
   color: black;
   margin: 0 0 10px 0;
   line-height: 1.4;
@@ -111,6 +115,7 @@
 }
 
 .news-excerpt {
+  font-family: var(--font-body); /* 👇 EXPERT FIX: Explicit body font */
   font-size: 14px;
   color: #64748b;
   line-height: 1.6;
@@ -125,6 +130,7 @@
 
 /* ===== META INFO (Time & Views) ===== */
 .news-meta {
+  font-family: var(--font-body); /* 👇 EXPERT FIX: Explicit body font */
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -151,6 +157,7 @@
 }
 
 .show-more-btn {
+  font-family: var(--font-body); /* 👇 EXPERT FIX: Applied body font */
   background-color: transparent;
   color: #e60000;
   border: 2px solid #e60000;

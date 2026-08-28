@@ -4,7 +4,7 @@
   display: flex;
   flex-direction: column;
   background-color: #f8fafc; 
-  font-family: 'Inter', system-ui, sans-serif;
+  font-family: var(--font-body); 
 }
 
 .topic-main-content {

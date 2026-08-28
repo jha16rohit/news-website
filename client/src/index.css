@@ -1,3 +1,24 @@
+/* =========================================
+   GLOBAL FONTS (English & Hindi Support)
+========================================= */
+@import url('https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&family=Rozha+One&display=swap');
+
+:root {
+  /* 👇 HEADINGS: Rozha One for that premium editorial newspaper look */
+  /* Note: Rozha One only supports font-weight: 400 */
+  --font-heading: 'Rozha One', serif; 
+  
+  /* 👇 BODY: Roboto first, falling back to Apple's native Hindi font */
+  --font-body: 'Roboto', 'Devanagari Sangam MN', sans-serif; 
+}
+
+body {
+  font-family: var(--font-body);
+  background-color: #f8f9fa;
+  margin: 0;
+  padding: 0;
+}
+
 * {
   margin: 0;
   padding: 0;

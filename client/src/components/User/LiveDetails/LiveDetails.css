@@ -3,6 +3,7 @@
   background-color: #f8fafc; 
   padding: 40px 0 80px 0;
   width: 100%;
+  font-family: var(--font-body); /* 👇 EXPERT FIX: Applied global body font */
 }
 
 .live-container {
@@ -37,6 +38,7 @@
 
 /* Pulsing Live Badge */
 .live-indicator {
+  font-family: var(--font-body);
   display: flex;
   align-items: center;
   gap: 6px;
@@ -64,6 +66,7 @@
 }
 
 .live-category {
+  font-family: var(--font-body);
   background-color: #f1f5f9;
   color: #475569;
   padding: 4px 12px;
@@ -74,14 +77,16 @@
 }
 
 .live-headline {
+  font-family: var(--font-heading); /* 👇 EXPERT FIX: Applied heading font */
   font-size: 36px;
-  font-weight: 900;
+  font-weight: 400; /* 👇 EXPERT FIX: Changed to 400 for Rozha One */
   color: #0f172a;
   line-height: 1.2;
   margin: 0 0 15px 0;
 }
 
 .live-meta {
+  font-family: var(--font-body);
   display: flex;
   gap: 20px;
   color: #64748b;
@@ -154,8 +159,9 @@
 }
 
 .timeline-header h2 {
+  font-family: var(--font-heading); /* 👇 EXPERT FIX: Applied heading font */
   font-size: 20px;
-  font-weight: 800;
+  font-weight: 400; /* 👇 EXPERT FIX: Changed to 400 for Rozha One */
   margin: 0;
 }
 
@@ -216,6 +222,7 @@
 }
 
 .update-time {
+  font-family: var(--font-body);
   font-size: 13px;
   font-weight: 700;
   color: #64748b;
@@ -228,13 +235,15 @@
 }
 
 .update-title {
+  font-family: var(--font-heading); /* 👇 EXPERT FIX: Applied heading font */
   font-size: 18px;
-  font-weight: 700;
+  font-weight: 400; /* 👇 EXPERT FIX: Changed to 400 for Rozha One */
   color: #0f172a;
   margin: 0 0 8px 0;
 }
 
 .update-text {
+  font-family: var(--font-body);
   font-size: 15px;
   line-height: 1.6;
   color: #334155;
@@ -242,6 +251,7 @@
 }
 
 .key-event-tag {
+  font-family: var(--font-body);
   display: inline-block;
   background: #fee2e2;
   color: #dc2626;
@@ -270,8 +280,9 @@
 }
 
 .widget-title {
+  font-family: var(--font-heading); /* 👇 EXPERT FIX: Applied heading font */
   font-size: 18px;
-  font-weight: 800;
+  font-weight: 400; /* 👇 EXPERT FIX: Changed to 400 for Rozha One */
   margin: 0 0 10px 0;
 }
 
@@ -283,12 +294,14 @@
 }
 
 .widget-text {
+  font-family: var(--font-body);
   font-size: 14px;
   line-height: 1.6;
   color: #475569;
 }
 
 .speaker-list {
+  font-family: var(--font-body);
   padding-left: 20px;
   margin: 0;
   font-size: 14px;

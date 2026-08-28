@@ -1,11 +1,9 @@
-@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,600;0,700;1,600&family=DM+Sans:wght@400;500;600&display=swap');
-
 /* ──────────────────────────────────────────────
    CONTACT US — User Page
 ────────────────────────────────────────────── */
 
 .cu-page {
-  font-family: 'DM Sans', sans-serif;
+  font-family: var(--font-body); /* 👇 EXPERT FIX: Applied global body font */
   color: #1a1f2e;
   background: #ffffff;
   overflow-x: hidden;
@@ -80,9 +78,9 @@
 }
 
 .cu-hero-title {
-  font-family: 'Playfair Display', serif;
+  font-family: var(--font-heading); /* 👇 EXPERT FIX: Applied heading font */
   font-size: clamp(36px, 5.5vw, 64px);
-  font-weight: 700;
+  font-weight: 400; /* 👇 EXPERT FIX: Changed to 400 for Rozha One */
   color: #ffffff;
   margin: 0 0 12px;
   line-height: 1.05;
@@ -120,9 +118,9 @@
 }
 
 .cu-panel-title {
-  font-family: 'Playfair Display', serif;
+  font-family: var(--font-heading); /* 👇 EXPERT FIX: Applied heading font */
   font-size: clamp(18px, 2.5vw, 22px);
-  font-weight: 700;
+  font-weight: 400; /* 👇 EXPERT FIX: Changed to 400 for Rozha One */
   color: #ffffff;
   margin: 0 0 20px;
   padding-bottom: 16px;
@@ -222,7 +220,7 @@
   border-radius: 7px;
   padding: 11px 14px;
   font-size: 13px;
-  font-family: 'DM Sans', sans-serif;
+  font-family: var(--font-body); /* 👇 EXPERT FIX: Applied body font */
   color: #1a1f2e;
   transition: border-color 0.2s, box-shadow 0.2s;
   resize: vertical;
@@ -256,7 +254,7 @@
   font-size: 14px;
   font-weight: 700;
   cursor: pointer;
-  font-family: 'DM Sans', sans-serif;
+  font-family: var(--font-body); /* 👇 EXPERT FIX: Applied body font */
   transition: all 0.25s;
   align-self: flex-start;
   margin-top: 2px;
@@ -289,8 +287,9 @@
 @keyframes cu-pop { from { transform: scale(0.5); opacity: 0; } to { transform: scale(1); opacity: 1; } }
 
 .cu-form-success h3 {
-  font-family: 'Playfair Display', serif;
+  font-family: var(--font-heading); /* 👇 EXPERT FIX: Applied heading font */
   font-size: 19px;
+  font-weight: 400; /* 👇 EXPERT FIX: Added 400 for Rozha One */
   color: #0b1423;
   max-width: 380px;
   line-height: 1.5;
@@ -307,7 +306,7 @@
   font-size: 12px;
   font-weight: 600;
   cursor: pointer;
-  font-family: 'DM Sans', sans-serif;
+  font-family: var(--font-body); /* 👇 EXPERT FIX: Applied body font */
   transition: all 0.2s;
 }
 .cu-success-back:hover { background: #e60000; color: #fff; }
@@ -358,7 +357,7 @@
   font-size: 12px;
   font-weight: 600;
   cursor: pointer;
-  font-family: 'DM Sans', sans-serif;
+  font-family: var(--font-body); /* 👇 EXPERT FIX: Applied body font */
   transition: all 0.2s;
   margin-top: 2px;
 }
@@ -433,9 +432,9 @@
 .cu-label-text { font-size: 10px; font-weight: 700; letter-spacing: 2.5px; text-transform: uppercase; color: #e60000; white-space: nowrap; }
 
 .cu-section-title {
-  font-family: 'Playfair Display', serif;
+  font-family: var(--font-heading); /* 👇 EXPERT FIX: Applied heading font */
   font-size: clamp(22px, 3.5vw, 34px);
-  font-weight: 700;
+  font-weight: 400; /* 👇 EXPERT FIX: Changed to 400 for Rozha One */
   color: #0b1423;
   margin: 0 0 28px;
   text-align: center;

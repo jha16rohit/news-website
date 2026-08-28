@@ -1,13 +1,11 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Playfair+Display:ital,wght@0,700;0,800;1,700&display=swap');
-
 /* ══════════════════════════════════════════════════════════════
-   PAGE LAYOUT
+   PAGE LAYOUT (Dynamic Variables Applied)
 ══════════════════════════════════════════════════════════════ */
 .ad-page-wrapper {
   background-color: #ffffff;
   padding: 0 0 60px;
   width: 100%;
-  font-family: 'Inter', sans-serif;
+  font-family: var(--font-body); /* 👇 EXPERT FIX: Applied global body font */
 }
 
 .ad-container {
@@ -161,9 +159,9 @@
    HEADLINE & SUBHEADLINE
 ══════════════════════════════════════════════════════════════ */
 .ad-headline {
-  font-family: 'Playfair Display', serif;
+  font-family: var(--font-heading); /* 👇 EXPERT FIX: Applied heading font */
   font-size: 40px;
-  font-weight: 800;
+  font-weight: 400; /* 👇 EXPERT FIX: Changed to 400 for Rozha One */
   line-height: 1.2;
   color: #0f172a;
   margin: 0 0 16px 0;
@@ -314,7 +312,8 @@
 
 .ad-article-body p { margin-bottom: 22px; }
 .ad-article-body h1, .ad-article-body h2 {
-  font-family: 'Playfair Display', serif;
+  font-family: var(--font-heading); /* 👇 EXPERT FIX: Applied heading font */
+  font-weight: 400; /* 👇 EXPERT FIX: Changed to 400 for Rozha One */
   color: #0f172a;
   margin: 36px 0 14px;
 }
@@ -325,7 +324,8 @@
 .ad-article-body strong { color: #0f172a; }
 .ad-article-body a { color: #e60000; text-underline-offset: 3px; }
 .ad-article-body blockquote {
-  font-family: 'Playfair Display', serif;
+  font-family: var(--font-heading); /* 👇 EXPERT FIX: Applied heading font */
+  font-weight: 400; /* 👇 EXPERT FIX */
   font-size: 22px;
   font-style: italic;
   color: #0f172a;
@@ -412,9 +412,9 @@
 }
 
 .ad-main-live-header h2 {
-  font-family: 'Inter', sans-serif;
-  font-size: 20px;
-  font-weight: 800;
+  font-family: var(--font-heading); /* 👇 EXPERT FIX: Applied heading font */
+  font-size: 24px; /* Slightly bumped from 20px to accommodate Rozha's proportions */
+  font-weight: 400; /* 👇 EXPERT FIX: Changed to 400 */
   color: #0f172a;
   margin: 0;
   letter-spacing: 0.5px;
@@ -471,7 +471,6 @@
   border: 3px solid #e60000;
   border-radius: 50%;
   box-shadow: 0 0 0 4px #fff;
-  /* ensure it never overlaps poll content */
   z-index: 1;
   pointer-events: none;
 }
@@ -1021,7 +1020,7 @@
   border: none;
   background: transparent;
   resize: none;
-  font-family: 'Inter', sans-serif;
+  font-family: var(--font-body); /* 👇 EXPERT FIX: Applied body font */
   font-size: 14px;
   color: #334155;
   outline: none;

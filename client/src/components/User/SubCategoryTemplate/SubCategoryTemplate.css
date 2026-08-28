@@ -1,9 +1,7 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Playfair+Display:wght@700;800&display=swap');
-
 .sct-root {
   background: #f8fafc;
   min-height: 100vh;
-  font-family: 'Inter', sans-serif;
+  font-family: var(--font-body); /* 👇 EXPERT FIX: Applied global body font */
   color: #0f172a;
 }
 
@@ -111,6 +109,7 @@
 .sct-card:hover .sct-card-img { transform: scale(1.08); }
 
 .sct-badge {
+  font-family: var(--font-body); /* 👇 EXPERT FIX: Explicit body font */
   position: absolute;
   top: 12px;
   left: 12px;
@@ -132,9 +131,9 @@
 }
 
 .sct-card-title {
-  font-family: 'Playfair Display', serif;
+  font-family: var(--font-heading); /* 👇 EXPERT FIX: Applied heading font */
   font-size: 1.1rem;
-  font-weight: 700;
+  font-weight: 400; /* 👇 EXPERT FIX: Changed to 400 for Rozha One */
   margin: 0 0 8px;
   line-height: 1.35;
   color: #0f172a;
@@ -171,6 +170,7 @@
 }
 
 .sct-read-btn {
+  font-family: var(--font-body); /* 👇 EXPERT FIX: Explicit body font */
   background: none;
   border: none;
   padding: 0;
@@ -194,6 +194,7 @@
 }
 
 .sct-btn-solid {
+  font-family: var(--font-body); /* 👇 EXPERT FIX: Explicit body font */
   color: white;
   border: none;
   padding: 12px 32px;
@@ -206,6 +207,7 @@
 .sct-btn-solid:hover { opacity: 0.9; transform: translateY(-2px); }
 
 .sct-btn-outline {
+  font-family: var(--font-body); /* 👇 EXPERT FIX: Explicit body font */
   background: transparent;
   border: 2px solid;
   padding: 12px 32px;

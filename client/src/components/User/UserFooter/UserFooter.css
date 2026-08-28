@@ -1,9 +1,7 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;900&display=swap');
-
 /* ===== BASE WRAPPER ===== */
 .site-footer {
   width: 100%;
-  font-family: 'Inter', sans-serif;
+  font-family: var(--font-body); /* 👇 EXPERT FIX: Applied global body font */
   position: relative;
   background-position: center;
   background-size: cover;
@@ -70,6 +68,7 @@
 }
 
 .fsb-title {
+  font-family: var(--font-body); /* 👇 EXPERT FIX: Applied body font */
   color: #e60000;
   font-weight: 700;
   font-size: 16px;
@@ -86,6 +85,7 @@
 }
 
 .fsb-desc {
+  font-family: var(--font-body); /* 👇 EXPERT FIX: Applied body font */
   color: #ffffff;
   font-size: 15px;
   white-space: nowrap;
@@ -112,7 +112,7 @@
   border-radius: 6px;
   width: 240px;
   font-size: 13px;
-  font-family: 'Inter', sans-serif;
+  font-family: var(--font-body); /* 👇 EXPERT FIX: Applied body font */
   box-sizing: border-box;
 }
 
@@ -128,6 +128,7 @@
 }
 
 .fsb-btn {
+  font-family: var(--font-body); /* 👇 EXPERT FIX: Applied body font */
   background-color: #e60000;
   color: white;
   border: none;
@@ -160,6 +161,7 @@
 }
 
 .f-trusted-text {
+  font-family: var(--font-body); /* 👇 EXPERT FIX: Applied body font */
   color: #94a3b8;
   font-size: 15px;
   line-height: 1.7;
@@ -168,7 +170,14 @@
 
 /* ── Social icons ── */
 .f-socials { display: flex; flex-direction: column; gap: 10px; }
-.f-social-title { color: #ffffff; font-size: 13px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; }
+.f-social-title { 
+  font-family: var(--font-body); /* 👇 EXPERT FIX: Applied body font */
+  color: #ffffff; 
+  font-size: 13px; 
+  font-weight: 700; 
+  text-transform: uppercase; 
+  letter-spacing: 0.5px; 
+}
 
 .f-social-icons { display: flex; gap: 10px; }
 
@@ -195,9 +204,10 @@
 
 /* ── Column headings ── */
 .f-heading {
+  font-family: var(--font-heading); /* 👇 EXPERT FIX: Applied heading font */
   color: #ffffff;
-  font-size: 16px;
-  font-weight: 700;
+  font-size: 18px;
+  font-weight: 400; /* 👇 EXPERT FIX: Changed to 400 for Rozha One */
   margin: 0 0 24px 0;
   position: relative;
   letter-spacing: 0.5px;
@@ -223,6 +233,7 @@
 .f-links li { margin-bottom: 12px; }
 
 .f-links a {
+  font-family: var(--font-body); /* 👇 EXPERT FIX: Applied body font */
   color: #cfd6e4;
   text-decoration: none;
   font-size: 15px;
@@ -247,6 +258,7 @@
 }
 
 .f-trending-tag {
+  font-family: var(--font-body); /* 👇 EXPERT FIX: Applied body font */
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -287,6 +299,7 @@
 }
 
 .footer-bottom-bar p {
+  font-family: var(--font-body); /* 👇 EXPERT FIX: Applied body font */
   margin: 0;
   font-size: 13px;
   color: #94a3b8;

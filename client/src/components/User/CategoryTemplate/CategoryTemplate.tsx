@@ -84,7 +84,7 @@ function StackCard({ a, color }: CardProps) {
         <img src={a.img} alt={a.title} className="ct-stack__img" />
       </div>
       <div className="ct-stack__body">
-        <span className="ct-badge ct-badge--text" style={{ color: color }}>{a.category}</span>
+        <span className="ct-badge ct-badge--text">{a.category}</span>
         <p className="ct-stack__title">{a.title}</p>
         <div className="ct-meta"><Clock size={12} /><span>{a.published}</span></div>
       </div>
