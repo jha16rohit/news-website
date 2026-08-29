@@ -100,6 +100,7 @@
   color: #0f172a;
   margin: 0 0 8px 0;
   line-height: 1.4;
+  font-family: Noto Sans Devanagari; /* 👇 EXPERT FIX: Applied heading font */
 }
 
 /* Description (With "..." Truncation) */
@@ -113,6 +114,7 @@
   line-clamp: 2;
   -webkit-box-orient: vertical;
   overflow: hidden;
+  font-family: Noto Sans Devanagari; /* 👇 EXPERT FIX: Applied body font */
 }
 
 /* 3. Social Footer */

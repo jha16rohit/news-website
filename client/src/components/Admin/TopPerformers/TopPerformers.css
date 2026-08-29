@@ -27,6 +27,12 @@
   border-bottom: 1px solid #e5e7eb;
   flex-shrink: 0;
 }
+.tp-item {
+  cursor: pointer;
+}
+.tp-item:hover .tp-content h4 {
+  color: #2563eb;
+}
 
 .tp-title {
   display: flex;

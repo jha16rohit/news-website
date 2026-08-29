@@ -36,11 +36,9 @@
   --uid-shadow-lg: 0 16px 40px rgba(217, 32, 48, 0.14);
 
   --uid-transition: 200ms cubic-bezier(0.4, 0, 0.2, 1);
-
-  background: var(--uid-color-bg);
   color: var(--uid-color-text);
   font-family: "Inter", "Segoe UI", -apple-system, BlinkMacSystemFont, sans-serif;
-  padding: 32px;
+  padding-top: 24px;
   display: flex;
   flex-direction: column;
   gap: 24px;
@@ -53,6 +51,23 @@
 
 .uid-section {
   width: 100%;
+}
+
+
+.uid-page-title {
+  margin: 0;
+  font-family: Times, "Times New Roman", serif;
+  font-size: 28px;
+  font-weight: 700;
+  line-height: 1.2;
+  color: var(--uid-color-text-primary);
+}
+
+.uid-page-subtitle {
+  margin: 5px 0 0;
+  font-size: 14px;
+  color: var(--uid-color-text-muted);
+  line-height: 1.5;
 }
 
 /* ------------------------------------------------------------------ */

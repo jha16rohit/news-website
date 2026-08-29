@@ -37,10 +37,9 @@
 
 .sp-root {
   font-family: var(--sp-font-body);
-  background: var(--sp-bg);
   color: var(--sp-text-primary);
   min-height: 100vh;
-  padding: 28px;
+  padding-top: 24px;
   display: flex;
   flex-direction: column;
   gap: 20px;
@@ -55,10 +54,10 @@
   flex-wrap: wrap;
 }
 .sp-page-title {
-  font-family: var(--sp-font-display);
-  font-size: 1.5rem;
-  font-weight: 600;
-  color: var(--sp-text-primary);
+  font-family: times, 'Times New Roman', serif;
+  font-size: 28px;
+  font-weight: 700;
+ 
   letter-spacing: -0.02em;
   line-height: 1.2;
 }
@@ -669,10 +668,17 @@
   .sp-stat { padding: 10px 14px; min-width: 0; }
 }
 @media (max-width: 600px) {
+  
   .sp-page-header { flex-direction: column; }
   .sp-page-header-right { width: 100%; flex-wrap: wrap; }
   .sp-search-input { width: 100%; }
   .sp-article-row { flex-wrap: wrap; }
+  .sp-stats-bar {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px;
+    width: 100%;
+  }
   .sp-article-actions { border-top: 1px solid var(--sp-border); padding: 8px 12px; justify-content: flex-end; }
   .sp-tabs { flex-wrap: wrap; }
 }

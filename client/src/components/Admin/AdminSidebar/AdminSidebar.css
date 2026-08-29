@@ -130,7 +130,7 @@
   gap: 14px;
 }
 
-.item-label { font-size: 15px; }
+.item-label { font-size: 14px; white-space: nowrap; }
 .item-left svg { font-size: 18px; flex-shrink: 0; }
 
 /* ===============================

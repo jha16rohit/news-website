@@ -13,6 +13,7 @@ import {
   toggleHomepagePin,
 } from "../../../api/news";
 import type { ArticleTypeEnum } from "../../../api/news";
+import Preloader from "../Preloader/Preloder";
 
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -135,6 +136,7 @@ const AllNews: React.FC = () => {
 
   const [page, setPage] = useState(1);
 const [hasMore, setHasMore] = useState(true);
+const [loading, setLoading] = useState(true);
 const [loadingMore, setLoadingMore] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
   
@@ -162,11 +164,12 @@ const [loadingMore, setLoadingMore] = useState(false);
     all: undefined,
   };
 
-  try {
-    if (append) {
-      setLoadingMore(true);
-    }
-
+ try {
+  if (append) {
+    setLoadingMore(true);
+  } else {
+    setLoading(true);
+  }
     const data = await fetchAdminNews({
       articleType: apiTypeMap[type || "all"],
       search: q || undefined,
@@ -209,9 +212,10 @@ const [loadingMore, setLoadingMore] = useState(false);
     }
   } catch (err) {
     console.error("fetchAdminNews failed:", err);
-  } finally {
-    setLoadingMore(false);
-  }
+ } finally {
+  setLoadingMore(false);
+  setLoading(false);
+}
 };
   
 const handleLoadMore = async () => {
@@ -514,6 +518,11 @@ setDeleteModal(null);
     await loadData(activeType, search);
     setSelectedItems(new Set());
   };
+  
+
+  if (loading && articles.length === 0) {
+  return <Preloader />;
+}
 
   // ── Render ────────────────────────────────────────────────────────────────
   return (

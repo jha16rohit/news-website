@@ -13,7 +13,7 @@ import {
 
 import {
   FaNewspaper, FaBolt, FaFire, FaClock,
-  FaTags, FaPhotoVideo, FaComments, FaChartBar,
+  FaTags, FaPhotoVideo, FaComments, 
   FaCog, FaTachometerAlt, 
 } from "react-icons/fa";
 import { MdWifiTethering, MdNotifications, MdFolder } from "react-icons/md";
@@ -67,7 +67,7 @@ const AdminSidebar: React.FC<AdminSidebarProps> = ({ open, onClose }) => {
           <SidebarItem icon={<MdFolder />} label="Categories" active={isActive("/admin/categories")} onClick={() => go("/admin/categories")} />
           <SidebarItem icon={<FaTags />} label="Tags" active={isActive("/admin/tags")} onClick={() => go("/admin/tags")} />
           <SidebarItem icon={<FaPhotoVideo />} label="Media Library" active={isActive("/admin/medialibrary")} onClick={() => go("/admin/medialibrary")} />
-          <SidebarItem icon={<FaChartBar />} label="Analytics" active={isActive("/admin/analytics")} onClick={() => go("/admin/analytics")} />
+          {/* <SidebarItem icon={<FaChartBar />} label="Analytics" active={isActive("/admin/analytics")} onClick={() => go("/admin/analytics")} /> */}
           <SidebarItem icon={<MdNotifications />} label="Notifications"  active={isActive("/admin/notification")} onClick={() => go("/admin/notification")} />
           
           {/* 👇 NEW: Footer Management Link 👇 */}

@@ -167,7 +167,18 @@ const TopPerformers = () => {
             : articles.length === 0
             ? <p className="tp-empty">No data available for this period.</p>
             : articles.map((item) => (
-                <div key={item.newsId} className="tp-item">
+                <div
+  key={item.newsId}
+  className="tp-item"
+  onClick={() => window.open(`/news/${item.newsId}`, "_blank", "noopener,noreferrer")}
+  role="link"
+  tabIndex={0}
+  onKeyDown={(e) => {
+    if (e.key === "Enter" || e.key === " ") {
+      window.open(`/news/${item.newsId}`, "_blank", "noopener,noreferrer");
+    }
+  }}
+>
                   <div className="tp-left">
                     <div className={`tp-rank${item.rank <= 3 ? ` tp-rank--top${item.rank}` : ""}`}>
                       {item.rank}

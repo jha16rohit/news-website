@@ -22,6 +22,7 @@ import {
 } from "../../../api/news";
 import "./MediaLibrary.css";
 import toast from "react-hot-toast";
+import Preloader from "../Preloader/Preloder";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -334,12 +335,7 @@ const emptySlots = items.filter(item => !item.url).length;
         </div>
 
         {/* Loading state */}
-        {loading && (
-          <div className="ml-empty">
-            <Loader2 size={36} className="ml-spinner" />
-            <p>Loading images…</p>
-          </div>
-        )}
+        {loading && <Preloader />}
 
         {/* Error state */}
         {!loading && error && (

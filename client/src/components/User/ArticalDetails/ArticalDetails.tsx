@@ -417,6 +417,51 @@ const ArticleDetail: React.FC = () => {
       .finally(() => setLoading(false));
   }, [articleId]);
 
+  // ── SEO Metadata ─────────────────────────────────────────────
+useEffect(() => {
+  if (!article) return;
+
+  // Page title
+  document.title =
+    article.metaTitle?.trim() || article.headline;
+
+  // Meta description
+  const description =
+    article.metaDescription?.trim() ||
+    article.excerpt?.trim() ||
+    "";
+
+  let metaDescription = document.querySelector(
+    'meta[name="description"]'
+  ) as HTMLMetaElement | null;
+
+  if (!metaDescription) {
+    metaDescription = document.createElement("meta");
+    metaDescription.name = "description";
+    document.head.appendChild(metaDescription);
+  }
+
+  metaDescription.content = description;
+
+  // Canonical URL
+  let canonical = document.querySelector(
+    'link[rel="canonical"]'
+  ) as HTMLLinkElement | null;
+
+  if (!canonical) {
+    canonical = document.createElement("link");
+    canonical.rel = "canonical";
+    document.head.appendChild(canonical);
+  }
+
+  canonical.href = window.location.href;
+
+  // Cleanup when leaving article
+  return () => {
+    document.title = "LocalNewz";
+  };
+}, [article]);
+
   // ── Fetch recent news ────────────────────────────────────────────────────
   useEffect(() => {
     fetch(`${BASE}/news/recent?limit=6`)
@@ -1150,14 +1195,14 @@ setAds(adResponse);
 />
 
           {/* ── SIDEBAR ── */}
-        <aside className="ad-sidebar">
+        <aside className="ad-sidebar ad-abc">
 
           {/* ... (Keep your Live Updates, Recent News, and Advertisement code the same here) ... */}
 
             
             {/* RELATED NEWS WIDGET */}
             {relatedNews.length > 0 && (
-              <div className="ad-sidebar-widget">
+              <div className="ad-sidebar-widget ">
                 <h3 className="ad-widget-title" style={{ color: "#0f172a" }}>Related News</h3>
                 <div className="ad-widget-divider" />
                 {relatedNews.map((item) => {

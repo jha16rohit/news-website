@@ -182,9 +182,7 @@ const FooterManagement: React.FC = () => {
     scrollRef.current?.scrollBy({ left: direction === "left" ? -300 : 300, behavior: "smooth" });
   };
 
-  const activeImage = images.find((img) => img.isActive);
-
-  // ─── Render ──────────────────────────────────────────────────────────────────
+  // const activeImage = images.find((img) => img.isActive);
   return (
     <div className="fm-page">
 
