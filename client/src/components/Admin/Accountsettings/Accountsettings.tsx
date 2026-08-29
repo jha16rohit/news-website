@@ -64,8 +64,7 @@ const AccountSettings: React.FC = () => {
     e.preventDefault();
 
     try {
-      const fullName = `${profile.firstName} ${profile.lastName}`;
-
+const fullName = `${profile.firstName} ${profile.lastName}`.trim();
       await updateProfile({
         name: fullName,
         email: profile.email,

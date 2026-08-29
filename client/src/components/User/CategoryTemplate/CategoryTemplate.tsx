@@ -1,98 +1,42 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useParams, Link } from "react-router-dom";
 import {
   Clock, Eye, ChevronRight, Cloud, Sun, CloudRain,
-  Calendar, MapPin, Thermometer, TrendingUp, ArrowRight,
+  Calendar, MapPin, Thermometer, ArrowRight
 } from "lucide-react";
-import { useNews } from "../../Admin/NewsStore/NewsStore";
-import UserNavbar from "../UserNavbar/UserNavbar";
+import { useCategories } from "../../../hooks/useCategories";
+
 import "./CategoryTemplate.css";
+import Advertisement from "../Advertisment/Advertisment";
+import SubCategoryTemplate from "../SubCategoryTemplate/SubCategoryTemplate";
+import { getCategoryNews } from "../../../api/user/categoryNews";
+import Preloader from "../../Admin/Preloader/Preloder";
+
+import { getRecentNews } from "../../../api/user/recentNews";
+import { getAdvertisementPool, type Advertisement as AdType } from "../../../api/user/advertisementPool";
 
 // ─── Static placeholder data ──────────────────────────────────────────────────
-
 const STATIC_ARTICLES = [
-  {
-    id: 1001,
-    title: "Champions League Final: Historic Night Under the Lights",
-    subtitle: "An electrifying finale saw two European giants battle for continental glory in a packed stadium that will be remembered for decades.",
-    category: "Sports", published: "2 hours ago", views: "34.2K",
-    img: "https://images.unsplash.com/photo-1508098682722-e99c43a406b2?w=900&q=80",
-  },
-  {
-    id: 1002,
-    title: "Slam Dunk Contest Sets New Viewership Record",
-    subtitle: "The annual contest drew the highest ratings in a decade as athletes defied gravity.",
-    category: "Sports", published: "3 hours ago", views: "18.1K",
-    img: "https://images.unsplash.com/photo-1546519638-68e109498ffc?w=600&q=80",
-  },
-  {
-    id: 1003,
-    title: "World Swimming Championships Deliver Stunning Upsets",
-    subtitle: "Defending champions fell as rising stars claimed gold in dramatic fashion.",
-    category: "Sports", published: "5 hours ago", views: "12.4K",
-    img: "https://images.unsplash.com/photo-1519315901367-f34ff9154487?w=600&q=80",
-  },
-  {
-    id: 1004,
-    title: "Clay Court Season Opens With Dramatic Five-Set Thriller",
-    subtitle: "Rain delays and a comeback for the ages made it one of the most watched opens in years.",
-    category: "Sports", published: "6 hours ago", views: "9.8K",
-    img: "https://images.unsplash.com/photo-1554068865-24cecd4e34b8?w=600&q=80",
-  },
-  {
-    id: 1005,
-    title: "India Clinches Historic Test Series Win Against Australia 3-1",
-    subtitle: "A thrilling final day in Sydney saw India seal their greatest overseas triumph.",
-    category: "Sports", published: "3 hours ago", views: "22.3K",
-    img: "https://images.unsplash.com/photo-1540747913346-19212a4e3b4a?w=600&q=80",
-  },
-  {
-    id: 1006,
-    title: "Formula 1 Season Opener Ends in Chaotic Multi-Car Crash",
-    subtitle: "Safety cars and red flags dominated as teams scramble to understand new regulations.",
-    category: "Sports", published: "4 hours ago", views: "15.6K",
-    img: "https://images.unsplash.com/photo-1614162692292-7ac56d7f7f1e?w=600&q=80",
-  },
-  {
-    id: 1007,
-    title: "Rugby World Cup Hosts Announce Record Ticket Sales",
-    subtitle: "Organisers report a sell-out across all group stages as global interest surges.",
-    category: "Sports", published: "7 hours ago", views: "8.2K",
-    img: "https://images.unsplash.com/photo-1567620905732-2d1ec7ab7445?w=600&q=80",
-  },
-  {
-    id: 1008,
-    title: "Olympic Marathon Route Revealed for Summer Games",
-    subtitle: "Athletes will tackle a challenging coastal course with significant elevation in the final 10km.",
-    category: "Sports", published: "8 hours ago", views: "6.9K",
-    img: "https://images.unsplash.com/photo-1476480862126-209bfaa8edc8?w=600&q=80",
-  },
-  {
-    id: 1009,
-    title: "Badminton Super Series: Local Hero Stuns World Number One",
-    subtitle: "An underdog story for the ages as a wildcard dispatched the reigning champion in straight sets.",
-    category: "Sports", published: "9 hours ago", views: "5.4K",
-    img: "https://images.unsplash.com/photo-1599391398131-cd12dfc6e0b9?w=600&q=80",
-  },
-];
-
-const RECENT_ITEMS = [
-  { id: 1, title: "KKR vs SRH IPL 2026 Date, Live Streaming Details", date: "April 2, 2026" },
-  { id: 2, title: "Raipur Stadium IPL 2026 Schedule Confirmed by BCCI", date: "March 27, 2026" },
-  { id: 3, title: "IPL 2026 Schedule: Phase Two Dates Officially Announced", date: "March 27, 2026" },
-  { id: 4, title: "Neeraj Chopra Targets Back-to-Back Olympic Javelin Gold", date: "March 26, 2026" },
-  { id: 5, title: "Virat Kohli Becomes Leading Run-Scorer in IPL History", date: "March 25, 2026" },
+  { id: 1001, title: "Champions League Final: Historic Night Under the Lights", subtitle: "An electrifying finale saw two European giants battle for continental glory in a packed stadium that will be remembered for decades.", category: "Sports", published: "2 hours ago", views: "34.2K", img: "https://images.unsplash.com/photo-1508098682722-e99c43a406b2?w=900&q=80" },
+  { id: 1002, title: "Slam Dunk Contest Sets New Viewership Record", subtitle: "The annual contest drew the highest ratings in a decade as athletes defied gravity.", category: "Sports", published: "3 hours ago", views: "18.1K", img: "https://images.unsplash.com/photo-1546519638-68e109498ffc?w=600&q=80" },
+  { id: 1003, title: "World Swimming Championships Deliver Stunning Upsets", subtitle: "Defending champions fell as rising stars claimed gold in dramatic fashion.", category: "Sports", published: "5 hours ago", views: "12.4K", img: "https://images.unsplash.com/photo-1519315901367-f34ff9154487?w=600&q=80" },
+  { id: 1004, title: "Clay Court Season Opens With Dramatic Five-Set Thriller", subtitle: "Rain delays and a comeback for the ages made it one of the most watched opens in years.", category: "Sports", published: "6 hours ago", views: "9.8K", img: "https://images.unsplash.com/photo-1554068865-24cecd4e34b8?w=600&q=80" },
+  { id: 1005, title: "India Clinches Historic Test Series Win Against Australia 3-1", subtitle: "A thrilling final day in Sydney saw India seal their greatest overseas triumph.", category: "Sports", published: "3 hours ago", views: "22.3K", img: "https://images.unsplash.com/photo-1540747913346-19212a4e3b4a?w=600&q=80" },
+  { id: 1006, title: "Formula 1 Season Opener Ends in Chaotic Multi-Car Crash", subtitle: "Safety cars and red flags dominated as teams scramble to understand new regulations.", category: "Sports", published: "4 hours ago", views: "15.6K", img: "https://images.unsplash.com/photo-1614162692292-7ac56d7f7f1e?w=600&q=80" },
+  { id: 1007, title: "Rugby World Cup Hosts Announce Record Ticket Sales", subtitle: "Organisers report a sell-out across all group stages as global interest surges.", category: "Sports", published: "7 hours ago", views: "8.2K", img: "https://images.unsplash.com/photo-1567620905732-2d1ec7ab7445?w=600&q=80" },
+  { id: 1008, title: "Olympic Marathon Route Revealed for Summer Games", subtitle: "Athletes will tackle a challenging coastal course with significant elevation in the final 10km.", category: "Sports", published: "8 hours ago", views: "6.9K", img: "https://images.unsplash.com/photo-1476480862126-209bfaa8edc8?w=600&q=80" },
+  { id: 1009, title: "Badminton Super Series: Local Hero Stuns World Number One", subtitle: "An underdog story for the ages as a wildcard dispatched the reigning champion in straight sets.", category: "Sports", published: "9 hours ago", views: "5.4K", img: "https://images.unsplash.com/photo-1599391398131-cd12dfc6e0b9?w=600&q=80" },
+  { id: 1010, title: "Tennis Legend Announces Retirement After Glorious Career", subtitle: "Fans around the world bid farewell to a player who defined an era with grace and unparalleled skill.", category: "Sports", published: "10 hours ago", views: "20.1K", img: "https://images.unsplash.com/photo-1508264165352-258a9bfc09c4?w=600&q=80" },
+  { id: 1011, title: "NBA Finals MVP Delivers Emotional Speech Amidst Championship Glory", subtitle: "Tears and triumph as the star player reflects on the journey to the title and thanks fans worldwide.", category: "Sports", published: "11 hours ago", views: "25.3K", img: "https://images.unsplash.com/photo-1517649763962-0c623066013b?w=600&q=80" },
 ];
 
 const FORECAST = [
-  { day: "Fri", icon: <Sun size={13} />, hi: 36, lo: 29 },
-  { day: "Sat", icon: <Cloud size={13} />, hi: 38, lo: 30 },
-  { day: "Sun", icon: <CloudRain size={13} />, hi: 34, lo: 27 },
-  { day: "Mon", icon: <Sun size={13} />, hi: 40, lo: 31 },
-  { day: "Tue", icon: <Sun size={13} />, hi: 41, lo: 30 },
+  { day: "Fri", icon: <Sun size={14} />, hi: 36, lo: 29 },
+  { day: "Sat", icon: <Cloud size={14} />, hi: 38, lo: 30 },
+  { day: "Sun", icon: <CloudRain size={14} />, hi: 34, lo: 27 },
+  { day: "Mon", icon: <Sun size={14} />, hi: 40, lo: 31 },
+  { day: "Tue", icon: <Sun size={14} />, hi: 41, lo: 30 },
 ];
-
-// ─── Calendar helper ──────────────────────────────────────────────────────────
 
 function buildCalendar() {
   const now   = new Date();
@@ -108,48 +52,49 @@ function buildCalendar() {
   for (let i = 1; i <= daysInMonth; i++) cells.push({ day: i, cur: true });
   const rem = 42 - cells.length;
   for (let i = 1; i <= rem; i++) cells.push({ day: i, cur: false });
-  return {
-    cells, today,
-    label: now.toLocaleDateString("en-US", { month: "long", year: "numeric" }),
-  };
+  return { cells, today, label: now.toLocaleDateString("en-US", { month: "long", year: "numeric" }) };
 }
-
-// ─── Types ────────────────────────────────────────────────────────────────────
 
 type Article = typeof STATIC_ARTICLES[0];
 
-// ─── Sub-components ───────────────────────────────────────────────────────────
+interface CardProps {
+  a: Article;
+  color: string;
+  delay?: number;
+}
 
-function HeroCard({ a, color }: { a: Article; color: string }) {
+function HeroCard({ a, color }: CardProps) {
   return (
-    <div className="ct-hero">
+    <Link to={`/article/${a.id}`} className="ct-hero" style={{ textDecoration: "none", color: "inherit" }}>
       <img src={a.img} alt={a.title} className="ct-hero__img" />
       <div className="ct-hero__overlay">
         <span className="ct-badge" style={{ background: color }}>{a.category}</span>
         <h2 className="ct-hero__title">{a.title}</h2>
         <p className="ct-hero__sub">{a.subtitle}</p>
+        <div className="ct-meta"><Clock size={14} /><span>{a.published}</span></div>
+      </div>
+    </Link>
+  );
+}
+
+function StackCard({ a, color }: CardProps) {
+  return (
+    <Link to={`/article/${a.id}`} className="ct-stack" style={{ textDecoration: "none", color: "inherit" }}>
+      <div className="ct-stack__imgwrap">
+        <img src={a.img} alt={a.title} className="ct-stack__img" />
+      </div>
+      <div className="ct-stack__body">
+        <span className="ct-badge ct-badge--text">{a.category}</span>
+        <p className="ct-stack__title">{a.title}</p>
         <div className="ct-meta"><Clock size={12} /><span>{a.published}</span></div>
       </div>
-    </div>
+    </Link>
   );
 }
 
-function StackCard({ a, color }: { a: Article; color: string }) {
+function GridCard({ a, color, delay = 0 }: CardProps) {
   return (
-    <div className="ct-stack">
-      <img src={a.img} alt={a.title} className="ct-stack__img" />
-      <div className="ct-stack__body">
-        <span className="ct-badge ct-badge--sm" style={{ background: color }}>{a.category}</span>
-        <p className="ct-stack__title">{a.title}</p>
-        <div className="ct-meta"><Clock size={11} /><span>{a.published}</span></div>
-      </div>
-    </div>
-  );
-}
-
-function GridCard({ a, color, delay = 0 }: { a: Article; color: string; delay?: number }) {
-  return (
-    <div className="ct-gcard" style={{ animationDelay: `${delay}ms` }}>
+    <Link to={`/article/${a.id}`} className="ct-gcard" style={{ animationDelay: `${delay}ms`, textDecoration: "none", color: "inherit", display: "flex" }}>
       <div className="ct-gcard__imgwrap">
         <img src={a.img} alt={a.title} className="ct-gcard__img" />
         <span className="ct-badge ct-badge--sm" style={{ background: color }}>{a.category}</span>
@@ -157,27 +102,29 @@ function GridCard({ a, color, delay = 0 }: { a: Article; color: string; delay?: 
       <div className="ct-gcard__body">
         <h4 className="ct-gcard__title">{a.title}</h4>
         <p className="ct-gcard__sub">{a.subtitle}</p>
-        <div className="ct-meta">
-          <Clock size={11} /><span>{a.published}</span>
-          <Eye size={11} /><span>{a.views}</span>
+        <div className="ct-meta-row">
+          <div className="ct-meta">
+            <Clock size={12} /><span>{a.published}</span>
+            <Eye size={12} style={{marginLeft: '8px'}} /><span>{a.views}</span>
+          </div>
+          <span className="ct-read-more" style={{ color }}>
+            Read More <ArrowRight size={14} />
+          </span>
         </div>
-        <button className="ct-read-more" style={{ color }}>
-          Read More <ArrowRight size={13} />
-        </button>
       </div>
-    </div>
+    </Link>
   );
 }
 
 function WeatherWidget({ color }: { color: string }) {
   return (
-    <div className="ct-weather" style={{ background: color }}>
+    <div className="ct-weather" style={{ background: `linear-gradient(135deg, ${color} 0%, #1a1a2e 100%)` }}>
       <div className="ct-weather__head">
-        <Cloud size={13} /><span>Weather</span>
-        <MapPin size={11} /><span>India</span>
+        <div className="ct-weather__head-left"><Cloud size={16} /><span>Weather</span></div>
+        <div className="ct-weather__head-right"><MapPin size={12} /><span>India</span></div>
       </div>
       <div className="ct-weather__main">
-        <Thermometer size={28} />
+        <Thermometer size={36} />
         <div>
           <div className="ct-weather__temp">27<sup>°C</sup></div>
           <div className="ct-weather__label">Clear Sky</div>
@@ -188,8 +135,10 @@ function WeatherWidget({ color }: { color: string }) {
           <div key={f.day} className="ct-weather__day">
             <span className="ct-weather__dname">{f.day}</span>
             <span className="ct-weather__icon">{f.icon}</span>
-            <span className="ct-weather__hi">{f.hi}°</span>
-            <span className="ct-weather__lo">{f.lo}°</span>
+            <div className="ct-weather__hilow">
+              <span className="ct-weather__hi">{f.hi}°</span>
+              <span className="ct-weather__lo">{f.lo}°</span>
+            </div>
           </div>
         ))}
       </div>
@@ -202,7 +151,7 @@ function CalendarWidget() {
   const DAYS = ["M", "T", "W", "T", "F", "S", "S"];
   return (
     <div className="ct-cal">
-      <div className="ct-cal__head"><Calendar size={13} /><span>{label}</span></div>
+      <div className="ct-cal__head"><Calendar size={15} /><span>{label}</span></div>
       <div className="ct-cal__row ct-cal__row--hdr">
         {DAYS.map((d, i) => <span key={i}>{d}</span>)}
       </div>
@@ -224,71 +173,127 @@ function CalendarWidget() {
   );
 }
 
-// ─── Main ─────────────────────────────────────────────────────────────────────
-
 const INITIAL_VISIBLE = 6;
 const LOAD_MORE_COUNT = 3;
 
 export default function CategoryTemplate() {
   const { slug } = useParams<{ slug: string }>();
-  const { categories, articles: storeArticles } = useNews();
+  const { categories } = useCategories();
 
-  // 6 visible initially, becomes 9 after Show More
   const [visible, setVisible] = useState(INITIAL_VISIBLE);
-  const [expanded, setExpanded] = useState(false);
+
+  const [categoryNews, setCategoryNews] = useState<any[]>([]);
+  const [recentNews, setRecentNews] = useState<any[]>([]);  
+  const [loading, setLoading] = useState(true);
+
+  const [ads, setAds] = useState<{
+    cards: AdType[];
+    strips: AdType[];
+  }>({
+    cards: [],
+    strips: [],
+  });  
 
   const category = categories.find(
-    (c) => c.name.toLowerCase().replace(/\s+/g, "-") === slug
+    (c) => c.slug === slug
   );
+  
+  const parentCategory = category?.parentId 
+    ? categories.find((c) => c.id === category.parentId) ?? null
+    : null;
 
-  const color = category?.color ?? "#e63946";
+  const color = "#e60000";
 
-  // Prefer real store articles, fall back to static
-  const storeFiltered = storeArticles.filter(
-    (a) => a.category.toLowerCase() === (category?.name ?? "").toLowerCase()
-  );
-  const source: Article[] = storeFiltered.length > 0
-    ? storeFiltered.map((a) => ({ ...a, img: "" }))
-    : STATIC_ARTICLES;
+  useEffect(() => {
+    async function fetchNews() {
+      try {
+        setLoading(true);
 
-  // Layout split: hero[0], stacks[1-3], grid[4-12]
-  const hero    = source[0];
-  const stacks  = source.slice(1, 4);
-  const allGrid = source.slice(4); // up to 9 grid articles from STATIC (indices 4-12)
-  const grid    = allGrid.slice(0, visible);
+        const data = await getCategoryNews(slug!);
 
-  // Show More is only available once (6 → 9), after that show "View All"
-  const canShowMore = !expanded && visible < allGrid.length;
+        if (data.success) {
+          setCategoryNews(data.news || []);
+          const recent = await getRecentNews();
+
+          if (recent.success) {
+            setRecentNews(recent.news || []);
+          }
+
+          // Load advertisements
+          const adResponse = await getAdvertisementPool({
+            cards: 1,
+            strips: 2,
+          });
+
+          // Safely set ads array to guarantee UI always renders
+          setAds({
+            cards: adResponse?.cards || [],
+            strips: adResponse?.strips || []
+          });
+        }
+
+      } catch (error) {
+        console.error("Category news fetch error:", error);
+      } finally {
+        setLoading(false);
+      }
+    }
+
+    if (slug) {
+      fetchNews();
+    }
+
+  }, [slug]);
+
+  const source: Article[] = categoryNews.map((a: any) => ({
+    id: a._id,
+    title: a.shortTitle || a.headline,
+    subtitle: a.excerpt || "Read full article for more details.",
+    category: a.categoryName || category?.name || "News",
+    published: a.publishedAt
+      ? new Date(a.publishedAt).toLocaleDateString()
+      : "Recently",
+    views: String(a.views || 0),
+    img: a.featuredImage || "https://via.placeholder.com/600x400",
+  }));
+
+  const hero = source[0];
+  const stacks = source.slice(1, 4);
+
+  const allGrid = [...source].sort(() => Math.random() - 0.5);
+  const grid = allGrid.slice(0, visible);
+
+  const canShowMore = visible < allGrid.length;
+  const canShowLess = visible > INITIAL_VISIBLE;
+
+  if (category && category.parentId) {
+    return <SubCategoryTemplate category={category} parentCategory={parentCategory} color={color} />;
+  }
 
   function handleShowMore() {
     setVisible((v) => Math.min(v + LOAD_MORE_COUNT, allGrid.length));
-    setExpanded(true);
   }
 
-  if (!category) {
+  function handleShowLess() {
+    setVisible(INITIAL_VISIBLE);
+  }
+
+  if (loading) {
     return (
       <>
-        <UserNavbar />
-        <div className="ct-notfound">
-          <TrendingUp size={40} />
-          <h2>Category not found</h2>
-          <Link to="/">Return to Home</Link>
-        </div>
+        <Preloader />
       </>
     );
   }
 
   return (
     <>
-      <UserNavbar />
-      <div className="ct-root">
+      <div className="ct-root" style={{ "--cat-color": color } as React.CSSProperties}>
 
-        {/* ── Hero Section ─────────────────────────────── */}
-        <section className="ct-section">
+        {/* ── TOP SECTION: Hero + Stacks LEFT | Recent News RIGHT ── */}
+        <section className="ct-section ct-section--top">
           <div className="ct-wrap">
             <div className="ct-hero-layout">
-
-              {/* Left: large hero + 3 stacked */}
               <div className="ct-hero-left">
                 {hero && <HeroCard a={hero} color={color} />}
                 <div className="ct-stacks">
@@ -296,19 +301,22 @@ export default function CategoryTemplate() {
                 </div>
               </div>
 
-              {/* Right: Recent News panel */}
               <aside className="ct-recent-panel">
                 <div className="ct-panel-title">
                   Recent News
                   <div className="ct-panel-line" style={{ background: color }} />
                 </div>
                 <ul className="ct-recent-list">
-                  {RECENT_ITEMS.map((item) => (
+                  {recentNews.slice(0, 5).map((item) => (
                     <li key={item.id} className="ct-recent-item">
-                      <ChevronRight size={13} style={{ color, flexShrink: 0, marginTop: 2 }} />
+                      <div className="ct-recent-icon"><ChevronRight size={14} style={{ color }} /></div>
                       <div>
-                        <p className="ct-recent-title">{item.title}</p>
-                        <span className="ct-recent-date">{item.date}</span>
+                        <p className="ct-recent-title">{item.shortTitle || item.headline}</p>
+                        <span className="ct-recent-date">{
+                          item.publishedAt
+                            ? new Date(item.publishedAt).toLocaleDateString()
+                            : "Recently"
+                        }</span>
                       </div>
                     </li>
                   ))}
@@ -317,11 +325,12 @@ export default function CategoryTemplate() {
             </div>
           </div>
         </section>
+        
+        <Advertisement adData={ads.strips[0] ?? null} />
 
-        {/* ── Latest News Section ──────────────────────── */}
+        {/* ── LATEST NEWS: Grid cards LEFT | Weather + Calendar RIGHT ── */}
         <section className="ct-section ct-section--gray">
           <div className="ct-wrap">
-
             <div className="ct-news-head">
               <h2 className="ct-news-title">Latest News</h2>
               <div className="ct-news-line" style={{ background: color }} />
@@ -329,13 +338,6 @@ export default function CategoryTemplate() {
 
             <div className="ct-news-layout">
 
-              {/* Sticky sidebar: weather + calendar */}
-              <aside className="ct-news-sidebar">
-                <WeatherWidget color={color} />
-                <CalendarWidget />
-              </aside>
-
-              {/* Grid + actions */}
               <div className="ct-news-main">
                 <div className="ct-grid">
                   {grid.map((a, i) => (
@@ -343,7 +345,6 @@ export default function CategoryTemplate() {
                       key={a.id}
                       a={a}
                       color={color}
-                      // Only animate the newly revealed 3 cards
                       delay={i >= INITIAL_VISIBLE ? (i - INITIAL_VISIBLE) * 80 : 0}
                     />
                   ))}
@@ -351,70 +352,32 @@ export default function CategoryTemplate() {
 
                 <div className="ct-actions">
                   {canShowMore && (
-                    <button
-                      className="ct-btn-solid"
-                      style={{ background: color }}
-                      onClick={handleShowMore}
-                    >
+                    <button className="ct-btn-solid" style={{ background: color }} onClick={handleShowMore}>
                       Show More
                     </button>
                   )}
-                  <button
-                    className="ct-btn-outline"
-                    style={{ borderColor: color, color }}
-                  >
-                    View All
-                  </button>
+                  {canShowLess && (
+                    <button className="ct-btn-outline" style={{ borderColor: color, color }} onClick={handleShowLess}>
+                      Show Less
+                    </button>
+                  )}
                 </div>
               </div>
+
+              <aside className="ct-news-sidebar">
+                <WeatherWidget color={color} />
+                <Advertisement
+                  adData={ads.cards[0] ?? null}
+                  variant="card"
+                />
+                <CalendarWidget />
+              </aside>
+
             </div>
           </div>
         </section>
 
-        {/* ── Advertisement ─────────────────────────────── */}
-        <section className="ct-section">
-          <div className="ct-wrap">
-            <div className="ct-ad">
-              <span className="ct-ad-label">Advertisement</span>
-              <div className="ct-ad-banner" />
-            </div>
-          </div>
-        </section>
-
-        {/* ── Footer ────────────────────────────────────── */}
-        <footer className="ct-footer">
-          <div className="ct-footer-inner">
-            <div className="ct-footer-brand">
-              <div className="ct-footer-logo">LocalNewz</div>
-              <p>India's trusted source for breaking news, in-depth analysis, and comprehensive coverage of events that matter to you.</p>
-            </div>
-            <div className="ct-footer-col">
-              <h5>Categories</h5>
-              {categories.filter((c) => c.enabled).map((c) => (
-                <Link key={c.id} to={`/category/${c.name.toLowerCase().replace(/\s+/g, "-")}`}>{c.name}</Link>
-              ))}
-            </div>
-            <div className="ct-footer-col">
-              <h5>Quick Links</h5>
-              <Link to="/">Recent News</Link>
-              <Link to="/">Trending</Link>
-              <Link to="/Topic">Topic</Link>
-              <Link to="/live-events">Live Coverage</Link>
-              <Link to="/">Videos</Link>
-              <Link to="/">Photo Gallery</Link>
-            </div>
-            <div className="ct-footer-col">
-              <h5>Company</h5>
-              <Link to="/about">About Us</Link>
-              <Link to="/contact">Contact</Link>
-              <Link to="/privacy-policy">Privacy Policy</Link>
-              <Link to="/terms">Terms of Service</Link>
-            </div>
-          </div>
-          <div className="ct-footer-copy">
-            © {new Date().getFullYear()} LocalNewz. All rights reserved. Made with love in India.
-          </div>
-        </footer>
+        <Advertisement adData={ads.strips[1] ?? null} />
 
       </div>
     </>

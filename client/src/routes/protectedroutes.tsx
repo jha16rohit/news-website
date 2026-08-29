@@ -2,6 +2,7 @@ import { Navigate } from "react-router-dom";
 import { useEffect, useState } from "react";
 import { getMe } from "../api/auth";
 import type { ReactNode } from "react";
+import Preloader from "../components/Admin/Preloader/Preloder";
 interface User {
   id: string;
   name: string;
@@ -32,7 +33,11 @@ const ProtectedRoute = ({ children }: { children: ReactNode }) => {
 
   // ⏳ While checking auth
   if (loading) {
-    return <div>Loading...</div>;
+     return (
+    <div style={{ height: "100vh" }}>
+      <Preloader />
+    </div>
+  );
   }
 
   // ❌ Not logged in

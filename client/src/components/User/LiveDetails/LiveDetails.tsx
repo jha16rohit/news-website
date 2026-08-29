@@ -1,10 +1,10 @@
 import React from "react";
-import { useParams, Link } from "react-router-dom";
-import { Clock, Share2, Facebook, Twitter, AlertCircle } from "lucide-react";
+import { Link } from "react-router-dom";
+import { Clock, Facebook, Twitter, AlertCircle } from "lucide-react";
 import "./LiveDetails.css";
 
 const LiveDetail: React.FC = () => {
-  const { eventId } = useParams();
+  // const { eventId } = useParams();
 
   // Mock data for a Live Event
   const liveEvent = {

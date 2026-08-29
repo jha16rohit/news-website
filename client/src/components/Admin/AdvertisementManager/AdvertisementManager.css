@@ -1,0 +1,183 @@
+/* ============================================================
+   ADVERTISEMENT MANAGER — adm- prefix
+   ============================================================ */
+
+.adm-root { padding: 24px; background: #f8f9fb; min-height: 100vh; font-family: 'Segoe UI', sans-serif; }
+
+.spin { animation: adm-spin 0.8s linear infinite; }
+@keyframes adm-spin { to { transform: rotate(360deg); } }
+
+/* HEADER */
+.adm-header { display: flex; align-items: flex-start; justify-content: space-between; gap: 24px; margin-bottom: 24px; flex-wrap: wrap; }
+.adm-page-title { font-size: 28px; font-weight: 800; color: #0f172a; margin: 0 0 4px; font-family: times new roman, sans-serif; }
+.adm-page-sub { font-size: 13px; color: #64748b; margin: 0; }
+.adm-header-stats { display: flex; gap: 12px; flex-wrap: wrap; }
+.adm-hstat { background: #fff; border: 1px solid #e2e8f0; border-radius: 10px; padding: 10px 16px; text-align: center; min-width: 80px; }
+.adm-hstat span { display: block; font-size: 22px; font-weight: 800; color: #0f172a; line-height: 1; }
+.adm-hstat em { display: block; font-size: 11px; color: #94a3b8; font-style: normal; margin-top: 2px; white-space: nowrap; }
+.adm-hstat--warn span { color: #f59e0b; }
+.adm-hstat--green span { color: #22c55e; }
+
+/* TABS */
+.adm-tabs { display: flex; gap: 0; background: #fff; border: 1px solid #e2e8f0; border-radius: 10px; overflow: hidden; margin-bottom: 20px; width: fit-content; flex-wrap: wrap; }
+.adm-tab { display: flex; align-items: center; gap: 7px; padding: 10px 20px; background: none; border: none; font-size: 13px; font-weight: 600; color: #64748b; cursor: pointer; transition: all 0.18s; }
+.adm-tab:hover { background: #f8f9fb; color: #0f172a; }
+.adm-tab--active { background: #e60000; color: #fff; }
+.adm-tab-badge { background: #fff; color: #e60000; font-size: 10px; font-weight: 800; padding: 1px 6px; border-radius: 10px; min-width: 18px; text-align: center; line-height: 16px; }
+.adm-tab--active .adm-tab-badge { background: rgba(255,255,255,0.25); color: #fff; }
+.adm-tab-badge--green { background: #22c55e; color: #fff; }
+.adm-tab-badge--gray { background: #94a3b8; color: #fff; }
+
+/* EMPTY STATE */
+.adm-empty { text-align: center; padding: 60px 24px; color: #94a3b8; }
+.adm-empty svg { margin-bottom: 12px; color: #cbd5e1; }
+.adm-empty h3 { font-size: 16px; color: #475569; margin: 0 0 6px; }
+.adm-empty p { font-size: 13px; margin: 0; }
+
+/* ── DATA TABLE ── */
+.adm-table-card { background: #fff; border: 1.5px solid #e2e8f0; border-radius: 12px; overflow: hidden; }
+.adm-data-table { width: 100%; border-collapse: collapse; }
+.adm-data-table th {
+  text-align: left; font-size: 11px; font-weight: 700; color: #94a3b8; text-transform: uppercase;
+  letter-spacing: 0.5px; padding: 12px 16px; border-bottom: 2px solid #f0f0f0; background: #fafbfc; white-space: nowrap;
+}
+.adm-data-row { cursor: pointer; transition: background 0.15s; }
+.adm-data-row:hover { background: #fafbfc; }
+.adm-data-table td { padding: 13px 16px; border-bottom: 1px solid #f1f5f9; font-size: 13px; color: #334155; vertical-align: top; }
+.adm-row-name { font-size: 13px; font-weight: 700; color: #0f172a; }
+.adm-row-sub { font-size: 12px; color: #64748b; }
+.adm-td-cap { font-weight: 600; color: #0f172a; }
+.adm-reason-cell { font-size: 13px; color: #ef4444; font-style: italic; max-width: 260px; }
+
+/* Row detail (used inside popup modals) */
+.adm-expand-grid { display: grid; grid-template-columns: 180px 1fr; gap: 18px; margin-bottom: 16px; }
+.adm-expand-img { border-radius: 8px; overflow: hidden; border: 1px solid #e2e8f0; background: #fff; height: 110px; }
+.adm-expand-img img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.adm-expand-info { display: flex; flex-direction: column; gap: 8px; justify-content: center; }
+.adm-iq-detail-row { display: flex; align-items: center; gap: 6px; font-size: 13px; color: #374151; }
+.adm-iq-detail-row svg { color: #94a3b8; flex-shrink: 0; }
+.adm-iq-detail-row a { color: #3b82f6; font-size: 12px; word-break: break-all; text-decoration: none; }
+.adm-iq-detail-row a:hover { text-decoration: underline; }
+.adm-iq-message { background: #fff; border-left: 3px solid #e60000; padding: 10px 12px; border-radius: 0 8px 8px 0; }
+.adm-iq-message p { font-size: 13px; color: #374151; margin: 0; font-style: italic; line-height: 1.5; }
+
+.adm-expand-actions { display: flex; gap: 10px; flex-wrap: wrap; }
+.adm-btn-publish-now, .adm-btn-renew {
+  padding: 8px 18px; background: #e60000; color: #fff; border: none; border-radius: 8px;
+  font-size: 13px; font-weight: 700; cursor: pointer; display: flex; align-items: center; gap: 6px;
+  transition: background 0.18s, transform 0.1s; box-shadow: 0 4px 14px rgba(230,0,0,0.25);
+}
+.adm-btn-publish-now:hover, .adm-btn-renew:hover { background: #c00000; transform: translateY(-1px); }
+.adm-btn-reject, .adm-btn-end {
+  padding: 8px 18px; background: #fff; color: #ef4444; border: 1.5px solid #fee2e2; border-radius: 8px;
+  font-size: 13px; font-weight: 700; cursor: pointer; display: flex; align-items: center; gap: 6px; transition: all 0.18s;
+}
+.adm-btn-reject:hover, .adm-btn-end:hover { background: #ef4444; color: #fff; }
+.adm-btn-renew:disabled, .adm-btn-end:disabled { opacity: 0.5; cursor: not-allowed; }
+
+/* Compact inline renew button used inside Expired table rows */
+.adm-btn-renew-inline {
+  padding: 6px 12px; background: #e60000; color: #fff; border: none; border-radius: 7px;
+  font-size: 12px; font-weight: 700; cursor: pointer; display: inline-flex; align-items: center; gap: 5px;
+  transition: background 0.15s, transform 0.1s;
+}
+.adm-btn-renew-inline:hover { background: #c00000; transform: translateY(-1px); }
+
+/* Reject / End note box */
+.adm-reject-box { background: #fff; border: 1.5px solid #fee2e2; border-radius: 10px; padding: 14px 16px; margin-bottom: 16px; }
+.adm-reject-box label { display: block; font-size: 12px; font-weight: 700; color: #374151; margin-bottom: 8px; }
+.adm-reject-box textarea {
+  width: 100%; box-sizing: border-box; padding: 10px 12px; border: 1.5px solid #e2e8f0; border-radius: 8px;
+  font-size: 13px; color: #374151; resize: vertical; font-family: inherit; outline: none; transition: border-color 0.18s;
+}
+.adm-reject-box textarea:focus { border-color: #e60000; }
+.adm-reject-actions { display: flex; justify-content: flex-end; gap: 10px; margin-top: 10px; }
+.adm-btn-reject-confirm {
+  padding: 8px 18px; background: #ef4444; color: #fff; border: none; border-radius: 8px;
+  font-size: 13px; font-weight: 700; cursor: pointer; display: flex; align-items: center; gap: 6px; transition: all 0.18s;
+}
+.adm-btn-reject-confirm:hover { background: #dc2626; }
+.adm-btn-reject-confirm:disabled { opacity: 0.5; cursor: not-allowed; }
+
+.adm-btn-cancel {
+  padding: 8px 16px; border: 1.5px solid #e2e8f0; border-radius: 8px; background: #fff;
+  font-size: 13px; font-weight: 600; color: #64748b; cursor: pointer; transition: all 0.15s;
+}
+.adm-btn-cancel:hover { background: #f8f9fb; }
+
+/* Status badges (published table) */
+.adm-pub-badge { font-size: 11px; font-weight: 700; padding: 3px 10px; border-radius: 12px; white-space: nowrap; }
+.adm-pub-badge--live { background: #d1fae5; color: #065f46; }
+.adm-pub-badge--expired { background: #fee2e2; color: #991b1b; }
+.adm-pub-badge--ended { background: #f1f5f9; color: #64748b; }
+
+/* Days-left badges */
+.adm-days-badge { font-size: 11px; font-weight: 700; padding: 3px 10px; border-radius: 12px; white-space: nowrap; }
+.adm-days-badge--ok { background: #d1fae5; color: #065f46; }
+.adm-days-badge--warn { background: #fef3c7; color: #92400e; }
+.adm-days-badge--danger { background: #fee2e2; color: #991b1b; }
+
+/* ── TIMELINE ── */
+.adm-timeline { background: #fafbfc; border: 1px solid #e2e8f0; border-radius: 10px; padding: 14px 16px; margin-bottom: 16px; }
+.adm-timeline-title { display: flex; align-items: center; gap: 6px; font-size: 12px; font-weight: 700; color: #374151; text-transform: uppercase; letter-spacing: 0.4px; margin-bottom: 12px; }
+.adm-timeline-list { display: flex; flex-direction: column; gap: 10px; padding-left: 4px; border-left: 2px solid #e2e8f0; }
+.adm-timeline-item { display: flex; align-items: flex-start; gap: 10px; margin-left: -5px; }
+.adm-timeline-dot { width: 8px; height: 8px; border-radius: 50%; background: #e60000; margin-top: 4px; flex-shrink: 0; }
+.adm-timeline-label { font-size: 12px; font-weight: 700; color: #0f172a; }
+.adm-timeline-date { font-size: 12px; color: #64748b; }
+
+/* ── PAGINATION ── */
+.adm-pagination {
+  display: flex; align-items: center; justify-content: space-between; gap: 12px;
+  padding: 12px 16px; border-top: 1px solid #f1f5f9; background: #fafbfc; flex-wrap: wrap;
+}
+.adm-pagination-info { font-size: 12px; color: #64748b; }
+.adm-pagination-btns { display: flex; align-items: center; gap: 10px; }
+.adm-pagination-page { font-size: 12px; font-weight: 600; color: #374151; white-space: nowrap; }
+.adm-pg-btn {
+  display: flex; align-items: center; gap: 4px; padding: 6px 12px; border: 1.5px solid #e2e8f0;
+  border-radius: 8px; background: #fff; font-size: 12px; font-weight: 700; color: #374151;
+  cursor: pointer; transition: all 0.15s;
+}
+.adm-pg-btn:hover:not(:disabled) { background: #e60000; border-color: #e60000; color: #fff; }
+.adm-pg-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+/* ── MODALS (Publish / Renew / End / Detail) ── */
+.adm-modal-overlay {
+  position: fixed; inset: 0; background: rgba(0,0,0,0.6); display: flex; align-items: center; justify-content: center;
+  z-index: 9999; padding: 24px; backdrop-filter: blur(3px);
+}
+.adm-modal { background: #fff; border-radius: 16px; width: 100%; max-width: 560px; max-height: 90vh; overflow-y: auto; box-shadow: 0 20px 60px rgba(0,0,0,0.25); display: flex; flex-direction: column; }
+.adm-modal-header { display: flex; align-items: flex-start; justify-content: space-between; padding: 22px 24px; border-bottom: 1px solid #f0f0f0; gap: 12px; }
+.adm-modal-header h2 { font-size: 17px; font-weight: 800; color: #0f172a; margin: 0 0 4px; }
+.adm-modal-header p { font-size: 13px; color: #64748b; margin: 0; }
+.adm-modal-close { width: 32px; height: 32px; border-radius: 8px; border: 1px solid #e2e8f0; background: #fff; color: #64748b; display: flex; align-items: center; justify-content: center; cursor: pointer; flex-shrink: 0; transition: all 0.15s; }
+.adm-modal-close:hover { background: #f8f9fb; color: #0f172a; }
+.adm-modal-body { padding: 22px 24px; flex: 1; }
+.adm-modal-footer { display: flex; align-items: center; gap: 10px; padding: 16px 24px; border-top: 1px solid #f0f0f0; justify-content: flex-end; }
+
+.adm-pf-group { display: flex; flex-direction: column; gap: 6px; margin-bottom: 14px; }
+.adm-pf-group label { font-size: 12px; font-weight: 700; color: #374151; text-transform: uppercase; letter-spacing: 0.4px; }
+.adm-pf-group input, .adm-pf-group textarea {
+  padding: 10px 14px; border: 1.5px solid #e2e8f0; border-radius: 8px; font-size: 13px; color: #0f172a;
+  outline: none; transition: border-color 0.18s, box-shadow 0.18s; font-family: inherit; width: 100%; box-sizing: border-box;
+}
+.adm-pf-group input:focus, .adm-pf-group textarea:focus { border-color: #e60000; box-shadow: 0 0 0 3px rgba(230,0,0,0.08); }
+.adm-pf-group textarea { resize: vertical; }
+.adm-err { font-size: 12px; color: #e60000; font-weight: 600; }
+.adm-field-hint { font-size: 11px; color: #94a3b8; display: block; margin-top: 4px; }
+.adm-img-preview { border-radius: 10px; overflow: hidden; border: 1px solid #e2e8f0; background: #f8f9fb; height: 140px; }
+.adm-img-preview img { width: 100%; height: 100%; object-fit: contain; display: block; }
+
+.adm-btn-publish { display: flex; align-items: center; gap: 7px; padding: 9px 20px; border: none; border-radius: 8px; background: #e60000; color: #fff; font-size: 14px; font-weight: 700; cursor: pointer; transition: background 0.15s, transform 0.1s; box-shadow: 0 4px 14px rgba(230,0,0,0.3); }
+.adm-btn-publish:hover { background: #c00000; transform: translateY(-1px); }
+.adm-btn-publish:disabled { opacity: 0.6; cursor: not-allowed; }
+
+/* RESPONSIVE */
+@media (max-width: 700px) {
+  .adm-root { padding: 16px; }
+  .adm-expand-grid { grid-template-columns: 1fr; }
+  .adm-header { flex-direction: column; }
+  .adm-data-table th:nth-child(2), .adm-data-table td:nth-child(2) { display: none; }
+  .adm-pagination { flex-direction: column; align-items: flex-start; }
+}

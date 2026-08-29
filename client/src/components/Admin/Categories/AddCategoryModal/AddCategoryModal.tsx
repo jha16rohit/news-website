@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { X, Check, Palette, Plus, ChevronDown } from "lucide-react";
 import "./AddCategoryModal.css";
-import type { Category } from "../../NewsStore/NewsStore";
+import type { Category } from "../../../../types/category";
 
 interface Props {
   isOpen:     boolean;
@@ -22,7 +22,8 @@ export default function AddCategoryModal({ isOpen, onClose, onAdd, categories }:
   const [color,       setColor]       = useState("#3b82f6");
   const [featured,    setFeatured]    = useState(false);
   const [enabled,     setEnabled]     = useState(true);
-  const [parentId,    setParentId]    = useState<number | null>(null);
+  const [parentId,    setParentId]    = useState<string | null>(null);
+  const [inShowcase,  setInShowcase]  = useState(false);
 
   useEffect(() => {
     if (isOpen) {
@@ -42,7 +43,18 @@ export default function AddCategoryModal({ isOpen, onClose, onAdd, categories }:
 
   const handleSubmit = () => {
     if (!name.trim()) return;
-    onAdd({ name, description, articles: "0", views: "0", featured, enabled, color, parentId });
+    onAdd({
+  name,
+  slug,
+  description,
+  articles: 0,
+  views: 0,
+  featured,
+  enabled,
+  color,
+  parentId,
+  inShowcase,
+});
     onClose();
   };
 
@@ -71,7 +83,7 @@ export default function AddCategoryModal({ isOpen, onClose, onAdd, categories }:
             <div className="add-select-wrap">
               <select
                 value={parentId ?? ""}
-                onChange={e => setParentId(e.target.value ? Number(e.target.value) : null)}
+                onChange={e => setParentId(e.target.value || null)}
                 className="add-select"
               >
                 <option value="">None (top-level)</option>
@@ -125,6 +137,10 @@ export default function AddCategoryModal({ isOpen, onClose, onAdd, categories }:
             <label className="add-toggle-group">
               <button className={`add-modal-toggle${featured ? " on" : ""}`} onClick={() => setFeatured(!featured)}><span /></button>
               <span>Featured</span>
+            </label>
+            <label className="add-toggle-group">
+              <button className={`add-modal-toggle${inShowcase ? " on" : ""}`} onClick={() => setInShowcase(!inShowcase)}><span /></button>
+              <span>Showcase</span>
             </label>
             <label className="add-toggle-group">
               <button className={`add-modal-toggle${enabled ? " on" : ""}`} onClick={() => setEnabled(!enabled)}><span /></button>

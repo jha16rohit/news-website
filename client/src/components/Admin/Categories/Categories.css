@@ -1,5 +1,4 @@
 .cat-root {
-  background: #f8fafc;
   min-height: 100vh;
   font-family: Inter, sans-serif;
 }
@@ -9,9 +8,10 @@
   justify-content: space-between;
   align-items: center;
   margin-bottom: 25px;
+  padding-top:  20px;
 }
 
-.cat-title { font-size: 32px; font-weight: 700; }
+.cat-title { font-size: 28px; font-weight: 700; font-family: times new roman, sans-serif; color: #111; margin: 0; }
 
 .cat-subtitle {
   color: #64748b;
@@ -333,3 +333,98 @@
 .cat-btn-delete:hover { background: #dc2626; }
 
 .cat-container { padding: 0; }
+
+/* ===================================================================
+   RESPONSIVE
+   Desktop:      > 1024px  (default styles above)
+   Tablet:       769px – 1024px
+   Mini tablet:  481px – 768px
+   Mobile:       <= 480px
+   Nothing is ever hidden — everything stays visible at every size,
+   layout just reflows to fit.
+=================================================================== */
+
+/* ---------- Tablet (769px – 1024px) ---------- */
+@media (max-width: 1024px) {
+  .cat-container { padding: 0 20px; }
+  .cat-stats { grid-template-columns: repeat(2, 1fr); }
+  .cat-grid  { grid-template-columns: repeat(2, 1fr); }
+  .cat-search input { width: 100%; max-width: 100%; box-sizing: border-box; }
+}
+
+/* ---------- Mini tablet (481px – 768px) ---------- */
+@media (max-width: 768px) {
+  .cat-container { padding: 0 14px; }
+
+  .cat-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 12px;
+  }
+  .cat-add-btn { width: 100%; text-align: center; }
+
+  .cat-title    { font-size: 22px; }
+  .cat-subtitle { font-size: 13px; }
+
+  .cat-stats { grid-template-columns: repeat(2, 1fr); gap: 10px; }
+  .cat-stat-card { padding: 14px; }
+  .cat-stat-icon { width: 36px; height: 36px; }
+  .cat-stat-value { font-size: 18px; }
+
+  .cat-grid { grid-template-columns: 1fr; }
+
+  .cat-card { flex-wrap: wrap; }
+  .cat-card--child { margin-left: 10px; }
+
+  .cat-content { min-width: 100%; order: 3; }
+  .cat-top { width: 100%; }
+
+  .cat-actions {
+    flex-direction: row;
+    margin-left: auto;
+  }
+}
+
+/* ---------- Mobile (<= 480px) ---------- */
+@media (max-width: 480px) {
+  .cat-container { padding: 0 10px; }
+
+  .cat-title    { font-size: 19px; }
+  .cat-subtitle { font-size: 12px; }
+  .cat-add-btn  { padding: 9px 14px; font-size: 13px; }
+
+  .cat-stats { grid-template-columns: 1fr; gap: 8px; }
+  .cat-stat-card { padding: 12px; gap: 10px; }
+  .cat-stat-value { font-size: 18px; }
+  .cat-stat-label { font-size: 11px; }
+
+  .cat-search input { padding: 9px 12px; font-size: 13px; }
+
+  .cat-card { padding: 12px; gap: 10px; }
+  .cat-avatar { width: 40px; height: 40px; font-size: 16px; }
+  .cat-card--child .cat-avatar { width: 34px; height: 34px; font-size: 13px; }
+
+  .cat-name-row h3 { font-size: 14px; }
+  .cat-desc { font-size: 12.5px; }
+  .cat-meta { font-size: 11px; gap: 8px; flex-wrap: wrap; }
+
+  .cat-featured,
+  .cat-child-count { font-size: 10px; padding: 2px 7px; }
+
+  .cat-actions { gap: 6px; }
+  .cat-icon-btn { width: 30px; height: 30px; }
+
+  .cat-toast {
+    left: 12px;
+    right: 12px;
+    bottom: 16px;
+    width: auto;
+  }
+
+  .cat-delete-modal { padding: 18px; max-width: calc(100vw - 32px); }
+  .cat-delete-modal h3 { font-size: 16px; }
+  .cat-delete-modal p  { font-size: 13px; }
+  .cat-delete-actions  { flex-wrap: wrap; }
+  .cat-btn-cancel,
+  .cat-btn-delete { flex: 1; text-align: center; }
+}

@@ -4,7 +4,7 @@
   display: flex;
   flex-direction: column;
   background-color: #f8fafc; 
-  font-family: 'Inter', system-ui, sans-serif;
+  font-family: var(--font-body); 
 }
 
 .topic-main-content {
@@ -19,20 +19,6 @@
 }
 
 /* ===== PAGE HEADER ===== */
-.topic-header-section {
-  margin-bottom: 40px;
-  text-align: left; /* Aligned left like the screenshot */
-  border-left: 4px solid #dc2626; /* Small red accent line */
-  padding-left: 15px;
-}
-
-.topic-page-heading {
-  font-size: 32px;
-  font-weight: 800;
-  color: #0f172a;
-  margin: 0 0 8px 0;
-}
-
 .topic-page-subheading {
   font-size: 16px;
   color: #64748b;
@@ -43,17 +29,17 @@
 .topic-grid {
   display: grid;
   grid-template-columns: repeat(4, 1fr); 
-  gap: 24px; /* Slightly wider gap */
+  gap: 24px; 
 }
 
 /* ===== INDIVIDUAL CARDS (News Style) ===== */
 .topic-card {
   background-color: #ffffff;
-  border-radius: 8px; /* Sharper corners like the image */
+  border-radius: 8px; 
   border: 1px solid #e2e8f0;
   display: flex;
   flex-direction: column;
-  overflow: hidden; /* Clips the top of the image inside the border radius */
+  overflow: hidden; 
   transition: transform 0.2s ease, box-shadow 0.2s ease;
 }
 
@@ -73,7 +59,7 @@
 .topic-card-image {
   width: 100%;
   height: 100%;
-  object-fit: cover;
+  object-fit: fill;
 }
 
 .topic-card-no-image {
@@ -95,7 +81,7 @@
 
 /* Red Caption Badge */
 .topic-card-badge {
-  background-color: #dc2626; /* Deep Red */
+  background-color: #dc2626; 
   color: #ffffff;
   font-size: 10px;
   font-weight: 800;
@@ -103,7 +89,7 @@
   letter-spacing: 0.5px;
   padding: 4px 8px;
   border-radius: 4px;
-  align-self: flex-start; /* Keeps the badge small */
+  align-self: flex-start; 
   margin-bottom: 12px;
 }
 
@@ -114,6 +100,7 @@
   color: #0f172a;
   margin: 0 0 8px 0;
   line-height: 1.4;
+  font-family: Noto Sans Devanagari; /* 👇 EXPERT FIX: Applied heading font */
 }
 
 /* Description (With "..." Truncation) */
@@ -122,13 +109,12 @@
   color: #475569;
   line-height: 1.6;
   margin: 0;
-  
-  /* 👇 This magic CSS automatically adds "..." at the end of line 2 */
   display: -webkit-box;
-  -webkit-line-clamp: 2; /* Increase this number to show more lines before truncating */
+  -webkit-line-clamp: 2; 
   line-clamp: 2;
   -webkit-box-orient: vertical;
   overflow: hidden;
+  font-family: Noto Sans Devanagari; /* 👇 EXPERT FIX: Applied body font */
 }
 
 /* 3. Social Footer */
@@ -136,7 +122,7 @@
   border-top: 1px solid #f1f5f9;
   padding: 14px 20px;
   display: flex;
-  justify-content: center; /* 👇 Changed from flex-start to center! */
+  justify-content: center; 
   align-items: center;
   gap: 16px; 
 }
@@ -165,7 +151,6 @@
 }
 
 .topic-show-more-btn {
-  background-color: transparent;
   color: #0f172a;
   border: 2px solid #e2e8f0;
   background-color: white;
@@ -182,26 +167,89 @@
   background-color: #f8fafc;
 }
 
-/* ===== RESPONSIVE ===== */
 .text-decoration-none {
   text-decoration: none !important;
   color: inherit !important;
 }
 
-@media (max-width: 1200px) {
+/* ══════════════════════════════════════════════════════════════
+   RESPONSIVE BREAKPOINTS (6-Tier Professional System)
+══════════════════════════════════════════════════════════════ */
+
+/* 1. Large Desktop - 1440px */
+@media (max-width: 1440px) {
+  .topic-container {
+    max-width: 1100px;
+  }
+}
+
+/* 2. Laptop - 1024px */
+@media (max-width: 1024px) {
   .topic-grid {
     grid-template-columns: repeat(3, 1fr); 
+    gap: 20px;
+  }
+  .topic-card-image-wrapper {
+    height: 170px;
   }
 }
 
-@media (max-width: 900px) {
+/* 3. Standard Tablet - 768px */
+@media (max-width: 768px) {
+  .topic-main-content {
+    padding: 40px 0 60px 0;
+  }
   .topic-grid {
     grid-template-columns: repeat(2, 1fr); 
+    gap: 20px;
   }
 }
 
-@media (max-width: 550px) {
+/* 4. Mobile L - 425px */
+@media (max-width: 425px) {
+  .topic-main-content {
+    padding: 30px 0 50px 0;
+  }
   .topic-grid {
     grid-template-columns: 1fr; 
+    gap: 24px;
+  }
+  .topic-card-image-wrapper {
+    height: 220px; /* Taller on mobile since it spans the full width */
+  }
+  .topic-action-row {
+    margin-top: 30px;
+  }
+  .topic-show-more-btn {
+    width: 100%; /* Full width button on phones */
+  }
+}
+
+/* 5. Mobile M - 375px */
+@media (max-width: 375px) {
+  .topic-card-title {
+    font-size: 17px;
+  }
+  .topic-card-image-wrapper {
+    height: 200px;
+  }
+  .topic-card-body {
+    padding: 16px;
+  }
+}
+
+/* 6. Mobile S - 320px */
+@media (max-width: 320px) {
+  .topic-card-title {
+    font-size: 16px;
+  }
+  .topic-card-desc {
+    font-size: 13px;
+  }
+  .topic-card-image-wrapper {
+    height: 180px;
+  }
+  .topic-card-footer {
+    padding: 12px 16px;
   }
 }

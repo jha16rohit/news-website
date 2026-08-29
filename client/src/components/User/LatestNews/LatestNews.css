@@ -1,8 +1,9 @@
 /* ===== SECTION WRAPPER ===== */
 .latest-news-section {
   padding: 50px 0;
-  background-color: #ffffff; /* Keeping it clean and white */
+  background-color: #ffffff; 
   width: 100%;
+  font-family: var(--font-body); /* 👇 EXPERT FIX: Applied global body font */
 }
 
 .latest-news-container {
@@ -15,12 +16,13 @@
 .section-header {
   margin-bottom: 30px;
   position: relative;
-  display: inline-block; /* Makes the underline exactly as wide as the text */
+  display: inline-block; 
 }
 
 .section-header h2 {
+  font-family: var(--font-heading); /* 👇 EXPERT FIX: Applied heading font */
   font-size: 28px;
-  font-weight: 800;
+  font-weight: 400; /* 👇 EXPERT FIX: Changed to 400 for Rozha One */
   color: #0b1423;
   margin: 0 0 8px 0;
   letter-spacing: -0.5px;
@@ -35,7 +37,7 @@
 /* ===== GRID LAYOUT ===== */
 .news-grid {
   display: grid;
-  grid-template-columns: repeat(3, 1fr); /* 3 columns across */
+  grid-template-columns: repeat(3, 1fr); 
   gap: 30px;
 }
 
@@ -43,86 +45,100 @@
 .news-card {
   display: flex;
   flex-direction: column;
-  background: white;
+  background: white ;
   border-radius: 12px;
   overflow: hidden;
   border: 1px solid #e2e8f0;
-  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+  box-shadow: 8px 10px 20px -6px rgba(0, 0, 0, 0.4);
   transition: transform 0.3s ease, box-shadow 0.3s ease;
   cursor: pointer;
-  text-decoration: none; /* In case Link adds underlining */
+  text-decoration: none; 
 }
 
 .news-card:hover {
   transform: translateY(-5px);
-  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+  box-shadow: 10px 14px 24px -6px rgba(0, 0, 0, 0.15);
 }
 
 /* ===== IMAGE ===== */
 .news-img-wrapper {
+   position: relative; 
    width: 100%;
-   height: 200px; /* Fixed height for uniformity */
+   height: 200px; 
    overflow: hidden;
 }
 
 .news-img {
   width: 100%;
   height: 100%;
-  object-fit: cover;
+  object-fit: fill;
   transition: transform 0.5s ease;
 }
 
-.news-card:hover .news-img {
-  transform: scale(1.05); /* Slight zoom on hover */
-}
+
 
 /* ===== TEXT CONTENT ===== */
 .news-content {
   padding: 20px;
   display: flex;
   flex-direction: column;
-  flex-grow: 1; /* Pushes meta to the bottom */
+  align-items: flex-start; 
+  flex-grow: 1; 
 }
 
-.news-category {
-  color: #e60000;
+/* Red Badge, White Text */
+.card-badge {
+  font-family: var(--font-body); /* 👇 EXPERT FIX: Explicit body font */
+  background-color: #e60000; 
+  color: #ffffff; 
   font-size: 11px;
   font-weight: 800;
   text-transform: uppercase;
+  padding: 4px 10px;
+  margin-bottom: 12px;
+  border-radius: 4px;
   letter-spacing: 0.5px;
-  margin-bottom: 10px;
+  display: inline-block;
+  line-height: 1;
 }
 
 .news-title {
+  font-family: Noto Sans Devanagari; /* 👇 EXPERT FIX: Applied heading font */
   font-size: 18px;
-  font-weight: 800;
-  color: #0f172a;
+  font-weight: 400; /* 👇 EXPERT FIX: Changed to 400 for Rozha One */
+  color: black;
   margin: 0 0 10px 0;
   line-height: 1.4;
+  text-align: left; 
 }
 
 .news-excerpt {
+  font-family: Noto Sans Devanagari; /* 👇 EXPERT FIX: Explicit body font */
   font-size: 14px;
   color: #64748b;
   line-height: 1.6;
   margin: 0 0 20px 0;
   display: -webkit-box;
-  -webkit-line-clamp: 2; /* Truncates after 2 lines */
+  -webkit-line-clamp: 2; 
+  line-clamp: 2;
   -webkit-box-orient: vertical;  
   overflow: hidden;
+  text-align: left;
 }
 
 /* ===== META INFO (Time & Views) ===== */
 .news-meta {
+  font-family: var(--font-body); /* 👇 EXPERT FIX: Explicit body font */
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-top: auto; /* Always sits at the bottom */
+  margin-top: auto; 
   padding-top: 15px;
-  border-top: 1px solid #f1f5f9;
+  border-top: 1px solid rgba(241, 245, 249, 0.1); 
   font-size: 13px;
   color: #94a3b8;
   font-weight: 500;
+  width: 100%; 
 }
 
 .news-meta span {
@@ -139,6 +155,7 @@
 }
 
 .show-more-btn {
+  font-family: var(--font-body); /* 👇 EXPERT FIX: Applied body font */
   background-color: transparent;
   color: #e60000;
   border: 2px solid #e60000;
@@ -154,27 +171,110 @@
 .show-more-btn:hover {
   background-color: #e60000;
   color: white;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(230, 0, 0, 0.15);
 }
 
-/* Fix for React Router links */
 .text-decoration-none {
     text-decoration: none !important;
     color: inherit !important;
 }
 
-/* ===== RESPONSIVE ===== */
-@media (max-width: 1024px) {
-  .news-grid {
-    grid-template-columns: repeat(2, 1fr); /* 2 columns on tablet */
+/* ══════════════════════════════════════════════════════════════
+   RESPONSIVE BREAKPOINTS (6-Tier Professional System)
+══════════════════════════════════════════════════════════════ */
+
+/* 1. Large Desktop - 1440px */
+@media (max-width: 1440px) {
+  .latest-news-container {
+    max-width: 1100px;
   }
 }
 
-@media (max-width: 600px) {
+/* 2. Laptop & Large Tablet - 1024px */
+@media (max-width: 1024px) {
   .news-grid {
-    grid-template-columns: 1fr; /* 1 column on mobile */
+    grid-template-columns: repeat(2, 1fr); /* 2 columns */
+    gap: 24px;
   }
-  
+}
+
+/* 3. Standard Tablet - 768px */
+@media (max-width: 768px) {
+  .latest-news-section {
+    padding: 40px 0;
+  }
+  .section-header h2 {
+    font-size: 26px;
+  }
+  .news-grid {
+    gap: 20px;
+  }
   .news-img-wrapper {
-    height: 220px;
+    height: 180px; 
+  }
+}
+
+/* 👇 THE CRITICAL FIX: Large Mobile / Phablet - 640px 👇 */
+@media (max-width: 640px) {
+  .news-grid {
+    grid-template-columns: 1fr; /* Safely drops to 1 column before it gets squished! */
+    gap: 24px;
+  }
+  .news-img-wrapper {
+    height: 240px; /* Gives the single-column image a nice cinematic width */
+  }
+}
+
+/* 4. Mobile L - 425px */
+@media (max-width: 425px) {
+  .latest-news-section {
+    padding: 32px 0;
+  }
+  .news-img-wrapper {
+    height: 220px; 
+  }
+  .section-header h2 {
+    font-size: 24px;
+  }
+  .show-more-btn {
+    width: 100%; /* Full width button on phones */
+  }
+}
+
+/* 5. Mobile M - 375px */
+@media (max-width: 375px) {
+  .news-img-wrapper {
+    height: 200px;
+  }
+  .news-title {
+    font-size: 17px;
+  }
+  .news-content {
+    padding: 16px;
+  }
+}
+
+/* 6. Mobile S - 320px */
+@media (max-width: 320px) {
+  .section-header h2 {
+    font-size: 22px;
+  }
+  .news-img-wrapper {
+    height: 180px;
+  }
+  .news-title {
+    font-size: 16px;
+    line-height: 1.3;
+  }
+  .news-excerpt {
+    font-size: 13px;
+  }
+  .card-badge {
+    font-size: 10px;
+    padding: 3px 8px;
+  }
+  .news-meta {
+    font-size: 12px;
   }
 }

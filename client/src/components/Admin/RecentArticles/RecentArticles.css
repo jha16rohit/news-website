@@ -38,9 +38,27 @@
 
 .recent-table tbody tr:hover { background: #f9fafb; }
 
-.article-cell { display: flex; flex-direction: column; }
-.article-cell strong { font-size: 14px; font-weight: 500; }
-.article-cell span   { color: #6b7280; font-size: 13px; margin-top: 2px; }
+.article-cell {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.article-cell strong {
+  font-size: 14px;
+  font-weight: 500;
+
+  /* Keep article title on one line */
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.article-cell span {
+  color: #6b7280;
+  font-size: 13px;
+  margin-top: 2px;
+}
 
 /* STATUS */
 .status {
@@ -246,6 +264,35 @@
   }
 
   .mac-meta .views { font-weight: 600; color: #111827; }
+    .recent-table {
+    min-width: 600px;
+    table-layout: fixed;
+  }
+
+  .recent-table th:first-child,
+  .recent-table td:first-child {
+    width: 240px;
+    max-width: 240px;
+  }
+
+  .article-cell {
+    width: 100%;
+    min-width: 0;
+  }
+
+  .article-cell strong {
+    display: block;
+    width: 100%;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .recent-table th:nth-child(4),
+.recent-table td:nth-child(4) {
+  width: 85px;
+  min-width: 85px;
+  white-space: nowrap;
+}
 }
 
 /* ===============================

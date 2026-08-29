@@ -1,0 +1,372 @@
+/* ===== OVERALL WRAPPER ===== */
+.cs-wrapper {
+  /* 👇 CRITICAL FIX: Restored to 95% so it perfectly aligns with the sections above and below it! 👇 */
+  width: 95%; 
+  max-width: 1400px; 
+  margin: 50px auto;
+  font-family: var(--font-body); /* 👇 EXPERT FIX: Applied global body font */
+  color: #0f172a;
+  box-sizing: border-box;
+}
+
+.cs-wrapper *, .cs-wrapper *::before, .cs-wrapper *::after {
+  box-sizing: border-box;
+}
+
+.cs-section {
+  margin-bottom: 40px;
+  padding-bottom: 40px;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.cs-section:last-child {
+  border-bottom: none;
+}
+
+/* ===== HEADER ===== */
+.cs-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 25px;
+  border-bottom: 1px solid #e2e8f0;
+  padding-bottom: 12px;
+}
+
+.cs-header-left {
+  display: flex;
+  flex-direction: column; 
+  align-items: flex-start;
+}
+
+.cs-title {
+  font-family: var(--font-heading); /* 👇 EXPERT FIX: Applied heading font */
+  margin: 0 0 6px 0; 
+  font-size: 24px;
+  font-weight: 400; /* 👇 EXPERT FIX: Changed to 400 for Rozha One */
+  color: #000000;
+}
+
+.cs-underline {
+  height: 4px; 
+  width: 50px; 
+  background-color: #e60000; 
+  border-radius: 2px; 
+}
+
+/* "View All" link */
+.cs-more {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 14px;
+  font-weight: 700;
+  color: #b91c1c; 
+  text-decoration: none;
+  transition: opacity 0.2s;
+}
+
+.cs-more:hover {
+  opacity: 0.7;
+}
+
+/* ===== GLOBAL LAYOUT ===== */
+.cs-layout {
+  display: flex;
+  gap: 30px;
+  width: 100%;
+}
+
+.cs-layout a {
+  text-decoration: none;
+  display: block;
+}
+
+/* =========================================
+   THE CINEMATIC DARK CARD
+========================================= */
+.cs-dark-card {
+  position: relative;
+  background-color: #ffffff; 
+  display: flex;
+  flex-direction: column;
+  border-radius: 8px;
+  overflow: hidden;
+  height: 100%; 
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+  box-shadow: 6px 7px 15px -3px rgba(0, 0, 0, 0.4);
+}
+
+.category-save-btn {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  background-color: rgba(0, 0, 0, 0.4);
+  border: none;
+  border-radius: 50%;
+  padding: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  backdrop-filter: blur(4px);
+  z-index: 10;
+}
+
+.category-save-btn:hover {
+  background-color: rgba(0, 0, 0, 0.7);
+  transform: scale(1.1);
+}
+
+.cs-dark-card:hover {
+  transform: translateY(-4px);
+}
+
+.cs-img-wrap {
+  width: 100%;
+  aspect-ratio: 16/9;
+  overflow: hidden;
+  flex-shrink: 0; 
+}
+
+.cs-dark-card img {
+  width: 100%;
+  height: 100%; 
+  object-fit: fill; 
+  display: block;
+  transition: transform 0.5s ease;
+}
+
+.cs-card-body {
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  flex-grow: 1;
+}
+
+.cs-card-badge {
+  font-family: var(--font-body); /* 👇 EXPERT FIX: Applied body font */
+  background-color: #e60000;
+  color: #ffffff;
+  font-size: 11px;
+  font-weight: 800;
+  text-transform: uppercase;
+  padding: 4px 10px;
+  align-self: flex-start;
+  margin-bottom: 15px;
+  border-radius: 4px;
+  letter-spacing: 0.5px;
+}
+
+.cs-card-title {
+  font-family: Noto Sans Devanagari; /* 👇 EXPERT FIX: Applied heading font */
+  font-size: 20px;
+  font-weight: 500; /* 👇 EXPERT FIX: Changed to 400 for Rozha One */
+  color: black;
+  line-height: 1.65;
+  margin: 0 0 12px 0;
+  
+  display: -webkit-box;
+  -webkit-line-clamp: 2; 
+  line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  text-overflow: ellipsis; 
+  min-height: 52px; 
+}
+
+.cs-grid-title-small {
+  font-size: 18px; 
+  min-height: 46px; 
+}
+
+.cs-card-sub {
+  font-family: Noto Sans Devanagari;
+  color: #64748b;
+  font-size: 14px;
+  line-height: 1.65;
+  margin: 0 0 16px 0;
+  
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.cs-card-time {
+  font-family: var(--font-body);
+  color: #94a3b8;
+  font-size: 12px;
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: auto;
+  margin-bottom: 8px;
+}
+
+/* =========================================
+   SIDEBAR 2x2 GRID (Dark Mini-Cards)
+========================================= */
+.cs-sidebar-col {
+  flex: 1.2; 
+  min-width: 0; 
+  display: grid;
+  grid-template-columns: repeat(2, 1fr); 
+  grid-template-rows: repeat(2, 1fr); 
+  gap: 20px;
+}
+
+.cs-list-item, .cs-split-sub-card {
+  position: relative;
+  display: flex;
+  flex-direction: column; 
+  padding: 0;
+  background-color: #ffffff; 
+  border-radius: 6px; 
+  overflow: hidden; 
+  height: 100%;
+  box-shadow: 6px 7px 15px -3px rgba(0, 0, 0, 0.4);
+  color: black;
+}
+
+.cs-list-item:hover {
+  transform: translateY(-4px);
+}
+
+.cs-list-item .cs-list-img, .cs-split-sub-card .cs-list-img {
+  width: 100%; 
+  height: 140px; 
+  object-fit: fill;
+}
+
+.cs-list-content {
+  display: flex;
+  flex-direction: column;
+  flex: 1; 
+  padding: 16px; 
+  align-items: flex-start;
+}
+
+.cs-list-cat {
+  font-family: var(--font-body); /* 👇 EXPERT FIX: Applied body font */
+  background-color: #e60000; 
+  color: #ffffff; 
+  font-size: 10px;
+  font-weight: 800;
+  text-transform: uppercase;
+  padding: 4px 8px; 
+  border-radius: 3px; 
+  margin-bottom: 10px;
+  display: inline-block; 
+  letter-spacing: 0.5px;
+}
+
+.cs-list-title {
+  font-family: Noto Sans Devanagari; /* 👇 EXPERT FIX: Applied heading font */
+  font-size: 14px; 
+  font-weight: 400; /* 👇 EXPERT FIX: Changed to 400 for Rozha One */
+  color: black; 
+  line-height: 1.65;
+  margin: 0 0 10px 0;
+  
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+/* ===== LAYOUT CONFIGURATIONS ===== */
+.cs-layout-hero-sidebar, .cs-layout-split-sidebar {
+  display: flex;
+  gap: 30px;
+}
+
+.cs-hero-col, .cs-split-col {
+  flex: 1.4; 
+  min-width: 0; 
+  border-right: 1px solid #e2e8f0; 
+  padding-right: 30px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.cs-layout-grid-3 {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 30px;
+}
+
+.cs-layout-grid-4 {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 25px;
+}
+
+.cs-sidebar-reversed {
+  border-right: 1px solid #e2e8f0; 
+  padding-right: 30px;
+}
+
+.cs-hero-reversed {
+  border-right: none; 
+  padding-right: 0;
+}
+
+/* =========================================
+   RESPONSIVE BREAKPOINTS (Professional Scale)
+========================================= */
+
+@media (max-width: 1024px) {
+  .cs-layout-hero-sidebar, .cs-layout-split-sidebar {
+    flex-direction: column;
+  }
+  
+  .cs-layout-grid-3 {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .cs-layout-grid-4 {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  
+  .cs-hero-col, .cs-split-col, .cs-sidebar-reversed { 
+    margin-bottom: 25px; 
+    border-right: none; 
+    border-bottom: 2px solid #e2e8f0; 
+    padding-right: 0;
+    padding-bottom: 25px;
+    width: 100%;
+  }
+}
+
+@media (max-width: 768px) {
+  .cs-layout-grid-3, .cs-layout-grid-4 {
+    grid-template-columns: 1fr;
+  }
+  
+  /* On tablets/mobiles, change sidebar grid to single column or clean stack */
+  .cs-sidebar-col {
+    grid-template-columns: repeat(2, 1fr); 
+    grid-template-rows: auto;
+  }
+}
+
+@media (max-width: 480px) {
+  .cs-sidebar-col {
+    grid-template-columns: 1fr; 
+  }
+
+  .cs-split-sub-card { 
+    flex-direction: column; 
+  }
+  
+  .cs-split-sub-card .cs-list-img { 
+    width: 100%; 
+    height: 180px; 
+  }
+}

@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { X, Check, Palette, ChevronDown } from "lucide-react";
 import "./EditCategoryModal.css";
-import type { Category } from "../../NewsStore/NewsStore";
+import type { Category } from "../../../../types/category";
 
 interface Props {
   isOpen:     boolean;
@@ -17,6 +17,7 @@ const COLORS = [
 ];
 
 export default function EditCategoryModal({ isOpen, onClose, category, onSave, categories }: Props) {
+  // Everything is held inside this single 'form' object!
   const [form, setForm] = useState<Category | null>(null);
   const [slug, setSlug] = useState("");
 
@@ -59,7 +60,12 @@ export default function EditCategoryModal({ isOpen, onClose, category, onSave, c
               <select
                 className="modal-select"
                 value={form.parentId ?? ""}
-                onChange={e => setForm({ ...form, parentId: e.target.value ? Number(e.target.value) : null })}
+                onChange={e =>
+                  setForm({
+                    ...form,
+                    parentId: e.target.value || null,
+                  })
+                }
               >
                 <option value="">None (top-level)</option>
                 {parentOptions.map(p => (
@@ -104,16 +110,35 @@ export default function EditCategoryModal({ isOpen, onClose, category, onSave, c
           </div>
 
           <div className="toggles-row">
-            <div className="toggle-group">
-              <button className={`modal-toggle${form.featured ? " on" : ""}`}
-                onClick={() => setForm({ ...form, featured: !form.featured })}><span /></button>
-              <label>Featured</label>
-            </div>
-            <div className="toggle-group">
-              <button className={`modal-toggle${form.enabled ? " on" : ""}`}
-                onClick={() => setForm({ ...form, enabled: !form.enabled })}><span /></button>
-              <label>Active</label>
-            </div>
+            <label className="toggle-group">
+              <button 
+                className={`modal-toggle${form.featured ? " on" : ""}`} 
+                onClick={() => setForm({ ...form, featured: !form.featured })}
+              >
+                <span />
+              </button>
+              <span>Featured</span>
+            </label>
+            
+            <label className="toggle-group">
+              <button 
+                className={`modal-toggle${form.inShowcase ? " on" : ""}`} 
+                onClick={() => setForm({ ...form, inShowcase: !form.inShowcase })}
+              >
+                <span />
+              </button>
+              <span>Showcase</span>
+            </label>
+
+            <label className="toggle-group">
+              <button 
+                className={`modal-toggle${form.enabled ? " on" : ""}`} 
+                onClick={() => setForm({ ...form, enabled: !form.enabled })}
+              >
+                <span />
+              </button>
+              <span>Active</span>
+            </label>
           </div>
 
           <div className="preview-section">

@@ -13,12 +13,14 @@
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
-  margin-bottom: 24px;
+  padding: 22px 10px 16px !important;
+
 }
 .tp-title {
-  font-size: 22px;
+  font-size: 28px;
   font-weight: 700;
   margin: 0 0 4px;
+  font-family: 'Times New Roman', Times, serif;
 }
 .tp-subtitle {
   font-size: 13px;
@@ -38,6 +40,7 @@
   font-weight: 600;
   cursor: pointer;
   transition: background 0.18s;
+  white-space: nowrap;
 }
 .tp-btn-new:hover {
   background: #1d4ed8;
@@ -587,6 +590,7 @@
   transition: background 0.15s;
 }
 .tp-btn-delete:hover { background: #dc2626; }
+
 
 /* Responsive */
 @media (max-width: 900px) {

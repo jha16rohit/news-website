@@ -4,7 +4,7 @@ import {
   Plus,
   Search,
   Edit2,
-  Eye,
+
   Trash2,
   X,
   FileText,
@@ -13,73 +13,30 @@ import {
   Upload,
 } from "lucide-react";
 import "./TopicProfiles.css";
+import Preloader from "../Preloader/Preloder";
 
 import { FaXTwitter } from "react-icons/fa6";
+import {
+  getProfiles,
+  createProfile,
+  updateProfile,
+  deleteProfile,
+} from "../../../api/topicProfile";
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 export interface Profile {
-  id: number;
+  id: string;
   name: string;
   slug: string;
-  caption: string;
+  caption?: string;
   description: string;
-  instagram: string;
-  facebook: string;
-  twitter: string;
+  instagram?: string;
+  facebook?: string;
+  twitter?: string;
   imageUrl?: string;
-  linkedArticles: number;
-}
-
-const STORAGE_KEY = "topic_profiles";
-
-function loadProfiles(): Profile[] {
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    if (raw) return JSON.parse(raw);
-  } catch {}
-  // default seed data
-  return [
-    {
-      id: 1,
-      name: "Narendra Modi",
-      slug: "narendra-modi",
-      caption: "Prime Minister of India",
-      description:
-        "Narendra Damodardas Modi is an Indian politician serving as the Prime Minister of India since 2014. He is a member of the Bharatiya Janata Party.",
-      instagram: "",
-      facebook: "",
-      twitter: "",
-      linkedArticles: 42,
-    },
-    {
-      id: 2,
-      name: "Virat Kohli",
-      slug: "virat-kohli",
-      caption: "Indian Cricketer",
-      description:
-        "Virat Kohli is an Indian international cricketer and former captain of the India national cricket team. He is widely regarded as one of the greatest batsmen of all time.",
-      instagram: "",
-      facebook: "",
-      twitter: "",
-      linkedArticles: 38,
-    },
-    {
-      id: 3,
-      name: "Elon Musk",
-      slug: "elon-musk",
-      caption: "CEO of Tesla & SpaceX",
-      description:
-        "Elon Reeve Musk is a businessman known for his key roles in Tesla, SpaceX, and various other ventures. He is one of the wealthiest people in the world.",
-      instagram: "",
-      facebook: "",
-      twitter: "",
-      linkedArticles: 27,
-    },
-  ];
-}
-
-function saveProfiles(profiles: Profile[]) {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(profiles));
+  createdAt?: string;
+  // derived from _count.news if backend sends it
+  linkedArticles?: number;
 }
 
 // ─── helpers ─────────────────────────────────────────────────────────────────
@@ -93,7 +50,7 @@ function toSlug(name: string) {
 // ─── Modal form ──────────────────────────────────────────────────────────────
 interface ProfileFormProps {
   initial?: Partial<Profile>;
-  onSave: (data: Omit<Profile, "id" | "linkedArticles">) => void;
+  onSave: (data: Omit<Profile, "id" | "linkedArticles" | "createdAt">) => Promise<void>;
   onClose: () => void;
 }
 
@@ -106,6 +63,7 @@ function ProfileForm({ initial, onSave, onClose }: ProfileFormProps) {
   const [facebook, setFacebook] = useState(initial?.facebook ?? "");
   const [twitter, setTwitter] = useState(initial?.twitter ?? "");
   const [imageUrl, setImageUrl] = useState(initial?.imageUrl ?? "");
+  const [isSaving, setIsSaving] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
 
   const [isWikiLoading, setIsWikiLoading] = useState(false);
@@ -116,7 +74,6 @@ function ProfileForm({ initial, onSave, onClose }: ProfileFormProps) {
     if (!initial?.slug) setSlug(toSlug(v));
   };
 
-  // Helper function to read the image file
   const processFile = (file: File) => {
     const reader = new FileReader();
     reader.onload = (ev) => setImageUrl(ev.target?.result as string);
@@ -156,48 +113,198 @@ function ProfileForm({ initial, onSave, onClose }: ProfileFormProps) {
     window.open(`https://www.google.com/search?q=${query}`, "_blank");
   };
 
-  const handleFetchWiki = async () => {
-    if (!name.trim()) {
-      alert("Please enter the Name first so I know who to search for on Wikipedia!");
+const handleFetchWiki = async () => {
+  if (!name.trim()) {
+    alert("Please enter the Name first.");
+    return;
+  }
+
+  setIsWikiLoading(true);
+
+  try {
+    const searchName = name.trim();
+
+    // Detect whether the name contains Devanagari characters
+    const isHindi = /[\u0900-\u097F]/.test(searchName);
+
+    // Use the appropriate Wikipedia
+    const wikiBase = isHindi
+      ? "https://hi.wikipedia.org/w/api.php"
+      : "https://en.wikipedia.org/w/api.php";
+
+    // ─────────────────────────────────────────────
+    // 1. FIRST: Try exact Wikipedia page title
+    // ─────────────────────────────────────────────
+    const exactUrl =
+      `${wikiBase}?action=query` +
+      `&format=json` +
+      `&formatversion=2` +
+      `&redirects=true` +
+      `&prop=extracts` +
+      `&explaintext=true` +
+      `&exintro=false` +
+      `&titles=${encodeURIComponent(searchName)}` +
+      `&origin=*`;
+
+    const exactResponse = await fetch(exactUrl);
+
+    if (!exactResponse.ok) {
+      throw new Error("Wikipedia request failed");
+    }
+
+    const exactData = await exactResponse.json();
+    const exactPage = exactData?.query?.pages?.[0];
+
+    // If exact page exists, use it
+    if (
+      exactPage &&
+      !exactPage.missing &&
+      exactPage.extract
+    ) {
+      let cleanText = exactPage.extract
+        .replace(/^=+.+?=+$/gm, "")
+        .replace(/\n{3,}/g, "\n\n")
+        .trim();
+
+      // Limit description
+      if (cleanText.length > 6000) {
+        let chopped = cleanText.substring(0, 6000);
+        const lastPeriod = chopped.lastIndexOf(".");
+
+        if (lastPeriod > 0) {
+          chopped = chopped.substring(0, lastPeriod + 1);
+        }
+
+        cleanText = chopped;
+      }
+
+      setDescription(cleanText);
       return;
     }
-    setIsWikiLoading(true);
-    try {
-      const url = `https://en.wikipedia.org/w/api.php?action=query&prop=extracts&explaintext=true&format=json&origin=*&titles=${encodeURIComponent(name)}`;
-      
-      const response = await fetch(url);
-      if (response.ok) {
-        const data = await response.json();
-        const pages = data.query.pages;
-        const pageId = Object.keys(pages)[0];
 
-        if (pageId === "-1") {
-          alert("Could not find a Wikipedia page matching that exact name.");
-        } else if (pages[pageId].extract) {
-          let fullText = pages[pageId].extract;
-          if (fullText.length > 6000) {
-            let choppedText = fullText.substring(0, 6000);
-            choppedText = choppedText.substring(0, choppedText.lastIndexOf(".")) + ".";
-            setDescription(choppedText);
-          } else {
-            setDescription(fullText);
-          }
-        } else {
-          alert("Wikipedia didn't return a description for this name.");
-        }
-      } else {
-        alert("Could not connect to Wikipedia.");
-      }
-    } catch (error) {
-      alert("Failed to connect to Wikipedia.");
-    } finally {
-      setIsWikiLoading(false);
+    // ─────────────────────────────────────────────
+    // 2. No exact page → search Wikipedia titles
+    // ─────────────────────────────────────────────
+    const searchUrl =
+      `${wikiBase}?action=query` +
+      `&list=search` +
+      `&srsearch=${encodeURIComponent(searchName)}` +
+      `&srwhat=title` +
+      `&srnamespace=0` +
+      `&srlimit=5` +
+      `&format=json` +
+      `&origin=*`;
+
+    const searchResponse = await fetch(searchUrl);
+
+    if (!searchResponse.ok) {
+      throw new Error("Wikipedia search failed");
     }
-  };
 
-  const handleSubmit = () => {
+    const searchData = await searchResponse.json();
+    const results = searchData?.query?.search ?? [];
+
+    if (results.length === 0) {
+      alert(
+        `No Wikipedia profile found for "${searchName}".`
+      );
+      return;
+    }
+
+    // Normalize strings for comparison
+    const normalizeText = (value: string) =>
+      value
+        .toLowerCase()
+        .normalize("NFD")
+        .replace(/[\u0300-\u036f]/g, "")
+        .replace(/[^\p{L}\p{N}\s]/gu, "")
+        .replace(/\s+/g, " ")
+        .trim();
+
+    const normalizedSearch = normalizeText(searchName);
+
+    // Find the closest title
+    const bestResult =
+      results.find(
+        (item: any) =>
+          normalizeText(item.title) === normalizedSearch
+      ) ??
+      results.find(
+        (item: any) =>
+          normalizeText(item.title).includes(normalizedSearch) ||
+          normalizedSearch.includes(normalizeText(item.title))
+      ) ??
+      results[0];
+
+    const pageTitle = bestResult.title;
+
+    // ─────────────────────────────────────────────
+    // 3. Fetch selected page biography
+    // ─────────────────────────────────────────────
+    const pageUrl =
+      `${wikiBase}?action=query` +
+      `&format=json` +
+      `&formatversion=2` +
+      `&redirects=true` +
+      `&prop=extracts` +
+      `&explaintext=true` +
+      `&titles=${encodeURIComponent(pageTitle)}` +
+      `&origin=*`;
+
+    const pageResponse = await fetch(pageUrl);
+
+    if (!pageResponse.ok) {
+      throw new Error("Could not fetch Wikipedia page");
+    }
+
+    const pageData = await pageResponse.json();
+    const page = pageData?.query?.pages?.[0];
+
+    if (!page || page.missing || !page.extract) {
+      alert(
+        `Could not find a biography for "${searchName}".`
+      );
+      return;
+    }
+
+    let cleanText = page.extract
+      .replace(/^=+.+?=+$/gm, "")
+      .replace(/\n{3,}/g, "\n\n")
+      .trim();
+
+    // ─────────────────────────────────────────────
+    // 4. Limit biography length
+    // ─────────────────────────────────────────────
+    if (cleanText.length > 6000) {
+      let chopped = cleanText.substring(0, 6000);
+      const lastPeriod = chopped.lastIndexOf(".");
+
+      if (lastPeriod > 0) {
+        chopped = chopped.substring(0, lastPeriod + 1);
+      }
+
+      cleanText = chopped;
+    }
+
+    setDescription(cleanText);
+
+  } catch (error) {
+    console.error("Wikipedia fetch error:", error);
+    alert(
+      "Could not fetch information from Wikipedia. Please try again."
+    );
+  } finally {
+    setIsWikiLoading(false);
+  }
+};
+  const handleSubmit = async () => {
     if (!name.trim() || !description.trim()) return;
-    onSave({ name, slug, caption, description, instagram, facebook, twitter, imageUrl });
+    setIsSaving(true);
+    try {
+      await onSave({ name, slug, caption, description, instagram, facebook, twitter, imageUrl });
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   return (
@@ -274,18 +381,17 @@ function ProfileForm({ initial, onSave, onClose }: ProfileFormProps) {
           </div>
 
           <div className="tp-field" style={{ marginTop: 12 }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
               <label>Description / Biography <span className="required">*</span></label>
-              <button 
-                type="button" 
-                className="tp-wiki-fetch-btn" 
+              <button
+                type="button"
+                className="tp-wiki-fetch-btn"
                 onClick={handleFetchWiki}
                 disabled={isWikiLoading}
               >
                 {isWikiLoading ? "Fetching..." : "✨ Auto-Fetch from Wikipedia"}
               </button>
             </div>
-            
             <textarea
               value={description}
               onChange={(e) => setDescription(e.target.value)}
@@ -350,9 +456,9 @@ function ProfileForm({ initial, onSave, onClose }: ProfileFormProps) {
         </div>
 
         <div className="tp-modal-footer">
-          <button className="tp-btn-cancel" onClick={onClose}>Cancel</button>
-          <button className="tp-btn-create" onClick={handleSubmit}>
-            {initial?.id ? "Save Changes" : "Create Profile"}
+          <button className="tp-btn-cancel" onClick={onClose} disabled={isSaving}>Cancel</button>
+          <button className="tp-btn-create" onClick={handleSubmit} disabled={isSaving}>
+            {isSaving ? "Saving..." : initial?.id ? "Save Changes" : "Create Profile"}
           </button>
         </div>
       </div>
@@ -379,57 +485,72 @@ function DeleteConfirm({ onConfirm, onCancel }: { onConfirm: () => void; onCance
 // ─── Main Component ───────────────────────────────────────────────────────────
 export default function TopicProfiles() {
   const [profiles, setProfiles] = useState<Profile[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [search, setSearch] = useState("");
   const [showCreate, setShowCreate] = useState(false);
   const [editingProfile, setEditingProfile] = useState<Profile | null>(null);
-  const [deletingId, setDeletingId] = useState<number | null>(null);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
 
-  useEffect(() => {
-    setProfiles(loadProfiles());
-  }, []);
-
-  const persist = (updated: Profile[]) => {
-    setProfiles(updated);
-    saveProfiles(updated);
+  // ── Fetch all profiles from DB on mount ──────────────────────────────────
+  const fetchProfiles = async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const data = await getProfiles();
+      setProfiles(data);
+    } catch (err: any) {
+      setError(err.message || "Failed to load profiles.");
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const handleCreate = (data: Omit<Profile, "id" | "linkedArticles">) => {
-    const newProfile: Profile = {
-      ...data,
-      id: Date.now(),
-      linkedArticles: 0,
-    };
-    persist([...profiles, newProfile]);
+  useEffect(() => {
+    fetchProfiles();
+  }, []);
+
+  // ── Create ────────────────────────────────────────────────────────────────
+  const handleCreate = async (data: Omit<Profile, "id" | "linkedArticles" | "createdAt">) => {
+    const created = await createProfile(data);
+    setProfiles((prev) => [created, ...prev]);
     setShowCreate(false);
   };
 
-  const handleEdit = (data: Omit<Profile, "id" | "linkedArticles">) => {
+  // ── Update ────────────────────────────────────────────────────────────────
+  const handleEdit = async (data: Omit<Profile, "id" | "linkedArticles" | "createdAt">) => {
     if (!editingProfile) return;
-    persist(
-      profiles.map((p) =>
-        p.id === editingProfile.id ? { ...p, ...data } : p
-      )
+    const updated = await updateProfile(editingProfile.id, data);
+    setProfiles((prev) =>
+      prev.map((p) => (p.id === editingProfile.id ? { ...p, ...updated } : p))
     );
     setEditingProfile(null);
   };
 
-  const handleDelete = (id: number) => {
-    persist(profiles.filter((p) => p.id !== id));
+  // ── Delete ────────────────────────────────────────────────────────────────
+  const handleDelete = async (id: string) => {
+    await deleteProfile(id);
+    setProfiles((prev) => prev.filter((p) => p.id !== id));
     setDeletingId(null);
   };
 
   const filtered = profiles.filter(
     (p) =>
       p.name.toLowerCase().includes(search.toLowerCase()) ||
-      p.caption.toLowerCase().includes(search.toLowerCase())
+      (p.caption ?? "").toLowerCase().includes(search.toLowerCase())
   );
 
-  const totalLinked = profiles.reduce((s, p) => s + p.linkedArticles, 0);
+  const totalLinked = profiles.reduce((s, p) => s + (p.linkedArticles ?? 0), 0);
+  // TopicProfile has no explicit active/inactive status field, so "Active"
+  // is defined as profiles that are actually in use — i.e. linked to at
+  // least one article. Without this, "Active" just duplicated "Total
+  // Profiles" and told you nothing new.
+  const activeCount = profiles.filter((p) => (p.linkedArticles ?? 0) > 0).length;
 
   return (
     <div className="tp-page">
       {/* Header */}
-      <div className="tp-header">
+      <div className="tp-header haaa">
         <div>
           <h1 className="tp-title">Topic Profiles</h1>
           <p className="tp-subtitle">Create and manage profiles for people and topics linked in articles</p>
@@ -445,21 +566,57 @@ export default function TopicProfiles() {
         <div className="tp-stat-card">
           <div className="tp-stat-icon tp-icon-blue"><User size={20} /></div>
           <div>
-            <div className="tp-stat-num">{profiles.length}</div>
+            <div
+              className="tp-stat-num"
+              style={{
+                display: "block",
+                visibility: "visible",
+                fontSize: 24,
+                fontWeight: 700,
+                lineHeight: 1.2,
+                color: "#111827",
+              }}
+            >
+              {profiles.length}
+            </div>
             <div className="tp-stat-label">Total Profiles</div>
           </div>
         </div>
         <div className="tp-stat-card">
           <div className="tp-stat-icon tp-icon-green"><User size={20} /></div>
           <div>
-            <div className="tp-stat-num">{profiles.length}</div>
+            <div
+              className="tp-stat-num"
+              style={{
+                display: "block",
+                visibility: "visible",
+                fontSize: 24,
+                fontWeight: 700,
+                lineHeight: 1.2,
+                color: "#111827",
+              }}
+            >
+              {activeCount}
+            </div>
             <div className="tp-stat-label">Active</div>
           </div>
         </div>
         <div className="tp-stat-card">
           <div className="tp-stat-icon tp-icon-yellow"><FileText size={20} /></div>
           <div>
-            <div className="tp-stat-num">{totalLinked}</div>
+            <div
+              className="tp-stat-num"
+              style={{
+                display: "block",
+                visibility: "visible",
+                fontSize: 24,
+                fontWeight: 700,
+                lineHeight: 1.2,
+                color: "#111827",
+              }}
+            >
+              {totalLinked}
+            </div>
             <div className="tp-stat-label">Linked Articles</div>
           </div>
         </div>
@@ -476,66 +633,70 @@ export default function TopicProfiles() {
         />
       </div>
 
+      {/* Loading / Error states */}
+      {loading && <Preloader />}
+      {error && <div className="tp-empty" style={{ color: "#ef4444" }}>{error}</div>}
+
       {/* Profile Cards */}
-      <div className="tp-grid">
-        {filtered.map((profile) => (
-          <div className="tp-card" key={profile.id}>
-            <div className="tp-card-banner" />
-            <div className="tp-card-avatar">
-              {profile.imageUrl ? (
-                <img src={profile.imageUrl} alt={profile.name} />
-              ) : (
-                <User size={24} />
-              )}
-            </div>
-            <div className="tp-card-body">
-              <div className="tp-card-name">{profile.name}</div>
-              <div className="tp-card-caption">{profile.caption}</div>
-              <div className="tp-card-slug">/topic/{profile.slug}</div>
-              <p className="tp-card-desc">{profile.description}</p>
-
-              <div className="tp-card-socials">
-                {profile.instagram && (
-                  <a href={profile.instagram} target="_blank" rel="noreferrer">
-                    <Instagram size={15} />
-                  </a>
-                )}
-                {profile.facebook && (
-                  <a href={profile.facebook} target="_blank" rel="noreferrer">
-                    <Facebook size={15} />
-                  </a>
-                )}
-                {profile.twitter && (
-                  <a href={profile.twitter} target="_blank" rel="noreferrer">
-                    <FaXTwitter size={15} />
-                  </a>
+      {!loading && !error && (
+        <div className="tp-grid">
+          {filtered.map((profile) => (
+            <div className="tp-card" key={profile.id}>
+              <div className="tp-card-banner" />
+              <div className="tp-card-avatar">
+                {profile.imageUrl ? (
+                  <img src={profile.imageUrl} alt={profile.name} />
+                ) : (
+                  <User size={24} />
                 )}
               </div>
+              <div className="tp-card-body">
+                <div className="tp-card-name">{profile.name}</div>
+                <div className="tp-card-caption">{profile.caption}</div>
+                <div className="tp-card-slug">/topic/{profile.slug}</div>
+                <p className="tp-card-desc">{profile.description}</p>
 
-              <div className="tp-card-articles">
-                <FileText size={13} />
-                {profile.linkedArticles} linked articles
+                <div className="tp-card-socials">
+                  {profile.instagram && (
+                    <a href={profile.instagram} target="_blank" rel="noreferrer">
+                      <Instagram size={15} />
+                    </a>
+                  )}
+                  {profile.facebook && (
+                    <a href={profile.facebook} target="_blank" rel="noreferrer">
+                      <Facebook size={15} />
+                    </a>
+                  )}
+                  {profile.twitter && (
+                    <a href={profile.twitter} target="_blank" rel="noreferrer">
+                      <FaXTwitter size={15} />
+                    </a>
+                  )}
+                </div>
+
+                <div className="tp-card-articles">
+                  <FileText size={13} />
+                  {profile.linkedArticles ?? 0} linked articles
+                </div>
+              </div>
+
+              <div className="tp-card-actions">
+                <button className="tp-action-btn" onClick={() => setEditingProfile(profile)}>
+                  <Edit2 size={14} /> Edit
+                </button>
+                
+                <button className="tp-action-btn tp-action-delete" onClick={() => setDeletingId(profile.id)}>
+                  <Trash2 size={14} /> Delete
+                </button>
               </div>
             </div>
+          ))}
 
-            <div className="tp-card-actions">
-              <button className="tp-action-btn" onClick={() => setEditingProfile(profile)}>
-                <Edit2 size={14} /> Edit
-              </button>
-              <button className="tp-action-btn">
-                <Eye size={14} /> View
-              </button>
-              <button className="tp-action-btn tp-action-delete" onClick={() => setDeletingId(profile.id)}>
-                <Trash2 size={14} /> Delete
-              </button>
-            </div>
-          </div>
-        ))}
-
-        {filtered.length === 0 && (
-          <div className="tp-empty">No profiles found.</div>
-        )}
-      </div>
+          {filtered.length === 0 && (
+            <div className="tp-empty">No profiles found.</div>
+          )}
+        </div>
+      )}
 
       {/* Modals */}
       {showCreate && (

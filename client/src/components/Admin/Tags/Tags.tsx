@@ -1,52 +1,306 @@
-import { useState } from "react";
+import { useState, useMemo, useEffect, useCallback } from "react";
 import {
   Tag,
-  TrendingUp,
   FileText,
   Plus,
   Search,
-  Pencil,
   Trash2,
+  X,
+  Check,
+  AlertTriangle,
+  Loader2,
+  Flame,
 } from "lucide-react";
 import "./Tags.css";
+import {
+  getAllTags,
+  createTag,
+  deleteTag as deleteTagApi,
+  setTagTrending,
+  type Tag as TagType,
+} from "../../../api/tags.api";
 
-interface TagItem {
-  id: number;
-  name: string;
-  slug: string;
-  articles: number;
-  date: string;
+// ─── Helpers ──────────────────────────────────────────────────────────────────
+function toSlug(name: string) {
+  const latinSlug = name
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-|-$/g, "");
+
+  // Agar english text hai toh normal slug return karo
+  if (latinSlug) {
+    return "/" + latinSlug;
+  }
+
+  // Agar Hindi / non-Latin text hai toh ek unique hash slug generate karo
+  let hash = 0;
+  for (let i = 0; i < name.length; i++) {
+    hash = (Math.imul(31, hash) + name.charCodeAt(i)) | 0;
+  }
+  return "/tag-" + Math.abs(hash).toString(36);
 }
 
-const tagsData: TagItem[] = [
-  { id: 1, name: "Elections 2024", slug: "/elections-2024", articles: 456, date: "Jan 15, 2024" },
-  { id: 2, name: "Budget 2024", slug: "/budget-2024", articles: 234, date: "Feb 1, 2024" },
-  { id: 3, name: "IPL 2024", slug: "/ipl-2024", articles: 1234, date: "Mar 1, 2024" },
-  { id: 4, name: "Stock Market", slug: "/stock-market", articles: 567, date: "Jan 1, 2024" },
-];
+function formatDate(iso: string) {
+  return new Date(iso).toLocaleDateString("en-IN", {
+    day: "2-digit",
+    month: "short",
+    year: "numeric",
+  });
+}
 
-const popularTags = [
-  "Elections 2024 (456)",
-  "Budget (234)",
-  "IPL (1234)",
-  "Stock Market (567)",
-  "AI Technology (345)",
-  "Climate Change (189)",
-  "Bollywood (789)",
-  "Cricket (1567)",
-  "COVID-19 (234)",
-  "Supreme Court (156)",
-  "RBI (123)",
-  "Modi Government (678)",
-];
+function normalizeTagName(raw: string): string {
+  return raw
+    .trim()
+    .toLowerCase()
+    .split(" ")
+    .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
+    .join(" ");
+}
 
+// ─── AddTagModal ──────────────────────────────────────────────────────────────
+interface AddTagModalProps {
+  existingNames: string[];
+  onSave: (name: string) => Promise<void>;
+  onClose: () => void;
+}
+
+function AddTagModal({ existingNames, onSave, onClose }: AddTagModalProps) {
+  const [name, setName] = useState("");
+  const [error, setError] = useState("");
+  const [saving, setSaving] = useState(false);
+
+  const normalized = name.trim() ? normalizeTagName(name) : "";
+  const slug = normalized ? toSlug(normalized) : "";
+
+  const handleSubmit = async () => {
+    const trimmed = name.trim();
+    if (!trimmed) { setError("Tag name is required."); return; }
+    const norm = normalizeTagName(trimmed);
+    if (existingNames.some((n) => n.toLowerCase() === norm.toLowerCase())) {
+      setError("A tag with this name already exists.");
+      return;
+    }
+    setSaving(true);
+    try {
+      await onSave(norm);
+    } catch (e: unknown) {
+      setError(e instanceof Error ? e.message : "Failed to create tag.");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <div className="tags-overlay" onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}>
+      <div className="tags-modal" role="dialog" aria-modal="true">
+        <div className="tags-modal-header">
+          <div className="tags-modal-title-wrap">
+            <div className="tags-modal-icon"><Tag size={18} /></div>
+            <div>
+              <h2>Add New Tag</h2>
+              <p>Tags help readers discover related content.</p>
+            </div>
+          </div>
+          <button className="tags-modal-close" onClick={onClose}><X size={16} /></button>
+        </div>
+
+        <div className="tags-modal-body">
+          <div className="tags-modal-field">
+            <label>Tag Name <span className="tags-required">*</span></label>
+            <input
+              autoFocus
+              value={name}
+              onChange={(e) => { setName(e.target.value); setError(""); }}
+              onKeyDown={(e) => e.key === "Enter" && handleSubmit()}
+              placeholder="e.g. Budget 2025"
+              disabled={saving}
+            />
+            {normalized && name.trim() && (
+              <span className="tags-modal-preview-name">
+                Will be saved as: <strong>{normalized}</strong>
+              </span>
+            )}
+            {error && (
+              <span className="tags-modal-error">
+                <AlertTriangle size={13} /> {error}
+              </span>
+            )}
+          </div>
+          {slug && (
+            <div className="tags-modal-field">
+              <label>URL Slug <span className="tags-muted">(auto-generated)</span></label>
+              <div className="tags-slug-preview">{slug}</div>
+            </div>
+          )}
+        </div>
+
+        <div className="tags-modal-footer">
+          <button className="tags-modal-cancel" onClick={onClose} disabled={saving}>Cancel</button>
+          <button className="tags-modal-save" onClick={handleSubmit} disabled={saving}>
+            {saving ? <Loader2 size={14} className="tags-spin" /> : <Check size={14} />}
+            {saving ? "Creating…" : "Create Tag"}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ─── DeleteConfirm ────────────────────────────────────────────────────────────
+function DeleteConfirm({
+  name,
+  articleCount,
+  onConfirm,
+  onCancel,
+  deleting,
+}: {
+  name: string;
+  articleCount: number;
+  onConfirm: () => void;
+  onCancel: () => void;
+  deleting: boolean;
+}) {
+  return (
+    <div className="tags-overlay" onClick={(e) => { if (e.target === e.currentTarget) onCancel(); }}>
+      <div className="tags-delete-modal" role="dialog" aria-modal="true">
+        <div className="tags-delete-icon"><Trash2 size={22} /></div>
+        <h3>Delete "{name}"?</h3>
+        <p>
+          This tag is used in <strong>{articleCount}</strong> article{articleCount !== 1 ? "s" : ""}.
+          Removing it will unlink it from those articles permanently.
+        </p>
+        <div className="tags-delete-actions">
+          <button className="tags-modal-cancel" onClick={onCancel} disabled={deleting}>Cancel</button>
+          <button className="tags-btn-delete" onClick={onConfirm} disabled={deleting}>
+            {deleting ? <Loader2 size={14} className="tags-spin" /> : <Trash2 size={14} />}
+            {deleting ? "Deleting…" : "Delete"}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ─── Main Component ───────────────────────────────────────────────────────────
 export default function Tags() {
-  const [search, setSearch] = useState("");
+  const [allTags,       setAllTags]       = useState<TagType[]>([]);
+  const [loading,       setLoading]       = useState(true);
+  const [search,        setSearch]        = useState("");
+  const [showAdd,       setShowAdd]       = useState(false);
+  const [deleteTagItem, setDeleteTagItem] = useState<TagType | null>(null);
+  const [deleting,      setDeleting]      = useState(false);
+  const [apiError,      setApiError]      = useState<string | null>(null);
+  const [visibleTagCount, setVisibleTagCount] = useState(6);
 
-  const filtered = tagsData.filter((t) =>
-    t.name.toLowerCase().includes(search.toLowerCase())
+  // Trending state: set of tag IDs currently marked as trending (from DB isTrending field)
+  const [trendingIds, setTrendingIds] = useState<Set<string>>(new Set());
+
+  // ── Load all tags from API ─────────────────────────────────────────────────
+  const loadTags = useCallback(async () => {
+    setLoading(true);
+    try {
+      const all = await getAllTags();
+      setAllTags(Array.isArray(all) ? all : []);
+      setApiError(null);
+    } catch {
+      setApiError("Failed to load tags. Please try again.");
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    loadTags();
+  }, [loadTags]);
+
+  // Sync trendingIds from DB whenever allTags changes
+  useEffect(() => {
+    const fromDb = new Set(
+      allTags.filter((t) => (t as any).isTrending).map((t) => t.id)
+    );
+    setTrendingIds(fromDb);
+  }, [allTags]);
+
+  // ── Derived ────────────────────────────────────────────────────────────────
+  const existingNames = allTags.map((t) => t.name);
+
+  // Admin-marked trending tags
+  const adminTrendingTags = useMemo(
+    () => allTags.filter((t) => trendingIds.has(t.id)),
+    [allTags, trendingIds]
   );
 
+  const filtered = useMemo(
+    () =>
+      allTags.filter(
+        (t) =>
+          t.name.toLowerCase().includes(search.toLowerCase()) ||
+          t.slug.toLowerCase().includes(search.toLowerCase())
+      ),
+    [allTags, search]
+  );
+
+  const visibleTags = useMemo(
+  () => filtered.slice(0, visibleTagCount),
+  [filtered, visibleTagCount]
+);
+
+  const totalTagged  = allTags.reduce((s, t) => s + (t._count?.articles ?? 0), 0);
+
+  // ── Toggle trending via API ────────────────────────────────────────────────
+  const toggleTrending = useCallback(async (tag: TagType) => {
+    const isTrending = !trendingIds.has(tag.id);
+    // Optimistic update
+    setTrendingIds((prev) => {
+      const next = new Set(prev);
+      if (isTrending) next.add(tag.id); else next.delete(tag.id);
+      return next;
+    });
+    try {
+      await setTagTrending(tag.id, isTrending);
+    } catch {
+      // Revert on failure
+      setTrendingIds((prev) => {
+        const next = new Set(prev);
+        if (isTrending) next.delete(tag.id); else next.add(tag.id);
+        return next;
+      });
+      setApiError("Failed to update trending status.");
+    }
+  }, [trendingIds]);
+
+  // ── Handlers ───────────────────────────────────────────────────────────────
+  const handleAdd = async (name: string) => {
+    try {
+      await createTag(name);
+      await loadTags();
+      setShowAdd(false);
+    } catch (e: any) {
+      // Re-throw so AddTagModal can display the error inside itself
+      throw e instanceof Error ? e : new Error("Failed to create tag. Please try again.");
+    }
+  };
+
+  const handleDelete = async () => {
+    if (!deleteTagItem) return;
+    setDeleting(true);
+    try {
+      await deleteTagApi(deleteTagItem.id);
+      setTrendingIds((prev) => {
+        const next = new Set(prev);
+        next.delete(deleteTagItem.id);
+        return next;
+      });
+      await loadTags();
+      setDeleteTagItem(null);
+    } catch {
+      setApiError("Failed to delete tag.");
+    } finally {
+      setDeleting(false);
+    }
+  };
+
+  // ── Render ─────────────────────────────────────────────────────────────────
   return (
     <div className="tags-root">
       <div className="tags-container">
@@ -55,89 +309,104 @@ export default function Tags() {
         <div className="tags-header">
           <div>
             <h1 className="tags-title">Tags</h1>
-            <p className="tags-subtitle">
-              Manage tags for better content discovery
-            </p>
+            <p className="tags-subtitle">Manage tags and set which appear as trending on the site</p>
           </div>
-          <button className="tags-add-btn">
+          <button className="tags-add-btn" onClick={() => setShowAdd(true)}>
             <Plus size={16} />
             Add Tag
           </button>
         </div>
 
+        {apiError && (
+          <div className="tags-api-error">
+            <AlertTriangle size={16} /> {apiError}
+            <button onClick={() => { setApiError(null); loadTags(); }}>Retry</button>
+          </div>
+        )}
+
         {/* STATS */}
         <div className="tags-stats">
-
           <div className="tags-stat-card">
-            <div className="tags-stat-icon bg-gray">
-              <Tag size={20} />
-            </div>
+            <div className="tags-stat-icon bg-gray"><Tag size={20} /></div>
             <div>
-              <div className="tags-stat-value">248</div>
+              <div className="tags-stat-value">{loading ? "—" : allTags.length}</div>
               <div className="tags-stat-label">Total Tags</div>
             </div>
           </div>
-
           <div className="tags-stat-card">
-            <div className="tags-stat-icon bg-blue">
-              <TrendingUp size={20} />
-            </div>
+            <div className="tags-stat-icon bg-orange"><Flame size={20} /></div>
             <div>
-              <div className="tags-stat-value">12</div>
-              <div className="tags-stat-label">Trending</div>
+              <div className="tags-stat-value">{loading ? "—" : adminTrendingTags.length}</div>
+              <div className="tags-stat-label">Admin Trending</div>
             </div>
           </div>
-
           <div className="tags-stat-card">
-            <div className="tags-stat-icon bg-green">
-              <FileText size={20} />
-            </div>
+            <div className="tags-stat-icon bg-green"><FileText size={20} /></div>
             <div>
-              <div className="tags-stat-value">8,456</div>
+              <div className="tags-stat-value">{loading ? "—" : totalTagged.toLocaleString()}</div>
               <div className="tags-stat-label">Tagged Articles</div>
             </div>
           </div>
-
-          <div className="tags-stat-card">
-            <div className="tags-stat-icon bg-gray">
-              <Tag size={20} />
-            </div>
-            <div>
-              <div className="tags-stat-value">34</div>
-              <div className="tags-stat-label">New This Week</div>
-            </div>
-          </div>
-
         </div>
 
         {/* CONTENT GRID */}
         <div className="tags-grid">
 
-          {/* LEFT - POPULAR TAGS */}
-          <div className="tags-popular">
-            <div className="tags-section-header">
-              <TrendingUp size={18} />
-              <h2>Popular Tags</h2>
-            </div>
+          {/* LEFT — PANELS */}
+          <div className="tags-left-col">
 
-            <div className="tags-chip-wrap">
-              {popularTags.map((t, i) => (
-                <span key={i} className="tags-chip">
-                  {t}
+            {/* Admin Trending Panel */}
+            <div className="tags-popular">
+              <div className="tags-section-header">
+                <Flame size={17} color="#e60000" />
+                <h2>Admin Trending Tags</h2>
+                <span className="tags-section-badge tags-section-badge--red">
+                  Shown on site
                 </span>
-              ))}
+              </div>
+              <p className="tags-panel-hint">
+                These tags appear in the Trending News page filter and the Footer. Toggle the flame icon on any tag row to add or remove.
+              </p>
+
+              {loading ? (
+                <div className="tags-loading">
+                  <Loader2 size={16} className="tags-spin" /> Loading…
+                </div>
+              ) : adminTrendingTags.length === 0 ? (
+                <div className="tags-empty-state">
+                  <Flame size={28} className="tags-empty-icon" />
+                  <p className="tags-empty-title">No trending tags set</p>
+                  <p className="tags-empty-desc">
+                    Click the flame icon on any tag in the list to mark it as trending.
+                  </p>
+                </div>
+              ) : (
+                <div className="tags-chip-wrap">
+                  {adminTrendingTags.map((t) => (
+                    <span key={t.id ?? (t as any)._id} className="tags-chip tags-chip--trending">
+                      <Flame size={11} />
+                      {t.name}
+                      <button
+                        className="tags-chip-remove"
+                        title="Remove from trending"
+                        onClick={() => toggleTrending(t)}
+                      >
+                        <X size={11} />
+                      </button>
+                    </span>
+                  ))}
+                </div>
+              )}
             </div>
           </div>
 
-          {/* RIGHT - ALL TAGS */}
+          {/* RIGHT — ALL TAGS TABLE */}
           <div className="tags-all">
-
             <div className="tags-section-header between">
               <div className="flex">
                 <Tag size={18} />
                 <h2>All Tags</h2>
               </div>
-
               <div className="tags-search">
                 <Search size={14} />
                 <input
@@ -146,49 +415,124 @@ export default function Tags() {
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
                 />
+                {search && (
+                  <button className="tags-search-clear" onClick={() => setSearch("")}>
+                    <X size={12} />
+                  </button>
+                )}
               </div>
             </div>
 
-            <div className="tags-list">
-              {filtered.map((t) => (
-                <div key={t.id} className="tags-row">
-
-                  <div className="tags-row-left">
-                    <div className="tags-icon-box">
-                      <Tag size={16} />
-                    </div>
-                    <div>
-                      <div className="tags-name">{t.name}</div>
-                      <div className="tags-slug">{t.slug}</div>
-                    </div>
-                  </div>
-
-                  <div className="tags-row-right">
-                    <div className="tags-count">
-                      <div className="count">{t.articles}</div>
-                      <div className="label">Articles</div>
-                    </div>
-
-                    <div className="tags-date">{t.date}</div>
-
-                    <div className="tags-actions">
-                      <button className="icon-btn">
-                        <Pencil size={14} />
-                      </button>
-                      <button className="icon-btn delete">
-                        <Trash2 size={14} />
-                      </button>
-                    </div>
-                  </div>
-
-                </div>
-              ))}
+            {/* Column labels */}
+            <div className="tags-list-header">
+              <span>Tag</span>
+              <span className="tags-list-header__right">Articles</span>
+              <span className="tags-list-header__date">Created</span>
+              <span className="tags-list-header__trending">Trending</span>
+              <span></span>
             </div>
 
-          </div>
+            <div className="tags-list">
+              {loading ? (
+                <div className="tags-loading tags-loading--center">
+                  <Loader2 size={22} className="tags-spin" /> Loading tags…
+                </div>
+              ) : filtered.length === 0 ? (
+                <div className="tags-no-results">
+                  {search
+                    ? `No tags matching "${search}"`
+                    : "No tags yet — click Add Tag to create one."}
+                </div>
+              ) : (
+               visibleTags.map((t) => {
+                  const isTrending = trendingIds.has(t.id);
+                  return (
+                    <div key={t.id ?? (t as any)._id} className={`tags-row ${isTrending ? "tags-row--trending" : ""}`}>
+                      <div className="tags-row-left">
+                        <div className="tags-icon-box"><Tag size={16} /></div>
+                        <div>
+                          <div className="tags-name">
+                            {t.name}
+                            {isTrending && (
+                              <span className="tags-trending-badge">
+                                <Flame size={10} /> Trending
+                              </span>
+                            )}
+                          </div>
+                          <div className="tags-slug">{toSlug(t.name)}</div>
+                        </div>
+                      </div>
 
+                      <div className="tags-row-right">
+                        <div className="tags-count">
+                          <div className="count">{t._count?.articles ?? 0}</div>
+                          <div className="label">Articles</div>
+                        </div>
+
+                        <div className="tags-date">
+                          {(t as unknown as { createdAt?: string }).createdAt
+                            ? formatDate((t as unknown as { createdAt: string }).createdAt)
+                            : "—"}
+                        </div>
+
+                        {/* Trending toggle */}
+                        <button
+                          className={`tags-trending-toggle ${isTrending ? "tags-trending-toggle--active" : ""}`}
+                          title={isTrending ? "Remove from trending" : "Mark as trending"}
+                          onClick={() => toggleTrending(t)}
+                        >
+                          <Flame size={15} />
+                          <span className="tags-trending-toggle-label">
+                            {isTrending ? "Trending" : "Set Trending"}
+                          </span>
+                        </button>
+
+                        <div className="tags-actions">
+                          <button
+                            className="icon-btn delete"
+                            title="Delete tag"
+                            onClick={() => setDeleteTagItem(t)}
+                          >
+                            <Trash2 size={14} />
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })
+              )}
+            </div>
+            {!loading && filtered.length > visibleTagCount && (
+  <div className="tags-load-more-wrap">
+    <button
+      className="tags-load-more"
+      onClick={() => setVisibleTagCount((prev) => prev + 10)}
+    >
+      Load More
+    </button>
+  </div>
+)}
+          </div>
         </div>
       </div>
+
+      {/* Modals */}
+      {showAdd && (
+        <AddTagModal
+          existingNames={existingNames}
+          onSave={handleAdd}
+          onClose={() => setShowAdd(false)}
+        />
+      )}
+      {deleteTagItem && (
+        <DeleteConfirm
+          name={deleteTagItem.name}
+          articleCount={deleteTagItem._count?.articles ?? 0}
+          onConfirm={handleDelete}
+          onCancel={() => setDeleteTagItem(null)}
+          deleting={deleting}
+        />
+      )}
     </div>
   );
 }

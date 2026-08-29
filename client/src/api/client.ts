@@ -1,23 +1,65 @@
-const BASE_URL = "http://localhost:5000";
+// client/src/api/client.ts
+
+import { getMemoryToken } from "../api/user/userauth";
+
+const BASE_URL = "http://localhost:5001";
 
 export const apiClient = async (
   endpoint: string,
   options: RequestInit = {}
 ) => {
-  const res = await fetch(`${BASE_URL}${endpoint}`, {
-    ...options,
-    credentials: "include", // agar cookies use kar rahe ho toh theek hai
-    headers: {
-      "Content-Type": "application/json",
-      ...(options.headers || {}),
-    },
-  });
+  try {
+    // Bearer token (user routes)
+    const memToken = getMemoryToken();
 
-  const data = await res.json();
+    const authHeader: Record<string, string> = memToken
+      ? { Authorization: `Bearer ${memToken}` }
+      : {};
 
-  if (!res.ok) {
-    throw new Error(data.message || "Something went wrong");
+    const isFormData = options.body instanceof FormData;
+    const isStringBody = typeof options.body === "string";
+
+    console.log("isFormData =", isFormData);
+    console.log("body =", options.body);
+
+    const headers: Record<string, string> = {
+  ...authHeader,
+  ...(options.headers as Record<string, string> || {}),
+};
+
+    // Only add JSON content-type when NOT uploading files
+    if (!isFormData && !("Content-Type" in headers)) {
+      headers["Content-Type"] = "application/json";
+    }
+
+    const res = await fetch(`${BASE_URL}${endpoint}`, {
+      ...options,
+      credentials: "include",
+      headers,
+      body: isFormData
+        ? options.body
+        : isStringBody
+        ? options.body
+        : options.body != null
+        ? JSON.stringify(options.body)
+        : undefined,
+    });
+
+    let data: any = null;
+
+    const contentType = res.headers.get("content-type") || "";
+
+    if (contentType.includes("application/json")) {
+      data = await res.json().catch(() => null);
+    }
+
+    if (!res.ok) {
+      throw new Error(data?.message || `HTTP ${res.status}`);
+    }
+
+    return data;
+  } catch (error: any) {
+    console.error("API Error:", error);
+    throw error;
   }
-
-  return data;
 };

@@ -2,12 +2,19 @@ import "./AdminSidebar.css";
 import type { ReactNode } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import Logo from "../../../assets/Logo.png";
-import { X,Newspaper } from "lucide-react";
+import { X, Newspaper } from "lucide-react";
+import {
+  ChartNoAxesCombined,
+  PanelsTopLeft,
+  BadgeDollarSign,
+  Info,
+  ContactRound,
+} from "lucide-react";
 
 import {
-  FaNewspaper, FaBolt, FaFire, FaStar, FaClock,
-  FaTags, FaPhotoVideo, FaComments, FaChartBar,
-  FaCog, FaTachometerAlt,
+  FaNewspaper, FaBolt, FaFire, FaClock,
+  FaTags, FaPhotoVideo, FaComments, 
+  FaCog, FaTachometerAlt, 
 } from "react-icons/fa";
 import { MdWifiTethering, MdNotifications, MdFolder } from "react-icons/md";
 
@@ -51,19 +58,25 @@ const AdminSidebar: React.FC<AdminSidebarProps> = ({ open, onClose }) => {
           <p className="menu-title">MENU</p>
 
           <SidebarItem icon={<FaTachometerAlt />} label="Dashboard" active={isActive("/admin/dashboard")} onClick={() => go("/admin/dashboard")} />
-          <SidebarItem icon={<FaNewspaper />} label="All News" badge="156" active={isActive("/admin/news")} onClick={() => go("/admin/news")} />
+          <SidebarItem icon={<FaNewspaper />} label="All News"  active={isActive("/admin/news")} onClick={() => go("/admin/news")} />
           <SidebarItem icon={<Newspaper />} label="Topic Profile" active={isActive("/admin/profile")} onClick={() => go("/admin/profile")} />
-          <SidebarItem icon={<FaBolt />} label="Breaking News" badge="3" danger active={isActive("/admin/breaking")} onClick={() => go("/admin/breaking")} />
-          <SidebarItem icon={<MdWifiTethering />} label="Live News" badge="3" danger active={isActive("/admin/live")} onClick={() => go("/admin/live")} />
-          <SidebarItem icon={<FaComments />} label="Comments" badge="24" active={isActive("/admin/comments")} onClick={() => go("/admin/comments")} />
-          <SidebarItem icon={<FaFire />} label="Trending" active={isActive("/admin/trending")} onClick={() => go("/admin/trending")} />
-          <SidebarItem icon={<FaStar />} label="Featured" active={isActive("/admin/feature")} onClick={() => go("/admin/feature")} />
-          <SidebarItem icon={<FaClock />} label="Scheduled" badge="12" active={isActive("/admin/schedule")} onClick={() => go("/admin/schedule")} />
+          <SidebarItem icon={<FaBolt />} label="Breaking News"  danger active={isActive("/admin/breaking")} onClick={() => go("/admin/breaking")} />
+          <SidebarItem icon={<MdWifiTethering />} label="Live News"  danger active={isActive("/admin/live")} onClick={() => go("/admin/live")} />
+          <SidebarItem icon={<FaComments />} label="Comments"  active={isActive("/admin/comments")} onClick={() => go("/admin/comments")} />
+          <SidebarItem icon={<FaFire />} label="Trending" active={isActive("/admin/trending")} onClick={() => go("/admin/trending")} />          <SidebarItem icon={<FaClock />} label="Scheduled"  active={isActive("/admin/schedule")} onClick={() => go("/admin/schedule")} />
           <SidebarItem icon={<MdFolder />} label="Categories" active={isActive("/admin/categories")} onClick={() => go("/admin/categories")} />
           <SidebarItem icon={<FaTags />} label="Tags" active={isActive("/admin/tags")} onClick={() => go("/admin/tags")} />
           <SidebarItem icon={<FaPhotoVideo />} label="Media Library" active={isActive("/admin/medialibrary")} onClick={() => go("/admin/medialibrary")} />
-          <SidebarItem icon={<FaChartBar />} label="Analytics" active={isActive("/admin/analytics")} onClick={() => go("/admin/analytics")} />
-          <SidebarItem icon={<MdNotifications />} label="Notifications" badge="12" active={isActive("/admin/notification")} onClick={() => go("/admin/notification")} />
+          {/* <SidebarItem icon={<FaChartBar />} label="Analytics" active={isActive("/admin/analytics")} onClick={() => go("/admin/analytics")} /> */}
+          <SidebarItem icon={<MdNotifications />} label="Notifications"  active={isActive("/admin/notification")} onClick={() => go("/admin/notification")} />
+          
+          {/* 👇 NEW: Footer Management Link 👇 */}
+          <SidebarItem icon={<ChartNoAxesCombined size={18} />} label="User Insights" active={isActive("/admin/user-insights")} onClick={() => go("/admin/user-insights")} />
+          <SidebarItem icon={<PanelsTopLeft size={18} />} label="Footer Manager" active={isActive("/admin/footer-management")} onClick={() => go("/admin/footer-management")} />
+          <SidebarItem icon={<BadgeDollarSign size={18} />} label="Advertisement Manager" active={isActive("/admin/advertisement-manager")} onClick={() => go("/admin/advertisement-manager")} />
+          <SidebarItem icon={<Info size={18} />} label="About Manager" active={isActive("/admin/about-manager")} onClick={() => go("/admin/about-manager")} />
+          <SidebarItem icon={<ContactRound size={18} />} label="Contact Manager" active={isActive("/admin/contact-manager")} onClick={() => go("/admin/contact-manager")} />
+          
           <SidebarItem icon={<FaCog />} label="Settings" active={isActive("/admin/setting")} onClick={() => go("/admin/setting")} />
         </nav>
 
