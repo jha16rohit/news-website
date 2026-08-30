@@ -42,20 +42,162 @@ function normalizeTag(raw: string): string {
     .join(" ");
 }
 
+// ─── Devanagari (Hindi) → Latin transliteration ────────────────────────────
+// The old slug generator simply stripped out any character that wasn't
+// a-z/0-9, which meant a Hindi headline had *nothing* left to build a slug
+// from and fell back to a random string like "article-r8mpa-8574" — a slug
+// with no relationship to the article at all.
+//
+// This is a lightweight phonetic transliteration (not a linguistically
+// perfect one), but it's enough to turn "भारत और उज्बेकिस्तान" into something
+// like "bharat-aur-ujbekistan", which is readable and actually describes
+// the article.
+const DEVANAGARI_VOWELS: Record<string, string> = {
+  "अ": "a", "आ": "aa", "इ": "i", "ई": "ee", "उ": "u", "ऊ": "oo",
+  "ऋ": "ri", "ॠ": "ri", "ऌ": "lu", "ॡ": "lu",
+  "ऍ": "e", "ऎ": "e", "ए": "e", "ऐ": "ai",
+  "ऑ": "o", "ऒ": "o", "ओ": "o", "औ": "au",
+  "ॲ": "a",
+};
+
+const DEVANAGARI_MATRAS: Record<string, string> = {
+  "\u093E": "a", "\u093F": "i", "\u0940": "ee", "\u0941": "u", "\u0942": "oo",
+  "\u0943": "ri", "\u0944": "ri", "\u0945": "e", "\u0946": "e", "\u0947": "e",
+  "\u0948": "ai", "\u0949": "o", "\u094A": "o", "\u094B": "o", "\u094C": "au",
+  "\u0962": "l", "\u0963": "l",
+};
+
+const DEVANAGARI_CONSONANTS: Record<string, string> = {
+  "क": "k", "ख": "kh", "ग": "g", "घ": "gh", "ङ": "ng",
+  "च": "ch", "छ": "chh", "ज": "j", "झ": "jh", "ञ": "ny",
+  "ट": "t", "ठ": "th", "ड": "d", "ढ": "dh", "ण": "n",
+  "त": "t", "थ": "th", "द": "d", "ध": "dh", "न": "n",
+  "प": "p", "फ": "ph", "ब": "b", "भ": "bh", "म": "m",
+  "य": "y", "र": "r", "ल": "l", "व": "v",
+  "श": "sh", "ष": "sh", "स": "s", "ह": "h", "ळ": "l",
+  // nukta forms (Urdu/Persian sounds written with Devanagari)
+  "क़": "q", "ख़": "kh", "ग़": "gh", "ज़": "z", "ड़": "r", "ढ़": "rh", "फ़": "f", "य़": "y",
+};
+
+const DEVANAGARI_DIGITS: Record<string, string> = {
+  "०": "0", "१": "1", "२": "2", "३": "3", "४": "4",
+  "५": "5", "६": "6", "७": "7", "८": "8", "९": "9",
+};
+
+function devanagariToRoman(input: string): string {
+  const chars = Array.from(input);
+  let out = "";
+
+  for (let i = 0; i < chars.length; i++) {
+    const c = chars[i];
+    const next = chars[i + 1];
+
+    if (DEVANAGARI_VOWELS[c]) { out += DEVANAGARI_VOWELS[c]; continue; }
+    if (DEVANAGARI_DIGITS[c]) { out += DEVANAGARI_DIGITS[c]; continue; }
+
+    if (c === "\u0902" || c === "\u0901") { out += "n"; continue; } // anusvara / chandrabindu
+    if (c === "\u0903") { out += "h"; continue; }                    // visarga
+    if (c === "\u093D") { continue; }                                // avagraha
+    if (c === "\u0950") { out += "om"; continue; }                   // ॐ
+    if (c === "\u094D") { continue; }                                // stray virama
+
+    if (DEVANAGARI_CONSONANTS[c]) {
+      out += DEVANAGARI_CONSONANTS[c];
+      if (next === "\u094D") { i++; }                                 // halant: no inherent vowel
+      else if (next === "\u093C") { i++; out += "a"; }                // nukta mark, keep inherent vowel
+      else if (next && DEVANAGARI_MATRAS[next]) { out += DEVANAGARI_MATRAS[next]; i++; }
+      else { out += "a"; }                                            // inherent "a"
+      continue;
+    }
+
+    if (c === "।" || c === "॥") continue; // danda / double danda
+    if (/[a-zA-Z0-9\s-]/.test(c)) { out += c; continue; }
+    // anything else (other scripts, punctuation, emoji) is dropped silently
+  }
+
+  return out;
+}
+
 function generateSlug(text: string): string {
-  // Support Hindi characters by verifying if latin characters exist
-  const latinClean = text
+  const source = text.trim();
+  if (!source) return "";
+
+  // Transliterate Devanagari (Hindi) so the slug stays meaningful instead of
+  // collapsing to nothing once non-Latin characters are stripped.
+  const romanised = /[\u0900-\u097F]/.test(source) ? devanagariToRoman(source) : source;
+
+  const slug = romanised
     .toLowerCase()
     .replace(/[^a-z0-9\s-]/g, "")
     .trim()
     .replace(/\s+/g, "-")
-    .replace(/-+/g, "-");
+    .replace(/-+/g, "-")
+    .replace(/^-+|-+$/g, "");
 
-  // Fallback if writing in Hindi/Devanagari script
-  if (!latinClean || latinClean === "-") {
-    return "article-" + Math.random().toString(36).slice(2, 7) + "-" + Date.now().toString().slice(-4);
+  if (slug) return slug.slice(0, 80);
+
+  // Only reached for genuinely empty/emoji-only input — extremely rare since
+  // the headline is a required field.
+  return "article-" + Math.random().toString(36).slice(2, 7) + "-" + Date.now().toString().slice(-4);
+}
+
+// ─── Draft autosave (survives refresh) ─────────────────────────────────────
+const DRAFT_STORAGE_PREFIX = "cna_draft_v1_";
+const DRAFT_MAX_AGE_MS = 3 * 24 * 60 * 60 * 1000; // stop offering to restore after 3 days
+
+interface DraftSnapshot {
+  savedAt: number;
+  selectedType: ArticleType;
+  headline: string;
+  shortTitle: string;
+  summary: string;
+  content: string;
+  tags: string[];
+  categoryId: string;
+  language: string;
+  articleLocation: string;
+  breakingToggles: { newsTicker: boolean; pushNotification: boolean; homepageAlert: boolean };
+  liveUpdates: { id: number; time: string; text: string }[];
+  imageCaption: string;
+  photoCredit: string;
+  mediaPreview: string | null;
+  metaTitle: string;
+  metaDesc: string;
+  urlSlug: string;
+  slugManuallyEdited: boolean;
+  focusKeywords: string;
+}
+
+function loadDraft(key: string): DraftSnapshot | null {
+  try {
+    const raw = localStorage.getItem(key);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw) as DraftSnapshot;
+    if (!parsed || typeof parsed !== "object") return null;
+    if (Date.now() - (parsed.savedAt ?? 0) > DRAFT_MAX_AGE_MS) {
+      localStorage.removeItem(key);
+      return null;
+    }
+    // Nothing meaningful to restore
+    if (!parsed.headline?.trim() && !parsed.shortTitle?.trim() && !parsed.content?.trim()) {
+      return null;
+    }
+    return parsed;
+  } catch {
+    return null;
   }
-  return latinClean.slice(0, 80);
+}
+
+function saveDraft(key: string, data: Omit<DraftSnapshot, "savedAt">) {
+  try {
+    localStorage.setItem(key, JSON.stringify({ ...data, savedAt: Date.now() }));
+  } catch {
+    // localStorage unavailable/full — autosave is best-effort, fail silently
+  }
+}
+
+function clearDraft(key: string) {
+  try { localStorage.removeItem(key); } catch { /* ignore */ }
 }
 
 const TYPE_PARAM_MAP: Record<string, ArticleType> = {
@@ -616,6 +758,55 @@ const ScheduleModal: React.FC<ScheduleModalProps> = ({ onClose, onConfirm }) => 
   );
 };
 
+interface RestoreDraftModalProps {
+  draft:     DraftSnapshot;
+  onRestore: () => void;
+  onDiscard: () => void;
+}
+const RestoreDraftModal: React.FC<RestoreDraftModalProps> = ({ draft, onRestore, onDiscard }) => {
+  const minutesAgo = Math.max(0, Math.round((Date.now() - draft.savedAt) / 60000));
+  const timeLabel =
+    minutesAgo < 1 ? "just now"
+    : minutesAgo === 1 ? "1 minute ago"
+    : minutesAgo < 60 ? `${minutesAgo} minutes ago`
+    : `${Math.round(minutesAgo / 60)} hour(s) ago`;
+  const preview = draft.headline?.trim() || draft.shortTitle?.trim() || "Untitled draft";
+
+  return (
+    <div className="cna-modal-overlay">
+      <div className="cna-modal" role="dialog" aria-modal="true" style={{ maxWidth: 460 }}>
+        <div className="cna-modal-header">
+          <div className="cna-modal-title-wrap">
+            <div className="cna-modal-icon"><FileText size={20} /></div>
+            <div>
+              <h2 className="cna-modal-title">Restore unsaved changes?</h2>
+              <p className="cna-modal-subtitle">We found work you hadn't saved from {timeLabel}.</p>
+            </div>
+          </div>
+        </div>
+        <div className="cna-modal-body">
+          <div style={{ background: "#f8fafc", border: "1px solid #e2e8f0", borderRadius: 10, padding: "12px 14px", fontSize: 14, color: "#334155" }}>
+            <strong style={{ display: "block", marginBottom: 4 }}>{preview}</strong>
+            {draft.summary?.trim() && (
+              <span style={{ color: "#64748b" }}>
+                {draft.summary.trim().slice(0, 140)}{draft.summary.length > 140 ? "…" : ""}
+              </span>
+            )}
+          </div>
+          <p style={{ fontSize: 13, color: "#94a3b8", marginTop: 10 }}>
+            Restoring brings back everything you typed before the page refreshed.
+            Discarding removes this saved copy for good.
+          </p>
+        </div>
+        <div className="cna-modal-footer">
+          <button className="cna-btn cna-btn-outline" onClick={onDiscard}>Discard</button>
+          <button className="cna-btn cna-btn-primary" onClick={onRestore}>Restore draft</button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
 type SeoTab = "settings" | "google";
 
 const CreateNewArticle: React.FC = () => {
@@ -791,6 +982,90 @@ const CreateNewArticle: React.FC = () => {
       .finally(() => setLoadingArticle(false));
   }, [editId, isEdit]);
 
+  // ─── Draft autosave / restore-on-refresh ─────────────────────────────────
+  // Keyed by the article being edited (or by "new + article type" when
+  // creating), so drafts never leak between unrelated articles/tabs.
+  const draftKey = `${DRAFT_STORAGE_PREFIX}${isEdit && editId ? `edit-${editId}` : `new-${typeParam || "standard"}`}`;
+
+  const [showRestoreModal, setShowRestoreModal] = useState(false);
+  const [pendingDraft,     setPendingDraft]     = useState<DraftSnapshot | null>(null);
+  const hasCheckedDraftRef = useRef(false);
+
+  // Check once (after any existing article has finished loading) whether
+  // there's an autosaved draft worth offering to restore.
+  useEffect(() => {
+    if (loadingArticle) return;
+    if (hasCheckedDraftRef.current) return;
+    hasCheckedDraftRef.current = true;
+
+    const draft = loadDraft(draftKey);
+    if (draft) {
+      setPendingDraft(draft);
+      setShowRestoreModal(true);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [loadingArticle, draftKey]);
+
+  // Debounced autosave: whenever the form changes, silently persist a
+  // snapshot to localStorage so a refresh (or an accidental tab close)
+  // doesn't lose the admin's work.
+  useEffect(() => {
+    if (loadingArticle)   return; // don't autosave over data that's still loading
+    if (showRestoreModal) return; // don't overwrite the saved draft before the user decides
+
+    const handle = setTimeout(() => {
+      if (!headline.trim() && !shortTitle.trim() && !content.trim()) return; // nothing worth saving yet
+      saveDraft(draftKey, {
+        selectedType, headline, shortTitle, summary, content, tags, categoryId,
+        language, articleLocation, breakingToggles, liveUpdates, imageCaption,
+        photoCredit,
+        mediaPreview: mediaPreview && !mediaPreview.startsWith("blob:") ? mediaPreview : null,
+        metaTitle, metaDesc, urlSlug, slugManuallyEdited, focusKeywords,
+      });
+    }, 800);
+
+    return () => clearTimeout(handle);
+  }, [
+    loadingArticle, showRestoreModal, draftKey,
+    selectedType, headline, shortTitle, summary, content, tags, categoryId,
+    language, articleLocation, breakingToggles, liveUpdates, imageCaption,
+    photoCredit, mediaPreview, metaTitle, metaDesc, urlSlug, slugManuallyEdited, focusKeywords,
+  ]);
+
+  const handleRestoreDraft = () => {
+    if (!pendingDraft) return;
+    setSelectedType(pendingDraft.selectedType ?? selectedType);
+    setHeadline(pendingDraft.headline ?? "");
+    setShortTitle(pendingDraft.shortTitle ?? "");
+    setSummary(pendingDraft.summary ?? "");
+    setContent(pendingDraft.content ?? "");
+    setInitialHtml(pendingDraft.content ?? "");
+    setTags(Array.isArray(pendingDraft.tags) ? pendingDraft.tags : []);
+    setCategoryId(pendingDraft.categoryId ?? "");
+    setLanguage(pendingDraft.language ?? "hindi");
+    setArticleLocation(pendingDraft.articleLocation ?? "");
+    setBreakingToggles(
+      pendingDraft.breakingToggles ?? { newsTicker: true, pushNotification: true, homepageAlert: true }
+    );
+    setLiveUpdates(Array.isArray(pendingDraft.liveUpdates) ? pendingDraft.liveUpdates : []);
+    setImageCaption(pendingDraft.imageCaption ?? "");
+    setPhotoCredit(pendingDraft.photoCredit ?? "");
+    if (pendingDraft.mediaPreview) setMediaPreview(pendingDraft.mediaPreview);
+    setMetaTitle(pendingDraft.metaTitle ?? "");
+    setMetaDesc(pendingDraft.metaDesc ?? "");
+    setUrlSlug(pendingDraft.urlSlug ?? "");
+    setSlugManuallyEdited(Boolean(pendingDraft.slugManuallyEdited));
+    setFocusKeywords(pendingDraft.focusKeywords ?? "");
+    setShowRestoreModal(false);
+    setPendingDraft(null);
+  };
+
+  const handleDiscardDraft = () => {
+    clearDraft(draftKey);
+    setShowRestoreModal(false);
+    setPendingDraft(null);
+  };
+
   const safeContent = typeof content === "string" ? content : "";
   const plainText = editorRef.current?.innerText ?? safeContent.replace(/<[^>]+>/g, " ");
   const wordCount = plainText.trim() === "" ? 0 : plainText.trim().split(/\s+/).length;
@@ -938,6 +1213,7 @@ const CreateNewArticle: React.FC = () => {
           await createNews(payload);
         }
       }
+      clearDraft(draftKey);
       navigate(getRedirectPath());
     } catch (err: any) {
       setSubmitError(err?.message || "Failed to publish. Please try again.");
@@ -981,6 +1257,7 @@ const CreateNewArticle: React.FC = () => {
           await createNews(payload);
         }
       }
+      clearDraft(draftKey);
       navigate("/admin/news");
     } catch (err: any) {
       setSubmitError(err?.message || "Failed to save draft. Please try again.");
@@ -1025,6 +1302,7 @@ const CreateNewArticle: React.FC = () => {
         }
       }
 
+      clearDraft(draftKey);
       setShowScheduleModal(false);
       navigate("/admin/schedule");
     } catch (err: any) {
@@ -1042,6 +1320,7 @@ const CreateNewArticle: React.FC = () => {
       const payload = buildPayload("DELETED", undefined, mode, 14);
       if (isEdit && editId) await updateNews(editId, payload as any);
       else                  await createNews(payload as any);
+      clearDraft(draftKey);
       setShowDeleteModal(false);
       navigate("/admin/news");
     } catch (err: any) {
@@ -1108,6 +1387,9 @@ const CreateNewArticle: React.FC = () => {
         </div>
       )}
 
+      {showRestoreModal && pendingDraft && (
+        <RestoreDraftModal draft={pendingDraft} onRestore={handleRestoreDraft} onDiscard={handleDiscardDraft} />
+      )}
       {showScheduleModal && <ScheduleModal onClose={() => setShowScheduleModal(false)} onConfirm={handleScheduleConfirm} />}
       {showTopicModal    && <TopicLinkModal savedRange={savedRange} editorRef={editorRef} onClose={() => setShowTopicModal(false)} />}
       {showDeleteModal && (
