@@ -114,14 +114,8 @@
   z-index: 10;
 }
 
-.category-save-btn:hover {
-  background-color: rgba(0, 0, 0, 0.7);
-  transform: scale(1.1);
-}
 
-.cs-dark-card:hover {
-  transform: translateY(-4px);
-}
+
 
 .cs-img-wrap {
   width: 100%;
@@ -232,9 +226,6 @@
   color: black;
 }
 
-.cs-list-item:hover {
-  transform: translateY(-4px);
-}
 
 .cs-list-item .cs-list-img, .cs-split-sub-card .cs-list-img {
   width: 100%; 

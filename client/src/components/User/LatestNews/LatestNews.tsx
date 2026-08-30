@@ -87,14 +87,16 @@ const LatestNews: React.FC = () => {
         </div>
 
         {/* Show More Button */}
-        <div className="show-more-wrapper">
-          <button 
-             className="show-more-btn"
-             onClick={() => setShowAll(!showAll)}
-          >
-             {showAll ? 'SHOW LESS' : 'SHOW MORE'}
-          </button>
-        </div>
+        {newsData.length > 6 && (
+          <div className="show-more-wrapper">
+            <button 
+               className="show-more-btn"
+               onClick={() => setShowAll(!showAll)}
+            >
+               {showAll ? 'SHOW LESS' : 'SHOW MORE'}
+            </button>
+          </div>
+        )}
 
       </div>
     </section>
