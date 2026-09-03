@@ -16,12 +16,19 @@ import { notifyUsersOfNewArticle } from "./userNotification.controller";
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
-function canModifyNews(req: AuthRequest, article: any): boolean {
-  if (req.user?.role === "ADMIN") {
-    return true;
-  }
+function isOwner(req: AuthRequest, article: any): boolean {
+  return Boolean(req.user?.id) && String(article.authorId) === String(req.user?.id);
+}
 
-  return String(article.authorId) === String(req.user?.id);
+function canModifyNews(req: AuthRequest, article: any): boolean {
+  return req.user?.role === "ADMIN" || isOwner(req, article);
+}
+
+// BREAKING/LIVE articles are visible to all authorized editors, but an EDITOR
+// may only change the status of an article they created. Content changes,
+// delete, and article-type changes remain ADMIN-only for these article types.
+function isStatusOnlyArticle(article: any): boolean {
+  return article?.articleType === "BREAKING" || article?.articleType === "LIVE";
 }
 
 function normalizeTagName(name: string): string {
@@ -556,7 +563,7 @@ if (req.user?.role === "EDITOR") {
 };
 
 // ─── GET ALL (admin — no status default filter) ────────────────────────────────
-export const getAllNews = async (req: Request, res: Response) => {
+export const getAllNews = async (req: AuthRequest, res: Response) => {
   try {
     await autoPublishDueScheduled();
 
@@ -589,9 +596,38 @@ export const getAllNews = async (req: Request, res: Response) => {
     }
 
     const filter: Record<string, any> = {};
+
+    // Privacy rules for the editor workspace:
+    // - DRAFT/SCHEDULED are private to their creator. ADMIN must not see them.
+    // - BREAKING/LIVE are shared: every authorized editor and ADMIN can see them.
+    // - Other published/expired content keeps the existing shared-list behavior.
+    if (req.user?.role === "ADMIN") {
+      if (status === "DRAFT" || status === "SCHEDULED") {
+        filter._id = { $exists: false };
+      } else {
+        filter.status = { $nin: ["DRAFT", "SCHEDULED"] };
+      }
+    } else if (req.user?.role === "EDITOR") {
+      if (status === "DRAFT" || status === "SCHEDULED") {
+        filter.status = String(status);
+        filter.authorId = String(req.user.id);
+      } else if (!status) {
+        // No explicit status: include shared content, plus this editor's private
+        // drafts/scheduled articles. Keep the privacy condition in $and so a
+        // search $or does not overwrite it below.
+        filter.$and = [{
+          $or: [
+            { status: { $nin: ["DRAFT", "SCHEDULED"] } },
+            { status: { $in: ["DRAFT", "SCHEDULED"] }, authorId: String(req.user.id) },
+          ],
+        }];
+      } else {
+        filter.status = String(status);
+      }
+    }
+
     if (catIdFilter) filter.categoryId = catIdFilter;
     if (articleType) filter.articleType = String(articleType);
-    if (status) filter.status = String(status);
 
     const normPriority =
       priority && priority !== "All Priority"
@@ -642,12 +678,22 @@ export const getAllNews = async (req: Request, res: Response) => {
     const aMap2 = Object.fromEntries(
       (auths2 as any[]).map((a: any) => [String(a._id), a]),
     );
-    const news = newsDocs2.map((n: any) => ({
-      ...n,
-      id: String(n._id),
-      categoryId: cMap2[n.categoryId] ?? n.categoryId,
-      authorId: aMap2[n.authorId] ?? n.authorId,
-    }));
+    const news = newsDocs2.map((n: any) => {
+      const owner = isOwner(req as AuthRequest, n);
+      const admin = req.user?.role === "ADMIN";
+      const sharedStatusArticle = isStatusOnlyArticle(n);
+
+      return {
+        ...n,
+        id: String(n._id),
+        categoryId: cMap2[n.categoryId] ?? n.categoryId,
+        authorId: aMap2[n.authorId] ?? n.authorId,
+        // Frontend uses these flags only for UI; the backend still enforces every mutation.
+        canChangeStatus: admin || owner,
+        canManage: admin || (owner && !sharedStatusArticle),
+        isOwner: owner,
+      };
+    });
 
     res.json({
       news,
@@ -824,10 +870,25 @@ export const updateNews = async (req: AuthRequest, res: Response) => {
     const existing = await News.findById(id);
     if (!existing) return res.status(404).json({ message: "News not found" });
     if (!canModifyNews(req, existing)) {
-  return res.status(403).json({
-    message: "You can only modify news created by you.",
-  });
-}
+      return res.status(403).json({
+        message: "You can only modify news created by you.",
+      });
+    }
+
+    // EDITORs can see all BREAKING/LIVE articles, but can only change the
+    // status of their own article. They cannot edit content, delete fields,
+    // switch article type, or modify live updates. ADMIN is unrestricted.
+    if (req.user?.role === "EDITOR" && isStatusOnlyArticle(existing)) {
+      const allowedKeys = new Set(["status", "statusType"]);
+      const incomingKeys = Object.keys(req.body || {}).filter((key) => req.body[key] !== undefined);
+      const forbiddenKeys = incomingKeys.filter((key) => !allowedKeys.has(key));
+
+      if (forbiddenKeys.length > 0) {
+        return res.status(403).json({
+          message: "Editors can only change the status of Breaking/Live news they created.",
+        });
+      }
+    }
 
     const {
       headline,
@@ -1057,6 +1118,77 @@ if (req.user?.role === "EDITOR") {
   }
 };
 
+// ─── REMOVE BREAKING STATUS — ADMIN ONLY ─────────────────────────────────────
+// The article stays published, but is converted back to STANDARD.
+// We also keep a permanent history marker so it remains visible in the
+// Breaking News page under the past Breaking News list.
+export const removeBreakingStatus = async (
+  req: AuthRequest,
+  res: Response,
+) => {
+  try {
+    const id = String(req.params.id);
+
+    if (req.user?.role !== "ADMIN") {
+      return res.status(403).json({
+        message: "Only Admin can remove Breaking News status.",
+      });
+    }
+
+    const article = await News.findById(id);
+
+    if (!article) {
+      return res.status(404).json({
+        message: "News not found",
+      });
+    }
+
+    if (article.articleType !== "BREAKING") {
+      return res.status(400).json({
+        message: "This article is not currently Breaking News.",
+      });
+    }
+
+    const now = new Date();
+
+    // Use the raw MongoDB collection so the history fields are persisted
+    // even when an older News Mongoose schema does not declare them yet.
+    const result = await News.collection.updateOne(
+      { _id: article._id },
+      {
+        $set: {
+          articleType: "STANDARD",
+          status: "PUBLISHED",
+          breakingRemovedAt: now,
+          wasBreaking: true,
+          breakingRemovedBy: req.user?.id || null,
+        },
+      },
+    );
+
+    if (!result.acknowledged || result.matchedCount !== 1) {
+      return res.status(500).json({
+        message: "Failed to remove Breaking News status.",
+      });
+    }
+
+    const updated = await News.findById(id)
+      .populate("categoryId", "name color")
+      .populate("authorId", "name role");
+
+    return res.status(200).json({
+      success: true,
+      message: "Breaking News status removed successfully.",
+      news: updated,
+    });
+  } catch (error) {
+    console.error("removeBreakingStatus error:", error);
+    return res.status(500).json({
+      message: "Failed to remove Breaking News status.",
+    });
+  }
+};
+
 // ─── DELETE ───────────────────────────────────────────────────────────────────
 export const deleteNews = async (req: AuthRequest, res: Response) => {
   try {
@@ -1064,10 +1196,16 @@ export const deleteNews = async (req: AuthRequest, res: Response) => {
     const existing = await News.findById(id);
     if (!existing) return res.status(404).json({ message: "News not found" });
     if (!canModifyNews(req, existing)) {
-  return res.status(403).json({
-    message: "You can only delete news created by you.",
-  });
-}
+      return res.status(403).json({
+        message: "You can only delete news created by you.",
+      });
+    }
+
+    if (req.user?.role === "EDITOR" && isStatusOnlyArticle(existing)) {
+      return res.status(403).json({
+        message: "Editors cannot delete Breaking/Live news. Only the status can be changed.",
+      });
+    }
 
     const { deleteMode, deleteIntervalDays } = req.body ?? {};
 
@@ -1106,19 +1244,142 @@ export const purgeDeletedNews = async (_req: Request, res: Response) => {
   }
 };
 
+
+// ─── BREAKING NEWS HISTORY ───────────────────────────────────────────────────
+// Returns current Breaking News + articles that were previously Breaking News
+// and were removed from Breaking by an Admin.
+//
+// We intentionally store the history marker directly in MongoDB. This keeps
+// older News documents compatible even if the News schema has not yet been
+// updated with these optional fields.
+export const getBreakingNewsHistory = async (
+  req: AuthRequest,
+  res: Response,
+) => {
+  try {
+    await autoPublishDueScheduled();
+
+    const docs = await News.find(
+      {
+        $or: [
+          { articleType: "BREAKING" },
+          {
+            wasBreaking: true,
+            breakingRemovedAt: { $exists: true, $ne: null },
+          },
+        ],
+        status: { $nin: ["DRAFT", "SCHEDULED", "DELETED"] },
+      },
+      null,
+      { strictQuery: false },
+    )
+      .sort({ breakingRemovedAt: -1, publishedAt: -1, createdAt: -1 })
+      .lean();
+
+    const categoryIds = [
+      ...new Set(
+        docs
+          .map((n: any) => String(n.categoryId || ""))
+          .filter(Boolean),
+      ),
+    ];
+
+    const authorIds = [
+      ...new Set(
+        docs
+          .map((n: any) => String(n.authorId || ""))
+          .filter(Boolean),
+      ),
+    ];
+
+    const [categories, authors] = await Promise.all([
+      Category.find({ _id: { $in: categoryIds } })
+        .select("_id name color")
+        .lean(),
+      User.find({ _id: { $in: authorIds } })
+        .select("_id name email role")
+        .lean(),
+    ]);
+
+    const categoryMap = Object.fromEntries(
+      (categories as any[]).map((c: any) => [String(c._id), c]),
+    );
+
+    const authorMap = Object.fromEntries(
+      (authors as any[]).map((a: any) => [String(a._id), a]),
+    );
+
+    const news = docs.map((n: any) => {
+      const isRemoved =
+        Boolean(n.wasBreaking) &&
+        Boolean(n.breakingRemovedAt);
+
+      const owner = isOwner(req, n);
+      const admin = req.user?.role === "ADMIN";
+
+      return {
+        ...n,
+        id: String(n._id),
+        categoryId: categoryMap[String(n.categoryId)] ?? n.categoryId,
+        authorId: authorMap[String(n.authorId)] ?? n.authorId,
+
+        // UI flags
+        isPastBreaking: isRemoved,
+        isOwner: owner,
+        canChangeStatus:
+          !isRemoved &&
+          (
+            admin ||
+            (
+              req.user?.role === "EDITOR" &&
+              owner &&
+              n.articleType === "BREAKING"
+            )
+          ),
+        canManage: admin && !isRemoved,
+      };
+    });
+
+    return res.json({
+      success: true,
+      news,
+      total: news.length,
+    });
+  } catch (error) {
+    console.error("getBreakingNewsHistory error:", error);
+    return res.status(500).json({
+      message: "Error fetching Breaking News history",
+    });
+  }
+};
+
 // ─── PAUSE / RESUME BREAKING ─────────────────────────────────────────────────
 export const togglePauseBreaking = async (req: AuthRequest, res: Response) => {
   try {
     const id = String(req.params.id);
     const existing = await News.findById(id);
-    if (!existing) return res.status(404).json({ message: "News not found" });
-    if (!canModifyNews(req, existing)) {
-  return res.status(403).json({
-    message: "You can only modify news created by you.",
-  });
-}
-    if (existing.articleType !== "BREAKING")
-      return res.status(400).json({ message: "Not a breaking news article" });
+
+    if (!existing) {
+      return res.status(404).json({ message: "News not found" });
+    }
+
+    if (existing.articleType !== "BREAKING") {
+      return res.status(400).json({
+        message: "Not a Breaking News article",
+      });
+    }
+
+    // Admin can change any Breaking article.
+    // Editor can ONLY change status of their own Breaking article.
+    if (
+      req.user?.role !== "ADMIN" &&
+      !isOwner(req, existing)
+    ) {
+      return res.status(403).json({
+        message:
+          "You can only change the status of Breaking News created by you.",
+      });
+    }
 
     const current = (existing as any).statusType as string | null;
     const newStatus = current === "paused" ? "published" : "paused";
@@ -1126,13 +1387,19 @@ export const togglePauseBreaking = async (req: AuthRequest, res: Response) => {
     const updated = await News.findByIdAndUpdate(
       id,
       { statusType: newStatus },
-      { returnDocument: 'after' },
+      { returnDocument: "after" },
     );
 
-    res.json({ success: true, statusType: newStatus, updated });
+    return res.json({
+      success: true,
+      statusType: newStatus,
+      updated,
+    });
   } catch (error) {
     console.error("togglePauseBreaking error:", error);
-    res.status(500).json({ message: "Error toggling pause state" });
+    return res.status(500).json({
+      message: "Error toggling pause state",
+    });
   }
 };
 
@@ -1142,11 +1409,11 @@ export const addLiveUpdate = async (req: AuthRequest, res: Response) => {
     const id = String(req.params.id);
     const news = await News.findById(id);
     if (!news) return res.status(404).json({ message: "News not found" });
-    if (!canModifyNews(req, news)) {
-  return res.status(403).json({
-    message: "You can only modify news created by you.",
-  });
-}
+    if (req.user?.role !== "ADMIN") {
+      return res.status(403).json({
+        message: "Editors can only change the status of Live news. Only ADMIN can post live updates.",
+      });
+    }
     if (news.articleType !== "LIVE")
       return res.status(400).json({ message: "Not a live article" });
 

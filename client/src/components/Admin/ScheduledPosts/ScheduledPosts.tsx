@@ -508,7 +508,7 @@ await loadData();
               {filteredDrafts.length > 0 && (
                 <div className="sp-draft-info-banner">
                   <CheckCircle2 size={14} />
-                  <span>Drafts are only visible to admins and will not appear on the live site until published.</span>
+                  <span>Drafts and scheduled articles are private to the editor who created them and will not appear on the live site until published.</span>
                 </div>
               )}
             </div>

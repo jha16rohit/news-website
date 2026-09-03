@@ -225,9 +225,8 @@ export const register = async (req: Request, res: Response) => {
       role: user.role,
     });
 
-    res.cookie("token", token, cookieOptions);
-
     res.status(201).json({
+      token,
       message: "User registered successfully",
       user: {
         id: String(user._id),
@@ -310,9 +309,8 @@ export const login = async (req: Request, res: Response) => {
       role: user.role,
     });
 
-    res.cookie("token", token, cookieOptions);
-
     res.json({
+      token,
       message: "Login successful",
       user: {
         id: String(user._id),
@@ -337,7 +335,8 @@ export const login = async (req: Request, res: Response) => {
 // ─────────────────────────────────────────────────────────────────────────────
 export const logout = (_req: Request, res: Response) => {
   try {
-    res.clearCookie("token", cookieOptions);
+    // Authentication is stored in per-tab sessionStorage on the client.
+    // There is no shared auth cookie to clear anymore.
     res.json({ message: "Logged out successfully" });
   } catch (error) {
     console.error("LOGOUT ERROR:", error);

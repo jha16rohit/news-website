@@ -90,7 +90,7 @@ const CommentsPage = () => {
 
   const getAuthHeaders = useCallback(() => {
     const headers: Record<string, string> = { "Content-Type": "application/json" };
-    const token = localStorage.getItem("token") || localStorage.getItem("adminToken");
+    const token = sessionStorage.getItem("auth-token");
     if (token) headers["Authorization"] = `Bearer ${token}`;
     return headers;
   }, []);

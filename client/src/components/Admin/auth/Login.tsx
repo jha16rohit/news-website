@@ -116,12 +116,6 @@ const handleLogin = async () => {
   try {
     const res = await loginUser(form);
 
-    localStorage.setItem("admin-auth", "true");
-
-    if (res?.token) {
-      localStorage.setItem("admin-token", res.token);
-    }
-
     navigate(
   res?.user?.role === "EDITOR"
     ? "/editor/editor-dashboard"

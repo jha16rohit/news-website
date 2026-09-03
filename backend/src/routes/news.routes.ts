@@ -11,6 +11,8 @@ import {
   addLiveUpdate,
   voteOnPoll,
   togglePauseBreaking,
+  getBreakingNewsHistory,
+  removeBreakingStatus,
   getMediaLibrary,
   deleteMediaImage,
   uploadMediaImage,
@@ -139,6 +141,15 @@ router.post(
   voteOnPoll
 );
 
+// ─── Breaking News history / admin actions ─────────────────────
+
+router.get(
+  "/breaking-history",
+  protect,
+  hasPermission("breaking-news"),
+  getBreakingNewsHistory
+);
+
 // ─── Admin mutations ────────────────────────────────────────────
 
 // Save drag-and-drop article order
@@ -174,12 +185,20 @@ router.delete(
   deleteNews
 );
 
-// Pause / resume breaking news
+// Pause / resume Breaking News
 router.patch(
   "/:id/pause-toggle",
   protect,
   hasPermission("breaking-news"),
   togglePauseBreaking
+);
+
+// Remove Breaking status — ADMIN ONLY
+router.patch(
+  "/:id/remove-breaking",
+  protect,
+  isAdmin,
+  removeBreakingStatus
 );
 
 // Add live update

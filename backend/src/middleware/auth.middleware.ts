@@ -17,7 +17,15 @@ export const protect = async (
   next: NextFunction
 ) => {
   try {
-    const token = req.cookies?.token;
+    const authHeader = req.headers.authorization;
+    const bearerToken = authHeader?.startsWith("Bearer ")
+      ? authHeader.slice(7).trim()
+      : null;
+
+    // Authentication is intentionally header-based. Do NOT fall back to the
+    // shared `token` cookie because Admin and Editor sessions must be
+    // independent per browser tab.
+    const token = bearerToken;
 
     // 1. Token check
     if (!token) {

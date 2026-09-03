@@ -48,6 +48,8 @@ interface LiveStory {
   liveUpdates:     LiveUpdate[];
   published:       string;
   endedAt?:        string | null;
+  canChangeStatus?: boolean;
+  canManage?: boolean;
 }
 
 // ─── Topic Profile ────────────────────────────────────────────────────────────
@@ -124,6 +126,8 @@ articleCategory: n.categoryId?.name || "",
     published: n.statusType === "ended"
       ? formatDate(n.updatedAt || n.publishedAt)
       : "Live",
+    canChangeStatus: Boolean(n.canChangeStatus),
+    canManage: Boolean(n.canManage),
   };
 }
 
@@ -822,10 +826,11 @@ interface StoryDetailPanelProps {
   onAddUpdate:    (storyId: string, update: Partial<LiveUpdate>) => void;
   onEditUpdate:   (storyId: string, update: Partial<LiveUpdate>) => void;
   onDeleteUpdate: (storyId: string, updateId: number) => void;
+  canManageUpdates: boolean;
 }
 
 const StoryDetailPanel: React.FC<StoryDetailPanelProps> = ({
-  story, onClose, onAddUpdate, onEditUpdate, onDeleteUpdate
+  story, onClose, onAddUpdate, onEditUpdate, onDeleteUpdate, canManageUpdates
 }) => {
   const [openMenuUpdateId,  setOpenMenuUpdateId]  = useState<number | null>(null);
   const [addUpdateOpen,     setAddUpdateOpen]      = useState(false);
@@ -897,7 +902,7 @@ const StoryDetailPanel: React.FC<StoryDetailPanelProps> = ({
                 ? "No updates yet"
                 : `${story.liveUpdates.length} update${story.liveUpdates.length !== 1 ? "s" : ""} — latest first`}
             </span>
-            {story.status === "live" && (
+            {story.status === "live" && canManageUpdates && (
               <div className="sdp-toolbar-right">
                 <button className="sdp-btn-add" onClick={() => setAddUpdateOpen(true)}>
                   <IconAdd /> Add Update
@@ -944,33 +949,35 @@ const StoryDetailPanel: React.FC<StoryDetailPanelProps> = ({
                         </div>
 
                         {/* Actions dropdown */}
-                        <div className="sdp-update-actions" onMouseDown={e => e.stopPropagation()}>
-                          <button
-                            className="sdp-update-menu-btn"
-                            onClick={() => setOpenMenuUpdateId(openMenuUpdateId === update.id ? null : update.id)}
-                          >
-                            ···
-                          </button>
-                          {openMenuUpdateId === update.id && (
-                            <div className="sdp-update-dropdown">
-                              <button
-                                className="sdp-update-dropdown-item"
-                                onClick={() => handleEditUpdate(update)}
-                              >
-                                <IconEdit size={13} /> Edit Update
-                              </button>
-                              <button
-                                className="sdp-update-dropdown-item sdp-update-dropdown-item--danger"
-                                onClick={() => {
-                                  setDeleteUpdateModal(update.id);
-                                  setOpenMenuUpdateId(null);
-                                }}
-                              >
-                                <IconTrash size={13} /> Delete Update
-                              </button>
-                            </div>
-                          )}
-                        </div>
+                        {canManageUpdates && (
+                          <div className="sdp-update-actions" onMouseDown={e => e.stopPropagation()}>
+                            <button
+                              className="sdp-update-menu-btn"
+                              onClick={() => setOpenMenuUpdateId(openMenuUpdateId === update.id ? null : update.id)}
+                            >
+                              ···
+                            </button>
+                            {openMenuUpdateId === update.id && (
+                              <div className="sdp-update-dropdown">
+                                <button
+                                  className="sdp-update-dropdown-item"
+                                  onClick={() => handleEditUpdate(update)}
+                                >
+                                  <IconEdit size={13} /> Edit Update
+                                </button>
+                                <button
+                                  className="sdp-update-dropdown-item sdp-update-dropdown-item--danger"
+                                  onClick={() => {
+                                    setDeleteUpdateModal(update.id);
+                                    setOpenMenuUpdateId(null);
+                                  }}
+                                >
+                                  <IconTrash size={13} /> Delete Update
+                                </button>
+                              </div>
+                            )}
+                          </div>
+                        )}
                       </div>
 
                       {/* Card body */}
@@ -1274,7 +1281,6 @@ const LiveStoriesPage: React.FC = () => {
     await apiUpdateNews(storyId, {
       status: "PUBLISHED",
       statusType: "ended",
-      articleType: "LIVE",
     } as any);
 
     // Reload from database
@@ -1309,7 +1315,7 @@ const LiveStoriesPage: React.FC = () => {
       )
     );
     try {
-      await apiUpdateNews(storyId, { status: "PUBLISHED", statusType: "published", articleType: "LIVE" } as any);
+      await apiUpdateNews(storyId, { status: "PUBLISHED", statusType: "published" } as any);
       
     } catch (err) {
       console.error("Failed to go live:", err);
@@ -1432,18 +1438,22 @@ const LiveStoriesPage: React.FC = () => {
                   </div>
                 </div>
                 <div className="ls-story-actions" onClick={e => e.stopPropagation()}>
-                  <button className="ls-btn-add-update" onClick={() => setAddUpdateId(story.id)}>
-                    <IconAdd /> Add Update
-                  </button>
-                  <button
-                    className="ls-btn-end-live"
-                    onClick={() => handleEndLive(story.id)}
-                    disabled={endingId === story.id}
-                  >
+                  {story.canManage && (
+                    <button className="ls-btn-add-update" onClick={() => setAddUpdateId(story.id)}>
+                      <IconAdd /> Add Update
+                    </button>
+                  )}
+                  {story.canChangeStatus && (
+                    <button
+                      className="ls-btn-end-live"
+                      onClick={() => handleEndLive(story.id)}
+                      disabled={endingId === story.id}
+                    >
                     {endingId === story.id ? <IconSpinner /> : <IconStop />}
-                    {endingId === story.id ? "Ending…" : "End Live"}
-                  </button>
-                  <div className="ls-more-wrap">
+                      {endingId === story.id ? "Ending…" : "End Live"}
+                    </button>
+                  )}
+                  {story.canManage && <div className="ls-more-wrap">
                     <button className="ls-btn-more" onClick={() => toggleMenu(story.id)}>···</button>
                     {openMenuId === story.id && (
                       <div className="ls-dropdown">
@@ -1455,7 +1465,7 @@ const LiveStoriesPage: React.FC = () => {
                         </button>
                       </div>
                     )}
-                  </div>
+                  </div>}
                 </div>
               </div>
             ))}
@@ -1482,12 +1492,16 @@ const LiveStoriesPage: React.FC = () => {
                     <p className="ls-story-note">Ready to go live — click "Go Live Now" to start live coverage</p>
                   </div>
                   <div className="ls-story-actions" onClick={e => e.stopPropagation()}>
-                    <button className="ls-btn-go-live" onClick={() => handleGoLive(story.id)}>
-                      <IconBroadcast /> Go Live Now
-                    </button>
-                    <button className="ls-btn-edit-icon" onClick={() => navigate(`/admin/create?edit=${story.id}&type=live`)}>
-                      <IconEdit size={15} />
-                    </button>
+                    {story.canChangeStatus && (
+                      <button className="ls-btn-go-live" onClick={() => handleGoLive(story.id)}>
+                        <IconBroadcast /> Go Live Now
+                      </button>
+                    )}
+                    {story.canManage && (
+                      <button className="ls-btn-edit-icon" onClick={() => navigate(`/admin/create?edit=${story.id}&type=live`)}>
+                        <IconEdit size={15} />
+                      </button>
+                    )}
                   </div>
                 </div>
               ))}
@@ -1535,9 +1549,11 @@ const LiveStoriesPage: React.FC = () => {
                         <button className="ls-dropdown-item" onClick={() => { navigate(`/admin/create?edit=${story.id}&type=live`); setOpenMenuId(null); }}>
                           <IconEye size={14} /> View Story
                         </button>
-                        <button className="ls-dropdown-item ls-dropdown-item--danger" onClick={() => { setDeleteModal(story.id); setOpenMenuId(null); }}>
-                          <IconTrash /> Delete Permanently
-                        </button>
+                        {story.canManage && (
+                          <button className="ls-dropdown-item ls-dropdown-item--danger" onClick={() => { setDeleteModal(story.id); setOpenMenuId(null); }}>
+                            <IconTrash /> Delete Permanently
+                          </button>
+                        )}
                       </div>
                     )}
                   </div>
@@ -1580,6 +1596,7 @@ const LiveStoriesPage: React.FC = () => {
           onAddUpdate={handleAddUpdate}
           onEditUpdate={handleEditUpdate}
           onDeleteUpdate={handleDeleteUpdate}
+          canManageUpdates={Boolean(detailStory.canManage)}
         />
       )}
     </>

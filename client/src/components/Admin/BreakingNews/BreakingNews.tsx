@@ -12,9 +12,9 @@ import {
   // up here at all, even though the "Scheduled" stat/filter expects it to.
   // Use the same admin-only endpoint AllNews.tsx and Livestories.tsx use,
   // so all three pages agree on what breaking articles exist and their state.
-  fetchAdminNews,
+  fetchBreakingNewsHistory,
   deleteNews as apiDeleteNews,
-  updateNews as apiUpdateNews,
+  removeBreakingStatus,
 } from "../../../api/news";
 // import { useNewsEvent, useNewsSubscription } from "../../../context/newscontext";
 
@@ -25,12 +25,15 @@ interface BreakingItem {
   headline: string;
   author:   string;
   timeAgo:  string;
-  status:   "live" | "scheduled" | "expired";
+  status:   "live" | "scheduled" | "expired" | "removed";
+  isPastBreaking?: boolean;
+  canChangeStatus?: boolean;
+  canManage?: boolean;
   category: string;
   views:    number;
 }
 
-const statusOptions = ["All Status", "Live", "Scheduled", "Expired"];
+const statusOptions = ["All Status", "Live", "Scheduled", "Expired", "Removed"];
 
 // ─── helpers ──────────────────────────────────────────────────────────────────
 function toRelative(isoStr?: string | null): string {
@@ -74,35 +77,41 @@ const BreakingNews: React.FC = () => {
   // ── Fetch ──────────────────────────────────────────────────────────────────
   const loadData = useCallback(async () => {
     setLoading(true);
+
     try {
-      const data = await fetchAdminNews({ articleType: "BREAKING", limit: 100 });
-      if (!data?.news) { setItems([]); return; }
+      const data = await fetchBreakingNewsHistory();
 
-      // This page's status model only understands live/scheduled/expired —
-      // a still-DRAFT (or DELETED/ARCHIVED) breaking article isn't "breaking"
-      // yet, so exclude those rather than let deriveStatus mislabel them live.
-      const relevant = data.news.filter((n: any) =>
-        n.status === "PUBLISHED" || n.status === "SCHEDULED"
-      );
+      if (!data?.news) {
+        setItems([]);
+        return;
+      }
 
-      const mapped = relevant.map((n: any, idx: number) => ({
-        id:       n.id,
-        localId:  idx + 1,
-        headline: n.headline,
-        // Backend enriches list responses with authorId/categoryId replaced
-        // by the populated {name,...} objects — not top-level author/category
-        // fields (matches AllNews.tsx's mapping). Using the wrong field names
-        // silently fell back to "Admin"/"General" for every single article.
-        author:   n.authorId?.name || "Admin",
-        timeAgo:  toRelative(n.publishedAt || n.createdAt),
-        status:   deriveStatus(n.status, n.expiryTime),
-        category: n.categoryId?.name || "General",
-        views:    n.views ?? 0,
-      }));
+      const mapped = data.news.map((n: any, idx: number) => {
+        const isPastBreaking = Boolean(n.isPastBreaking);
+
+        return {
+          id: n.id,
+          localId: idx + 1,
+          headline: n.headline,
+          author: n.authorId?.name || "Admin",
+          timeAgo: isPastBreaking
+            ? toRelative(n.breakingRemovedAt)
+            : toRelative(n.publishedAt || n.createdAt),
+          status: isPastBreaking
+            ? "removed"
+            : deriveStatus(n.status, n.expiryTime),
+          category: n.categoryId?.name || "General",
+          views: n.views ?? 0,
+          isPastBreaking,
+          canChangeStatus: Boolean(n.canChangeStatus),
+          canManage: Boolean(n.canManage),
+        };
+      });
 
       setItems(mapped);
     } catch (err) {
-      console.error("Failed to fetch breaking news:", err);
+      console.error("Failed to fetch Breaking News history:", err);
+      setItems([]);
     } finally {
       setLoading(false);
     }
@@ -114,8 +123,9 @@ const BreakingNews: React.FC = () => {
   useEffect(() => { setVisibleCount(itemsPerPage); }, [searchQuery, statusFilter]);
 
   // ── Stats ──────────────────────────────────────────────────────────────────
-  const liveCount      = items.filter(n => n.status === "live").length;
-  const scheduledCount = items.filter(n => n.status === "scheduled").length;
+  const activeItems     = items.filter(n => !n.isPastBreaking);
+  const liveCount      = activeItems.filter(n => n.status === "live").length;
+  const scheduledCount = activeItems.filter(n => n.status === "scheduled").length;
   const totalViews     = items.reduce((sum, n) => sum + n.views, 0);
   const avgEngagement  = "+24%";
 
@@ -140,53 +150,62 @@ const BreakingNews: React.FC = () => {
       case "live":      return "bn-status-live";
       case "scheduled": return "bn-status-scheduled";
       case "expired":   return "bn-status-expired";
+      case "removed":   return "bn-status-expired";
       default:          return "";
     }
   };
 
   // ── Actions ────────────────────────────────────────────────────────────────
   const handleMenuAction = (action: string, id: string) => {
+    const item = items.find(n => n.id === id);
+
     setOpenMenuId(null);
+
+    if (!item || item.isPastBreaking) return;
+
     switch (action) {
       case "edit":
+        // Editors do not get edit access for Breaking News.
+        if (!item.canManage) return;
         navigate(`/admin/create?edit=${id}&type=breaking`);
         break;
+
       case "remove":
+        // Only Admin receives canManage for an active Breaking article.
+        if (!item.canManage) return;
         setRemoveModal(id);
         break;
+
       case "delete":
+        if (!item.canManage) return;
         setDeleteModal(id);
         break;
     }
   };
 
-  // Remove breaking status — converts article to standard published
   const confirmRemove = async () => {
     if (!removeModal) return;
-    try {
-      await apiUpdateNews(removeModal, {
-  articleType: "STANDARD",
-  status: "PUBLISHED"
-} as any);
 
-await loadData();
-    } catch (err) {
-      console.error("Remove breaking failed:", err);
-    } finally {
+    try {
+      await removeBreakingStatus(removeModal);
       setRemoveModal(null);
+      await loadData();
+    } catch (err: any) {
+      console.error("Remove breaking failed:", err);
+      alert(err?.message || "Failed to remove Breaking News status");
     }
   };
 
   const confirmDelete = async () => {
     if (!deleteModal) return;
+
     try {
       await apiDeleteNews(deleteModal);
-
-await loadData();
-    } catch (err) {
-      console.error("Delete failed:", err);
-    } finally {
       setDeleteModal(null);
+      await loadData();
+    } catch (err: any) {
+      console.error("Delete failed:", err);
+      alert(err?.message || "Failed to delete article");
     }
   };
 
@@ -201,7 +220,7 @@ await loadData();
         <div className="bn-header-left">
           <div>
             <h1 className="bn-title">Breaking News</h1>
-            <p className="bn-subtitle">Manage live breaking news and urgent updates</p>
+            <p className="bn-subtitle">Manage live breaking news and view past Breaking News</p>
           </div>
         </div>
       </div>
@@ -253,7 +272,11 @@ await loadData();
                 <span className="bn-live-time"><Clock size={14} />{news.timeAgo}</span>
                 <button
                   className="bn-live-link"
-                  onClick={() => navigate(`/admin/create?edit=${news.id}&type=breaking`)}
+                  onClick={() => {
+                    if (news.canManage) {
+                      navigate(`/admin/create?edit=${news.id}&type=breaking`);
+                    }
+                  }}
                 >
                   <ExternalLink size={14} />
                 </button>
@@ -333,34 +356,46 @@ await loadData();
                   <span className={`bn-badge ${getStatusClass(news.status)}`}>
                     {news.status === "live"      && <div className="bn-status-dot" />}
                     {news.status === "scheduled" && <Clock size={12} />}
-                    {news.status}
+                    {news.status === "removed" && <XCircle size={12} />}
+                    {news.status === "removed" ? "Removed" : news.status}
                   </span>
                 </td>
                 <td className="bn-td-category">{news.category}</td>
                 <td className="bn-td-views">{formatNumber(news.views)}</td>
                 <td className="bn-td-actions" onClick={e => e.stopPropagation()}>
-                  <div className="bn-action-wrapper">
-                    <button
-                      className="bn-action-btn"
-                      onClick={() => setOpenMenuId(openMenuId === news.id ? null : news.id)}
-                    >
-                      <MoreHorizontal size={18} />
-                    </button>
-                    {openMenuId === news.id && (
-                      <div className="bn-action-menu">
-                        <button onClick={() => handleMenuAction("edit", news.id)}>
-                          <Edit size={16} /> Edit
-                        </button>
-                        <button onClick={() => handleMenuAction("remove", news.id)}>
-                          <XCircle size={16} /> Remove Breaking
-                        </button>
-                        <div className="bn-menu-divider" />
-                        <button className="bn-delete" onClick={() => handleMenuAction("delete", news.id)}>
-                          <Trash2 size={16} /> Delete
-                        </button>
-                      </div>
-                    )}
-                  </div>
+                  {!news.isPastBreaking && news.canManage ? (
+                    <div className="bn-action-wrapper">
+                      <button
+                        className="bn-action-btn"
+                        onClick={() => setOpenMenuId(openMenuId === news.id ? null : news.id)}
+                      >
+                        <MoreHorizontal size={18} />
+                      </button>
+
+                      {openMenuId === news.id && (
+                        <div className="bn-action-menu">
+                          <button onClick={() => handleMenuAction("edit", news.id)}>
+                            <Edit size={16} /> Edit
+                          </button>
+
+                          <button onClick={() => handleMenuAction("remove", news.id)}>
+                            <XCircle size={16} /> Remove Breaking
+                          </button>
+
+                          <div className="bn-menu-divider" />
+
+                          <button
+                            className="bn-delete"
+                            onClick={() => handleMenuAction("delete", news.id)}
+                          >
+                            <Trash2 size={16} /> Delete
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                  ) : (
+                    <span style={{ color: "#94a3b8", fontSize: "13px" }}>—</span>
+                  )}
                 </td>
               </tr>
             ))}
