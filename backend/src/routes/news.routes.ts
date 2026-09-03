@@ -193,11 +193,11 @@ router.patch(
   togglePauseBreaking
 );
 
-// Remove Breaking status — ADMIN ONLY
+// Remove Breaking status — Admin: any article; Editor: own article only.
 router.patch(
   "/:id/remove-breaking",
   protect,
-  isAdmin,
+  hasPermission("breaking-news"),
   removeBreakingStatus
 );
 

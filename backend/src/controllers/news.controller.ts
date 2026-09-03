@@ -597,33 +597,32 @@ export const getAllNews = async (req: AuthRequest, res: Response) => {
 
     const filter: Record<string, any> = {};
 
-    // Privacy rules for the editor workspace:
-    // - DRAFT/SCHEDULED are private to their creator. ADMIN must not see them.
-    // - BREAKING/LIVE are shared: every authorized editor and ADMIN can see them.
-    // - Other published/expired content keeps the existing shared-list behavior.
-    if (req.user?.role === "ADMIN") {
-      if (status === "DRAFT" || status === "SCHEDULED") {
-        filter._id = { $exists: false };
-      } else {
-        filter.status = { $nin: ["DRAFT", "SCHEDULED"] };
-      }
-    } else if (req.user?.role === "EDITOR") {
-      if (status === "DRAFT" || status === "SCHEDULED") {
-        filter.status = String(status);
-        filter.authorId = String(req.user.id);
-      } else if (!status) {
-        // No explicit status: include shared content, plus this editor's private
-        // drafts/scheduled articles. Keep the privacy condition in $and so a
-        // search $or does not overwrite it below.
-        filter.$and = [{
+    // ── VISIBILITY RULES ───────────────────────────────────────────────────────
+    // DRAFT/SCHEDULED are private: each user sees ONLY their own.
+    // This includes ADMIN: Admin sees Admin-created drafts/scheduled articles,
+    // but never another user's private drafts/scheduled articles.
+    // BREAKING/LIVE and other non-private statuses are shared.
+    const privateStatuses = ["DRAFT", "SCHEDULED"];
+    const isPrivateStatus = status === "DRAFT" || status === "SCHEDULED";
+    const ownerId = String(req.user?.id || "");
+
+    if (isPrivateStatus) {
+      filter.status = String(status);
+      filter.authorId = ownerId;
+    } else if (!status) {
+      // No status filter: shared articles + this user's private articles.
+      // Keep this in $and so the search $or below cannot bypass privacy.
+      filter.$and = [
+        {
           $or: [
-            { status: { $nin: ["DRAFT", "SCHEDULED"] } },
-            { status: { $in: ["DRAFT", "SCHEDULED"] }, authorId: String(req.user.id) },
+            { status: { $nin: privateStatuses } },
+            { status: { $in: privateStatuses }, authorId: ownerId },
           ],
-        }];
-      } else {
-        filter.status = String(status);
-      }
+        },
+      ];
+    } else {
+      // Explicit non-private status (PUBLISHED, etc.) is shared.
+      filter.status = String(status);
     }
 
     if (catIdFilter) filter.categoryId = catIdFilter;
@@ -688,7 +687,7 @@ export const getAllNews = async (req: AuthRequest, res: Response) => {
         id: String(n._id),
         categoryId: cMap2[n.categoryId] ?? n.categoryId,
         authorId: aMap2[n.authorId] ?? n.authorId,
-        // Frontend uses these flags only for UI; the backend still enforces every mutation.
+        // Frontend flags mirror backend rules. Backend still enforces every mutation.
         canChangeStatus: admin || owner,
         canManage: admin || (owner && !sharedStatusArticle),
         isOwner: owner,
@@ -879,13 +878,27 @@ export const updateNews = async (req: AuthRequest, res: Response) => {
     // status of their own article. They cannot edit content, delete fields,
     // switch article type, or modify live updates. ADMIN is unrestricted.
     if (req.user?.role === "EDITOR" && isStatusOnlyArticle(existing)) {
-      const allowedKeys = new Set(["status", "statusType"]);
-      const incomingKeys = Object.keys(req.body || {}).filter((key) => req.body[key] !== undefined);
+      // BREAKING/LIVE ownership has already been checked above. Editors may
+      // change ONLY lifecycle status fields. If the frontend includes
+      // articleType for clarity, it is accepted only when it is the SAME
+      // type; an editor can never use this endpoint to turn a LIVE article
+      // into STANDARD or BREAKING (or vice versa).
+      const allowedKeys = new Set(["status", "statusType", "articleType"]);
+      const incomingKeys = Object.keys(req.body || {}).filter(
+        (key) => req.body[key] !== undefined,
+      );
       const forbiddenKeys = incomingKeys.filter((key) => !allowedKeys.has(key));
 
       if (forbiddenKeys.length > 0) {
         return res.status(403).json({
           message: "Editors can only change the status of Breaking/Live news they created.",
+        });
+      }
+
+      if (req.body.articleType !== undefined &&
+          toArticleTypeEnum(String(req.body.articleType)) !== existing.articleType) {
+        return res.status(403).json({
+          message: "Editors cannot change the article type of Breaking/Live news.",
         });
       }
     }
@@ -1004,8 +1017,16 @@ if (req.user?.role === "EDITOR") {
 }
 
     const justPublished = status === "PUBLISHED" && existing.status !== "PUBLISHED";
+    const reopenedLive =
+      existing.articleType === "LIVE" &&
+      existing.statusType === "ended" &&
+      status === "PUBLISHED" &&
+      (!articleType || typeEnum === "LIVE");
 
-    if (justPublished) {
+    if (justPublished || reopenedLive) {
+      // A LIVE story remains PUBLISHED in the News.status column even when it
+      // is ended. Reopening it therefore must also refresh publishedAt so the
+      // Live Stories page gets a new "Started" timestamp.
       publishedAt = new Date();
       scheduledAt = null;
     } else if (status === "SCHEDULED" && publishAt) {
@@ -1028,9 +1049,22 @@ if (req.user?.role === "EDITOR") {
 
     const resolvedTags = Array.isArray(tags) ? await upsertTags(tags) : null;
 
+    // ── BREAKING HISTORY STATE ────────────────────────────────────────────────
+    // If a previously removed Breaking article is made Breaking again, it must
+    // become an ACTIVE Breaking article and must no longer appear as Removed.
+    // Conversely, do not create a history marker merely because an article is
+    // Standard/Live. The marker is created only by removeBreakingStatus().
+    const breakingStateUpdate: Record<string, any> = {};
+    if (typeEnum === "BREAKING" && existing.articleType !== "BREAKING") {
+      breakingStateUpdate.wasBreaking = false;
+      breakingStateUpdate.breakingRemovedAt = null;
+      breakingStateUpdate.breakingRemovedBy = null;
+    }
+
     const updateData: Record<string, any> = {
       categoryId,
       articleType: typeEnum,
+      ...breakingStateUpdate,
       slug,
       publishedAt,
       scheduledAt,
@@ -1095,6 +1129,26 @@ if (req.user?.role === "EDITOR") {
       .populate("authorId", "name")
       .populate("categoryId", "name color");
 
+    // IMPORTANT: breakingRemovedAt / wasBreaking may not exist in older
+    // versions of the Mongoose News schema. In that case Mongoose strict mode
+    // can silently ignore the fields above. Use the raw MongoDB collection to
+    // definitively clear the old Removed marker whenever this article is made
+    // Breaking again. Without this, the Breaking History endpoint sees the
+    // stale `wasBreaking: true` marker and keeps showing the article as
+    // Removed instead of putting it back into Currently Live.
+    if (typeEnum === "BREAKING" && existing.articleType !== "BREAKING") {
+      await News.collection.updateOne(
+        { _id: existing._id },
+        {
+          $unset: {
+            wasBreaking: "",
+            breakingRemovedAt: "",
+            breakingRemovedBy: "",
+          },
+        },
+      );
+    }
+
     if (justPublished && updated) {
       notifySubscribersOfNewArticle({
         headline: updated.headline,
@@ -1129,12 +1183,6 @@ export const removeBreakingStatus = async (
   try {
     const id = String(req.params.id);
 
-    if (req.user?.role !== "ADMIN") {
-      return res.status(403).json({
-        message: "Only Admin can remove Breaking News status.",
-      });
-    }
-
     const article = await News.findById(id);
 
     if (!article) {
@@ -1146,6 +1194,14 @@ export const removeBreakingStatus = async (
     if (article.articleType !== "BREAKING") {
       return res.status(400).json({
         message: "This article is not currently Breaking News.",
+      });
+    }
+
+    // Admin can remove any Breaking article. An Editor can remove Breaking
+    // only from an article that this Editor created.
+    if (req.user?.role !== "ADMIN" && !isOwner(req, article)) {
+      return res.status(403).json({
+        message: "You can only remove Breaking status from news created by you.",
       });
     }
 
@@ -1310,7 +1366,11 @@ export const getBreakingNewsHistory = async (
     );
 
     const news = docs.map((n: any) => {
+      // A currently BREAKING article is ALWAYS active, even if an old
+      // database record still contains the historical removal marker. The
+      // marker only means "Removed" while the article is no longer BREAKING.
       const isRemoved =
+        n.articleType !== "BREAKING" &&
         Boolean(n.wasBreaking) &&
         Boolean(n.breakingRemovedAt);
 
@@ -1337,6 +1397,10 @@ export const getBreakingNewsHistory = async (
             )
           ),
         canManage: admin && !isRemoved,
+        // Removing Breaking is a status action: Admin can do it for any
+        // Breaking article; an Editor can do it only for their own article.
+        canRemoveBreaking:
+          !isRemoved && (admin || (req.user?.role === "EDITOR" && owner)),
       };
     });
 

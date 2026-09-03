@@ -9,6 +9,7 @@ import {
   fetchAdminNews,
   deleteNews as apiDeleteNews,
   updateNews as apiUpdateNews,
+  removeBreakingStatus,
   reorderNews,
   toggleHomepagePin,
 } from "../../../api/news";
@@ -173,14 +174,16 @@ useEffect(() => {
 const isAdmin = currentUser?.role === "ADMIN";
 const isEditor = currentUser?.role === "EDITOR";
 
-const canMarkBreaking =
+const canMarkBreaking = (news: NewsItem) =>
   isAdmin ||
   (isEditor &&
+    news.authorId === currentUser?.id &&
     currentUser?.permissions.includes("breaking-news") === true);
 
-const canConvertLive =
+const canConvertLive = (news: NewsItem) =>
   isAdmin ||
   (isEditor &&
+    news.authorId === currentUser?.id &&
     currentUser?.permissions.includes("live-news") === true);
 
 
@@ -451,28 +454,36 @@ const onDragEnd = async () => {
 }
 
       case "mark-breaking": {
-        const isBreaking = item?.tagType === "breaking";
+        if (!item || !canModifyArticle(item)) break;
 
-try {
-  await apiUpdateNews(
-    id,
-    {
-      articleType: isBreaking ? "STANDARD" : "BREAKING",
-      status: "PUBLISHED",
-    } as any
-  );
+        const isBreaking = item.tagType === "breaking";
 
-  await loadData(activeType, search);
+        try {
+          if (isBreaking) {
+            // Removing Breaking records history and is allowed for Admin or
+            // the Editor who created this article.
+            await removeBreakingStatus(id);
+          } else {
+            // Re-breaking a previously removed article clears the old
+            // breakingRemovedAt/wasBreaking marker in the backend.
+            await apiUpdateNews(id, {
+              articleType: "BREAKING",
+              status: "PUBLISHED",
+            } as any);
+          }
 
-} catch (err) {
-  console.error(err);
-}
+          await loadData(activeType, search);
+        } catch (err) {
+          console.error("Failed to update Breaking status:", err);
+        }
 
-break;
+        break;
       }
 
       case "convert-live": {
-        const isLive = item?.tagType === "live";
+        if (!item || !canModifyArticle(item)) break;
+
+        const isLive = item.tagType === "live";
 
         // Ending an already-ended live story from here is a no-op — that
         // state is managed from the Live Stories page.
@@ -798,7 +809,7 @@ onDragEnd={() => {
       : "Pin to Homepage"}
   </button>
 )}
-                          {canMarkBreaking && (
+                          {canMarkBreaking(news) && (
   <button
     className={`dropdown-item${news.tagType === "breaking" ? " breaking-active" : ""}`}
                             onClick={() => handleMenuAction("mark-breaking", news.id)}
@@ -806,7 +817,7 @@ onDragEnd={() => {
                             <Zap size={15} className={news.tagType === "breaking" ? "icon-red" : ""} />
                             {news.tagType === "breaking" ? "Remove Breaking" : "Mark as Breaking"}
                           </button>)}
-{canConvertLive && (
+{canConvertLive(news) && (
   <button
     className={`dropdown-item${news.tagType === "live" ? " breaking-active" : ""}`}
     onClick={() => handleMenuAction("convert-live", news.id)}

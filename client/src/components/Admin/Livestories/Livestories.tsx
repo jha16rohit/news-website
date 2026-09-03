@@ -1258,36 +1258,53 @@ const LiveStoriesPage: React.FC = () => {
     }
   };
 
+  // ── End Live ────────────────────────────────────────────────────────────────
+  // Backend is the final authority for ownership. The UI only exposes this
+  // button when canChangeStatus is true (ADMIN or the story owner).
   const handleEndLive = async (storyId: string) => {
-  const now = new Date();
+    const story = stories.find(s => s.id === storyId);
+    if (!story || story.status !== "live" || !story.canChangeStatus) return;
 
-  setStories(prev =>
-    prev.map(s =>
-      s.id === storyId
-        ? {
-            ...s,
-            status: "ended",
-            endedAt: now.toISOString(),
-            published: formatDate(now.toISOString())
-          }
-        : s
-    )
-  );
+    const now = new Date();
+    setEndingId(storyId);
 
-  setEndingId(storyId);
+    setStories(prev =>
+      prev.map(s =>
+        s.id === storyId
+          ? {
+              ...s,
+              status: "ended",
+              endedAt: now.toISOString(),
+              published: formatDate(now.toISOString()),
+            }
+          : s
+      )
+    );
 
-  try {
-    // Save ended status to database
-    await apiUpdateNews(storyId, {
-      status: "PUBLISHED",
-      statusType: "ended",
-    } as any);
+    try {
+      await apiUpdateNews(storyId, {
+        status: "PUBLISHED",
+        statusType: "ended",
+        articleType: "LIVE",
+      } as any);
 
-    // Reload from database
-    await loadData();
+      await loadData();
+    } catch (err) {
+      console.error("Failed to end live:", err);
+      await loadData();
+    } finally {
+      setEndingId(null);
+    }
+  };
 
-  } catch (err) {
-    console.error("Failed to end live:", err);
+  // ── Go Live / Go Live Again ───────────────────────────────────────────────
+  // An ENDED story keeps articleType=LIVE. Reopening it only changes the
+  // lifecycle status back to published/live; it does NOT create a new article.
+  const handleGoLive = async (storyId: string) => {
+    const story = stories.find(s => s.id === storyId);
+    if (!story || !story.canChangeStatus) return;
+
+    const now = new Date().toISOString();
 
     setStories(prev =>
       prev.map(s =>
@@ -1295,30 +1312,27 @@ const LiveStoriesPage: React.FC = () => {
           ? {
               ...s,
               status: "live",
+              liveStartedAt: now,
               endedAt: null,
-              published: "Live"
+              published: "Live",
             }
           : s
       )
     );
-  } finally {
-    setEndingId(null);
-  }
-};
 
-  const handleGoLive = async (storyId: string) => {
-    setStories(prev =>
-      prev.map(s =>
-        s.id === storyId
-          ? { ...s, status: "live", liveStartedAt: new Date().toISOString(), published: "Live" }
-          : s
-      )
-    );
     try {
-      await apiUpdateNews(storyId, { status: "PUBLISHED", statusType: "published" } as any);
-      
+      await apiUpdateNews(storyId, {
+        status: "PUBLISHED",
+        statusType: "published",
+        articleType: "LIVE",
+      } as any);
+
+      // Important: reload so every open editor/admin page gets the same
+      // database-backed state.
+      await loadData();
     } catch (err) {
       console.error("Failed to go live:", err);
+      await loadData();
     }
   };
 
@@ -1542,6 +1556,16 @@ const LiveStoriesPage: React.FC = () => {
                   </div>
                 </div>
                 <div className="ls-story-actions" onClick={e => e.stopPropagation()}>
+                  {/* Only ADMIN or the story owner can change its status. */}
+                  {story.canChangeStatus && (
+                    <button
+                      className="ls-btn-go-live"
+                      onClick={() => handleGoLive(story.id)}
+                    >
+                      <IconBroadcast /> Go Live Again
+                    </button>
+                  )}
+
                   <div className="ls-more-wrap">
                     <button className="ls-btn-more" onClick={() => toggleMenu(story.id)}>···</button>
                     {openMenuId === story.id && (

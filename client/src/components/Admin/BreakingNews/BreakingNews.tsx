@@ -29,6 +29,7 @@ interface BreakingItem {
   isPastBreaking?: boolean;
   canChangeStatus?: boolean;
   canManage?: boolean;
+  canRemoveBreaking?: boolean;
   category: string;
   views:    number;
 }
@@ -171,8 +172,7 @@ const BreakingNews: React.FC = () => {
         break;
 
       case "remove":
-        // Only Admin receives canManage for an active Breaking article.
-        if (!item.canManage) return;
+        if (!item.canRemoveBreaking) return;
         setRemoveModal(id);
         break;
 
@@ -363,7 +363,7 @@ const BreakingNews: React.FC = () => {
                 <td className="bn-td-category">{news.category}</td>
                 <td className="bn-td-views">{formatNumber(news.views)}</td>
                 <td className="bn-td-actions" onClick={e => e.stopPropagation()}>
-                  {!news.isPastBreaking && news.canManage ? (
+                  {!news.isPastBreaking && (news.canManage || news.canRemoveBreaking) ? (
                     <div className="bn-action-wrapper">
                       <button
                         className="bn-action-btn"
@@ -374,22 +374,29 @@ const BreakingNews: React.FC = () => {
 
                       {openMenuId === news.id && (
                         <div className="bn-action-menu">
-                          <button onClick={() => handleMenuAction("edit", news.id)}>
-                            <Edit size={16} /> Edit
-                          </button>
+                          {news.canManage && (
+                            <button onClick={() => handleMenuAction("edit", news.id)}>
+                              <Edit size={16} /> Edit
+                            </button>
+                          )}
 
-                          <button onClick={() => handleMenuAction("remove", news.id)}>
-                            <XCircle size={16} /> Remove Breaking
-                          </button>
+                          {news.canRemoveBreaking && (
+                            <button onClick={() => handleMenuAction("remove", news.id)}>
+                              <XCircle size={16} /> Remove Breaking
+                            </button>
+                          )}
 
-                          <div className="bn-menu-divider" />
-
-                          <button
-                            className="bn-delete"
-                            onClick={() => handleMenuAction("delete", news.id)}
-                          >
-                            <Trash2 size={16} /> Delete
-                          </button>
+                          {news.canManage && (
+                            <>
+                              <div className="bn-menu-divider" />
+                              <button
+                                className="bn-delete"
+                                onClick={() => handleMenuAction("delete", news.id)}
+                              >
+                                <Trash2 size={16} /> Delete
+                              </button>
+                            </>
+                          )}
                         </div>
                       )}
                     </div>
