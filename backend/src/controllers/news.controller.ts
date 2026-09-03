@@ -16,6 +16,14 @@ import { notifyUsersOfNewArticle } from "./userNotification.controller";
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
+function canModifyNews(req: AuthRequest, article: any): boolean {
+  if (req.user?.role === "ADMIN") {
+    return true;
+  }
+
+  return String(article.authorId) === String(req.user?.id);
+}
+
 function normalizeTagName(name: string): string {
   return name
     .trim()
@@ -154,21 +162,30 @@ function normalisePriority(
 }
 
 async function resolveCategoryId(body: any): Promise<string> {
-  if (body.categoryId?.trim()) return String(body.categoryId.trim());
+  if (body.categoryId?.trim()) {
+    const category = await Category.findById(body.categoryId.trim());
+
+    if (!category) {
+      throw new Error("Selected category does not exist.");
+    }
+
+    return String(category._id);
+  }
 
   const name = String(body.category ?? "").trim();
-  if (!name) throw new Error("Category is required");
 
-  let cat = await Category.findOne({
+  if (!name) {
+    throw new Error("Category is required");
+  }
+
+  const cat = await Category.findOne({
     name: { $regex: new RegExp(`^${name}$`, "i") },
   });
 
   if (!cat) {
-    const slug = slugify(name, { lower: true, strict: true });
-    cat = await Category.create({
-      name,
-      slug: `${slug}-${Math.random().toString(36).slice(2, 5)}`,
-    });
+    throw new Error(
+      "Category does not exist. Please ask an Admin to create it or get Categories permission."
+    );
   }
 
   return String(cat._id);
@@ -176,6 +193,7 @@ async function resolveCategoryId(body: any): Promise<string> {
 
 async function upsertTags(tags: string[]): Promise<string[]> {
   const names: string[] = [];
+
   for (const tagName of tags) {
     const normalized = normalizeTagName(tagName);
 
@@ -183,22 +201,27 @@ async function upsertTags(tags: string[]): Promise<string[]> {
       continue;
     }
 
-   let tagSlug = slugify(normalized, {
+    let tagSlug = slugify(normalized, {
       lower: true,
       strict: true,
     });
 
-    // Fallback logic for Hindi/Devanagari tags to prevent them from being skipped
+    // Fallback logic for Hindi/Devanagari tags
     if (!tagSlug) {
       let hash = 0;
+
       for (let i = 0; i < normalized.length; i++) {
-        hash = (Math.imul(31, hash) + normalized.charCodeAt(i)) | 0;
+        hash =
+          (Math.imul(31, hash) + normalized.charCodeAt(i)) | 0;
       }
+
       tagSlug = "tag-" + Math.abs(hash).toString(36);
     }
+
     let tag = await Tag.findOne({
       slug: tagSlug,
     });
+
     if (!tag) {
       tag = await Tag.create({
         name: normalized,
@@ -206,13 +229,16 @@ async function upsertTags(tags: string[]): Promise<string[]> {
         usageCount: 1,
       });
     } else {
-      await Tag.findByIdAndUpdate(tag._id, { $inc: { usageCount: 1 } });
+      await Tag.findByIdAndUpdate(tag._id, {
+        $inc: { usageCount: 1 },
+      });
     }
+
     names.push(normalized);
   }
+
   return names;
 }
-
 // ─── AUTO-PUBLISH SCHEDULED ARTICLES ───────────────────────────────────────────
 // There was previously NO mechanism that ever moved a "SCHEDULED" article to
 // "PUBLISHED" once its scheduledAt time arrived — the status just sat at
@@ -327,6 +353,50 @@ export const createNews = async (req: AuthRequest, res: Response) => {
     let deletedAt: Date | null = null;
     let deleteAfter: Date | null = null;
     let resolvedStatus = status || "DRAFT";
+
+    // ── Editor capability checks ──────────────────────────────────────────────
+if (req.user?.role === "EDITOR") {
+  const editor = await User.findById(req.user.id).select("permissions");
+
+  if (!editor) {
+    return res.status(401).json({
+      message: "User not found.",
+    });
+  }
+
+  const permissions = editor.permissions || [];
+
+  // Standard Article only needs create-news.
+  // Breaking News additionally needs breaking-news.
+  if (
+    typeEnum === "BREAKING" &&
+    !permissions.includes("breaking-news")
+  ) {
+    return res.status(403).json({
+      message: "Breaking News permission is required.",
+    });
+  }
+
+  // Live Article additionally needs live-news.
+  if (
+    typeEnum === "LIVE" &&
+    !permissions.includes("live-news")
+  ) {
+    return res.status(403).json({
+      message: "Live News permission is required.",
+    });
+  }
+
+  // Scheduled Article additionally needs scheduled.
+  if (
+    resolvedStatus === "SCHEDULED" &&
+    !permissions.includes("scheduled")
+  ) {
+    return res.status(403).json({
+      message: "Scheduled News permission is required.",
+    });
+  }
+}
 
     if (resolvedStatus === "PUBLISHED") {
       publishedAt = new Date();
@@ -753,6 +823,11 @@ export const updateNews = async (req: AuthRequest, res: Response) => {
     const id = String(req.params.id);
     const existing = await News.findById(id);
     if (!existing) return res.status(404).json({ message: "News not found" });
+    if (!canModifyNews(req, existing)) {
+  return res.status(403).json({
+    message: "You can only modify news created by you.",
+  });
+}
 
     const {
       headline,
@@ -787,7 +862,40 @@ export const updateNews = async (req: AuthRequest, res: Response) => {
     const typeEnum = articleType
       ? toArticleTypeEnum(articleType)
       : existing.articleType;
+// ── Editor capability checks ─────────────────────────────────────────────
+if (req.user?.role === "EDITOR") {
+  const editor = await User.findById(req.user.id).select("permissions");
 
+  if (!editor) {
+    return res.status(401).json({
+      message: "User not found.",
+    });
+  }
+
+  const permissions = editor.permissions || [];
+
+  // Editor cannot change an article into Breaking News
+  if (
+    typeEnum === "BREAKING" &&
+    existing.articleType !== "BREAKING" &&
+    !permissions.includes("breaking-news")
+  ) {
+    return res.status(403).json({
+      message: "Breaking News permission is required.",
+    });
+  }
+
+  // Editor cannot change an article into Live Updates
+  if (
+    typeEnum === "LIVE" &&
+    existing.articleType !== "LIVE" &&
+    !permissions.includes("live-news")
+  ) {
+    return res.status(403).json({
+      message: "Live News permission is required.",
+    });
+  }
+}
     let categoryId = existing.categoryId;
     if (req.body.categoryId || req.body.category) {
       try {
@@ -813,6 +921,26 @@ export const updateNews = async (req: AuthRequest, res: Response) => {
     let scheduledAt: Date | null = (existing as any).scheduledAt ?? null;
     let deletedAt: Date | null = (existing as any).deletedAt ?? null;
     let deleteAfter: Date | null = (existing as any).deleteAfter ?? null;
+
+    if (
+  req.user?.role === "EDITOR" &&
+  status === "SCHEDULED" &&
+  existing.status !== "SCHEDULED"
+) {
+  const editor = await User.findById(req.user.id).select("permissions");
+
+  if (!editor) {
+    return res.status(401).json({
+      message: "User not found.",
+    });
+  }
+
+  if (!editor.permissions?.includes("scheduled")) {
+    return res.status(403).json({
+      message: "Scheduled News permission is required.",
+    });
+  }
+}
 
     const justPublished = status === "PUBLISHED" && existing.status !== "PUBLISHED";
 
@@ -935,6 +1063,11 @@ export const deleteNews = async (req: AuthRequest, res: Response) => {
     const id = String(req.params.id);
     const existing = await News.findById(id);
     if (!existing) return res.status(404).json({ message: "News not found" });
+    if (!canModifyNews(req, existing)) {
+  return res.status(403).json({
+    message: "You can only delete news created by you.",
+  });
+}
 
     const { deleteMode, deleteIntervalDays } = req.body ?? {};
 
@@ -979,6 +1112,11 @@ export const togglePauseBreaking = async (req: AuthRequest, res: Response) => {
     const id = String(req.params.id);
     const existing = await News.findById(id);
     if (!existing) return res.status(404).json({ message: "News not found" });
+    if (!canModifyNews(req, existing)) {
+  return res.status(403).json({
+    message: "You can only modify news created by you.",
+  });
+}
     if (existing.articleType !== "BREAKING")
       return res.status(400).json({ message: "Not a breaking news article" });
 
@@ -1004,6 +1142,11 @@ export const addLiveUpdate = async (req: AuthRequest, res: Response) => {
     const id = String(req.params.id);
     const news = await News.findById(id);
     if (!news) return res.status(404).json({ message: "News not found" });
+    if (!canModifyNews(req, news)) {
+  return res.status(403).json({
+    message: "You can only modify news created by you.",
+  });
+}
     if (news.articleType !== "LIVE")
       return res.status(400).json({ message: "Not a live article" });
 
@@ -1235,6 +1378,11 @@ export const deleteMediaImage = async (req: AuthRequest, res: Response) => {
     const newsId = String(req.params.newsId);
     const article = await News.findById(newsId);
     if (!article) return res.status(404).json({ message: "Article not found" });
+    if (!canModifyNews(req, article)) {
+  return res.status(403).json({
+    message: "You can only modify news created by you.",
+  });
+}
 
     const imageUrl = article.featuredImage;
 
@@ -1519,6 +1667,12 @@ export const uploadMediaImage = async (
         message: "Article not found",
       });
     }
+
+    if (!canModifyNews(req, article)) {
+  return res.status(403).json({
+    message: "You can only modify news created by you.",
+  });
+}
 
     // uploadedImageUrl is already provided by your upload middleware
     const imageUrl = (req as any).uploadedImageUrl;

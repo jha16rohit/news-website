@@ -19,9 +19,6 @@ export const apiClient = async (
     const isFormData = options.body instanceof FormData;
     const isStringBody = typeof options.body === "string";
 
-    console.log("isFormData =", isFormData);
-    console.log("body =", options.body);
-
     const headers: Record<string, string> = {
   ...authHeader,
   ...(options.headers as Record<string, string> || {}),

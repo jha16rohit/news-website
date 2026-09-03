@@ -1,16 +1,32 @@
 import mongoose, { Document, Schema } from "mongoose";
 
 export interface IUser extends Document {
+  userId: string;
   name: string;
   email: string;
   password: string;
   phone?: string;
-  role: string;
+
+  role: "ADMIN" | "EDITOR";
+
+  permissions: string[];
+
+  status: "Active" | "Inactive" | "Deleted";
+
   createdAt: Date;
 }
 
 const UserSchema = new Schema<IUser>(
   {
+    userId: {
+      type: String,
+      required: true,
+      unique: true,
+      uppercase: true,
+      trim: true,
+      index: true,
+    },
+
     name: {
       type: String,
       required: true,
@@ -37,7 +53,19 @@ const UserSchema = new Schema<IUser>(
 
     role: {
       type: String,
-      default: "ADMIN",
+      enum: ["ADMIN", "EDITOR"],
+      default: "EDITOR",
+    },
+
+    permissions: {
+      type: [String],
+      default: [],
+    },
+
+    status: {
+      type: String,
+      enum: ["Active", "Inactive", "Deleted"],
+      default: "Active",
     },
   },
   {
@@ -48,9 +76,6 @@ const UserSchema = new Schema<IUser>(
   }
 );
 
-const User = mongoose.model<IUser>(
-  "User",
-  UserSchema
-);
+const User = mongoose.model<IUser>("User", UserSchema);
 
 export default User;

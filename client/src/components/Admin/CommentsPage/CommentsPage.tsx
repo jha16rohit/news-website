@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
+import { useNavigate } from "react-router-dom";
 import "./CommentsPage.css";
 import {
   Clock,
@@ -63,6 +64,7 @@ const computeColumns = (width: number) => {
 const ROWS_PER_PAGE = 2;
 
 const CommentsPage = () => {
+  const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState<Status>("all");
   const [search, setSearch] = useState("");
   const [comments, setComments] = useState<Comment[]>([]);
@@ -330,7 +332,16 @@ const CommentsPage = () => {
 
                   <p className="cci-text">{c.text}</p>
 
-                  <a className="cci-article-link" title={c.article}>on {c.article} ↗</a>
+                  <a
+  className="cci-article-link"
+  href={`/admin/news/${c.newsId}`}
+  onClick={(e) => {
+    e.preventDefault();
+    navigate(`/article/${c.newsId}`);
+  }}
+>
+  on {c.article} ↗
+</a>
 
                   <div className="cci-footer">
                     <span className="cci-likes">

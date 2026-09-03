@@ -1,4 +1,5 @@
 import { Router } from "express";
+
 import {
   createProfile,
   getProfiles,
@@ -6,11 +7,47 @@ import {
   deleteProfile,
 } from "../controllers/topicProfile.controller";
 
+import {
+  protect,
+  hasPermission,
+} from "../middleware/auth.middleware";
+
 const router = Router();
 
-router.post("/", createProfile);
-router.get("/", getProfiles);
-router.put("/:id", updateProfile);
-router.delete("/:id", deleteProfile);
+// ─── CREATE ────────────────────────────────────────────────────────────────
+
+router.post(
+  "/",
+  protect,
+  hasPermission("topic-profile"),
+  createProfile
+);
+
+// ─── READ ──────────────────────────────────────────────────────────────────
+
+router.get(
+  "/",
+  protect,
+  hasPermission("topic-profile"),
+  getProfiles
+);
+
+// ─── UPDATE ────────────────────────────────────────────────────────────────
+
+router.put(
+  "/:id",
+  protect,
+  hasPermission("topic-profile"),
+  updateProfile
+);
+
+// ─── DELETE ────────────────────────────────────────────────────────────────
+
+router.delete(
+  "/:id",
+  protect,
+  hasPermission("topic-profile"),
+  deleteProfile
+);
 
 export default router;

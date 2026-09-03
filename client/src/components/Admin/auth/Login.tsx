@@ -72,7 +72,10 @@ const Login: React.FC = () => {
 
   // ── Login form ──────────────────────────────────────────────────────────────
   const [showPassword, setShowPassword] = useState(false);
-  const [form, setForm] = useState({ email: "", password: "" });
+ const [form, setForm] = useState({
+  emailOrUserId: "",
+  password: "",
+});
 
   // ── Forgot flow ─────────────────────────────────────────────────────────────
   const [screen,       setScreen]       = useState<Screen>("login");
@@ -101,21 +104,35 @@ const Login: React.FC = () => {
   const clearMsg = () => setMessage(null);
 
   // ── Handlers ────────────────────────────────────────────────────────────────
-  const handleLogin = async () => {
-    clearMsg();
-    if (!form.email || !form.password) { showMsg("error", "All fields are required"); return; }
-    setLoading(true);
-    try {
-      const res = await loginUser(form);
-      localStorage.setItem("admin-auth", "true");
-      if (res?.token) localStorage.setItem("admin-token", res.token);
-      navigate("/admin/dashboard");
-    } catch (err: any) {
-      showMsg("error", err.message || "Login failed");
-    } finally {
-      setLoading(false);
+const handleLogin = async () => {
+  clearMsg();
+  if (!form.emailOrUserId || !form.password) {
+    showMsg("error", "All fields are required");
+    return;
+  }
+
+  setLoading(true);
+
+  try {
+    const res = await loginUser(form);
+
+    localStorage.setItem("admin-auth", "true");
+
+    if (res?.token) {
+      localStorage.setItem("admin-token", res.token);
     }
-  };
+
+    navigate(
+  res?.user?.role === "EDITOR"
+    ? "/editor/editor-dashboard"
+    : "/admin/dashboard"
+);
+  } catch (err: any) {
+    showMsg("error", err.message || "Login failed");
+  } finally {
+    setLoading(false);
+  }
+};
 
   const handleSendOtp = async () => {
     clearMsg();
@@ -210,14 +227,16 @@ const Login: React.FC = () => {
             )}
 
             <div className="input-group">
-              <input
-                type="email"
-                name="email"
-                placeholder="Email"
-                value={form.email}
-                onChange={(e) => setForm({ ...form, email: e.target.value })}
-                onKeyDown={(e) => e.key === "Enter" && handleLogin()}
-              />
+<input
+  type="text"
+  name="emailOrUserId"
+  placeholder="Email or User ID"
+  value={form.emailOrUserId}
+  onChange={(e) =>
+    setForm({ ...form, emailOrUserId: e.target.value })
+  }
+  onKeyDown={(e) => e.key === "Enter" && handleLogin()}
+/>
               <FaUser className="end-icon" />
             </div>
 

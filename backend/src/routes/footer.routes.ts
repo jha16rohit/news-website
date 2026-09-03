@@ -1,27 +1,54 @@
 import { Router } from "express";
+
 import {
   getFooterSettings,
   updateFooterSettings,
   uploadFooterImageHandler,
   deleteFooterImage,
 } from "../controllers/footer.controller";
+
 import { uploadFooterImage } from "../middleware/Footerupload.middleware";
-import { protect } from "../middleware/auth.middleware";
+
+import {
+  protect,
+  hasPermission,
+} from "../middleware/auth.middleware";
 
 const router = Router();
 
 // ─── Public: frontend reads footer data ───────────────────────────────────────
-router.get("/", getFooterSettings);
+
+router.get(
+  "/",
+  getFooterSettings
+);
 
 // ─── Protected: save text + image list ───────────────────────────────────────
-router.put("/", protect, updateFooterSettings);
 
-// ─── Protected: upload a single image to Supabase, returns { url } ───────────
-// Frontend sends: multipart/form-data with field "image"
-router.post("/upload-image", protect, uploadFooterImage, uploadFooterImageHandler);
+router.put(
+  "/",
+  protect,
+  hasPermission("footer-management"),
+  updateFooterSettings
+);
 
-// ─── Protected: delete a single image from Supabase + DB ────────────────────
-// Frontend sends: { imageUrl: "https://..." }
-router.delete("/delete-image", protect, deleteFooterImage);
+// ─── Protected: upload a single image to Supabase ────────────────────────────
+
+router.post(
+  "/upload-image",
+  protect,
+  hasPermission("footer-management"),
+  uploadFooterImage,
+  uploadFooterImageHandler
+);
+
+// ─── Protected: delete a single image from Supabase + DB ─────────────────────
+
+router.delete(
+  "/delete-image",
+  protect,
+  hasPermission("footer-management"),
+  deleteFooterImage
+);
 
 export default router;

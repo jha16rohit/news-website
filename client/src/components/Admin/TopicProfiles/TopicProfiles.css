@@ -228,7 +228,6 @@
 /* Card actions */
 .tp-card-actions {
   display: flex;
-  border-top: 1px solid #f3f4f6;
   padding: 10px 12px;
   gap: 4px;
   justify-content: center;

@@ -10,6 +10,8 @@ import {
   getTrendingTags,
   type Tag as TagType,
 } from "../../../api/tags.api";
+import { getMe } from "../../../api/auth";
+
 import {
   Bold, Italic, Underline, Heading1, Heading2, List, ListOrdered,
   Quote, AlignLeft, AlignCenter, AlignRight, Link,
@@ -893,6 +895,53 @@ const CreateNewArticle: React.FC = () => {
   const [savedRange,        setSavedRange]        = useState<Range | null>(null);
   const [submitError,       setSubmitError]       = useState<string | null>(null);
   const [isSubmitting,      setIsSubmitting]      = useState(false);
+  const [currentUser, setCurrentUser] = useState<{
+  role: "ADMIN" | "EDITOR";
+  permissions: string[];
+} | null>(null);
+
+const [userLoading, setUserLoading] = useState(true);
+
+useEffect(() => {
+  setUserLoading(true);
+
+  getMe()
+    .then((res: any) => {
+      setCurrentUser({
+        role: res.user?.role,
+        permissions: Array.isArray(res.user?.permissions)
+          ? res.user.permissions
+          : [],
+      });
+    })
+    .catch(() => {
+      setCurrentUser(null);
+    })
+    .finally(() => {
+      setUserLoading(false);
+    });
+}, []);
+
+const isAdmin = currentUser?.role === "ADMIN";
+const isEditor = currentUser?.role === "EDITOR";
+
+const canCreateBreaking =
+  !userLoading &&
+  (isAdmin ||
+    (isEditor &&
+      currentUser?.permissions?.includes("breaking-news") === true));
+
+const canCreateLive =
+  !userLoading &&
+  (isAdmin ||
+    (isEditor &&
+      currentUser?.permissions?.includes("live-news") === true));
+
+const canSchedule =
+  !userLoading &&
+  (isAdmin ||
+    (isEditor &&
+      currentUser?.permissions?.includes("scheduled") === true));
 
   const editorRef    = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -1359,14 +1408,27 @@ const CreateNewArticle: React.FC = () => {
           </p>
         </div>
         <div className="cna-header-actions">
-          <button className="cna-btn cna-btn-outline" disabled={isSubmitting}
-            onClick={() => setShowScheduleModal(true)}>
-            <Clock size={15} /> {isEdit ? "Reschedule" : "Schedule"}
-          </button>
-          <button className="cna-btn cna-btn-secondary" disabled={isSubmitting}
-            onClick={handleSaveDraft}>
-            <FileText size={15} /> {isSubmitting ? "Saving…" : "Save Draft"}
-          </button>
+{canSchedule && (
+  <>
+    <button
+      className="cna-btn cna-btn-outline"
+      disabled={isSubmitting}
+      onClick={() => setShowScheduleModal(true)}
+    >
+      <Clock size={15} />
+      {isEdit ? "Reschedule" : "Schedule"}
+    </button>
+
+    <button
+      className="cna-btn cna-btn-secondary"
+      disabled={isSubmitting}
+      onClick={handleSaveDraft}
+    >
+      <FileText size={15} />
+      {isSubmitting ? "Saving…" : "Save Draft"}
+    </button>
+  </>
+)}
           <button className="cna-btn cna-btn-primary" disabled={isSubmitting}
             onClick={handlePublish}>
             <Rocket size={15} /> {isSubmitting ? "Saving…" : isEdit ? "Update & Publish" : "Publish Now"}
@@ -1446,14 +1508,34 @@ const CreateNewArticle: React.FC = () => {
           <section className="cna-section">
             <label className="cna-section-label">Article Type</label>
             <div className="cna-type-grid">
-              {ARTICLE_TYPES.map(({ label, icon }) => (
-                <button key={label}
-                  className={`cna-type-btn${selectedType === label ? " cna-type-btn--active" : ""}`}
-                  onClick={() => setSelectedType(label)}>
-                  <span className="cna-type-icon">{icon}</span>{label}
-                </button>
-              ))}
-            </div>
+ {ARTICLE_TYPES.map(({ label, icon }) => {
+  const allowed =
+    label === "Standard Article"
+      ? true
+      : label === "Breaking News"
+        ? canCreateBreaking
+        : canCreateLive;
+
+  if (!allowed) return null;
+
+  return (
+    <button
+      key={label}
+      type="button"
+      className={`cna-type-btn${
+        selectedType === label ? " cna-type-btn--active" : ""
+      }`}
+      onClick={() => {
+        setSelectedType(label);
+        setSubmitError(null);
+      }}
+    >
+      <span className="cna-type-icon">{icon}</span>
+      {label}
+    </button>
+  );
+})}
+</div>
           </section>
 
           <section className="cna-section">

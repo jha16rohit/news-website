@@ -29,23 +29,34 @@ import {
 } from "../controllers/news.controller";
 
 import { uploadToCloudinary } from "../middleware/Upload.middleware";
-import { protect } from "../middleware/auth.middleware";
+import {
+  protect,
+  isAdmin,
+  hasPermission,
+} from "../middleware/auth.middleware";
 
 const router = Router();
 
 // ─── Media Library ──────────────────────────────────────────────
 
-router.get("/media-library", getMediaLibrary);
+router.get(
+  "/media-library",
+  protect,
+  hasPermission("media-library"),
+  getMediaLibrary
+);
 
 router.delete(
   "/media-library/:newsId",
   protect,
+  hasPermission("media-library"),
   deleteMediaImage
 );
 
 router.patch(
   "/media-library/:newsId/upload",
   protect,
+  hasPermission("media-library"),
   uploadToCloudinary,
   uploadMediaImage
 );
@@ -117,6 +128,8 @@ router.get(
 
 router.post(
   "/create",
+  protect,
+  hasPermission("create-news"),
   uploadToCloudinary,
   createNews
 );
@@ -132,6 +145,7 @@ router.post(
 router.put(
   "/reorder",
   protect,
+  hasPermission("news"),
   reorderNews
 );
 
@@ -139,6 +153,7 @@ router.put(
 router.put(
   "/:id/homepage-pin",
   protect,
+  hasPermission("news"),
   toggleHomepagePin
 );
 
@@ -146,6 +161,7 @@ router.put(
 router.put(
   "/:id",
   protect,
+  hasPermission("news"),
   uploadToCloudinary,
   updateNews
 );
@@ -154,6 +170,7 @@ router.put(
 router.delete(
   "/:id",
   protect,
+  hasPermission("news"),
   deleteNews
 );
 
@@ -161,6 +178,7 @@ router.delete(
 router.patch(
   "/:id/pause-toggle",
   protect,
+  hasPermission("breaking-news"),
   togglePauseBreaking
 );
 
@@ -168,6 +186,7 @@ router.patch(
 router.post(
   "/:id/live-update",
   protect,
+  hasPermission("live-news"),
   addLiveUpdate
 );
 
@@ -176,6 +195,7 @@ router.post(
 router.delete(
   "/admin/purge-deleted",
   protect,
+  isAdmin,
   purgeDeletedNews
 );
 

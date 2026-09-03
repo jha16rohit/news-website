@@ -137,3 +137,45 @@ export function trackReadTime(newsId: string, viewId: string, seconds: number): 
     }
   } catch { /* fire-and-forget */ }
 }
+
+
+// ── Editor analytics ────────────────────────────────────────────────────────
+
+const EDITOR_BASE = "/api/analytics/editor";
+
+async function getEditor(path: string, range?: number) {
+  const q = range ? `?range=${range}` : "";
+
+  const res = await fetch(`${EDITOR_BASE}${path}${q}`, {
+    credentials: "include",
+  });
+
+  if (!res.ok) {
+    throw new Error(`Editor Analytics API error: ${path}`);
+  }
+
+  return res.json();
+}
+
+export async function fetchEditorKPIs(range: number) {
+  return getEditor("/kpis", range);
+}
+
+export async function fetchEditorTrafficChart(range: number) {
+  return getEditor("/traffic", range);
+}
+
+export async function fetchEditorTopArticles(range: number, limit = 10) {
+  const res = await fetch(
+    `${EDITOR_BASE}/top-articles?range=${range}&limit=${limit}`,
+    {
+      credentials: "include",
+    }
+  );
+
+  if (!res.ok) {
+    throw new Error("Editor Analytics API error: top-articles");
+  }
+
+  return res.json();
+}

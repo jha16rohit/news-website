@@ -1,4 +1,5 @@
 import { Router } from "express";
+
 import {
   createCategory,
   getAllCategories,
@@ -10,24 +11,76 @@ import {
   getCategoryNews,
 } from "../controllers/category.controller";
 
+import {
+  protect,
+  hasPermission,
+} from "../middleware/auth.middleware";
+
 const router = Router();
 
 // ─── CREATE ────────────────────────────────────────────────────────────────
-router.post("/", createCategory);
+
+router.post(
+  "/",
+  protect,
+  hasPermission("categories"),
+  createCategory
+);
 
 // ─── READ ──────────────────────────────────────────────────────────────────
-router.get("/", getAllCategories);
-router.get("/:slug/news", getCategoryNews);
-router.get("/:id", getCategoryById);
+
+router.get(
+  "/",
+  protect,
+  getAllCategories
+);
+
+router.get(
+  "/:slug/news",
+  protect,
+  hasPermission("categories"),
+  getCategoryNews
+);
+
+router.get(
+  "/:id",
+  protect,
+  hasPermission("categories"),
+  getCategoryById
+);
 
 // ─── UPDATE ────────────────────────────────────────────────────────────────
-router.put("/:id", updateCategory);
+
+router.put(
+  "/:id",
+  protect,
+  hasPermission("categories"),
+  updateCategory
+);
 
 // ─── DELETE ────────────────────────────────────────────────────────────────
-router.delete("/:id", deleteCategory);
 
-// ─── TOGGLES (for your UI switches) ────────────────────────────────────────
-router.patch("/:id/featured", toggleFeatured);
-router.patch("/:id/active", toggleActive);
+router.delete(
+  "/:id",
+  protect,
+  hasPermission("categories"),
+  deleteCategory
+);
+
+// ─── TOGGLES ───────────────────────────────────────────────────────────────
+
+router.patch(
+  "/:id/featured",
+  protect,
+  hasPermission("categories"),
+  toggleFeatured
+);
+
+router.patch(
+  "/:id/active",
+  protect,
+  hasPermission("categories"),
+  toggleActive
+);
 
 export default router;
