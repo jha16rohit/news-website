@@ -77,7 +77,7 @@ function HeroCard({ a, color }: CardProps) {
   );
 }
 
-function StackCard({ a, color }: CardProps) {
+function StackCard({ a }: CardProps) {
   return (
     <Link to={`/article/${a.id}`} className="ct-stack" style={{ textDecoration: "none", color: "inherit" }}>
       <div className="ct-stack__imgwrap">
@@ -153,12 +153,12 @@ function CalendarWidget() {
     <div className="ct-cal">
       <div className="ct-cal__head"><Calendar size={15} /><span>{label}</span></div>
       <div className="ct-cal__row ct-cal__row--hdr">
-        {DAYS.map((d, i) => <span key={i}>{d}</span>)}
+        {DAYS.map((d, i) => <span key={`cal-day-${i}`}>{d}</span>)}
       </div>
       <div className="ct-cal__row ct-cal__row--body">
         {cells.map((c, i) => (
           <span
-            key={i}
+            key={`cal-cell-${i}`}
             className={[
               "ct-cal__cell",
               !c.cur ? "ct-cal__cell--dim" : "",
@@ -254,7 +254,7 @@ export default function CategoryTemplate() {
       ? new Date(a.publishedAt).toLocaleDateString()
       : "Recently",
     views: String(a.views || 0),
-    img: a.featuredImage || "https://via.placeholder.com/600x400",
+    img: a.featuredImage || "https://images.unsplash.com/photo-1585829365295-ab7cd400c167?w=600&q=80",
   }));
 
   const hero = source[0];
@@ -297,7 +297,7 @@ export default function CategoryTemplate() {
               <div className="ct-hero-left">
                 {hero && <HeroCard a={hero} color={color} />}
                 <div className="ct-stacks">
-                  {stacks.map((a) => <StackCard key={a.id} a={a} color={color} />)}
+                  {stacks.map((a) => <StackCard key={`stack-${a.id}`} a={a} color={color} />)}
                 </div>
               </div>
 
@@ -307,8 +307,8 @@ export default function CategoryTemplate() {
                   <div className="ct-panel-line" style={{ background: color }} />
                 </div>
                 <ul className="ct-recent-list">
-                  {recentNews.slice(0, 5).map((item) => (
-                    <li key={item.id} className="ct-recent-item">
+                  {recentNews.slice(0, 5).map((item, index) => (
+                    <li key={`recent-${item.id ?? item._id ?? index}`} className="ct-recent-item">
                       <div className="ct-recent-icon"><ChevronRight size={14} style={{ color }} /></div>
                       <div>
                         <p className="ct-recent-title">{item.shortTitle || item.headline}</p>
@@ -342,7 +342,7 @@ export default function CategoryTemplate() {
                 <div className="ct-grid">
                   {grid.map((a, i) => (
                     <GridCard
-                      key={a.id}
+                      key={`grid-${a.id}-${i}`}
                       a={a}
                       color={color}
                       delay={i >= INITIAL_VISIBLE ? (i - INITIAL_VISIBLE) * 80 : 0}
