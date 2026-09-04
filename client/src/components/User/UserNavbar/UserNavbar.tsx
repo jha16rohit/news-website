@@ -1,10 +1,8 @@
 // client/src/components/User/UserNavbar/UserNavbar.tsx
 // ──────────────────────────────────────────────────────────────
-// Merged version: keeps the real, API-backed live search (debounced,
-// request-race-safe, trending tags from /api/tags/trending) from the
-// second draft, AND restores the full working Notification Center
-// (tabs, unread dot, mark-as-read, "See All") from the first draft.
-// User state is kept in React state only (no localStorage).
+// Merged version: Real, API-backed live search, notification center,
+// and dismissible notification items persisted in localStorage so they
+// do not reappear upon page refresh.
 
 import React, { useState, useEffect, useRef, useMemo } from "react";
 import "./UserNavbar.css";
@@ -70,18 +68,30 @@ const getTimeLabel = (createdAt: string): string => {
   return `${Math.floor(day / 7)}w ago`;
 };
 
+const DISMISSED_NOTIFS_KEY = "localnewz_dismissed_notifications";
+
 const UserNavbar: React.FC = () => {
   const { user, openLogin, logout } = useAuth();
 
   const [isProfileOpen, setIsProfileOpen] = useState(false);
   const profileDropdownRef = useRef<HTMLDivElement>(null);
 
+  const navigate = useNavigate();
+
   // ── Notification center state (real, API-backed) ───────────────
   const [isNotificationOpen, setIsNotificationOpen] = useState(false);
   const notificationRef = useRef<HTMLDivElement>(null);
   const [notifTab, setNotifTab] = useState<"Today" | "This Week" | "Earlier" | "All">("Today");
 
-  const [notifications, setNotifications] = useState<UserNotificationItem[]>([]);
+  const [notifications, setNotifications] = useState<UserNotificationItem[]>(() => {
+    try {
+      const saved = localStorage.getItem(DISMISSED_NOTIFS_KEY);
+      // We can initialize empty here and let fetchNotifications filter out dismissed ones cleanly
+      return [];
+    } catch {
+      return [];
+    }
+  });
   const [notifLoading, setNotifLoading] = useState(false);
   const [notifError, setNotifError] = useState<string | null>(null);
 
@@ -102,7 +112,21 @@ const UserNavbar: React.FC = () => {
     setNotifError(null);
     try {
       const data = await getMyNotifications();
-      setNotifications(data.notifications || []);
+      const allNotifs: UserNotificationItem[] = data.notifications || [];
+
+      // Retrieve locally dismissed notification IDs from localStorage
+      const dismissedIds: string[] = (() => {
+        try {
+          const saved = localStorage.getItem(DISMISSED_NOTIFS_KEY);
+          return saved ? JSON.parse(saved) : [];
+        } catch {
+          return [];
+        }
+      })();
+
+      // Exclude dismissed notifications so they never reappear after refresh
+      const filtered = allNotifs.filter(n => !dismissedIds.includes(n.id));
+      setNotifications(filtered);
     } catch (err) {
       setNotifError(err instanceof Error ? err.message : "Couldn't load notifications.");
     } finally {
@@ -132,6 +156,33 @@ const UserNavbar: React.FC = () => {
     });
   };
 
+  const handleDismissNotification = (e: React.MouseEvent, id: string) => {
+    e.stopPropagation(); // prevent triggering row click / navigation
+    
+    // Instantly remove from local state
+    setNotifications(prev => {
+      const updated = prev.filter(n => n.id !== id);
+      try {
+        const currentDismissed: string[] = (() => {
+          try {
+            const s = localStorage.getItem(DISMISSED_NOTIFS_KEY);
+            return s ? JSON.parse(s) : [];
+          } catch {
+            return [];
+          }
+        })();
+        if (!currentDismissed.includes(id)) {
+          currentDismissed.push(id);
+          localStorage.setItem(DISMISSED_NOTIFS_KEY, JSON.stringify(currentDismissed));
+        }
+      } catch {}
+      return updated;
+    });
+
+    // Also mark as read on server
+    markNotificationRead(id).catch(() => {});
+  };
+
   const handleNotificationClick = (notif: UserNotificationItem) => {
     if (!notif.read) handleMarkAsRead(notif.id);
     setIsNotificationOpen(false);
@@ -144,7 +195,6 @@ const UserNavbar: React.FC = () => {
 
   const { categories } = useCategories();
   const location  = useLocation();
-  const navigate  = useNavigate();
 
   const [mobileMenuOpen,    setMobileMenuOpen]    = useState(false);
   const [isSearchOpen,      setIsSearchOpen]      = useState(false);
@@ -313,9 +363,6 @@ const UserNavbar: React.FC = () => {
   };
 
   const handleSubscribeClick = () => {
-    // Gate: an unauthenticated visitor must sign in before they can
-    // subscribe. Previously this scrolled straight to the footer for
-    // anyone, signed in or not — no auth check existed at all.
     if (!user) {
       openLogin();
       return;
@@ -576,10 +623,10 @@ const UserNavbar: React.FC = () => {
                           key={notif.id}
                           className="notif-item"
                           onClick={() => handleNotificationClick(notif)}
-                          style={{ cursor: "pointer" }}
+                          style={{ cursor: "pointer", position: "relative" }}
                         >
                           <div className="notif-icon"><Icon size={20} strokeWidth={1.5} /></div>
-                          <div className="notif-content">
+                          <div className="notif-content" style={{ paddingRight: "20px" }}>
                             <div className="notif-top">
                               <span className="notif-subj">
                                 {!notif.read && <span className="notif-dot">•</span>}
@@ -589,6 +636,28 @@ const UserNavbar: React.FC = () => {
                             </div>
                             <p className="notif-desc">{notif.message}</p>
                           </div>
+                          <button
+                            onClick={(e) => handleDismissNotification(e, notif.id)}
+                            title="Dismiss notification"
+                            style={{
+                              position: "absolute",
+                              top: "10px",
+                              right: "10px",
+                              background: "transparent",
+                              border: "none",
+                              color: "#94a3b8",
+                              cursor: "pointer",
+                              padding: "2px",
+                              display: "flex",
+                              alignItems: "center",
+                              justifyContent: "center",
+                              borderRadius: "4px"
+                            }}
+                            onMouseEnter={(e) => (e.currentTarget.style.color = "#ef4444")}
+                            onMouseLeave={(e) => (e.currentTarget.style.color = "#94a3b8")}
+                          >
+                            <X size={14} />
+                          </button>
                         </div>
                       );
                     })
