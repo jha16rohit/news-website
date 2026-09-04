@@ -1,8 +1,8 @@
 // client/src/components/User/UserNavbar/UserNavbar.tsx
 // ──────────────────────────────────────────────────────────────
 // Merged version: Real, API-backed live search, notification center,
-// and dismissible notification items persisted in localStorage so they
-// do not reappear upon page refresh.
+// and dismissible notification items persisted in localStorage without 
+// any unused variable warnings.
 
 import React, { useState, useEffect, useRef, useMemo } from "react";
 import "./UserNavbar.css";
@@ -83,15 +83,7 @@ const UserNavbar: React.FC = () => {
   const notificationRef = useRef<HTMLDivElement>(null);
   const [notifTab, setNotifTab] = useState<"Today" | "This Week" | "Earlier" | "All">("Today");
 
-  const [notifications, setNotifications] = useState<UserNotificationItem[]>(() => {
-    try {
-      const saved = localStorage.getItem(DISMISSED_NOTIFS_KEY);
-      // We can initialize empty here and let fetchNotifications filter out dismissed ones cleanly
-      return [];
-    } catch {
-      return [];
-    }
-  });
+  const [notifications, setNotifications] = useState<UserNotificationItem[]>([]);
   const [notifLoading, setNotifLoading] = useState(false);
   const [notifError, setNotifError] = useState<string | null>(null);
 
