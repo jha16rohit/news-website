@@ -3,6 +3,7 @@ import { Router } from "express";
 import {
   createCategory,
   getAllCategories,
+  getPublicCategories,
   getCategoryById,
   updateCategory,
   deleteCategory,
@@ -27,7 +28,22 @@ router.post(
   createCategory
 );
 
-// ─── READ ──────────────────────────────────────────────────────────────────
+// ─── PUBLIC (unauthenticated) ───────────────────────────────────────────────
+// Used by the public/user-facing site. MUST be declared before the
+// "/:id" and "/:slug/news" routes below, or Express will try to match
+// "public" as an :id / :slug param first.
+
+router.get(
+  "/public",
+  getPublicCategories
+);
+
+router.get(
+  "/public/:slug/news",
+  getCategoryNews
+);
+
+// ─── READ (ADMIN) ────────────────────────────────────────────────────────────
 
 router.get(
   "/",

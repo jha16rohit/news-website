@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { getCategories } from "../api/category.api";
+import { getPublicCategories } from "../api/user/categoryNews";
 import type { Category } from "../types/category";
 
 export const useCategories = () => {
@@ -10,7 +10,7 @@ export const useCategories = () => {
     async function fetchData() {
       try {
         const data =
-          await getCategories();
+          await getPublicCategories();
 
         setCategories(data);
 
