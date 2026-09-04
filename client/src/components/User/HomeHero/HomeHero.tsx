@@ -5,6 +5,13 @@ import { getHomepageNews } from "../../../api/user/news";
 import { getTrendingTags } from "../../../api/user/tag";
 import "./HomeHero.css";
 
+// Inline SVG placeholders — no network request, never fails, unlike
+// via.placeholder.com which is unreliable / can go down (ERR_CONNECTION_CLOSED).
+const PLACEHOLDER_IMG_LARGE =
+  "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='1200' height='700'%3E%3Crect width='100%25' height='100%25' fill='%23e5e7eb'/%3E%3Ctext x='50%25' y='50%25' font-family='sans-serif' font-size='32' fill='%239ca3af' text-anchor='middle' dominant-baseline='middle'%3ENo Image%3C/text%3E%3C/svg%3E";
+const PLACEHOLDER_IMG_SMALL =
+  "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='150'%3E%3Crect width='100%25' height='100%25' fill='%23e5e7eb'/%3E%3Ctext x='50%25' y='50%25' font-family='sans-serif' font-size='16' fill='%239ca3af' text-anchor='middle' dominant-baseline='middle'%3ENo Image%3C/text%3E%3C/svg%3E";
+
 interface Article {
   id: string;
   slug: string;
@@ -157,7 +164,7 @@ const HeroSection: React.FC = () => {
               <img
                 src={
                   featuredArticle.featuredImage ||
-                  "https://via.placeholder.com/1200x700?text=No+Image"
+                  PLACEHOLDER_IMG_LARGE
                 }
                 alt={featuredArticle.headline}
                 className="featured-bg-img"
@@ -213,7 +220,7 @@ const HeroSection: React.FC = () => {
                   <img
                     src={
                       article.featuredImage ||
-                      "https://via.placeholder.com/200x150?text=No+Image"
+                      PLACEHOLDER_IMG_SMALL
                     }
                     alt={article.headline}
                     className="trending-img"

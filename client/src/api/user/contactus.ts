@@ -61,14 +61,25 @@ export const getContactUsSettings = (): Promise<ContactUsSettings> =>
   apiClient("/api/contact/settings");
 
 // Submit a contact message (public)
-export const submitContactMessage = (
+export const submitContactMessage = async (
   data: ContactMessagePayload
-): Promise<ContactMessageResponse> =>
-  apiClient("/api/contact/messages", {
+): Promise<ContactMessageResponse> => {
+  const res: any = await apiClient("/api/contact/messages", {
     method: "POST",
     body: JSON.stringify(data),
   });
+  return {
+    ...res,
+    id: res?.id ?? res?._id,
+  };
+};
 
 // Poll for reply on a specific message (public)
-export const getMessageById = (id: string): Promise<ContactMessageResponse> =>
-  apiClient(`/api/contact/messages/${id}`);
+export const getMessageById = async (id: string): Promise<ContactMessageResponse> => {
+  const data: any = await apiClient(`/api/contact/messages/${id}`);
+  return {
+    ...data,
+    id: data?.id ?? data?._id,
+    replyText: data?.replyText ?? data?.reply,
+  };
+};

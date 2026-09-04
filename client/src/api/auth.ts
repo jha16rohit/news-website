@@ -1,5 +1,5 @@
 // client/src/api/auth.ts
-import { apiClient } from "./client";
+import { apiClient, getAuthToken } from "./client";
 
 // ─── REGISTER ────────────────────────────────────────────────────────────────
 export const registerUser = (data: {
@@ -35,7 +35,15 @@ export const loginUser = async (data: {
 };
 
 // ─── GET CURRENT USER ────────────────────────────────────────────────────────
-export const getMe = () => apiClient("/api/auth/me");
+// Short-circuits when there's no token yet (e.g. the login page checking for
+// an existing session on mount) instead of firing a network request that's
+// guaranteed to 401 and console.error from apiClient.
+export const getMe = () => {
+  if (!getAuthToken()) {
+    return Promise.reject(new Error("Not authorized, no token"));
+  }
+  return apiClient("/api/auth/me");
+};
 
 // ─── LOGOUT ──────────────────────────────────────────────────────────────────
 export const logoutUser = async () => {

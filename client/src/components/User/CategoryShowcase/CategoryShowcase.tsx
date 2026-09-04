@@ -9,6 +9,11 @@ import "./CategoryShowcase.css";
 const slugOf = (text: string) =>
   text ? text.toLowerCase().replace(/\s+/g, "-") : "";
 
+// Inline SVG placeholder — no network request, never fails, unlike
+// via.placeholder.com which is unreliable / can go down.
+const PLACEHOLDER_IMG =
+  "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='400' height='260'%3E%3Crect width='100%25' height='100%25' fill='%23e5e7eb'/%3E%3Ctext x='50%25' y='50%25' font-family='sans-serif' font-size='20' fill='%239ca3af' text-anchor='middle' dominant-baseline='middle'%3ENo Image%3C/text%3E%3C/svg%3E";
+
 const LAYOUT_STYLES = [
   "hero-sidebar",
   "grid-3",
@@ -73,7 +78,8 @@ const CategoryShowcase: React.FC = () => {
 
             subtitle: a.excerpt || a.shortTitle || "Read full story",
 
-            img: a.featuredImage || a.imageUrl || a.img || "",
+            // Always resolve to a usable src — never an empty string.
+            img: a.featuredImage || a.imageUrl || a.img || PLACEHOLDER_IMG,
 
             category:
               a?.categoryId?.name || a?.categoryName || a?.category || "News",
@@ -160,7 +166,7 @@ const CategoryShowcase: React.FC = () => {
                     className="cs-dark-card"
                   >
                     <div className="cs-img-wrap">
-                      {article.img && <img src={article.img} alt="" />}
+                      <img src={article.img} alt="" />
                     </div>
                     <div className="cs-card-body">
                       <span className="cs-card-badge">{article.category}</span>
@@ -232,7 +238,7 @@ const CategoryShowcase: React.FC = () => {
                     className="cs-dark-card"
                   >
                     <div className="cs-img-wrap">
-                      {article.img && <img src={article.img} alt="" />}
+                      <img src={article.img} alt="" />
                     </div>
                     <div className="cs-card-body">
                       <span className="cs-card-badge">{article.category}</span>

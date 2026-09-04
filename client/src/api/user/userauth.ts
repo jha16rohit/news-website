@@ -2,7 +2,7 @@
 // All API calls go to the real backend. No localStorage.
 // Components/context cache the returned user in React state / context.
 
-import { apiClient } from "../client";
+import { apiClient, getAuthToken } from "../client";
 
 // ─────────────────────────────────────────────
 // TYPES
@@ -25,17 +25,40 @@ export interface AuthResponse {
 }
 
 // ─────────────────────────────────────────────
-// IN-MEMORY TOKEN
+// TOKEN STORAGE
 // ─────────────────────────────────────────────
-
-let _memoryToken: string | null = null;
+// FIX: this used to be a plain in-memory variable (`_memoryToken`) that was
+// never written to `sessionStorage`. `apiClient` (client.ts) reads the
+// token from `sessionStorage.getItem("auth-token")`, so every call made
+// through it — /api/users/me, /api/tags/trending, /api/categories,
+// /api/user-notifications, /api/comments/*, etc. — went out with NO
+// Authorization header at all, even immediately after a successful login.
+// That's the actual cause of the "Not authorized, no token" 401s showing
+// up across the whole app. `setMemoryToken`/`getMemoryToken` now read and
+// write the same sessionStorage key `apiClient` uses, so the two are
+// finally in sync. Function names/signatures are unchanged so callers
+// (AuthContext, etc.) don't need to change.
+const TOKEN_KEY = "auth-token";
 
 export function setMemoryToken(token: string | null): void {
-  _memoryToken = token;
+  try {
+    if (token) {
+      sessionStorage.setItem(TOKEN_KEY, token);
+    } else {
+      sessionStorage.removeItem(TOKEN_KEY);
+    }
+  } catch {
+    // sessionStorage unavailable (e.g. private browsing) -- fail silently,
+    // matching the existing try/catch pattern in client.ts's getAuthToken.
+  }
 }
 
 export function getMemoryToken(): string | null {
-  return _memoryToken;
+  try {
+    return sessionStorage.getItem(TOKEN_KEY);
+  } catch {
+    return null;
+  }
 }
 
 // ─────────────────────────────────────────────
@@ -90,8 +113,17 @@ export async function googleAuth(credential: string): Promise<AuthResponse> {
 // ─────────────────────────────────────────────
 // GET CURRENT USER
 // ─────────────────────────────────────────────
-
+// FIX: previously called unconditionally, so an anonymous visitor (no
+// token yet) triggered a network round trip that was guaranteed to 401,
+// plus a console.error from apiClient, on every page load / mount. Now
+// short-circuits locally when there's no token, since the caller (e.g.
+// AuthContext checking login state on mount) already treats any rejection
+// here as "not logged in" -- behavior is identical, just quieter and
+// without the wasted request.
 export async function getMe(): Promise<{ user: AuthUser }> {
+  if (!getAuthToken()) {
+    return Promise.reject(new Error("Not authorized, no token"));
+  }
   return apiClient("/api/users/me");
 }
 
@@ -100,7 +132,9 @@ export async function getMe(): Promise<{ user: AuthUser }> {
 // ─────────────────────────────────────────────
 
 export async function logoutUser(): Promise<void> {
-  await apiClient("/api/users/logout", { method: "POST" });
+  if (getAuthToken()) {
+    await apiClient("/api/users/logout", { method: "POST" }).catch(() => {});
+  }
   setMemoryToken(null);
 }
 
@@ -147,6 +181,7 @@ export interface ReadingHistoryItem {
 }
 
 export async function getReadingHistory(): Promise<{ history: ReadingHistoryItem[] }> {
+  if (!getAuthToken()) return Promise.reject(new Error("Not authorized, no token"));
   return apiClient("/api/users/reading-history");
 }
 
@@ -162,6 +197,7 @@ export interface AnalyticsData {
 }
 
 export async function getAnalytics(): Promise<AnalyticsData> {
+  if (!getAuthToken()) return Promise.reject(new Error("Not authorized, no token"));
   return apiClient("/api/users/analytics");
 }
 
@@ -170,6 +206,7 @@ export async function getAnalytics(): Promise<AnalyticsData> {
 // ─────────────────────────────────────────────
 
 export async function trackRead(newsId: string, durationSeconds = 0): Promise<void> {
+  if (!getAuthToken()) return;
   await apiClient("/api/users/track-read", {
     method: "POST",
     body: JSON.stringify({ newsId, durationSeconds }),
@@ -177,6 +214,7 @@ export async function trackRead(newsId: string, durationSeconds = 0): Promise<vo
 }
 
 export async function trackShare(newsId: string, platform: string): Promise<void> {
+  if (!getAuthToken()) return;
   await apiClient("/api/users/track-share", {
     method: "POST",
     body: JSON.stringify({ newsId, platform }),

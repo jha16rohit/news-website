@@ -24,7 +24,18 @@ router.post(
   createTag
 );
 
-// ─── READ ──────────────────────────────────────────────────────────────────
+// ─── PUBLIC (unauthenticated) ───────────────────────────────────────────────
+// Used by the public site (HomeHero trending strip, UserFooter trending
+// topics). No `protect` here on purpose — getTrendingTags has no auth logic
+// in the controller, it was only ever meant to be public, same pattern as
+// category.controller's getPublicCategories.
+
+router.get(
+  "/trending",
+  getTrendingTags
+);
+
+// ─── READ (ADMIN) ────────────────────────────────────────────────────────────
 
 router.get(
   "/",
@@ -32,13 +43,7 @@ router.get(
   getAllTags
 );
 
-router.get(
-  "/trending",
-  protect,
-  getTrendingTags
-);
-
-// ─── TRENDING ───────────────────────────────────────────────────────────────
+// ─── TRENDING (ADMIN TOGGLE) ─────────────────────────────────────────────────
 
 router.patch(
   "/:id/trending",
@@ -47,7 +52,7 @@ router.patch(
   setTagTrending
 );
 
-// ─── DELETE ────────────────────────────────────────────────────────────────
+// ─── DELETE ───────────────────────────────────────────────────────────────
 
 router.delete(
   "/:id",

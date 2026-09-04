@@ -48,6 +48,12 @@ interface PublishedAd {
   endReason?: string;
 }
 
+// Normalizes a published-ad object coming back from the API. Backend
+// responses may be raw Mongoose documents shaped with `_id` instead of
+// `id`, which otherwise leaves `ad.id` undefined everywhere this
+// component reads it (row keys, button handlers, busyId comparisons).
+const normalizeAd = (a: any): PublishedAd => ({ ...a, id: a.id ?? a._id });
+
 const PAGE_LABEL: Record<string, string> = {
   home: "Home Page", all: "Sitewide (All Pages)", politics: "Politics",
   sports: "Sports", business: "Business & Finance", technology: "Technology",
@@ -231,9 +237,7 @@ function PublishModal({
     }
     setLoading(true); setError(null);
     try {
-      console.log("Inquiry:", inquiry);
-console.log("Inquiry ID:", inquiry._id);
-      const ad: PublishedAd = await apiClient("/api/advertisement/published-ads", {
+      const ad = await apiClient("/api/advertisement/published-ads", {
         method: "POST",
         body: JSON.stringify({
           inquiryId: inquiry._id,
@@ -241,7 +245,7 @@ console.log("Inquiry ID:", inquiry._id);
           publishNotes: publishNotes.trim() || undefined,
         }),
       });
-      onPublish(ad);
+      onPublish(normalizeAd(ad));
     } catch (err: any) {
       setError(err.message || "Failed to publish");
     } finally {
@@ -547,7 +551,7 @@ export default function AdvertisementManager() {
         apiClient("/api/advertisement/published-ads"),
       ]);
       setInquiries(inqs);
-      setPublishedAds(ads);
+      setPublishedAds((ads ?? []).map(normalizeAd));
     } catch (err: any) {
       console.error("Failed to load data:", err.message);
     } finally {
@@ -604,11 +608,12 @@ export default function AdvertisementManager() {
   const handleEndAd = async (adId: string, endReason: string) => {
     setBusyId(adId);
     try {
-      const updated: PublishedAd = await apiClient(`/api/advertisement/published-ads/${adId}/end`, {
+      const updated = await apiClient(`/api/advertisement/published-ads/${adId}/end`, {
         method: "PATCH",
         body: JSON.stringify({ endReason: endReason || "Ended by Admin" }),
       });
-      setPublishedAds(prev => prev.map(a => a.id === adId ? updated : a));
+      const normalized = normalizeAd(updated);
+      setPublishedAds(prev => prev.map(a => a.id === adId ? normalized : a));
       setEndingAd(null);
       setViewingLiveAd(null);
       setExpiredPage(1);
@@ -622,11 +627,12 @@ export default function AdvertisementManager() {
   const handleRenewAd = async (adId: string, durationDays: number, notes: string) => {
     setBusyId(adId);
     try {
-      const updated: PublishedAd = await apiClient(`/api/advertisement/published-ads/${adId}/renew`, {
+      const updated = await apiClient(`/api/advertisement/published-ads/${adId}/renew`, {
         method: "PATCH",
         body: JSON.stringify({ durationDays, publishNotes: notes || undefined }),
       });
-      setPublishedAds(prev => prev.map(a => a.id === adId ? updated : a));
+      const normalized = normalizeAd(updated);
+      setPublishedAds(prev => prev.map(a => a.id === adId ? normalized : a));
       setRenewingAd(null);
       setViewingLiveAd(null);
       setViewingExpiredAd(null);

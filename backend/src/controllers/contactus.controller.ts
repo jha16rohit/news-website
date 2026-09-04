@@ -5,6 +5,7 @@ import ContactUsSettings from "../models/ContactUsSettings";
 import ContactInfo from "../models/ContactInfo";
 import FAQItem from "../models/FAQItem";
 import ContactMessage from "../models/ContactMessage";
+import UserNotification from "../models/UserNotification";
 
 // ── Resend client ─────────────────────────────────────────────────────────────
 let resendClient: Resend | null = null;
@@ -212,6 +213,19 @@ export const getMessageById = async (req: Request, res: Response) => {
   }
 };
 
+// Case-insensitive lookup by email for user history[cite: 2]
+export const getMessagesByEmail = async (req: Request, res: Response) => {
+  try {
+    const emailParam = Array.isArray(req.params.email) ? req.params.email[0] : req.params.email;
+    const messages = await ContactMessage.find({ 
+      email: { $regex: new RegExp(`^${emailParam}$`, "i") } 
+    }).sort({ receivedAt: -1 });
+    res.json(messages);
+  } catch (err: any) {
+    res.status(500).json({ message: err.message });
+  }
+};
+
 export const createMessage = async (req: Request, res: Response) => {
   try {
     const { name, email, phone, subject, message } = req.body;
@@ -263,6 +277,18 @@ export const replyToMessage = async (req: Request, res: Response) => {
     );
 
     if (!msg) return res.status(404).json({ message: "Message not found" });
+
+    // Create an in-app user notification using valid schema properties[cite: 2]
+    try {
+      await UserNotification.create({
+        type: "ad_response",
+        title: "Reply to your enquiry",
+        message: `Admin replied: "${replyText.substring(0, 60)}..."`,
+        link: "/contact",
+      });
+    } catch (notifErr: any) {
+      console.error("[ContactUs] Failed to create in-app notification:", notifErr.message);
+    }
 
     // Send reply email to user
     try {

@@ -16,6 +16,7 @@ import {
 } from "lucide-react";
 import {
   adminFetchCommentStats,
+  adminFetchComments,
   adminApproveComment,
   adminRejectComment,
   adminDeleteComment,
@@ -88,13 +89,6 @@ const CommentsPage = () => {
     return () => window.removeEventListener("resize", handleResize);
   }, []);
 
-  const getAuthHeaders = useCallback(() => {
-    const headers: Record<string, string> = { "Content-Type": "application/json" };
-    const token = sessionStorage.getItem("auth-token");
-    if (token) headers["Authorization"] = `Bearer ${token}`;
-    return headers;
-  }, []);
-
   const loadStats = async () => {
     try {
       const data = await adminFetchCommentStats();
@@ -114,20 +108,13 @@ const CommentsPage = () => {
   const loadComments = useCallback(async () => {
     setLoading(true);
     try {
-      const qs = new URLSearchParams();
-      if (activeTab !== "all") qs.set("status", activeTab);
-      if (search.trim()) qs.set("search", search);
-      qs.set("limit", "50");
-
-      const res = await fetch(`http://localhost:5001/api/admin/comments?${qs.toString()}`, {
-        method: "GET",
-        headers: getAuthHeaders(),
-        credentials: "include" 
+      const data = await adminFetchComments({
+        status: activeTab === "all" ? undefined : activeTab,
+        search: search.trim() || undefined,
+        limit: 50,
       });
 
-      if (res.ok) {
-        const data = await res.json();
-        if (data && data.comments) {
+      if (data && data.comments) {
           const mapped = data.comments.map((c: any) => {
             let timeLabel = "Some time ago";
             if (c.time) {
@@ -154,14 +141,13 @@ const CommentsPage = () => {
             };
           });
           setComments(mapped);
-        }
       }
     } catch (err) {
       console.error("Error fetching comments list:", err);
     } finally {
       setLoading(false);
     }
-  }, [activeTab, search, getAuthHeaders]);
+  }, [activeTab, search]);
 
   useEffect(() => {
     loadStats();

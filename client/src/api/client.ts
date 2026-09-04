@@ -9,9 +9,20 @@ export const getAuthToken = (): string | null => {
   }
 };
 
+// FIX: `RequestInit["body"]` is DOM's strict `BodyInit` type (string |
+// Blob | FormData | ...), which doesn't allow a plain object. The runtime
+// code below already JSON.stringifies anything that isn't FormData or a
+// string, so callers passing `body: { foo: "bar" }` have always worked —
+// TypeScript just didn't know that. This widened type lets callers pass a
+// plain object/array directly (as comment.ts, advertise.ts etc. do)
+// without the compiler flagging it as an error.
+export interface ApiClientOptions extends Omit<RequestInit, "body"> {
+  body?: BodyInit | Record<string, unknown> | unknown[] | null;
+}
+
 export const apiClient = async (
   endpoint: string,
-  options: RequestInit = {}
+  options: ApiClientOptions = {}
 ) => {
   try {
     const token = getAuthToken();
@@ -28,14 +39,14 @@ export const apiClient = async (
     }
 
     const res = await fetch(`${BASE_URL}${endpoint}`, {
-      ...options,
+      ...(options as RequestInit),
       // IMPORTANT: no shared cookie session. Authentication is per-tab.
       credentials: "omit",
       headers,
       body: isFormData
-        ? options.body
+        ? (options.body as FormData)
         : isStringBody
-        ? options.body
+        ? (options.body as string)
         : options.body != null
         ? JSON.stringify(options.body)
         : undefined,

@@ -214,6 +214,15 @@ const userId = (req as any).userId as string | undefined; // set by protectSiteU
 // Only the logged-in user's own ad requests — this is what the "Advertise
 // With Us" page's "My Ad Requests" table should call, NOT getInquiries
 // (which intentionally returns everyone's inquiries, for the admin panel).
+//
+// FIX: this used to `res.json(inquiries)` with the raw Mongoose documents.
+// Those only carry `_id`, but the frontend (`MyAdInquiry` in advertise.ts /
+// AdvertiseWithUs.tsx) reads `.id`, so every row's id was `undefined`.
+// It also never told the user *when* a published ad ends, because
+// `durationDays` / `expiresAt` live on the PublishedAd document created by
+// `publishAd`, not on the AdInquiry itself. We now look those up and merge
+// them in, so once admin publishes an ad, the user immediately sees it's
+// live along with its duration/expiry.
 export const getMyInquiries = async (req: Request, res: Response) => {
   try {
     const userId = (req as any).userId as string | undefined;
@@ -222,7 +231,29 @@ export const getMyInquiries = async (req: Request, res: Response) => {
     }
 
     const inquiries = await AdInquiry.find({ userId }).sort({ submittedAt: -1 });
-    res.json(inquiries);
+
+    const inquiryIds = inquiries.map((i) => String(i._id));
+    const publishedAds = inquiryIds.length
+      ? await PublishedAd.find({ inquiryId: { $in: inquiryIds } })
+      : [];
+    const publishedByInquiry = new Map(
+      publishedAds.map((ad) => [ad.inquiryId, ad])
+    );
+
+    const formatted = inquiries.map((inquiry) => {
+      const pub = publishedByInquiry.get(String(inquiry._id));
+      return {
+        id: String(inquiry._id),
+        adType: inquiry.adType,
+        status: inquiry.status,
+        submittedAt: inquiry.submittedAt,
+        rejectionReason: inquiry.rejectionReason,
+        durationDays: pub?.durationDays,
+        expiresAt: pub?.expiresAt,
+      };
+    });
+
+    res.json(formatted);
   } catch (err: any) {
     res.status(500).json({ message: err.message });
   }
@@ -238,10 +269,15 @@ if (rejectionReason !== undefined) {
     update.rejectionReason = rejectionReason;
 }
 
+    // FIX: `returnDocument` is the native MongoDB-driver option name and is
+    // silently ignored by Mongoose, which instead returns the PRE-update
+    // document unless `new: true` is passed. That meant this endpoint kept
+    // handing back the old status/rejectionReason to the caller even
+    // though the update itself was applied correctly in the database.
     const inquiry = await AdInquiry.findByIdAndUpdate(
       req.params.id,
       update,
-      { returnDocument: 'after' }
+      { new: true }
     );
     if (!inquiry)
       return res.status(404).json({ message: "Inquiry not found" });

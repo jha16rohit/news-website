@@ -4,7 +4,7 @@ import { Mail, ChevronRight, TrendingUp, Youtube } from "lucide-react";
 import { FaXTwitter, FaFacebookF, FaInstagram, FaWhatsapp } from "react-icons/fa6";
 import logo from "../../../assets/Logo.png";
 import "./UserFooter.css";
-import { getCategories } from "../../../api/category.api";
+import { getPublicCategories } from "../../../api/user/categoryNews";
 
 // import { useNews } from "../../Admin/NewsStore/NewsStore";
 import { getFooterSettings } from "../../../api/user/userfooter"; // ← adjust path if needed
@@ -154,8 +154,8 @@ const Footer: React.FC = () => {
         setFooterData(footer);
       }
 
-      // Categories
-      const categoryData = await getCategories();
+      // Categories (public, unauthenticated — matches the public nav/menu)
+      const categoryData = await getPublicCategories();
 
       console.log("Categories Response:", categoryData);
 

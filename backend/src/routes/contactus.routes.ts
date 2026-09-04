@@ -5,6 +5,7 @@ import {
   updateContactUsSettings,
   getMessages,
   getMessageById,
+  getMessagesByEmail,
   createMessage,
   markMessageRead,
   replyToMessage,
@@ -41,6 +42,18 @@ router.post(
   createMessage
 );
 
+// Public: fetch all past messages and replies for a user by email
+router.get(
+  "/messages/email/:email",
+  getMessagesByEmail
+);
+
+// Public: allow users to poll and view their specific message thread & reply
+router.get(
+  "/messages/:id",
+  getMessageById
+);
+
 // ─── Protected: Contact Us inbox ────────────────────────────────────────────
 
 router.get(
@@ -48,13 +61,6 @@ router.get(
   protect,
   hasPermission("contact-manager"),
   getMessages
-);
-
-router.get(
-  "/messages/:id",
-  protect,
-  hasPermission("contact-manager"),
-  getMessageById
 );
 
 router.patch(
