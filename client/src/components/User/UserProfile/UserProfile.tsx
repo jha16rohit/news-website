@@ -15,9 +15,17 @@ import {
   updateProfile,
   changePassword,
   logoutUser,
+  getReadingHistory,
+  getAnalytics,
 } from "../../../api/user/userauth";
 
 import type { AuthUser } from "../../../api/user/userauth";
+
+import {
+  fetchMyComments,
+  deleteComment,
+  type MyComment,
+} from "../../../api/user/comment";
 
 // ─────────────────────────────────────────────
 // LOCAL TYPES (Ensures no import errors)
@@ -38,14 +46,9 @@ export interface AnalyticsData {
   platforms: { name: string; pct: number }[];
 }
 
-// 👇 TEMPORARY MOCKS: Prevents White Screen of Death until you build these APIs 👇
-const getReadingHistory = async () => {
-  return { history: [] }; // Returns empty history for now
-};
-
-const getAnalytics = async () => {
-  return null; // Returns empty analytics for now
-};
+// (Reading history & analytics now come from the real backend endpoints,
+// imported above from userauth.ts — the old mock stand-ins that lived here
+// and always returned empty/null data have been removed.)
 
 // ─────────────────────────────────────────────
 // COLOR PALETTES
@@ -76,6 +79,27 @@ function formatDateMatch(dateStr: string): string {
   return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
 }
 
+function formatMemberSince(dateStr?: string | null): string {
+  if (!dateStr) return "recently";
+  const d = new Date(dateStr);
+  if (isNaN(d.getTime())) return "recently";
+  return d.toLocaleDateString('en-US', { month: 'short', year: 'numeric' });
+}
+
+function timeAgo(dateStr: string): string {
+  const then = new Date(dateStr).getTime();
+  if (isNaN(then)) return "";
+  const diffMs = Date.now() - then;
+  const minutes = Math.floor(diffMs / 60000);
+  if (minutes < 1) return "just now";
+  if (minutes < 60) return `${minutes}m ago`;
+  const hours = Math.floor(minutes / 60);
+  if (hours < 24) return `${hours}h ago`;
+  const days = Math.floor(hours / 24);
+  if (days < 7) return `${days}d ago`;
+  return formatDateMatch(dateStr);
+}
+
 const UserProfile: React.FC = () => {
   const navigate = useNavigate();
 
@@ -95,6 +119,12 @@ const UserProfile: React.FC = () => {
   // ── Analytics ──────────────────────────────────────────────────
   const [analytics, setAnalytics] = useState<AnalyticsData | null>(null);
   const [analyticsLoading, setAnalyticsLoading] = useState(true);
+
+  // ── My comments ──────────────────────────────────────────────────
+  const [comments, setComments] = useState<MyComment[]>([]);
+  const [commentsLoading, setCommentsLoading] = useState(true);
+  const [commentsError, setCommentsError] = useState<string | null>(null);
+  const [deletingCommentId, setDeletingCommentId] = useState<string | null>(null);
 
   // ── Edit profile form state ───────────────────────────────────
   const [editName, setEditName] = useState("");
@@ -131,6 +161,11 @@ const UserProfile: React.FC = () => {
           .then((data: any) => setAnalytics(data))
           .catch(() => setAnalytics(null))
           .finally(() => setAnalyticsLoading(false));
+
+        fetchMyComments()
+          .then((res) => setComments(res.comments))
+          .catch(() => setCommentsError("Failed to load your comments."))
+          .finally(() => setCommentsLoading(false));
       })
       .catch(() => navigate("/"))
       .finally(() => {
@@ -201,6 +236,19 @@ const UserProfile: React.FC = () => {
     navigate("/");
   };
 
+  const handleDeleteComment = async (commentId: string) => {
+    if (!window.confirm("Delete this comment? This cannot be undone.")) return;
+    setDeletingCommentId(commentId);
+    try {
+      await deleteComment(commentId);
+      setComments(prev => prev.filter(c => c.id !== commentId));
+    } catch (err: any) {
+      setCommentsError(err?.message || "Failed to delete comment.");
+    } finally {
+      setDeletingCommentId(null);
+    }
+  };
+
   const openEditModal = () => {
     if (!user) return;
     setEditName(user.name);
@@ -266,7 +314,7 @@ const UserProfile: React.FC = () => {
               </div>
 
               <div className="up-left-member">
-                <CalendarDays size={14} /> Member since Jan 2024
+                <CalendarDays size={14} /> Member since {formatMemberSince(user.createdAt)}
               </div>
             </div>
 
@@ -281,14 +329,25 @@ const UserProfile: React.FC = () => {
                     {user.phone && <span><Phone size={15} /> {user.phone}</span>}
                   </div>
                   
-                  <div className="up-r-interests">
-                    <p className="up-r-interests-lbl">Followed Topics</p>
-                    <div className="up-r-interests-tags">
-                      <span className="up-interest-tag">Technology</span>
-                      <span className="up-interest-tag">Frontend Web Dev</span>
-                      <span className="up-interest-tag">Education</span>
+                  {analytics && analytics.categories.length > 0 ? (
+                    <div className="up-r-interests">
+                      <p className="up-r-interests-lbl">Top Read Categories</p>
+                      <div className="up-r-interests-tags">
+                        {analytics.categories.slice(0, 3).map(c => (
+                          <span key={c.label} className="up-interest-tag">{c.label}</span>
+                        ))}
+                      </div>
                     </div>
-                  </div>
+                  ) : (
+                    !analyticsLoading && (
+                      <div className="up-r-interests">
+                        <p className="up-r-interests-lbl">Top Read Categories</p>
+                        <p style={{ fontSize: 13, color: "var(--up-muted)", margin: 0 }}>
+                          Read a few articles to see your top categories here.
+                        </p>
+                      </div>
+                    )
+                  )}
                 </div>
                 
                 {/* Decorative Graphic */}
@@ -354,7 +413,7 @@ const UserProfile: React.FC = () => {
                         <div className="up-nc-body">
                           <h4 className="up-nc-title">{a.headline}</h4>
                           <div className="up-nc-meta">
-                            <span>2 min read</span>
+                            <span>{timeAgo(a.readAt)}</span>
                             <span>{formatDateMatch(a.readAt)}</span>
                           </div>
                           <div className="up-nc-tags">
@@ -369,11 +428,71 @@ const UserProfile: React.FC = () => {
               </div>
             )}
 
-            {/* COMMENTS TAB (Placeholder) */}
+            {/* COMMENTS TAB */}
             {activeTab === "comments" && (
               <div className="up-pane fade-up" key="c">
                 <div className="up-pane-header"><h2>My Comments</h2></div>
-                <div className="up-empty-state"><MessageSquare size={32} /><p>No comments posted yet.</p></div>
+
+                {commentsError && (
+                  <div className="up-modal-error" style={{ marginBottom: 12 }}>
+                    <span>{commentsError}</span>
+                    <button onClick={() => setCommentsError(null)}><X size={12} /></button>
+                  </div>
+                )}
+
+                {commentsLoading ? (
+                  <div className="up-empty-state"><Loader2 size={24} className="spin-icon" /><p>Loading your comments...</p></div>
+                ) : comments.length === 0 ? (
+                  <div className="up-empty-state"><MessageSquare size={32} /><p>No comments posted yet.</p></div>
+                ) : (
+                  <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+                    {comments.map((c) => {
+                      const statusStyle =
+                        c.status === "approved" ? { background: "#dcfce7", color: "#16a34a" } :
+                        c.status === "rejected" ? { background: "#fee2e2", color: "#dc2626" } :
+                        { background: "#fef9c3", color: "#a16207" };
+                      return (
+                        <div key={c.id} style={{ border: "1px solid #e5e7eb", borderRadius: 10, padding: "14px 16px", background: "#fff" }}>
+                          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 12 }}>
+                            <div style={{ minWidth: 0 }}>
+                              {c.newsSlug ? (
+                                <Link to={`/article/${c.newsSlug}`} style={{ fontSize: 13, fontWeight: 600, color: "#0b1423", textDecoration: "none" }}>
+                                  {c.newsHeadline}
+                                </Link>
+                              ) : (
+                                <span style={{ fontSize: 13, fontWeight: 600, color: "#94a3b8" }}>{c.newsHeadline || "Article removed"}</span>
+                              )}
+                              <p style={{ margin: "6px 0 0", fontSize: 14, color: "#334155" }}>
+                                {c.isReply && <span style={{ color: "#94a3b8", marginRight: 4 }}>↳ reply:</span>}
+                                {c.text}
+                              </p>
+                            </div>
+                            <span style={{ ...statusStyle, fontSize: 11, fontWeight: 600, padding: "3px 8px", borderRadius: 999, whiteSpace: "nowrap", textTransform: "capitalize" }}>
+                              {c.status}
+                            </span>
+                          </div>
+                          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginTop: 10 }}>
+                            <div style={{ display: "flex", gap: 14, fontSize: 12, color: "#94a3b8" }}>
+                              <span>{timeAgo(c.time)}</span>
+                              <span>👍 {c.likes}</span>
+                              <span>👎 {c.dislikes}</span>
+                            </div>
+                            <button
+                              className="up-btn-ghost"
+                              style={{ padding: "4px 10px", fontSize: 12 }}
+                              disabled={deletingCommentId === c.id}
+                              onClick={() => handleDeleteComment(c.id)}
+                            >
+                              {deletingCommentId === c.id
+                                ? <Loader2 size={12} className="spin-icon" />
+                                : <><Trash2 size={12} /> Delete</>}
+                            </button>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
               </div>
             )}
 

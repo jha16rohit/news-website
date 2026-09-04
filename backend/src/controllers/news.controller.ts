@@ -25,17 +25,100 @@ function normalizeTagName(name: string): string {
     .join(" ");
 }
 
+// ─── Devanagari (Hindi) → Latin transliteration ────────────────────────────
+// `slugify(..., { strict: true })` drops every non a-z/0-9 character, so a
+// Hindi headline had nothing left to build a slug from and always fell back
+// to a random "samachar-xxxxx" string with no relation to the article.
+// Transliterating Devanagari to Latin first means slugify has real words to
+// work with, e.g. "भारत और उज्बेकिस्तान" -> "bharat-aur-ujbekistan".
+const DEVANAGARI_VOWELS: Record<string, string> = {
+  "अ": "a", "आ": "aa", "इ": "i", "ई": "ee", "उ": "u", "ऊ": "oo",
+  "ऋ": "ri", "ॠ": "ri", "ऌ": "lu", "ॡ": "lu",
+  "ऍ": "e", "ऎ": "e", "ए": "e", "ऐ": "ai",
+  "ऑ": "o", "ऒ": "o", "ओ": "o", "औ": "au",
+  "ॲ": "a",
+};
+
+const DEVANAGARI_MATRAS: Record<string, string> = {
+  "\u093E": "a", "\u093F": "i", "\u0940": "ee", "\u0941": "u", "\u0942": "oo",
+  "\u0943": "ri", "\u0944": "ri", "\u0945": "e", "\u0946": "e", "\u0947": "e",
+  "\u0948": "ai", "\u0949": "o", "\u094A": "o", "\u094B": "o", "\u094C": "au",
+  "\u0962": "l", "\u0963": "l",
+};
+
+const DEVANAGARI_CONSONANTS: Record<string, string> = {
+  "क": "k", "ख": "kh", "ग": "g", "घ": "gh", "ङ": "ng",
+  "च": "ch", "छ": "chh", "ज": "j", "झ": "jh", "ञ": "ny",
+  "ट": "t", "ठ": "th", "ड": "d", "ढ": "dh", "ण": "n",
+  "त": "t", "थ": "th", "द": "d", "ध": "dh", "न": "n",
+  "प": "p", "फ": "ph", "ब": "b", "भ": "bh", "म": "m",
+  "य": "y", "र": "r", "ल": "l", "व": "v",
+  "श": "sh", "ष": "sh", "स": "s", "ह": "h", "ळ": "l",
+  "क़": "q", "ख़": "kh", "ग़": "gh", "ज़": "z", "ड़": "r", "ढ़": "rh", "फ़": "f", "य़": "y",
+};
+
+const DEVANAGARI_DIGITS: Record<string, string> = {
+  "०": "0", "१": "1", "२": "2", "३": "3", "४": "4",
+  "५": "5", "६": "6", "७": "7", "८": "8", "९": "9",
+};
+
+function devanagariToRoman(input: string): string {
+  const chars = Array.from(input);
+  let out = "";
+
+  for (let i = 0; i < chars.length; i++) {
+    const c = chars[i];
+    const next = chars[i + 1];
+
+    if (DEVANAGARI_VOWELS[c]) { out += DEVANAGARI_VOWELS[c]; continue; }
+    if (DEVANAGARI_DIGITS[c]) { out += DEVANAGARI_DIGITS[c]; continue; }
+
+    if (c === "\u0902" || c === "\u0901") { out += "n"; continue; }
+    if (c === "\u0903") { out += "h"; continue; }
+    if (c === "\u093D") { continue; }
+    if (c === "\u0950") { out += "om"; continue; }
+    if (c === "\u094D") { continue; }
+
+    if (DEVANAGARI_CONSONANTS[c]) {
+      out += DEVANAGARI_CONSONANTS[c];
+      if (next === "\u094D") { i++; }
+      else if (next === "\u093C") { i++; out += "a"; }
+      else if (next && DEVANAGARI_MATRAS[next]) { out += DEVANAGARI_MATRAS[next]; i++; }
+      else { out += "a"; }
+      continue;
+    }
+
+    if (c === "।" || c === "॥") continue;
+    if (/[a-zA-Z0-9\s-]/.test(c)) { out += c; continue; }
+  }
+
+  return out;
+}
+
+// Transliterates Devanagari (if present) before handing off to `slugify`,
+// so Hindi text produces a readable slug instead of an empty string.
+function slugifyAny(text: string): string {
+  const source = (text || "").trim();
+  if (!source) return "";
+  const romanised = /[\u0900-\u097F]/.test(source) ? devanagariToRoman(source) : source;
+  return slugify(romanised, { lower: true, strict: true });
+}
+
 // Look for your "buildUniqueSlug" method around line 33 and swap it out with this one:
 
 async function buildUniqueSlug(
   base: string,
   excludeId?: string,
+  preferredSlug?: string,
 ): Promise<string> {
-  // strict true strips out Hindi characters. Let's create an elegant fallback
-  let raw = slugify(base, { lower: true, strict: true });
-  
-  if (!raw || raw.trim() === "") {
-    // Fallback logic to protect multi-language/Hindi headlines from producing blank values
+  // If the client already sent a slug (auto-generated from a transliterated
+  // headline, or hand-edited by the admin in the URL Slug field), reuse it
+  // instead of discarding it and re-deriving a meaningless one from scratch.
+  let raw = preferredSlug ? slugifyAny(preferredSlug) : "";
+  if (!raw) raw = slugifyAny(base);
+
+  if (!raw) {
+    // Only reached for a genuinely empty/emoji-only headline.
     raw = "samachar-" + Math.random().toString(36).slice(2, 7);
   }
 
@@ -43,7 +126,7 @@ async function buildUniqueSlug(
   if (excludeId) query._id = { $ne: excludeId };
   const existing = await News.findOne(query);
   if (!existing) return raw;
-  
+
   return `${raw}-${Math.random().toString(36).slice(2, 7)}`;
 }
 
@@ -235,7 +318,7 @@ export const createNews = async (req: AuthRequest, res: Response) => {
       return res.status(400).json({ message: e.message });
     }
 
-    const slug = await buildUniqueSlug(headline);
+    const slug = await buildUniqueSlug(headline, undefined, req.body.slug);
     const typeEnum = toArticleTypeEnum(articleType);
 
     // ── Status / dates ────────────────────────────────────────────────────────
@@ -713,7 +796,16 @@ export const updateNews = async (req: AuthRequest, res: Response) => {
     }
 
     let slug = existing.slug;
-    if (headline && headline.trim() !== existing.headline) {
+    const incomingSlug = typeof req.body.slug === "string" ? req.body.slug.trim() : "";
+    const incomingSlugNormalised = incomingSlug ? slugifyAny(incomingSlug) : "";
+
+    if (incomingSlugNormalised && incomingSlugNormalised !== existing.slug) {
+      // Admin manually edited the URL Slug field (or the frontend sent a
+      // freshly auto-generated, transliterated slug) — honour it.
+      slug = await buildUniqueSlug(headline?.trim() || existing.headline, id, incomingSlug);
+    } else if (headline && headline.trim() !== existing.headline) {
+      // Headline changed and the slug wasn't hand-edited — regenerate from
+      // the new headline (with Hindi transliteration applied).
       slug = await buildUniqueSlug(headline.trim(), id);
     }
 
