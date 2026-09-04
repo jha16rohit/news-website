@@ -1,5 +1,4 @@
-// client/src/api/auth.ts  (admin-side auth API)
-
+// client/src/api/auth.ts
 import { apiClient } from "./client";
 
 // ─── REGISTER ────────────────────────────────────────────────────────────────
@@ -13,19 +12,40 @@ export const registerUser = (data: {
     body: JSON.stringify(data),
   });
 
-// ─── LOGIN ────────────────────────────────────────────────────────────────────
-export const loginUser = (data: { email: string; password: string }) =>
-  apiClient("/api/auth/login", {
+// ─── LOGIN ───────────────────────────────────────────────────────────────────
+// The JWT is stored in sessionStorage by this tab only.
+export const loginUser = async (data: {
+  emailOrUserId: string;
+  password: string;
+}) => {
+  const response = await apiClient("/api/auth/login", {
     method: "POST",
     body: JSON.stringify(data),
   });
+
+  if (response?.token) {
+    sessionStorage.setItem("auth-token", response.token);
+  }
+
+  if (response?.user) {
+    sessionStorage.setItem("auth-user", JSON.stringify(response.user));
+  }
+
+  return response;
+};
 
 // ─── GET CURRENT USER ────────────────────────────────────────────────────────
 export const getMe = () => apiClient("/api/auth/me");
 
 // ─── LOGOUT ──────────────────────────────────────────────────────────────────
-export const logoutUser = () =>
-  apiClient("/api/auth/logout", { method: "POST" });
+export const logoutUser = async () => {
+  try {
+    await apiClient("/api/auth/logout", { method: "POST" });
+  } finally {
+    sessionStorage.removeItem("auth-token");
+    sessionStorage.removeItem("auth-user");
+  }
+};
 
 // ─── UPDATE PROFILE ──────────────────────────────────────────────────────────
 export const updateProfile = (data: {
@@ -48,8 +68,7 @@ export const changePassword = (data: {
     body: JSON.stringify(data),
   });
 
-// ─── FORGOT PASSWORD (step 1 — sends OTP) ────────────────────────────────────
-// method: "email" | "phone"   contact: the email address or phone number
+// ─── FORGOT PASSWORD ─────────────────────────────────────────────────────────
 export const forgotPassword = (data: {
   method: "email" | "phone";
   contact: string;
@@ -59,7 +78,7 @@ export const forgotPassword = (data: {
     body: JSON.stringify(data),
   });
 
-// ─── VERIFY OTP (step 2 — returns resetToken) ────────────────────────────────
+// ─── VERIFY OTP ──────────────────────────────────────────────────────────────
 export const verifyOtp = (data: {
   method: "email" | "phone";
   contact: string;
@@ -70,7 +89,7 @@ export const verifyOtp = (data: {
     body: JSON.stringify(data),
   });
 
-// ─── RESET PASSWORD (step 3) ─────────────────────────────────────────────────
+// ─── RESET PASSWORD ──────────────────────────────────────────────────────────
 export const resetPassword = (data: {
   resetToken: string;
   newPassword: string;

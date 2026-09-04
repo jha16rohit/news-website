@@ -221,29 +221,30 @@ export async function getTrafficChart(req: Request, res: Response) {
   try {
     const range = parseInt(String(req.query.range ?? "1"), 10) || 1;
 
-    if (range <= 1) {
-      // Hourly buckets for "Today"
-      const start = startOfDay(new Date());
-      const rows = await PageView.aggregate([
-        { $match: { createdAt: { $gte: start } } },
-        {
-          $group: {
-            _id: { $hour: "$createdAt" },
-            views: { $sum: 1 },
-            visitors: { $addToSet: "$visitorId" },
-          },
-        },
-        { $sort: { _id: 1 } },
-      ]);
+if (range <= 1) {
+  // Hourly buckets for "Today"
+  const start = startOfDay(new Date());
 
-      const chart = rows.map((r) => ({
-        label: formatHourLabel(r._id),
-        views: r.views,
-        uniqueVisitors: r.visitors.length,
-      }));
+  const rows = await PageView.aggregate([
+    { $match: { createdAt: { $gte: start } } },
+    {
+      $group: {
+        _id: { $hour: "$createdAt" },
+        views: { $sum: 1 },
+        visitors: { $addToSet: "$visitorId" },
+      },
+    },
+    { $sort: { _id: 1 } },
+  ]);
 
-      return res.json({ chart });
-    }
+  const chart = rows.map((r) => ({
+    label: formatHourLabel(r._id),
+    views: r.views,
+    uniqueVisitors: r.visitors.length,
+  }));
+
+  return res.json({ chart });
+}
 
     // Daily buckets for 7 / 30 day ranges
     const start = rangeStart(range);
@@ -718,5 +719,267 @@ export async function exportAnalytics(req: Request, res: Response) {
   } catch (error) {
     console.error("exportAnalytics error:", error);
     res.status(500).json({ message: "Error exporting analytics" });
+  }
+}
+
+// ─── EDITOR: traffic chart ────────────────────────────────────────────────────
+
+export async function getEditorTrafficChart(req: Request, res: Response) {
+  try {
+    const userId = String((req as any).user?.id || "");
+
+    if (!userId) {
+      return res.status(401).json({ message: "Not authorized" });
+    }
+
+    const range = parseInt(String(req.query.range ?? "1"), 10) || 1;
+
+    // Get only articles created by the logged-in Editor
+    const editorNews = await News.find({
+      authorId: userId,
+    })
+      .select("_id")
+      .lean();
+
+    const newsIds = editorNews.map((article: any) => String(article._id));
+
+    if (newsIds.length === 0) {
+      return res.json({ chart: [] });
+    }
+
+    if (range <= 1) {
+      const start = startOfDay(new Date());
+
+      const rows = await PageView.aggregate([
+        {
+          $match: {
+            newsId: { $in: newsIds },
+            createdAt: { $gte: start },
+          },
+        },
+        {
+          $group: {
+            _id: { $hour: "$createdAt" },
+            views: { $sum: 1 },
+            visitors: { $addToSet: "$visitorId" },
+          },
+        },
+        { $sort: { _id: 1 } },
+      ]);
+
+      const chart = rows.map((r) => ({
+        label: formatHourLabel(r._id),
+        views: r.views,
+        uniqueVisitors: r.visitors.length,
+      }));
+
+      return res.json({ chart });
+    }
+
+    const start = rangeStart(range);
+
+    const rows = await PageView.aggregate([
+      {
+        $match: {
+          newsId: { $in: newsIds },
+          createdAt: { $gte: start },
+        },
+      },
+      {
+        $group: {
+          _id: {
+            $dateToString: {
+              format: "%Y-%m-%d",
+              date: "$createdAt",
+            },
+          },
+          views: { $sum: 1 },
+          visitors: { $addToSet: "$visitorId" },
+        },
+      },
+      { $sort: { _id: 1 } },
+    ]);
+
+    const chart = rows.map((r) => ({
+      label: formatDayLabel(r._id, range),
+      views: r.views,
+      uniqueVisitors: r.visitors.length,
+    }));
+
+    return res.json({ chart });
+  } catch (error) {
+    console.error("getEditorTrafficChart error:", error);
+    return res.status(500).json({
+      message: "Error fetching editor traffic chart",
+    });
+  }
+}
+
+
+// ─── EDITOR: top articles ─────────────────────────────────────────────────────
+
+export async function getEditorTopArticles(req: Request, res: Response) {
+  try {
+    const userId = String((req as any).user?.id || "");
+
+    if (!userId) {
+      return res.status(401).json({ message: "Not authorized" });
+    }
+
+    const range = parseInt(String(req.query.range ?? "1"), 10) || 1;
+    const limit = parseInt(String(req.query.limit ?? "10"), 10) || 10;
+
+    const editorNews = await News.find({
+      authorId: userId,
+    })
+      .select("_id headline")
+      .lean();
+
+    const newsIds = editorNews.map((article: any) => String(article._id));
+
+    if (newsIds.length === 0) {
+      return res.json({ articles: [] });
+    }
+
+    const start = rangeStart(range);
+
+    const current = await PageView.aggregate([
+      {
+        $match: {
+          newsId: { $in: newsIds },
+          createdAt: { $gte: start },
+        },
+      },
+      {
+        $group: {
+          _id: "$newsId",
+          views: { $sum: 1 },
+          totalReadTime: {
+            $sum: { $ifNull: ["$readTime", 0] },
+          },
+          readSessions: {
+            $sum: {
+              $cond: [
+                { $gt: ["$readTime", 0] },
+                1,
+                0,
+              ],
+            },
+          },
+        },
+      },
+      { $sort: { views: -1 } },
+      { $limit: limit },
+    ]);
+
+    const titleMap = Object.fromEntries(
+      editorNews.map((article: any) => [
+        String(article._id),
+        article.headline,
+      ])
+    );
+
+    const articles = current.map((article) => ({
+      newsId: article._id,
+      title: titleMap[article._id] ?? "Untitled article",
+      views: article.views,
+      avgReadTime:
+        article.readSessions > 0
+          ? article.totalReadTime / article.readSessions
+          : 0,
+    }));
+
+    return res.json({ articles });
+  } catch (error) {
+    console.error("getEditorTopArticles error:", error);
+    return res.status(500).json({
+      message: "Error fetching editor top articles",
+    });
+  }
+}
+
+
+// ─── EDITOR: KPI cards ─────────────────────────────────────────────────────────
+
+export async function getEditorKPIs(req: Request, res: Response) {
+  try {
+    const userId = String((req as any).user?.id || "");
+
+    if (!userId) {
+      return res.status(401).json({ message: "Not authorized" });
+    }
+
+    const range = parseInt(String(req.query.range ?? "1"), 10) || 1;
+    const start = rangeStart(range);
+
+    const editorNews = await News.find({
+      authorId: userId,
+    })
+      .select("_id")
+      .lean();
+
+    const newsIds = editorNews.map((article: any) => String(article._id));
+
+    if (newsIds.length === 0) {
+      return res.json({
+        totalViews: {
+          value: 0,
+          formatted: "0",
+        },
+        articlesPublished: {
+          value: 0,
+          formatted: "0",
+        },
+        uniqueVisitors: {
+          value: 0,
+          formatted: "0",
+        },
+      });
+    }
+
+    const [
+      views,
+      articlesPublished,
+      uniqueVisitors,
+    ] = await Promise.all([
+      PageView.countDocuments({
+        newsId: { $in: newsIds },
+        createdAt: { $gte: start },
+      } as any),
+
+      News.countDocuments({
+        authorId: userId,
+        status: "PUBLISHED",
+        publishedAt: { $gte: start },
+      }),
+
+      PageView.distinct(
+        "visitorId",
+        {
+          newsId: { $in: newsIds },
+          createdAt: { $gte: start },
+        } as any
+      ),
+    ]);
+
+    return res.json({
+      totalViews: {
+        value: views,
+        formatted: formatCount(views),
+      },
+      articlesPublished: {
+        value: articlesPublished,
+        formatted: formatCount(articlesPublished),
+      },
+      uniqueVisitors: {
+        value: uniqueVisitors.length,
+        formatted: formatCount(uniqueVisitors.length),
+      },
+    });
+  } catch (error) {
+    console.error("getEditorKPIs error:", error);
+    return res.status(500).json({
+      message: "Error fetching editor KPIs",
+    });
   }
 }

@@ -9,16 +9,19 @@ import {
   fetchAdminNews,
   deleteNews as apiDeleteNews,
   updateNews as apiUpdateNews,
+  removeBreakingStatus,
   reorderNews,
   toggleHomepagePin,
 } from "../../../api/news";
 import type { ArticleTypeEnum } from "../../../api/news";
 import Preloader from "../Preloader/Preloder";
+import { getMe } from "../../../api/auth";
 
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 interface NewsItem {
-  id:              string;   // backend UUID
+  id:              string;  
+  authorId: string;  // backend UUID
   localId:         number;   // for drag-reorder
   title:           string;
   subtitle:        string;
@@ -87,6 +90,10 @@ function mapNewsItem(n: any, idx: number): NewsItem {
 
   return {
     id:              n._id ?? n.id,
+    authorId:
+    typeof n.authorId === "object"
+      ? String(n.authorId?._id ?? "")
+      : String(n.authorId ?? ""),
     localId:         idx + 1,
     title:           n.headline,
     subtitle:        n.shortTitle || n.headline.slice(0, 50),
@@ -139,6 +146,56 @@ const [hasMore, setHasMore] = useState(true);
 const [loading, setLoading] = useState(true);
 const [loadingMore, setLoadingMore] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
+
+  const [currentUser, setCurrentUser] = useState<{
+  id: string;
+  role: "ADMIN" | "EDITOR";
+  permissions: string[];
+} | null>(null);
+
+
+
+useEffect(() => {
+  getMe()
+    .then((res: any) => {
+      setCurrentUser({
+        id: String(res.user?.id ?? ""),
+        role: res.user?.role,
+        permissions: Array.isArray(res.user?.permissions)
+          ? res.user.permissions
+          : [],
+      });
+    })
+    .catch(() => {
+      setCurrentUser(null);
+    });
+}, []);
+
+const isAdmin = currentUser?.role === "ADMIN";
+const isEditor = currentUser?.role === "EDITOR";
+
+const canMarkBreaking = (news: NewsItem) =>
+  isAdmin ||
+  (isEditor &&
+    news.authorId === currentUser?.id &&
+    currentUser?.permissions.includes("breaking-news") === true);
+
+const canConvertLive = (news: NewsItem) =>
+  isAdmin ||
+  (isEditor &&
+    news.authorId === currentUser?.id &&
+    currentUser?.permissions.includes("live-news") === true);
+
+
+const canModifyArticle = (news: NewsItem) => {
+  if (isAdmin) return true;
+
+  if (isEditor) {
+    return news.authorId === currentUser?.id;
+  }
+
+  return false;
+};
   
 
   // Re-fetch whenever another page mutates an article
@@ -397,28 +454,36 @@ const onDragEnd = async () => {
 }
 
       case "mark-breaking": {
-        const isBreaking = item?.tagType === "breaking";
+        if (!item || !canModifyArticle(item)) break;
 
-try {
-  await apiUpdateNews(
-    id,
-    {
-      articleType: isBreaking ? "STANDARD" : "BREAKING",
-      status: "PUBLISHED",
-    } as any
-  );
+        const isBreaking = item.tagType === "breaking";
 
-  await loadData(activeType, search);
+        try {
+          if (isBreaking) {
+            // Removing Breaking records history and is allowed for Admin or
+            // the Editor who created this article.
+            await removeBreakingStatus(id);
+          } else {
+            // Re-breaking a previously removed article clears the old
+            // breakingRemovedAt/wasBreaking marker in the backend.
+            await apiUpdateNews(id, {
+              articleType: "BREAKING",
+              status: "PUBLISHED",
+            } as any);
+          }
 
-} catch (err) {
-  console.error(err);
-}
+          await loadData(activeType, search);
+        } catch (err) {
+          console.error("Failed to update Breaking status:", err);
+        }
 
-break;
+        break;
       }
 
       case "convert-live": {
-        const isLive = item?.tagType === "live";
+        if (!item || !canModifyArticle(item)) break;
+
+        const isLive = item.tagType === "live";
 
         // Ending an already-ended live story from here is a no-op — that
         // state is managed from the Live Stories page.
@@ -614,16 +679,27 @@ setDeleteModal(null);
                 <tr
                   key={news.id}
                   className={`news-row ${news.leftBorder || ""} ${isDragging ? "row-dragging" : ""} ${isDragOver ? "row-drag-over" : ""}`}
-                  draggable
-                  onDragStart={e => onDragStart(e, index, news.id)}
-                  onDragEnter={() => onDragEnter(index, news.id)}
-                  onDragOver={e => e.preventDefault()}
-                  onDragEnd={onDragEnd}
+                  draggable={isAdmin}
+                  onDragStart={e => {
+  if (!isAdmin) return;
+  onDragStart(e, index, news.id);
+}}
+onDragEnter={() => {
+  if (!isAdmin) return;
+  onDragEnter(index, news.id);
+}}
+onDragOver={e => {
+  if (isAdmin) e.preventDefault();
+}}
+onDragEnd={() => {
+  if (!isAdmin) return;
+  onDragEnd();
+}}
                 >
                   {/* DRAG HANDLE */}
                   <td className="drag-handle-cell">
-                    <GripVertical size={15} className="drag-handle" />
-                  </td>
+  {isAdmin && <GripVertical size={15} className="drag-handle" />}
+</td>
 
                   {/* CHECKBOX */}
                   <td>
@@ -702,9 +778,14 @@ setDeleteModal(null);
 
                       {openDropdown === news.id && (
                         <div className="action-dropdown">
-                          <button className="dropdown-item" onClick={() => handleMenuAction("edit", news.id)}>
-                            <Edit size={15} /> Edit
-                          </button>
+                          {canModifyArticle(news) && (
+  <button
+    className="dropdown-item"
+    onClick={() => handleMenuAction("edit", news.id)}
+  >
+    <Edit size={15} /> Edit
+  </button>
+)}
                           {news.status === "Published" && (
   <button
     className="dropdown-item"
@@ -714,7 +795,7 @@ setDeleteModal(null);
   </button>
 )}
                           <div className="dropdown-divider" />
-                          {news.status === "Published" && (
+{isAdmin && news.status === "Published" && (
   <button
     className="dropdown-item"
     onClick={() => handleMenuAction("pin", news.id)}
@@ -728,34 +809,48 @@ setDeleteModal(null);
       : "Pin to Homepage"}
   </button>
 )}
-                          <button
-                            className={`dropdown-item${news.tagType === "breaking" ? " breaking-active" : ""}`}
+                          {canMarkBreaking(news) && (
+  <button
+    className={`dropdown-item${news.tagType === "breaking" ? " breaking-active" : ""}`}
                             onClick={() => handleMenuAction("mark-breaking", news.id)}
                           >
                             <Zap size={15} className={news.tagType === "breaking" ? "icon-red" : ""} />
                             {news.tagType === "breaking" ? "Remove Breaking" : "Mark as Breaking"}
-                          </button>
-                          <button
-                            className={`dropdown-item${news.tagType === "live" ? " breaking-active" : ""}`}
-                            onClick={() => handleMenuAction("convert-live", news.id)}
-                            disabled={news.tagType === "live" && news.isEnded}
-                            style={
-                              news.tagType === "live"
-                                ? news.isEnded
-                                  ? { color: "#6b7280", opacity: 0.6, cursor: "not-allowed" }
-                                  : { color: "#16a34a" }
-                                : {}
-                            }
-                          >
-                            <Radio size={15} />
-                            {news.tagType === "live"
-                              ? news.isEnded ? "Ended" : "End Live"
-                              : "Convert to Live"}
-                          </button>
+                          </button>)}
+{canConvertLive(news) && (
+  <button
+    className={`dropdown-item${news.tagType === "live" ? " breaking-active" : ""}`}
+    onClick={() => handleMenuAction("convert-live", news.id)}
+    disabled={news.tagType === "live" && news.isEnded}
+    style={
+      news.tagType === "live"
+        ? news.isEnded
+          ? {
+              color: "#6b7280",
+              opacity: 0.6,
+              cursor: "not-allowed",
+            }
+          : { color: "#16a34a" }
+        : {}
+    }
+  >
+    <Radio size={15} />
+    {news.tagType === "live"
+      ? news.isEnded
+        ? "Ended"
+        : "End Live"
+      : "Convert to Live"}
+  </button>
+)}
                           <div className="dropdown-divider" />
-                          <button className="dropdown-item danger" onClick={() => handleMenuAction("delete", news.id)}>
-                            <Trash2 size={15} /> Delete
-                          </button>
+                          {canModifyArticle(news) && (
+  <button
+    className="dropdown-item danger"
+    onClick={() => handleMenuAction("delete", news.id)}
+  >
+    <Trash2 size={15} /> Delete
+  </button>
+)}
                         </div>
                       )}
                     </div>

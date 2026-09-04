@@ -1,24 +1,53 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Outlet, Navigate } from "react-router-dom";
 import AdminSidebar from "../AdminSidebar/AdminSidebar";
 import AdminTopBar from "../AdminTopBar/AdminTopBar";
+import { getMe } from "../../../api/auth";
+import Preloader from "../Preloader/Preloder";
 
 const SIDEBAR_WIDTH = 260;
 const TOPBAR_HEIGHT = 60;
 
 const AdminLayout = () => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [authenticated, setAuthenticated] = useState(false);
 
-  // ✅ admin auth check
-  const isAuth = localStorage.getItem("admin-auth");
+  useEffect(() => {
+    const verifyUser = async () => {
+      try {
+        await getMe();
+        setAuthenticated(true);
+      } catch (error) {
+        setAuthenticated(false);
+      } finally {
+        setLoading(false);
+      }
+    };
 
-  if (!isAuth) {
-    return <Navigate to="/admin/login-xyzsft" />;
+    verifyUser();
+  }, []);
+
+  // ⏳ Check authentication with backend
+  if (loading) {
+    return (
+      <div style={{ height: "100vh" }}>
+        <Preloader />
+      </div>
+    );
+  }
+
+  // ❌ Not authenticated
+  if (!authenticated) {
+    return <Navigate to="/admin/login-xyzsft" replace />;
   }
 
   return (
     <>
-      <AdminSidebar open={sidebarOpen} onClose={() => setSidebarOpen(false)} />
+      <AdminSidebar
+        open={sidebarOpen}
+        onClose={() => setSidebarOpen(false)}
+      />
 
       <div
         style={{
@@ -32,7 +61,9 @@ const AdminLayout = () => {
         }}
         className="topbar-wrapper"
       >
-        <AdminTopBar onMenuClick={() => setSidebarOpen(true)} />
+        <AdminTopBar
+          onMenuClick={() => setSidebarOpen(true)}
+        />
       </div>
 
       <main
@@ -49,12 +80,25 @@ const AdminLayout = () => {
 
       <style>{`
         @media (min-width: 1025px) {
-          .topbar-wrapper { left: ${SIDEBAR_WIDTH}px !important; }
-          .admin-main { margin-left: ${SIDEBAR_WIDTH}px; padding: ${TOPBAR_HEIGHT}px 24px 24px; }
+          .topbar-wrapper {
+            left: ${SIDEBAR_WIDTH}px !important;
+          }
+
+          .admin-main {
+            margin-left: ${SIDEBAR_WIDTH}px;
+            padding: ${TOPBAR_HEIGHT}px 24px 24px;
+          }
         }
+
         @media (max-width: 1024px) {
-          .topbar-wrapper { left: 0 !important; }
-          .admin-main { margin-left: 0; padding: ${TOPBAR_HEIGHT}px 16px 16px; }
+          .topbar-wrapper {
+            left: 0 !important;
+          }
+
+          .admin-main {
+            margin-left: 0;
+            padding: ${TOPBAR_HEIGHT}px 16px 16px;
+          }
         }
       `}</style>
     </>

@@ -1,40 +1,36 @@
 // client/src/api/client.ts
-
-import { getMemoryToken } from "../api/user/userauth";
-
 const BASE_URL = "http://localhost:5001";
+
+export const getAuthToken = (): string | null => {
+  try {
+    return sessionStorage.getItem("auth-token");
+  } catch {
+    return null;
+  }
+};
 
 export const apiClient = async (
   endpoint: string,
   options: RequestInit = {}
 ) => {
   try {
-    // Bearer token (user routes)
-    const memToken = getMemoryToken();
-
-    const authHeader: Record<string, string> = memToken
-      ? { Authorization: `Bearer ${memToken}` }
-      : {};
-
+    const token = getAuthToken();
     const isFormData = options.body instanceof FormData;
     const isStringBody = typeof options.body === "string";
 
-    console.log("isFormData =", isFormData);
-    console.log("body =", options.body);
-
     const headers: Record<string, string> = {
-  ...authHeader,
-  ...(options.headers as Record<string, string> || {}),
-};
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      ...((options.headers as Record<string, string>) || {}),
+    };
 
-    // Only add JSON content-type when NOT uploading files
     if (!isFormData && !("Content-Type" in headers)) {
       headers["Content-Type"] = "application/json";
     }
 
     const res = await fetch(`${BASE_URL}${endpoint}`, {
       ...options,
-      credentials: "include",
+      // IMPORTANT: no shared cookie session. Authentication is per-tab.
+      credentials: "omit",
       headers,
       body: isFormData
         ? options.body
@@ -46,7 +42,6 @@ export const apiClient = async (
     });
 
     let data: any = null;
-
     const contentType = res.headers.get("content-type") || "";
 
     if (contentType.includes("application/json")) {

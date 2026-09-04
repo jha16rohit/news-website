@@ -272,9 +272,7 @@ await loadData();
               <button className="sp-search-clear" onClick={() => setSearchQuery("")}><X size={13} /></button>
             )}
           </div>
-          <button className="sp-btn sp-btn-primary" onClick={() => navigate("/admin/create")}>
-            + New Article
-          </button>
+          
         </div>
       </header>
 
@@ -412,7 +410,6 @@ await loadData();
                   <CalendarClock size={40} strokeWidth={1.2} />
                   <p className="sp-empty-title">No scheduled articles</p>
                   <p className="sp-empty-sub">{selectedDay ? "No articles scheduled for this day." : "Create an article and use the Schedule button to plan ahead."}</p>
-                  <button className="sp-btn sp-btn-primary" onClick={() => navigate("/admin/create")}>Create Article</button>
                 </div>
               ) : (
                 <div className="sp-article-list">
@@ -471,7 +468,6 @@ await loadData();
                   <FileText size={40} strokeWidth={1.2} />
                   <p className="sp-empty-title">No drafts saved</p>
                   <p className="sp-empty-sub">Save a draft while creating an article to continue editing it later.</p>
-                  <button className="sp-btn sp-btn-primary" onClick={() => navigate("/admin/create")}>Create Article</button>
                 </div>
               ) : (
                 <div className="sp-article-list">
@@ -512,7 +508,7 @@ await loadData();
               {filteredDrafts.length > 0 && (
                 <div className="sp-draft-info-banner">
                   <CheckCircle2 size={14} />
-                  <span>Drafts are only visible to admins and will not appear on the live site until published.</span>
+                  <span>Drafts and scheduled articles are private to the editor who created them and will not appear on the live site until published.</span>
                 </div>
               )}
             </div>

@@ -222,6 +222,15 @@ export const deleteNews = (
   });
 
 // ─── BREAKING ──────────────────────────────────────────────────────────────────
+
+export const fetchBreakingNewsHistory = () =>
+  apiClient("/api/news/breaking-history");
+
+export const removeBreakingStatus = (id: string) =>
+  apiClient(`/api/news/${id}/remove-breaking`, {
+    method: "PATCH",
+  });
+
 export const togglePauseBreaking = (id: string) =>
   apiClient(`/api/news/${id}/pause-toggle`, { method: "PATCH" });
 

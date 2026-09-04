@@ -11,6 +11,8 @@ import {
   addLiveUpdate,
   voteOnPoll,
   togglePauseBreaking,
+  getBreakingNewsHistory,
+  removeBreakingStatus,
   getMediaLibrary,
   deleteMediaImage,
   uploadMediaImage,
@@ -29,23 +31,34 @@ import {
 } from "../controllers/news.controller";
 
 import { uploadToCloudinary } from "../middleware/Upload.middleware";
-import { protect } from "../middleware/auth.middleware";
+import {
+  protect,
+  isAdmin,
+  hasPermission,
+} from "../middleware/auth.middleware";
 
 const router = Router();
 
 // ─── Media Library ──────────────────────────────────────────────
 
-router.get("/media-library", getMediaLibrary);
+router.get(
+  "/media-library",
+  protect,
+  hasPermission("media-library"),
+  getMediaLibrary
+);
 
 router.delete(
   "/media-library/:newsId",
   protect,
+  hasPermission("media-library"),
   deleteMediaImage
 );
 
 router.patch(
   "/media-library/:newsId/upload",
   protect,
+  hasPermission("media-library"),
   uploadToCloudinary,
   uploadMediaImage
 );
@@ -117,6 +130,8 @@ router.get(
 
 router.post(
   "/create",
+  protect,
+  hasPermission("create-news"),
   uploadToCloudinary,
   createNews
 );
@@ -126,12 +141,22 @@ router.post(
   voteOnPoll
 );
 
+// ─── Breaking News history / admin actions ─────────────────────
+
+router.get(
+  "/breaking-history",
+  protect,
+  hasPermission("breaking-news"),
+  getBreakingNewsHistory
+);
+
 // ─── Admin mutations ────────────────────────────────────────────
 
 // Save drag-and-drop article order
 router.put(
   "/reorder",
   protect,
+  hasPermission("news"),
   reorderNews
 );
 
@@ -139,6 +164,7 @@ router.put(
 router.put(
   "/:id/homepage-pin",
   protect,
+  hasPermission("news"),
   toggleHomepagePin
 );
 
@@ -146,6 +172,7 @@ router.put(
 router.put(
   "/:id",
   protect,
+  hasPermission("news"),
   uploadToCloudinary,
   updateNews
 );
@@ -154,20 +181,31 @@ router.put(
 router.delete(
   "/:id",
   protect,
+  hasPermission("news"),
   deleteNews
 );
 
-// Pause / resume breaking news
+// Pause / resume Breaking News
 router.patch(
   "/:id/pause-toggle",
   protect,
+  hasPermission("breaking-news"),
   togglePauseBreaking
+);
+
+// Remove Breaking status — Admin: any article; Editor: own article only.
+router.patch(
+  "/:id/remove-breaking",
+  protect,
+  hasPermission("breaking-news"),
+  removeBreakingStatus
 );
 
 // Add live update
 router.post(
   "/:id/live-update",
   protect,
+  hasPermission("live-news"),
   addLiveUpdate
 );
 
@@ -176,6 +214,7 @@ router.post(
 router.delete(
   "/admin/purge-deleted",
   protect,
+  isAdmin,
   purgeDeletedNews
 );
 

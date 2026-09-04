@@ -1,8 +1,9 @@
-// server/src/app.ts  
+// server/src/app.ts
 
 import express from "express";
 import cors from "cors";
 import cookieParser from "cookie-parser";
+
 import authRoutes from "./routes/auth.routes";
 import newsRoutes from "./routes/news.routes";
 import { commentRouter, adminCommentRouter } from "./routes/comment.routes";
@@ -15,11 +16,16 @@ import advertisementPoolRoutes from "./routes/advertisementPool.routes";
 import contactUsRoutes from "./routes/contactus.routes";
 import siteUserRoutes from "./routes/siteuser.routes";
 import notificationRoutes from "./routes/notification.routes";
-import { analyticsPublicRouter, analyticsAdminRouter } from "./routes/analytics.routes"; // ← ADD
+import {
+  analyticsPublicRouter,
+  analyticsAdminRouter,
+  analyticsEditorRouter,
+} from "./routes/analytics.routes";
 import { startScheduler } from "./scheduler";
- import newsletterRouter from "./routes/newsletter.routes";
- import pushRoutes from "./routes/push.routes";
- import userNotificationRoutes from "./routes/userNotification.routes";
+import newsletterRouter from "./routes/newsletter.routes";
+import pushRoutes from "./routes/push.routes";
+import userNotificationRoutes from "./routes/userNotification.routes";
+import adminUserRoutes from "./routes/adminUser.routes";
 
 import path from "path";
 
@@ -38,6 +44,7 @@ app.use((req, res, next) => {
   if (req.method === "OPTIONS") {
     return res.sendStatus(200);
   }
+
   next();
 });
 
@@ -48,30 +55,41 @@ app.use(express.json({ limit: "10mb" }));
 startScheduler();
 
 // ✅ 4. ROUTES REGISTRATION
-app.use("/api/auth",            authRoutes);
-app.use("/api/news",            newsRoutes);
 
-// ── Comment routes ──────────────────────────────
-app.use("/api/comments",        commentRouter);
-app.use("/api/admin/comments",  adminCommentRouter);
+app.use("/api/auth", authRoutes);
+app.use("/api/news", newsRoutes);
 
-// ── Analytics routes ────────────────────────────
-app.use("/api/analytics",       analyticsPublicRouter);   // ← ADD (public: pageview + readtime)
-app.use("/api/admin/analytics", analyticsAdminRouter);    // ← ADD (admin: kpis, chart, export…)
+// ── Admin User Management ─────────────────────────
+app.use("/api/admin/users", adminUserRoutes);
 
-app.use("/api/topic-profiles",  topicProfileRoutes);
-app.use("/api/categories",      categoryRoutes);
-app.use("/api/tags",            tagsRoutes);
+// ── Comment routes ────────────────────────────────
+app.use("/api/comments", commentRouter);
+app.use("/api/admin/comments", adminCommentRouter);
+
+// ── Analytics routes ──────────────────────────────
+app.use("/api/analytics", analyticsPublicRouter);
+app.use("/api/admin/analytics", analyticsAdminRouter);
+app.use("/api/analytics/editor", analyticsEditorRouter);
+
+app.use("/api/topic-profiles", topicProfileRoutes);
+app.use("/api/categories", categoryRoutes);
+app.use("/api/tags", tagsRoutes);
 app.use("/api/footer-settings", footerRoutes);
-app.use("/api/advertisement",   advertisementRoutes);
+app.use("/api/advertisement", advertisementRoutes);
 app.use("/api/advertisement-pool", advertisementPoolRoutes);
-app.use("/api/contact",         contactUsRoutes);
+app.use("/api/contact", contactUsRoutes);
+
 app.use("/api/push", pushRoutes);
 app.use("/api/user-notifications", userNotificationRoutes);
 app.use("/api/notifications", notificationRoutes);
-// ── Frontend User section ───────────────────────
-app.use("/api/users",           siteUserRoutes);
+
+// ── Frontend User section ─────────────────────────
+app.use("/api/users", siteUserRoutes);
 app.use("/api/newsletter", newsletterRouter);
-app.use("/uploads", express.static(path.join(process.cwd(), "uploads")));
+
+app.use(
+  "/uploads",
+  express.static(path.join(process.cwd(), "uploads"))
+);
 
 export default app;

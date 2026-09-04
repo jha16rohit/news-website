@@ -1,5 +1,3 @@
-// ─── routes/contactUs.routes.ts ───────────────────────────────────────────────
-
 import { Router } from "express";
 
 import {
@@ -13,24 +11,71 @@ import {
   deleteMessage,
 } from "../controllers/contactus.controller";
 
+import {
+  protect,
+  hasPermission,
+} from "../middleware/auth.middleware";
+
 const router = Router();
 
-// Settings (hero, info, form config, FAQ)
-router.get("/settings", getContactUsSettings);
+// ─── Public: frontend reads Contact Us settings ─────────────────────────────
 
-router.put("/settings", updateContactUsSettings);
+router.get(
+  "/settings",
+  getContactUsSettings
+);
 
-// Inbox messages
-router.get("/messages", getMessages);
+// ─── Protected: update Contact Us settings ─────────────────────────────────
 
-router.get("/messages/:id", getMessageById);
+router.put(
+  "/settings",
+  protect,
+  hasPermission("contact-manager"),
+  updateContactUsSettings
+);
 
-router.post("/messages", createMessage);
+// ─── Public: users can submit Contact Us messages ───────────────────────────
 
-router.patch("/messages/:id/read", markMessageRead);
+router.post(
+  "/messages",
+  createMessage
+);
 
-router.patch("/messages/:id/reply", replyToMessage);
+// ─── Protected: Contact Us inbox ────────────────────────────────────────────
 
-router.delete("/messages/:id", deleteMessage);
+router.get(
+  "/messages",
+  protect,
+  hasPermission("contact-manager"),
+  getMessages
+);
+
+router.get(
+  "/messages/:id",
+  protect,
+  hasPermission("contact-manager"),
+  getMessageById
+);
+
+router.patch(
+  "/messages/:id/read",
+  protect,
+  hasPermission("contact-manager"),
+  markMessageRead
+);
+
+router.patch(
+  "/messages/:id/reply",
+  protect,
+  hasPermission("contact-manager"),
+  replyToMessage
+);
+
+router.delete(
+  "/messages/:id",
+  protect,
+  hasPermission("contact-manager"),
+  deleteMessage
+);
 
 export default router;

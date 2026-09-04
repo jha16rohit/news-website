@@ -23,11 +23,14 @@ import {
   deleteProfile,
 } from "../../../api/topicProfile";
 
+import { getMe } from "../../../api/auth";
+
 // ─── Types ───────────────────────────────────────────────────────────────────
 export interface Profile {
   id: string;
   name: string;
   slug: string;
+   authorId?: string;
   caption?: string;
   description: string;
   instagram?: string;
@@ -491,6 +494,10 @@ export default function TopicProfiles() {
   const [showCreate, setShowCreate] = useState(false);
   const [editingProfile, setEditingProfile] = useState<Profile | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [currentUser, setCurrentUser] = useState<{
+  id: string;
+  role: "ADMIN" | "EDITOR";
+} | null>(null);
 
   // ── Fetch all profiles from DB on mount ──────────────────────────────────
   const fetchProfiles = async () => {
@@ -506,9 +513,24 @@ export default function TopicProfiles() {
     }
   };
 
-  useEffect(() => {
+useEffect(() => {
+  const loadUserAndProfiles = async () => {
+    try {
+      const me = await getMe();
+
+      setCurrentUser({
+        id: me.user.id,
+        role: me.user.role,
+      });
+    } catch (err) {
+      console.error("Failed to load current user:", err);
+    }
+
     fetchProfiles();
-  }, []);
+  };
+
+  loadUserAndProfiles();
+}, []);
 
   // ── Create ────────────────────────────────────────────────────────────────
   const handleCreate = async (data: Omit<Profile, "id" | "linkedArticles" | "createdAt">) => {
@@ -546,6 +568,16 @@ export default function TopicProfiles() {
   // least one article. Without this, "Active" just duplicated "Total
   // Profiles" and told you nothing new.
   const activeCount = profiles.filter((p) => (p.linkedArticles ?? 0) > 0).length;
+
+  const canModifyProfile = (profile: Profile) => {
+  if (!currentUser) return false;
+
+  // Admin can modify every profile.
+  if (currentUser.role === "ADMIN") return true;
+
+  // Editor can modify only profiles created by them.
+  return String(profile.authorId) === String(currentUser.id);
+};
 
   return (
     <div className="tp-page">
@@ -681,13 +713,23 @@ export default function TopicProfiles() {
               </div>
 
               <div className="tp-card-actions">
-                <button className="tp-action-btn" onClick={() => setEditingProfile(profile)}>
-                  <Edit2 size={14} /> Edit
-                </button>
-                
-                <button className="tp-action-btn tp-action-delete" onClick={() => setDeletingId(profile.id)}>
-                  <Trash2 size={14} /> Delete
-                </button>
+                {canModifyProfile(profile) && (
+  <div className="tp-card-actions">
+    <button
+      className="tp-action-btn"
+      onClick={() => setEditingProfile(profile)}
+    >
+      <Edit2 size={14} /> Edit
+    </button>
+
+    <button
+      className="tp-action-btn tp-action-delete"
+      onClick={() => setDeletingId(profile.id)}
+    >
+      <Trash2 size={14} /> Delete
+    </button>
+  </div>
+)}
               </div>
             </div>
           ))}
