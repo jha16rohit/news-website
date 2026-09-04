@@ -119,7 +119,7 @@ export const createCategory = async (req: Request, res: Response) => {
   }
 };
 
-// ─── GET ALL ──────────────────────────────────────────────────────────────────
+// ─── GET ALL (ADMIN — every category, active + inactive) ─────────────────────
 export const getAllCategories = async (req: Request, res: Response) => {
   try {
     const { search } = req.query;
@@ -167,6 +167,57 @@ export const getAllCategories = async (req: Request, res: Response) => {
     res.json(shaped);
   } catch (error) {
     console.error("getAllCategories error:", error);
+    res.status(500).json({ message: "Error fetching categories" });
+  }
+};
+
+// ─── GET ALL (PUBLIC — active categories only, lightweight shape) ─────────────
+// Used by the public/user-facing site (nav menus, category filters, etc).
+// Unlike getAllCategories, this is unauthenticated and only ever exposes
+// categories the admin/editor has switched "active" on.
+export const getPublicCategories = async (req: Request, res: Response) => {
+  try {
+    const categories = await Category.find({ active: true })
+      .select("_id name slug color parentId featured showcase")
+      .sort({ name: 1 });
+
+    // Only ever expose active children — an inactive child shouldn't
+    // appear in a public dropdown/showcase even if its parent is active.
+    const shaped = await Promise.all(
+      categories.map(async (c) => {
+        const parent = c.parentId
+          ? await Category.findOne({ _id: c.parentId, active: true }).select(
+              "_id name slug color"
+            )
+          : null;
+
+        const children = await Category.find({
+          parentId: String(c._id),
+          active: true,
+        }).select("_id name slug color");
+
+        return {
+          id: String(c._id),
+          name: c.name,
+          slug: c.slug,
+          color: c.color ?? "#3b82f6",
+          parentId: c.parentId ?? null,
+          parent,
+          children,
+          featured: c.featured,
+          inShowcase: c.showcase,
+          enabled: true, // query already restricts to active: true
+        };
+      })
+    );
+
+    // Return the full flat list (parents + children). Consumers that only
+    // want top-level nav items should filter with `!c.parentId` themselves —
+    // e.g. CategoryTemplate looks up a category (which may itself be a
+    // child) by slug via this same list, so children must stay included.
+    res.json(shaped);
+  } catch (error) {
+    console.error("getPublicCategories error:", error);
     res.status(500).json({ message: "Error fetching categories" });
   }
 };
@@ -347,7 +398,7 @@ export const toggleActive = async (req: Request, res: Response) => {
   }
 };
 
-// ─── GET CATEGORY NEWS ──────────────────────────────────────────
+// ─── GET CATEGORY NEWS (PUBLIC) ────────────────────────────────────────────────
 export const getCategoryNews = async (
   req: Request,
   res: Response
@@ -386,31 +437,31 @@ export const getCategoryNews = async (
 
     // Fetch all related news
     const rawNews = await News.find({
-  categoryId: {
-    $in: allowedCategoryIds,
-  },
+      categoryId: {
+        $in: allowedCategoryIds,
+      },
 
-  status: "PUBLISHED",
-}).sort({
-  createdAt: -1,
-});
+      status: "PUBLISHED",
+    }).sort({
+      createdAt: -1,
+    });
 
-const news = await Promise.all(
-  rawNews.map(async (item) => {
+    const news = await Promise.all(
+      rawNews.map(async (item) => {
 
-    const newsCategory =
-      await Category.findById(
-        item.categoryId
-      );
+        const newsCategory =
+          await Category.findById(
+            item.categoryId
+          );
 
-    return {
-      ...item.toObject(),
+        return {
+          ...item.toObject(),
 
-      categoryName:
-        newsCategory?.name || "News",
-    };
-  })
-);
+          categoryName:
+            newsCategory?.name || "News",
+        };
+      })
+    );
 
     // Send response
     res.json({

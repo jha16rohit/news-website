@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { ArrowRight, Clock } from "lucide-react";
-import { getCategories } from "../../../api/category.api";
+import { getPublicCategories } from "../../../api/user/categoryNews";
 import { fetchAllNews } from "../../../api/news";
 import type { Category } from "../../../types/category";
 import "./CategoryShowcase.css";
@@ -25,7 +25,7 @@ const CategoryShowcase: React.FC = () => {
     const fetchData = async () => {
       try {
         // Categories
-        const categoryData = await getCategories();
+        const categoryData = await getPublicCategories();
         setCategories(categoryData || []);
 
         // News
