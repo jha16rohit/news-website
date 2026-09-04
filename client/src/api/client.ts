@@ -1,60 +1,68 @@
-// client/src/api/client.ts
-export const BASE_URL = "http://localhost:5001";
+// client/src/client.ts
+// Central API Client that handles all requests and automatically injects
+// the Authorization token into the headers.
 
-export const getAuthToken = (): string | null => {
-  try {
-    return sessionStorage.getItem("auth-token");
-  } catch {
-    return null;
-  }
-};
+import { getMemoryToken } from "./user/userauth";
 
-export const apiClient = async (
-  endpoint: string,
-  options: RequestInit = {}
-) => {
-  try {
-    const token = getAuthToken();
-    const isFormData = options.body instanceof FormData;
-    const isStringBody = typeof options.body === "string";
+// 👇 EXPERT FIX: Added 'export' here so news.ts can use it!
+export const BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:5001";
 
-    const headers: Record<string, string> = {
+// 👇 EXPERT FIX: Export getAuthToken so news.ts can access tokens
+export const getAuthToken = getMemoryToken;
+
+interface ClientOptions extends RequestInit {
+  data?: object;
+}
+
+export async function apiClient(endpoint: string, options: ClientOptions = {}) {
+  const { data, headers: customHeaders, ...customConfig } = options;
+
+  // Grab the token from localStorage via getMemoryToken
+  const token = getMemoryToken();
+
+  // 👇 THE MAGIC FIX: Check if a body payload exists in EITHER format
+  const hasBody = Boolean(data || customConfig.body);
+
+  const config: RequestInit = {
+    method: "GET",
+    headers: {
+      // 👇 Forces the JSON header if ANY body is detected so the backend parses it!
+      ...(hasBody ? { "Content-Type": "application/json" } : {}),
+      
+      // Attach the Authorization header if a token exists
       ...(token ? { Authorization: `Bearer ${token}` } : {}),
-      ...((options.headers as Record<string, string>) || {}),
-    };
 
-    if (!isFormData && !("Content-Type" in headers)) {
-      headers["Content-Type"] = "application/json";
+      // Allow overrides
+      ...customHeaders,
+    },
+    ...customConfig,
+  };
+
+  // If there's a JSON body, stringify it
+  if (data) {
+    config.body = JSON.stringify(data);
+  }
+
+  try {
+    const response = await fetch(`${BASE_URL}${endpoint}`, config);
+
+    // If the response is not OK, throw an error with the backend message
+    if (!response.ok) {
+      let errorMessage = "An error occurred.";
+      try {
+        const errorData = await response.json();
+        errorMessage = errorData.message || errorData.error || errorMessage;
+      } catch (e) {
+        // Fallback to status text if JSON parsing fails
+        errorMessage = response.statusText;
+      }
+      throw new Error(errorMessage);
     }
 
-    const res = await fetch(`${BASE_URL}${endpoint}`, {
-      ...options,
-      // IMPORTANT: no shared cookie session. Authentication is per-tab.
-      credentials: "omit",
-      headers,
-      body: isFormData
-        ? options.body
-        : isStringBody
-        ? options.body
-        : options.body != null
-        ? JSON.stringify(options.body)
-        : undefined,
-    });
-
-    let data: any = null;
-    const contentType = res.headers.get("content-type") || "";
-
-    if (contentType.includes("application/json")) {
-      data = await res.json().catch(() => null);
-    }
-
-    if (!res.ok) {
-      throw new Error(data?.message || `HTTP ${res.status}`);
-    }
-
-    return data;
-  } catch (error: any) {
-    console.error("API Error:", error);
+    // Attempt to return JSON data
+    return await response.json();
+  } catch (error) {
+    console.error("API Client Error:", error);
     throw error;
   }
-};
+}

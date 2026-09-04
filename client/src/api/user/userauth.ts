@@ -1,6 +1,6 @@
 // client/src/api/userauth.ts
-// All API calls go to the real backend. No localStorage.
-// Components/context cache the returned user in React state / context.
+// All API calls go to the real backend. 
+// Uses localStorage to persist auth state across new tabs.
 
 import { apiClient } from "../client";
 
@@ -25,17 +25,21 @@ export interface AuthResponse {
 }
 
 // ─────────────────────────────────────────────
-// IN-MEMORY TOKEN
+// AUTH TOKEN STORAGE (Cross-Tab Support)
 // ─────────────────────────────────────────────
 
-let _memoryToken: string | null = null;
-
 export function setMemoryToken(token: string | null): void {
-  _memoryToken = token;
+  // 👇 EXPERT FIX: Saves token to browser storage so new tabs can access it
+  if (token) {
+    localStorage.setItem("authToken", token);
+  } else {
+    localStorage.removeItem("authToken");
+  }
 }
 
 export function getMemoryToken(): string | null {
-  return _memoryToken;
+  // 👇 EXPERT FIX: Fetches token from browser storage when opening a new tab
+  return localStorage.getItem("authToken");
 }
 
 // ─────────────────────────────────────────────

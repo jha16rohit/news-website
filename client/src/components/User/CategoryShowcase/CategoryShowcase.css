@@ -13,11 +13,6 @@
   box-sizing: border-box;
 }
 
-.cs-section {
-  margin-bottom: 40px;
-  padding-bottom: 40px;
-  border-bottom: 1px solid #e2e8f0;
-}
 
 .cs-section:last-child {
   border-bottom: none;
@@ -312,19 +307,20 @@
    RESPONSIVE BREAKPOINTS (Professional Scale)
 ========================================= */
 
+/* 1. Laptop / Tablet - 1024px */
 @media (max-width: 1024px) {
-  .cs-layout-hero-sidebar, .cs-layout-split-sidebar {
+  /* 👇 EXPERT FIX 1: Added hero-reversed so ALL layouts properly stack top-to-bottom! */
+  .cs-layout-hero-sidebar, 
+  .cs-layout-split-sidebar,
+  .cs-layout-hero-reversed {
     flex-direction: column;
   }
   
-  .cs-layout-grid-3 {
-    grid-template-columns: repeat(2, 1fr);
-  }
-
+  .cs-layout-grid-3, 
   .cs-layout-grid-4 {
     grid-template-columns: repeat(2, 1fr);
   }
-  
+
   .cs-hero-col, .cs-split-col, .cs-sidebar-reversed { 
     margin-bottom: 25px; 
     border-right: none; 
@@ -335,29 +331,97 @@
   }
 }
 
-@media (max-width: 768px) {
+/* 2. Mobile Phones - 640px and below */
+@media (max-width: 640px) {
+  /* 👇 EXPERT FIX 2: Forces the 4 sidebar cards into a perfect 2x2 grid! */
+  .cs-sidebar-col {
+    display: grid !important;
+    grid-template-columns: repeat(2, 1fr) !important; 
+    grid-template-rows: auto;
+    gap: 12px;
+  }
+
+  /* Styling for the 4 small cards in the 2x2 grid */
+  .cs-list-item, .cs-split-sub-card {
+    flex-direction: column; /* Image on top, text below */
+    border-radius: 8px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+    border: 1px solid #e2e8f0;
+    height: 100%;
+  }
+
+  /* Ensures small card images are perfect cinematic rectangles */
+  .cs-list-item .cs-list-img, .cs-split-sub-card .cs-list-img {
+    width: 100%;
+    height: auto;
+    aspect-ratio: 16/9;
+    object-fit: cover;
+    margin: 0;
+    border-radius: 8px 8px 0 0;
+  }
+
+  .cs-list-content {
+    padding: 10px;
+    align-items: flex-start;
+  }
+
+  .cs-list-cat {
+    font-size: 10px;
+    padding: 3px 6px;
+    margin-bottom: 6px;
+  }
+
+  .cs-list-title {
+    font-size: 13px;
+    line-height: 1.4;
+    margin-bottom: 6px;
+    -webkit-line-clamp: 3; /* Allows up to 3 lines for the title */
+  }
+
+  .cs-card-time {
+    font-size: 11px;
+    margin-top: auto;
+  }
+
+  /* Styling for the Big Main Card */
+  .cs-img-wrap {
+    aspect-ratio: 16/9;
+    height: auto;
+  }
+  
+  .cs-dark-card img {
+    object-fit: cover;
+  }
+
+  .cs-card-body {
+    padding: 16px;
+  }
+
+  .cs-card-title {
+    font-size: 18px;
+    min-height: auto;
+  }
+  
+  .cs-card-sub {
+    font-size: 13px;
+  }
+  
   .cs-layout-grid-3, .cs-layout-grid-4 {
     grid-template-columns: 1fr;
   }
-  
-  /* On tablets/mobiles, change sidebar grid to single column or clean stack */
-  .cs-sidebar-col {
-    grid-template-columns: repeat(2, 1fr); 
-    grid-template-rows: auto;
-  }
 }
 
-@media (max-width: 480px) {
-  .cs-sidebar-col {
-    grid-template-columns: 1fr; 
-  }
-
-  .cs-split-sub-card { 
-    flex-direction: column; 
+/* 3. Small Mobile - 375px & 320px */
+@media (max-width: 375px) {
+  .cs-list-content {
+    padding: 8px;
   }
   
-  .cs-split-sub-card .cs-list-img { 
-    width: 100%; 
-    height: 180px; 
+  .cs-list-title {
+    font-size: 12px;
+  }
+  
+  .cs-list-cat {
+    font-size: 9px;
   }
 }

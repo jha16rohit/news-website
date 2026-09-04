@@ -292,6 +292,10 @@ const UserNavbar: React.FC = () => {
   // ── Logout ───────────────────────────────────────────────────
   const handleLogout = async () => {
     setIsProfileOpen(false);
+    
+    // 👇 EXPERT FIX: Destroy token on logout!
+    localStorage.removeItem("authToken");
+    
     await logout();
     navigate("/");
   };

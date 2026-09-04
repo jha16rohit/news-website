@@ -33,7 +33,9 @@ const UserLayout: React.FC = () => {
       {loginOpen && (
         <SignIn
           onClose={closeLogin}
-          onSuccess={(user) => {
+          onSuccess={(user, token) => {
+            // 👇 EXPERT FIX: Save Token to Local Storage as extra safeguard
+            localStorage.setItem("authToken", token);
             login(user);
           }}
         />

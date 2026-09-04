@@ -232,6 +232,9 @@ const UserProfile: React.FC = () => {
   };
 
   const handleLogout = async () => {
+    // 👇 EXPERT FIX: Destroy token on logout!
+    localStorage.removeItem("authToken");
+    
     await logoutUser().catch(() => {});
     navigate("/");
   };
