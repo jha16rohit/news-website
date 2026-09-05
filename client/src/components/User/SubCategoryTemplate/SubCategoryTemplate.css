@@ -274,7 +274,7 @@
     max-width: 95%;
   }
   .sct-grid {
-    grid-template-columns: repeat(3, 1fr);
+    grid-template-columns: repeat(2, 1fr);
     gap: 20px;
   }
   .sct-title {
@@ -285,7 +285,7 @@
 /* 3. Standard Tablet - 768px */
 @media (max-width: 768px) {
   .sct-grid {
-    grid-template-columns: repeat(2, 1fr); /* Drop to 2 columns for tablets */
+    grid-template-columns: repeat(1, 1fr); /* Drop to 2 columns for tablets */
     gap: 20px;
   }
   .sct-header-banner {
