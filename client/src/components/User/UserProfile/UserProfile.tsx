@@ -335,9 +335,27 @@ const UserProfile: React.FC = () => {
                   {analytics && analytics.categories.length > 0 ? (
                     <div className="up-r-interests">
                       <p className="up-r-interests-lbl">Top Read Categories</p>
-                      <div className="up-r-interests-tags">
+                      <div
+                        className="up-r-interests-tags"
+                        style={{ display: "flex", flexWrap: "wrap", gap: "8px", marginTop: "6px" }}
+                      >
                         {analytics.categories.slice(0, 3).map(c => (
-                          <span key={c.label} className="up-interest-tag">{c.label}</span>
+                          <span
+                            key={c.label}
+                            className="up-interest-tag"
+                            style={{
+                              display: "inline-block",
+                              padding: "4px 12px",
+                              borderRadius: "999px",
+                              background: "#f1f2f4",
+                              border: "1px solid #e0e2e6",
+                              color: "#333",
+                              fontSize: "13px",
+                              whiteSpace: "nowrap",
+                            }}
+                          >
+                            {c.label}
+                          </span>
                         ))}
                       </div>
                     </div>

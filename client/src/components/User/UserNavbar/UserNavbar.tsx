@@ -381,7 +381,7 @@ const UserNavbar: React.FC = () => {
 
   const handleProfileClick = () => {
     setIsProfileOpen(false);
-    window.open("/profile", "_blank", "noopener,noreferrer");
+    navigate("/profile");
   };
 
   const handleTagClick = (tagText: string) => {
