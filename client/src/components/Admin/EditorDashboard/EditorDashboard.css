@@ -148,7 +148,7 @@
   clear: none;
 }
 
-.section-header {
+.a-section-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -156,13 +156,13 @@
   margin-bottom: 18px;
 }
 
-.section-header h2 {
+.a-section-header h2 {
   margin: 0;
 
   color: #0f172a;
 }
 
-.section-header p {
+.a-section-header p {
   margin: 5px 0 0;
   font-size: 13px;
   color: #94a3b8;
@@ -657,7 +657,7 @@
     grid-template-columns: 1fr;
   }
 
-  .section-header {
+  .a-section-header {
     align-items: flex-start;
     flex-direction: column;
   }

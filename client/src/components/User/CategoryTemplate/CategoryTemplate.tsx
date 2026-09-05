@@ -84,7 +84,7 @@ function StackCard({ a }: CardProps) {
         <img src={a.img} alt={a.title} className="ct-stack__img" />
       </div>
       <div className="ct-stack__body">
-        <span className="ct-badge ct-badge--text">{a.category}</span>
+        <span className="ct-badge">{a.category}</span>
         <p className="ct-stack__title">{a.title}</p>
         <div className="ct-meta"><Clock size={12} /><span>{a.published}</span></div>
       </div>
@@ -258,7 +258,7 @@ export default function CategoryTemplate() {
   }));
 
   const hero = source[0];
-  const stacks = source.slice(1, 4);
+  const stacks = source.slice(1, 5); 
 
   const allGrid = [...source].sort(() => Math.random() - 0.5);
   const grid = allGrid.slice(0, visible);
@@ -307,20 +307,32 @@ export default function CategoryTemplate() {
                   <div className="ct-panel-line" style={{ background: color }} />
                 </div>
                 <ul className="ct-recent-list">
-                  {recentNews.slice(0, 5).map((item, index) => (
-                    <li key={`recent-${item.id ?? item._id ?? index}`} className="ct-recent-item">
-                      <div className="ct-recent-icon"><ChevronRight size={14} style={{ color }} /></div>
-                      <div>
-                        <p className="ct-recent-title">{item.shortTitle || item.headline}</p>
-                        <span className="ct-recent-date">{
-                          item.publishedAt
-                            ? new Date(item.publishedAt).toLocaleDateString()
-                            : "Recently"
-                        }</span>
-                      </div>
-                    </li>
-                  ))}
-                </ul>
+  {recentNews.slice(0, 5).map((item, index) => (
+    <li key={`recent-${item.id ?? item._id ?? index}`}>
+      <Link
+        to={`/article/${item.slug || item._id || item.id}`}
+        className="ct-recent-item"
+        style={{ textDecoration: "none", color: "inherit" }}
+      >
+        <div className="ct-recent-icon">
+          <ChevronRight size={14} style={{ color }} />
+        </div>
+
+        <div>
+          <p className="ct-recent-title">
+            {item.shortTitle || item.headline}
+          </p>
+
+          <span className="ct-recent-date">
+            {item.publishedAt
+              ? new Date(item.publishedAt).toLocaleDateString()
+              : "Recently"}
+          </span>
+        </div>
+      </Link>
+    </li>
+  ))}
+</ul>
               </aside>
             </div>
           </div>
@@ -366,11 +378,11 @@ export default function CategoryTemplate() {
 
               <aside className="ct-news-sidebar">
                 <WeatherWidget color={color} />
+                <CalendarWidget />
                 <Advertisement
                   adData={ads.cards[0] ?? null}
                   variant="card"
                 />
-                <CalendarWidget />
               </aside>
 
             </div>

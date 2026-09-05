@@ -913,11 +913,13 @@
   /* 👇 FULLSCREEN MOBILE NOTIFICATION FIX 👇 */
   .notif-panel {
     position: fixed;
-    top: 50px; /* Keeps the 50px Navbar entirely visible! */
-    left: 0; right: 0; bottom: 0;
-    width: 100vw; 
-    height: calc(100vh - 50px);
-    max-height: calc(100vh - 50px);
+    top: 85px; /* Safely clears the header and breaking bar */
+    left: 0; 
+    right: 0; 
+    bottom: 0; /* 👇 MAGIC FIX: Pins to the bottom of the screen automatically */
+    width: 100%; 
+    height: auto; /* 👇 MAGIC FIX: Kills the 100vh bug on different phone sizes */
+    max-height: none; 
     border-radius: 0;
     z-index: 9999;
     display: flex;
@@ -926,7 +928,7 @@
   
   .notif-header { padding: 30px 24px 20px; }
   .notif-title-main { font-size: 20px; }
-  .notif-list { flex: 1; max-height: none; }
+  .notif-list { flex: 1; max-height: none; overflow-y: auto; }
 }
 
 /* 4. Mobile L - 425px */
@@ -948,9 +950,9 @@
   .smp-submit-btn { height: 46px; width: 100%; }
 
   .notif-panel {
-    top: 70px; /* Adjusted for the slightly smaller navbar on mobile */
-    height: calc(100vh - 45px);
-    max-height: calc(100vh - 45px);
+    top: 75px; /* Adjusted snugly for the slightly smaller mobile navbar */
+    height: auto;
+    max-height: none;
   }
 }
 

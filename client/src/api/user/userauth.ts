@@ -1,6 +1,6 @@
 // client/src/api/userauth.ts
-// All API calls go to the real backend. No localStorage.
-// Components/context cache the returned user in React state / context.
+// All API calls go to the real backend. 
+// Uses localStorage to persist auth state across new tabs.
 
 import { apiClient, getAuthToken } from "../client";
 
@@ -25,6 +25,7 @@ export interface AuthResponse {
 }
 
 // ─────────────────────────────────────────────
+
 // TOKEN STORAGE
 // ─────────────────────────────────────────────
 // FIX: this used to be a plain in-memory variable (`_memoryToken`) that was
@@ -48,8 +49,7 @@ export function setMemoryToken(token: string | null): void {
       sessionStorage.removeItem(TOKEN_KEY);
     }
   } catch {
-    // sessionStorage unavailable (e.g. private browsing) -- fail silently,
-    // matching the existing try/catch pattern in client.ts's getAuthToken.
+    // sessionStorage unavailable -- fail silently.
   }
 }
 
