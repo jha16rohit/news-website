@@ -905,7 +905,7 @@
   .logo { width: 85px; height: 50px; }
   .navbar-logo-img { height: 90px; top: -40px; }
   .nav-actions { gap: 14px; }
-  .subscribe-btn { padding: 6px 14px; font-size: 13px; }
+  .subscribe-btn { display: none; }
   .ticker-text {  padding: 2px 0;}
   .breaking-label, .breaking-date { display: none; }
   .breaking-container { padding-left: 95px; } 

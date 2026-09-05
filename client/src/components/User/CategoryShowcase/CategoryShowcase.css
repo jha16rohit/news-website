@@ -24,7 +24,8 @@
   justify-content: space-between;
   align-items: center;
   margin-bottom: 25px;
-  border-bottom: 1px solid #e2e8f0;
+  margin-top: 25px;
+  /* border-bottom: 1px solid #e2e8f0; */
   padding-bottom: 12px;
 }
 
@@ -224,7 +225,7 @@
 
 .cs-list-item .cs-list-img, .cs-split-sub-card .cs-list-img {
   width: 100%; 
-  height: 140px; 
+  height: 170px; 
   object-fit: fill;
 }
 
@@ -274,7 +275,7 @@
 .cs-hero-col, .cs-split-col {
   flex: 1.4; 
   min-width: 0; 
-  border-right: 1px solid #e2e8f0; 
+  
   padding-right: 30px;
   display: flex;
   flex-direction: column;
@@ -294,7 +295,7 @@
 }
 
 .cs-sidebar-reversed {
-  border-right: 1px solid #e2e8f0; 
+  /* border-right: 1px solid #e2e8f0;  */
   padding-right: 30px;
 }
 
@@ -324,7 +325,7 @@
   .cs-hero-col, .cs-split-col, .cs-sidebar-reversed { 
     margin-bottom: 25px; 
     border-right: none; 
-    border-bottom: 2px solid #e2e8f0; 
+    /* border-bottom: 2px solid #e2e8f0;  */
     padding-right: 0;
     padding-bottom: 25px;
     width: 100%;

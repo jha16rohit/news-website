@@ -247,14 +247,14 @@ export default function CategoryTemplate() {
 
   const source: Article[] = categoryNews.map((a: any) => ({
     id: a._id,
-    title: a.shortTitle || a.headline,
+    title:  a.headline,
     subtitle: a.excerpt || "Read full article for more details.",
     category: a.categoryName || category?.name || "News",
     published: a.publishedAt
       ? new Date(a.publishedAt).toLocaleDateString()
       : "Recently",
     views: String(a.views || 0),
-    img: a.featuredImage || "https://images.unsplash.com/photo-1585829365295-ab7cd400c167?w=600&q=80",
+    img: a.featuredImage ,
   }));
 
   const hero = source[0];

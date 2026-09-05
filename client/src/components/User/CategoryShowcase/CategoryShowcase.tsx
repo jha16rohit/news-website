@@ -130,7 +130,7 @@ const CategoryShowcase: React.FC = () => {
                       className="cs-dark-card"
                     >
                       <div className="cs-img-wrap">
-                        <img src={displayArticles[0].img} alt="" />
+                        <img src={displayArticles[0].img}  />
                       </div>
                       <div className="cs-card-body">
                         <span className="cs-card-badge">
