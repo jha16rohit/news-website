@@ -1,8 +1,8 @@
 import React, { useRef, useEffect, useState } from "react";
 import { Clock, Eye, ChevronLeft, ChevronRight } from "lucide-react";
 import { Link } from "react-router-dom";
-import { getHomepageNews } from "../../../api/user/news";
-import { getTrendingTags } from "../../../api/user/tag";
+// import { getHomepageNews } from "../../../api/user/news";
+// import { getTrendingTags } from "../../../api/user/tag";
 import "./HomeHero.css";
 
 // Inline SVG placeholders — no network request, never fails, unlike
@@ -11,6 +11,11 @@ const PLACEHOLDER_IMG_LARGE =
   "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='1200' height='700'%3E%3Crect width='100%25' height='100%25' fill='%23e5e7eb'/%3E%3Ctext x='50%25' y='50%25' font-family='sans-serif' font-size='32' fill='%239ca3af' text-anchor='middle' dominant-baseline='middle'%3ENo Image%3C/text%3E%3C/svg%3E";
 const PLACEHOLDER_IMG_SMALL =
   "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='150'%3E%3Crect width='100%25' height='100%25' fill='%23e5e7eb'/%3E%3Ctext x='50%25' y='50%25' font-family='sans-serif' font-size='16' fill='%239ca3af' text-anchor='middle' dominant-baseline='middle'%3ENo Image%3C/text%3E%3C/svg%3E";
+
+  interface HeroSectionProps {
+  articles: Article[];
+  trendingTags: Tag[];
+}
 
 interface Article {
   id: string;
@@ -32,13 +37,16 @@ interface Tag {
   slug: string;
 }
 
-const HeroSection: React.FC = () => {
+const HeroSection: React.FC<HeroSectionProps> = ({
+  articles,
+  trendingTags,
+}) => {
   // Reference for the scrolling tags container
   const tagsScrollRef = useRef<HTMLDivElement>(null);
 
   // Backend Articles State
-  const [articles, setArticles] = useState<Article[]>([]);
-  const [trendingTags, setTrendingTags] = useState<Tag[]>([]);
+  // const [articles, setArticles] = useState<Article[]>([]);
+  // const [trendingTags, setTrendingTags] = useState<Tag[]>([]);
   
   // 👇 EXPERT FIX: State to track if tags are overflowing the screen
   const [isOverflowing, setIsOverflowing] = useState(false);
@@ -52,18 +60,18 @@ const HeroSection: React.FC = () => {
     }
   };
 
-  useEffect(() => {
-    const fetchTrendingTags = async () => {
-      try {
-        const tags = await getTrendingTags();
-        setTrendingTags(tags);
-      } catch (error) {
-        console.error("Failed to fetch trending tags:", error);
-      }
-    };
+  // useEffect(() => {
+  //   const fetchTrendingTags = async () => {
+  //     try {
+  //       const tags = await getTrendingTags();
+  //       setTrendingTags(tags);
+  //     } catch (error) {
+  //       console.error("Failed to fetch trending tags:", error);
+  //     }
+  //   };
 
-    fetchTrendingTags();
-  }, []);
+  //   fetchTrendingTags();
+  // }, []);
 
   // 👇 EXPERT FIX: Re-check overflow whenever tags load or window resizes
   useEffect(() => {
@@ -78,21 +86,21 @@ const HeroSection: React.FC = () => {
   }, [trendingTags]);
 
   // Fetch News From Backend
-  useEffect(() => {
-    const fetchNews = async () => {
-      try {
-        const data = await getHomepageNews();
+  // useEffect(() => {
+  //   const fetchNews = async () => {
+  //     try {
+  //       const data = await getHomepageNews();
 
-        if (data?.news) {
-          setArticles(data.news);
-        }
-      } catch (error) {
-        console.error("Failed to fetch news:", error);
-      }
-    };
+  //       if (data?.news) {
+  //         setArticles(data.news);
+  //       }
+  //     } catch (error) {
+  //       console.error("Failed to fetch news:", error);
+  //     }
+  //   };
 
-    fetchNews();
-  }, []);
+  //   fetchNews();
+  // }, []);
 
   // Featured Article
   const featuredArticle = articles[0];

@@ -1,10 +1,15 @@
-import { useEffect, useState } from "react";
+// import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { ArrowRight, Clock } from "lucide-react";
-import { getPublicCategories } from "../../../api/user/categoryNews";
-import { fetchAllNews } from "../../../api/news";
+// import { getPublicCategories } from "../../../api/user/categoryNews";
+// import { fetchAllNews } from "../../../api/news";
 import type { Category } from "../../../types/category";
 import "./CategoryShowcase.css";
+
+interface CategoryShowcaseProps {
+  categories: Category[];
+  articles: any[];
+}
 
 const slugOf = (text: string) =>
   text ? text.toLowerCase().replace(/\s+/g, "-") : "";
@@ -22,27 +27,30 @@ const LAYOUT_STYLES = [
   "grid-4",
 ];
 
-const CategoryShowcase: React.FC = () => {
-  const [categories, setCategories] = useState<Category[]>([]);
-  const [articles, setArticles] = useState<any[]>([]);
+const CategoryShowcase: React.FC<CategoryShowcaseProps> = ({
+  categories,
+  articles,
+}) => {
+  // const [categories, setCategories] = useState<Category[]>([]);
+  // const [articles, setArticles] = useState<any[]>([]);
 
-  useEffect(() => {
-    const fetchData = async () => {
-      try {
-        // Categories
-        const categoryData = await getPublicCategories();
-        setCategories(categoryData || []);
+  // useEffect(() => {
+  //   const fetchData = async () => {
+  //     try {
+  //       // Categories
+  //       const categoryData = await getPublicCategories();
+  //       setCategories(categoryData || []);
 
-        // News
-        const newsData = await fetchAllNews();
-        setArticles(newsData?.news || []);
-      } catch (error) {
-        console.error("Category showcase fetch error:", error);
-      }
-    };
+  //       // News
+  //       const newsData = await fetchAllNews();
+  //       setArticles(newsData?.news || []);
+  //     } catch (error) {
+  //       console.error("Category showcase fetch error:", error);
+  //     }
+  //   };
 
-    fetchData();
-  }, []);
+  //   fetchData();
+  // }, []);
 
   const showcaseCategories = categories.filter(
     (c) => c.inShowcase && c.enabled,

@@ -500,7 +500,9 @@
     line-height: 1.45;
     margin-bottom: 10px;
     -webkit-line-clamp: 3;
-    line-clamp: 3; /* Allows up to 3 lines of text so it fills the card nicely */
+    line-clamp: 3;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
   }
 
   .trending-time {

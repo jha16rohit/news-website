@@ -167,7 +167,6 @@
 /* 👇 EXPERT FIX: 4 Stacked Horizontal Cards */
 .ct-stacks {
   display: grid;
-  grid-template-rows: repeat(4, 1fr); /* Forces exactly 4 stacked rows */
   gap: 12px; 
   height: 100%;
 }

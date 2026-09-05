@@ -376,7 +376,7 @@
     font-size: 13px;
     line-height: 1.4;
     margin-bottom: 6px;
-    -webkit-line-clamp: 3; /* Allows up to 3 lines for the title */
+   
   }
 
   .cs-card-time {

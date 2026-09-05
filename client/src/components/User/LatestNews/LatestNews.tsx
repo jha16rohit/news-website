@@ -1,42 +1,46 @@
-import React, { useState,useEffect } from "react"; // 👇 FIX: Added useEffect here!
+import React, { useState } from "react"; // 👇 FIX: Added useEffect here!
 import { Clock} from "lucide-react"; 
 import { Link } from "react-router-dom";
 import "./LatestNews.css";
-import { getTrendingNews } from "../../../api/user/trendingNews";
+// import { getTrendingNews } from "../../../api/user/trendingNews";
 
-const LatestNews: React.FC = () => {
+interface LatestNewsProps {
+  newsData: any[];
+}
+
+const LatestNews: React.FC<LatestNewsProps> = ({ newsData }) => {
   const [showAll, setShowAll] = useState(false);
 
 
 
-  const [newsData, setNewsData] = useState<any[]>([]);
+  // const [newsData, setNewsData] = useState<any[]>([]);
 
-  useEffect(() => {
-  const fetchNews = async () => {
-    try {
-      const response =
-        await getTrendingNews();
+//   useEffect(() => {
+//   const fetchNews = async () => {
+//     try {
+//       const response =
+//         await getTrendingNews();
 
-      setNewsData(
-        response.news || []
-      );
-    } catch (error) {
-      console.error(error);
-    }
-  };
+//       setNewsData(
+//         response.news || []
+//       );
+//     } catch (error) {
+//       console.error(error);
+//     }
+//   };
 
-  fetchNews();
+//   fetchNews();
 
-  const interval =
-    setInterval(
-      fetchNews,
-      60 * 60 * 1000
-    ); // 1 hour
+//   const interval =
+//     setInterval(
+//       fetchNews,
+//       60 * 60 * 1000
+//     ); // 1 hour
 
-  return () =>
-    clearInterval(interval);
+//   return () =>
+//     clearInterval(interval);
 
-}, []);
+// }, []);
 
   const visibleArticles = showAll ? newsData : newsData.slice(0, 6);
 

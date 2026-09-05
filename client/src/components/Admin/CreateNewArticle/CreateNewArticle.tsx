@@ -19,6 +19,7 @@ import {
   FileText, Tag, MapPin, User, Trash2, Search, X, CalendarClock,
   Plus, TrendingUp,
 } from "lucide-react";
+import Preloader from "../Preloader/Preloder";
 
 interface Category {
   id: string | number;
@@ -1417,12 +1418,10 @@ const canSchedule =
 
   if (loadingArticle) {
     return (
-      <div className="cna-root" style={{ display: "flex", alignItems: "center", justifyContent: "center", minHeight: 300 }}>
-        <div style={{ textAlign: "center", color: "#94a3b8" }}>
-          <div style={{ fontSize: 32, marginBottom: 12 }}>⏳</div>
-          <p>Loading article…</p>
-        </div>
-      </div>
+      <>
+      <Preloader />
+        
+      </>
     );
   }
 
@@ -1493,8 +1492,8 @@ const canSchedule =
 )}
 
       {isEdit && (
-        <div style={{ background: "#eff6ff", border: "1px solid #bfdbfe", color: "#1d4ed8", borderRadius: 10, padding: "10px 16px", marginBottom: 16, fontSize: 14, display: "flex", alignItems: "center", gap: 8 }}>
-          ✏️ <span>Editing an existing article — changes will be saved to the database on publish or save draft.</span>
+        <div style={{ background: "#eff6ff", border: "1px solid #bfdbfe", color: "#1d4ed8", borderRadius: 10, padding: "20px 16px 20px 16px", marginTop: "16px", fontSize: 14, display: "flex", alignItems: "center", gap: 8 }}>
+           <span>Editing an existing article — changes will be saved to the database on publish or save draft.</span>
         </div>
       )}
 
