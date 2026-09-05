@@ -1,6 +1,6 @@
 import "./AdminSidebar.css";
 import type { ReactNode } from "react";
-import { useEffect, useState } from "react";
+
 import { useNavigate, useLocation } from "react-router-dom";
 import Logo from "../../../assets/Logo.png";
 import { X, Newspaper } from "lucide-react";
@@ -26,13 +26,6 @@ import {
 } from "react-icons/fa";
 import { MdWifiTethering, MdNotifications, MdFolder } from "react-icons/md";
 
-import { getMe } from "../../../api/auth";
-
-interface AdminSidebarProps {
-  open: boolean;
-  onClose: () => void;
-}
-
 interface AuthUser {
   id: string;
   userId?: string;
@@ -42,12 +35,19 @@ interface AuthUser {
   permissions?: string[];
 }
 
-const AdminSidebar: React.FC<AdminSidebarProps> = ({ open, onClose }) => {
+interface AdminSidebarProps {
+  open: boolean;
+  onClose: () => void;
+  user: AuthUser | null;
+}
+
+const AdminSidebar: React.FC<AdminSidebarProps> = ({
+  open,
+  onClose,
+  user,
+}) => {
   const navigate = useNavigate();
   const location = useLocation();
-
-const [user, setUser] = useState<AuthUser | null>(null);
-const [userLoading, setUserLoading] = useState(true);
 
   const isActive = (path: string) => location.pathname === path;
 
@@ -55,22 +55,6 @@ const [userLoading, setUserLoading] = useState(true);
     navigate(path);
     onClose();
   };
-
-  // Get logged-in user from backend
-useEffect(() => {
-  const loadUser = async () => {
-    try {
-      const res = await getMe();
-      setUser(res.user);
-    } catch {
-      setUser(null);
-    } finally {
-      setUserLoading(false);
-    }
-  };
-
-  loadUser();
-}, []);
 
   const isEditor = user?.role === "EDITOR";
 
@@ -82,10 +66,6 @@ useEffect(() => {
 
   // Editor sidebar routes
   const editorPath = (path: string) => `/editor/${path}`;
-
-  if (userLoading) {
-  return null;
-}
 
   return (
     <>
@@ -270,7 +250,6 @@ useEffect(() => {
           {/* ==================== EDITOR SIDEBAR ==================== */}
           {isEditor && (
             <>
-              {/* Editor Dashboard is always available */}
               <SidebarItem
                 icon={<FaTachometerAlt />}
                 label="Dashboard"
@@ -414,13 +393,13 @@ useEffect(() => {
                   onClick={() => go(editorPath("contact-manager"))}
                 />
               )}
-<SidebarItem
-  icon={<FaCog />}
-  label="Settings"
-  active={isActive("/editor/settings")}
-  onClick={() => go("/editor/settings")}
-/>
 
+              <SidebarItem
+                icon={<FaCog />}
+                label="Settings"
+                active={isActive("/editor/settings")}
+                onClick={() => go("/editor/settings")}
+              />
             </>
           )}
         </nav>

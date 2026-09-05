@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
-import { Mail, ChevronRight, TrendingUp, Youtube } from "lucide-react";
-import { FaXTwitter, FaFacebookF, FaInstagram, FaWhatsapp } from "react-icons/fa6";
+import { Mail, ChevronRight, TrendingUp, /*Youtube*/ } from "lucide-react";
+// import { FaXTwitter, FaFacebookF, FaInstagram, FaWhatsapp } from "react-icons/fa6";
 import logo from "../../../assets/Logo.png";
 import "./UserFooter.css";
 import { getPublicCategories } from "../../../api/user/categoryNews";
@@ -264,7 +264,7 @@ const Footer: React.FC = () => {
               </div>
               <p className="f-trusted-text">{footerData.trustedText}</p>
 
-              <div className="f-socials">
+              {/* <div className="f-socials">
                 <span className="f-social-title">Follow Us</span>
                 <div className="f-social-icons">
                   <a href="#" className="s-icon fb" aria-label="Facebook"><FaFacebookF size={15} /></a>
@@ -273,7 +273,7 @@ const Footer: React.FC = () => {
                   <a href="#" className="s-icon ig" aria-label="Instagram"><FaInstagram size={15} /></a>
                   <a href="#" className="s-icon wa" aria-label="WhatsApp"><FaWhatsapp size={15} /></a>
                 </div>
-              </div>
+              </div> */}
             </div>
 
             {/* Dynamic Categories */}
@@ -307,9 +307,13 @@ const Footer: React.FC = () => {
 
             {/* Trending Topics */}
             <div className="f-col">
-              <h3 className="f-heading">TRENDING TOPICS</h3>
+              
               {displayTags.length > 0 ? (
+                <div>
+                  <h3 className="f-heading">TRENDING TOPICS</h3>
+
                 <div className="f-trending-grid">
+                  
                   {displayTags.map((tag: any) => (
                     <Link key={tag.id ?? tag._id} to={`/tag/${tag.slug}`} className="f-trending-tag">
                       <span>#{tag.name}</span>
@@ -317,8 +321,9 @@ const Footer: React.FC = () => {
                     </Link>
                   ))}
                 </div>
+                </div>
               ) : (
-                <p className="f-trending-empty">No trending topics yet.</p>
+                <p className="f-trending-empty"></p>
               )}
             </div>
 

@@ -895,6 +895,7 @@ const CreateNewArticle: React.FC = () => {
   const [savedRange,        setSavedRange]        = useState<Range | null>(null);
   const [submitError,       setSubmitError]       = useState<string | null>(null);
   const [isSubmitting,      setIsSubmitting]      = useState(false);
+  const [isSavingDraft, setIsSavingDraft] = useState(false);
   const [currentUser, setCurrentUser] = useState<{
   role: "ADMIN" | "EDITOR";
   permissions: string[];
@@ -945,11 +946,31 @@ const canSchedule =
 
   const editorRef    = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const publishButtonRef = useRef<HTMLButtonElement>(null);
+  const publishSentinelRef = useRef<HTMLDivElement>(null);
+
 
   const [dbTags,          setDbTags]          = useState<TagType[]>([]);
   const [trendingDbTags,  setTrendingDbTags]  = useState<TagType[]>([]);
   const [tagDropdown,     setTagDropdown]     = useState<string[]>([]);
   const [tagDropdownOpen, setTagDropdownOpen] = useState(false);
+  const [showFloatingPublish, setShowFloatingPublish] = useState(false);
+
+  useEffect(() => {
+  const sentinel = publishSentinelRef.current;
+  if (!sentinel) return;
+
+  const observer = new IntersectionObserver(
+    ([entry]) => {
+      setShowFloatingPublish(!entry.isIntersecting);
+    },
+    { threshold: 0 }
+  );
+
+  observer.observe(sentinel);
+
+  return () => observer.disconnect();
+}, []);
 
   useEffect(() => {
     Promise.all([getAllTags(), getTrendingTags()])
@@ -1030,6 +1051,22 @@ const canSchedule =
       })
       .finally(() => setLoadingArticle(false));
   }, [editId, isEdit]);
+
+  useEffect(() => {
+  const button = publishButtonRef.current;
+  if (!button) return;
+
+  const observer = new IntersectionObserver(
+    ([entry]) => {
+      setShowFloatingPublish(!entry.isIntersecting);
+    },
+    { threshold: 0 }
+  );
+
+  observer.observe(button);
+
+  return () => observer.disconnect();
+}, []);
 
   // ─── Draft autosave / restore-on-refresh ─────────────────────────────────
   // Keyed by the article being edited (or by "new + article type" when
@@ -1274,7 +1311,7 @@ const canSchedule =
   const handleSaveDraft = async () => {
     setSubmitError(null);
     if (!validate()) return;
-    setIsSubmitting(true);
+    setIsSavingDraft(true);
 
     try {
       const payload = buildPayload("DRAFT");
@@ -1311,7 +1348,7 @@ const canSchedule =
     } catch (err: any) {
       setSubmitError(err?.message || "Failed to save draft. Please try again.");
     } finally {
-      setIsSubmitting(false);
+      setIsSavingDraft(false);
     }
   };
 
@@ -1395,6 +1432,11 @@ const canSchedule =
 
   return (
     <div className="cna-root">
+      <div
+  ref={publishSentinelRef}
+  className="cna-publish-sentinel"
+  aria-hidden="true"
+/>
       <header className="cna-header">
         <div className="cna-header-left">
           <div className="cna-title-group">
@@ -1420,13 +1462,13 @@ const canSchedule =
     </button>
 
     <button
-      className="cna-btn cna-btn-secondary"
-      disabled={isSubmitting}
-      onClick={handleSaveDraft}
-    >
-      <FileText size={15} />
-      {isSubmitting ? "Saving…" : "Save Draft"}
-    </button>
+  className="cna-btn cna-btn-secondary"
+  disabled={isSavingDraft || isSubmitting}
+  onClick={handleSaveDraft}
+>
+  <FileText size={15} />
+  {isSavingDraft ? "Saving…" : "Save Draft"}
+</button>
   </>
 )}
           <button className="cna-btn cna-btn-primary" disabled={isSubmitting}
@@ -1435,6 +1477,20 @@ const canSchedule =
           </button>
         </div>
       </header>
+{showFloatingPublish && (
+  <button
+    className="cna-floating-publish-btn"
+    disabled={isSubmitting}
+    onClick={handlePublish}
+  >
+    <Rocket size={15} />
+    {isSubmitting
+      ? "Saving…"
+      : isEdit
+        ? "Update & Publish"
+        : "Publish Now"}
+  </button>
+)}
 
       {isEdit && (
         <div style={{ background: "#eff6ff", border: "1px solid #bfdbfe", color: "#1d4ed8", borderRadius: 10, padding: "10px 16px", marginBottom: 16, fontSize: 14, display: "flex", alignItems: "center", gap: 8 }}>

@@ -77,7 +77,7 @@
 /* ── STATS ──────────────────────────────────────────────────── */
 .tags-stats {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
+  grid-template-columns: repeat(3, 1fr);
   gap: 16px;
   margin-bottom: 24px;
 }
@@ -792,10 +792,13 @@
     grid-template-columns: 1fr;
   }
 
-  .tags-left-col {
+  /* .tags-left-col {
     display: grid;
     grid-template-columns: 1fr 1fr;
     gap: 16px;
+  } */
+  .tags-popular{
+    width: 100%;
   }
 
   .tags-stats {

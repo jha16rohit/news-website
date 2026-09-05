@@ -8,17 +8,30 @@ import Preloader from "../Preloader/Preloder";
 const SIDEBAR_WIDTH = 260;
 const TOPBAR_HEIGHT = 60;
 
+interface AuthUser {
+  id: string;
+  userId?: string;
+  name: string;
+  email: string;
+  role: "ADMIN" | "EDITOR";
+  permissions?: string[];
+}
+
 const AdminLayout = () => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [loading, setLoading] = useState(true);
   const [authenticated, setAuthenticated] = useState(false);
+  const [user, setUser] = useState<AuthUser | null>(null);
 
   useEffect(() => {
     const verifyUser = async () => {
       try {
-        await getMe();
+        const res = await getMe();
+
+        setUser(res.user);
         setAuthenticated(true);
       } catch (error) {
+        setUser(null);
         setAuthenticated(false);
       } finally {
         setLoading(false);
@@ -47,6 +60,7 @@ const AdminLayout = () => {
       <AdminSidebar
         open={sidebarOpen}
         onClose={() => setSidebarOpen(false)}
+        user={user}
       />
 
       <div

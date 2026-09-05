@@ -694,7 +694,7 @@ export default function AdvertisementManager() {
                 <div className="adm-table-card">
                   <table className="adm-data-table">
                     <thead>
-                      <tr><th>Advertiser</th><th>Contact</th><th>Format</th><th>Target Page</th><th>Submitted</th></tr>
+                      <tr><th>Advertiser</th><th>Contact</th><th>Format</th><th>Submitted</th></tr>
                     </thead>
                     <tbody>
                       {pendingPageItems.map(iq => (
@@ -702,7 +702,7 @@ export default function AdvertisementManager() {
                           <td><div className="adm-row-name">{iq.company || iq.name}</div><div className="adm-row-sub">{iq.name}</div></td>
                           <td><div className="adm-row-sub">{iq.email}</div><div className="adm-row-sub">{iq.phone}</div></td>
                           <td className="adm-td-cap">{iq.adType === "card" ? "Card" : "Strip"}</td>
-                          <td>{PAGE_LABEL[iq.targetPage] || iq.targetPage}</td>
+                          
                           <td className="adm-row-sub">{fmtDate(iq.submittedAt)}</td>
                         </tr>
                       ))}

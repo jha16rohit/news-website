@@ -532,23 +532,27 @@ break;
   };
 
   const [deleteModeChoice, setDeleteModeChoice] = useState<"instant" | "interval">("instant");
+  const [deleting, setDeleting] = useState(false);
 
-  const confirmDelete = async () => {
-    if (!deleteModal) return;
-    try {
-  await apiDeleteNews(deleteModal, {
-    deleteMode: deleteModeChoice,
-    deleteIntervalDays: 14,
-  });
+const confirmDelete = async () => {
+  if (!deleteModal || deleting) return;
 
-  await loadData(activeType, search);
+  setDeleting(true);
 
-} catch (err) {
-  console.error("Delete failed:", err);
-}
+  try {
+    await apiDeleteNews(deleteModal, {
+      deleteMode: deleteModeChoice,
+      deleteIntervalDays: 14,
+    });
 
-setDeleteModal(null);
-  };
+    await loadData(activeType, search);
+    setDeleteModal(null);
+  } catch (err) {
+    console.error("Delete failed:", err);
+  } finally {
+    setDeleting(false);
+  }
+};
 
   // ── Bulk actions ──────────────────────────────────────────────────────────
   const handleBulkPublish = async () => {
@@ -904,7 +908,20 @@ onDragEnd={() => {
             </div>
             <div className="modal-actions">
               <button className="modal-cancel" onClick={() => setDeleteModal(null)}>Cancel</button>
-              <button className="modal-confirm" onClick={confirmDelete}>Yes, Delete</button>
+              <button
+  className="modal-confirm"
+  onClick={confirmDelete}
+  disabled={deleting}
+>
+  {deleting ? (
+    <>
+      <span className="delete-spinner" />
+      Deleting...
+    </>
+  ) : (
+    "Yes, Delete"
+  )}
+</button>
             </div>
           </div>
         </div>
