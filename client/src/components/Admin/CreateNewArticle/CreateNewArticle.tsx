@@ -11,6 +11,7 @@ import {
   type Tag as TagType,
 } from "../../../api/tags.api";
 import { getMe } from "../../../api/auth";
+import { getTopicProfiles } from "../../../api/user/topicProfile";
 
 import {
   Bold, Italic, Underline, Heading1, Heading2, List, ListOrdered,
@@ -222,10 +223,25 @@ interface TopicProfile {
 
 async function fetchTopicProfiles(): Promise<TopicProfile[]> {
   try {
-    const res = await fetch("http://localhost:5001/api/topic-profiles", { credentials: "include" });
-    if (!res.ok) return [];
-    return await res.json();
-  } catch { return []; }
+    // Reuse the app's apiClient so this hits the correct API base URL and
+    // carries the same auth headers as every other admin request — the old
+    // code used a hardcoded "http://localhost:5001" fetch with no auth
+    // header, which 401'd against the protected endpoint and silently
+    // returned an empty list.
+    const data = await getTopicProfiles();
+    const list: any[] = Array.isArray(data) ? data : [];
+
+    return list.map((p) => ({
+      id: p.id ?? p._id,
+      name: p.name,
+      slug: p.slug,
+      caption: p.caption,
+      description: p.description,
+      imageUrl: p.imageUrl,
+    }));
+  } catch {
+    return [];
+  }
 }
 
 function saveSelection(): Range | null {
@@ -1203,12 +1219,16 @@ const canSchedule =
     const apiType = toApiArticleType();
     return {
       headline:   headline.trim(),
-      shortTitle: shortTitle.trim() || undefined,
-      excerpt:    summary.trim()    || undefined,
+      // NOTE: send the real value (even "") rather than `undefined` here.
+      // `undefined` keys are dropped by JSON.stringify, so on update the
+      // backend's `if (field !== undefined)` guard never sees them and the
+      // old value survives — this is what made "clear + save" a no-op.
+      shortTitle: shortTitle.trim(),
+      excerpt:    summary.trim(),
       content:    editorRef.current?.innerHTML ?? content,
       categoryId,
       language:   language || "hindi",
-      location:    articleLocation || undefined,
+      location:    articleLocation.trim(),
       tags,
       slug:       urlSlug,
       articleType: apiType,
@@ -1217,11 +1237,11 @@ const canSchedule =
       breakingHomepageAlert: apiType === "BREAKING" ? breakingToggles.homepageAlert    : undefined,
       liveUpdates: apiType === "LIVE" ? liveUpdates : undefined,
       featuredImage: mediaFile ? undefined : (mediaPreview && !mediaPreview.startsWith("blob:") ? mediaPreview : undefined),
-      imageCaption:  imageCaption   || undefined,
-      photoCredit:   photoCredit    || undefined,
-      metaTitle:       metaTitle      || undefined,
-      metaDescription: metaDesc       || undefined,
-      focusKeywords:   focusKeywords  || undefined,
+      imageCaption:  imageCaption.trim(),
+      photoCredit:   photoCredit.trim(),
+      metaTitle:       metaTitle.trim(),
+      metaDescription: metaDesc.trim(),
+      focusKeywords:   focusKeywords.trim(),
       canonicalUrl:    urlSlug ? `https://yournewssite.com/news/${urlSlug}` : undefined,
       keywords: focusKeywords ? focusKeywords.split(",").map(k => k.trim()).filter(Boolean) : [],
       status,
