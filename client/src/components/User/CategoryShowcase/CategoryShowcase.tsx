@@ -86,7 +86,7 @@ const CategoryShowcase: React.FC<CategoryShowcaseProps> = ({
             // Always resolve to a usable src — never an empty string.
             // img: a.featuredImage || a.imageUrl || a.img || PLACEHOLDER_IMG,
 
-            img: a.featuredImage || a.imageUrl || a.img || "",
+            img: a.featuredImage || a.imageUrl || a.img || "https://placehold.co/400x225/e2e8f0/64748b?text=No+Image",
 
             category:
               a?.categoryId?.name || a?.categoryName || a?.category || "News",
@@ -160,7 +160,7 @@ const CategoryShowcase: React.FC<CategoryShowcaseProps> = ({
                         key={article.id || i}
                         className="cs-list-item"
                       >
-                        <img src={article.img} alt="" className="cs-list-img" />
+                        <img src={article.img} className="cs-list-img" />
                         <div className="cs-list-content">
                           <span className="cs-list-cat">
                             {article.category}

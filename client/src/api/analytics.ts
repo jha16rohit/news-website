@@ -5,6 +5,7 @@
 // and session cookies are included correctly.
 const BASE        = "/api/admin/analytics";
 const PUBLIC_BASE = "/api/analytics";
+
 // Use the JWT stored in this browser tab. This keeps Admin and Editor sessions
 // independent when both panels are open at the same time.
 function getAuthHeaders(): Record<string, string> {
@@ -19,7 +20,6 @@ async function authFetch(input: RequestInfo | URL, init: RequestInit = {}) {
     credentials: "include",
   });
 }
-
 
 // ── Admin API helpers ─────────────────────────────────────────
 
@@ -69,6 +69,17 @@ let _emailFetched = false;
 
 async function getLoggedInEmail(): Promise<string | null> {
   if (_emailFetched) return _cachedEmail;
+  
+  // 👇 EXPERT FIX: Check for a token FIRST. 
+  // If there is no token (Guest), we instantly return null and skip the fetch entirely.
+  // This completely stops the 401 Unauthorized red console errors!
+  const headers = getAuthHeaders();
+  if (!headers.Authorization) {
+    _cachedEmail = null;
+    _emailFetched = true;
+    return null;
+  }
+
   try {
     const res = await authFetch("/api/auth/me");
     if (!res.ok) { _cachedEmail = null; _emailFetched = true; return null; }
@@ -150,7 +161,6 @@ export function trackReadTime(newsId: string, viewId: string, seconds: number): 
     }
   } catch { /* fire-and-forget */ }
 }
-
 
 // ── Editor analytics ────────────────────────────────────────────────────────
 
