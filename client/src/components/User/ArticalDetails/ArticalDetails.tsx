@@ -1189,10 +1189,6 @@ setAds(adResponse);
             </div>
           )}
 
-          <Advertisement
-  adData={ads.cards[0] ?? null}
-  variant="card"
-/>
 
           {/* ── SIDEBAR ── */}
         <aside className="ad-sidebar ad-abc">
@@ -1242,7 +1238,10 @@ setAds(adResponse);
                 </div>
               </div>
             )}
-
+          <Advertisement
+  adData={ads.cards[0] ?? null}
+  variant="card"
+/>
           {/* 👆 END OF STICKY WRAPPER 👆 */}
 
         </aside>

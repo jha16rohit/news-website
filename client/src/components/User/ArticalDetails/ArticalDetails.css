@@ -1326,29 +1326,28 @@
 
 /* 2. Laptop & Tablet (Side-by-Side Grid) - 1024px to 641px */
 @media (max-width: 1024px) {
-  /* 👇 EXPERT FIX: Changed align-items to stretch so children span the full width */
   .ad-container { flex-direction: column; gap: 40px; align-items: stretch; }
   
-  /* 👇 EXPERT FIX: Forces main content to strictly respect the screen boundary! */
   .ad-main-content {
     width: 100%;
     max-width: 100%;
     box-sizing: border-box;
   }
 
+  /* 👇 EXPERT FIX: Changed to flex-column so all widgets stack full-width one below the other! */
   .ad-sidebar {
     width: 100%;
-    display: grid;
-    grid-template-columns: repeat(2, 1fr);
+    display: flex;
+    flex-direction: column;
     gap: 24px;
     box-sizing: border-box;
   }
 
+  /* 👇 EXPERT FIX: Stacked the sticky widget container as well */
   .ad-sticky-widget {
     position: static;
-    grid-column: 1 / -1; 
-    display: grid;
-    grid-template-columns: repeat(2, 1fr);
+    display: flex;
+    flex-direction: column;
     gap: 24px;
   }
   
