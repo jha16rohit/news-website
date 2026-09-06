@@ -21,9 +21,8 @@ const slugOf = (text: string) =>
 
 const LAYOUT_STYLES = [
   "hero-sidebar",
-  "split-sidebar",
-  "hero-reversed",
   "grid-3",
+  "split-sidebar",
   "grid-4",
 ];
 
@@ -84,10 +83,8 @@ const CategoryShowcase: React.FC<CategoryShowcaseProps> = ({
             title: a.headline || a.title || "Untitled News",
             subtitle: a.excerpt || a.shortTitle || "Read full story",
 
-
             // Always resolve to a usable src — never an empty string.
             // img: a.featuredImage || a.imageUrl || a.img || PLACEHOLDER_IMG,
-
 
             img: a.featuredImage || a.imageUrl || a.img || "",
 
@@ -138,7 +135,7 @@ const CategoryShowcase: React.FC<CategoryShowcaseProps> = ({
                       className="cs-dark-card"
                     >
                       <div className="cs-img-wrap">
-                        <img src={displayArticles[0].img}  />
+                        <img src={displayArticles[0].img} />
                       </div>
                       <div className="cs-card-body">
                         <span className="cs-card-badge">
@@ -325,7 +322,6 @@ const CategoryShowcase: React.FC<CategoryShowcaseProps> = ({
                 </>
               )}
 
-
               {/* LAYOUT 4: 4-COLUMN GRID */}
               {layout === "grid-4" &&
                 displayArticles.slice(0, 8).map((article, i) => (
@@ -349,57 +345,6 @@ const CategoryShowcase: React.FC<CategoryShowcaseProps> = ({
                     </div>
                   </Link>
                 ))}
-
-              {/* LAYOUT 2: SPLIT + SIDEBAR */}
-              {layout === "split-sidebar" && (
-                <>
-                  <div className="cs-split-col">
-                    <Link
-                      to={`/article/${displayArticles[0].id}`}
-                      className="cs-dark-card"
-                    >
-                      <div className="cs-img-wrap">
-                        <img src={displayArticles[0].img} alt="" />
-                      </div>
-                      <div className="cs-card-body">
-                        <span className="cs-card-badge">
-                          {displayArticles[0].category}
-                        </span>
-                        <h3 className="cs-card-title">
-                          {displayArticles[0].title}
-                        </h3>
-                        <p className="cs-card-sub">
-                          {displayArticles[0].subtitle}
-                        </p>
-                        <div className="cs-card-time">
-                          <Clock size={14} /> {displayArticles[0].time}
-                        </div>
-                      </div>
-                    </Link>
-                  </div>
-                  <div className="cs-sidebar-col">
-                    {displayArticles.slice(2, 6).map((article, i) => (
-                      <Link
-                        to={`/article/${article.id}`}
-                        key={article.id || i}
-                        className="cs-list-item"
-                      >
-                        <img src={article.img} alt="" className="cs-list-img" />
-                        <div className="cs-list-content">
-                          <span className="cs-list-cat">
-                            {article.category}
-                          </span>
-                          <h4 className="cs-list-title">{article.title}</h4>
-                          <div className="cs-card-time">
-                            <Clock size={14} /> {article.time}
-                          </div>
-                        </div>
-                      </Link>
-                    ))}
-                  </div>
-                </>
-              )}
-
             </div>
           </section>
         );

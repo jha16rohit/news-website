@@ -2,7 +2,7 @@
 .hero-section {
   padding: 15px 0px 40px 0;
   width: 100%;
- background: #ffff;
+  background: #ffffff;
 }
 
 .hero-container {
@@ -14,7 +14,9 @@
   gap: 15px;
 }
 
-/* ===== TOP ROW ===== */
+/* ========================================= */
+/* ===== TOP ROW (LAPTOP BASE STYLES) ===== */
+/* ========================================= */
 .hero-top-row {
   display: flex;
   gap: 30px;
@@ -40,12 +42,10 @@
   position: absolute;
   top: 0; left: 0;
   width: 100%; height: 100%;
-  object-fit: fill;
+  object-fit: cover; /* 'cover' guarantees the image NEVER squishes */
   z-index: 1;
   transition: transform 0.6s ease; 
 }
-
-
 
 .featured-overlay {
   position: relative; 
@@ -59,7 +59,7 @@
 }
 
 .category-badge {
-  font-family: var(--font-body); /* 👇 EXPERT FIX: Applied body font */
+  font-family: var(--font-body);
   display: inline-block;
   padding: 5px 14px;
   border-radius: 20px;
@@ -73,16 +73,16 @@
 .category-badge.politics { background-color: #e60000; color: white; }
 
 .featured-title {
-  font-family: Noto Sans Devanagari; /* 👇 EXPERT FIX: Applied heading font */
+  font-family: Noto Sans Devanagari; 
   font-size: 33px;
-  font-weight: 600; /* 👇 EXPERT FIX: Changed to 400 for Rozha One */
+  font-weight: 600; 
   line-height: 1.25;
   margin: 0 0 12px 0;
   text-shadow: 0 2px 4px rgba(0,0,0,0.3);
 }
 
 .featured-excerpt {
-  font-family: Noto Sans Devanagari; /* 👇 EXPERT FIX: Applied body font */
+  font-family: Noto Sans Devanagari; 
   font-size: 15px;
   line-height: 1.6;
   color: rgba(255, 255, 255, 0.85);
@@ -96,7 +96,7 @@
 }
 
 .featured-meta {
-  font-family: var(--font-body); /* 👇 EXPERT FIX: Applied body font */
+  font-family: var(--font-body); 
   display: flex;
   gap: 20px;
   font-size: 13px;
@@ -115,19 +115,22 @@
 
 .section-header {
   margin-bottom: 16px;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start; /* Locks red line perfectly to the left */
 }
 
 .section-header h2 {
-  font-family: var(--font-heading); /* 👇 EXPERT FIX: Applied heading font */
+  font-family: var(--font-heading); 
   font-size: 22px;
-  font-weight: 400; /* 👇 EXPERT FIX: Changed to 400 for Rozha One */
+  font-weight: 400; 
   color: #0b1423;
   margin: 0 0 8px 0;
 }
 
 .header-underline {
-  height: 3px;
-  width: 40px;
+  height: 4px;
+  width: 50px;
   background-color: #e60000;
   border-radius: 2px;
 }
@@ -135,27 +138,32 @@
 .trending-list {
   display: flex;
   flex-direction: column;
-  gap: 8px; 
+  gap: 12px; 
 }
 
 .trending-card {
   display: flex;
   flex-direction: row;
   gap: 14px;
-  background-color: transparent; 
-  padding: 8px; 
+  background-color: #ffffff;
+  padding: 10px; 
   border-radius: 8px;
   border: 1px solid #e2e8f0;
-  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.08);
-  transition: background-color 0.2s ease, transform 0.2s ease;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.03);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
   cursor: pointer;
+}
+
+.trending-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.08);
 }
 
 .trending-img {
   width: 140px;  
   height: 100px; 
   border-radius: 6px;
-  object-fit: fill;
+  object-fit: cover;
   flex-shrink: 0;
 }
 
@@ -163,7 +171,8 @@
   display: flex; 
   flex-direction: column; 
   justify-content: center;
-  flex: 1; 
+  flex: 1;
+  min-width: 0; /* allows text to wrap/clamp instead of forcing overflow on narrow flex children */
 }
 
 .trending-info-header {
@@ -174,7 +183,7 @@
 }
 
 .trending-category {
-  font-family: var(--font-body); /* 👇 EXPERT FIX: Applied body font */
+  font-family: var(--font-body); 
   color: #e60000; 
   font-size: 10px; 
   font-weight: 800;
@@ -184,9 +193,9 @@
 }
 
 .trending-title {
-  font-family: Noto Sans Devanagari; /* 👇 EXPERT FIX: Applied heading font */
+  font-family: Noto Sans Devanagari; 
   font-size: 15px; 
-  font-weight: 500; /* 👇 EXPERT FIX: Changed to 400 for Rozha One */
+  font-weight: 500; 
   color: #0f172a; 
   margin: 0 0 6px 0;
   display: -webkit-box;
@@ -197,7 +206,7 @@
 }
 
 .trending-time { 
-  font-family: var(--font-body); /* 👇 EXPERT FIX: Applied body font */
+  font-family: var(--font-body); 
   font-size: 11px; 
   color: #94a3b8; 
   font-weight: 500;
@@ -233,7 +242,7 @@
 }
 
 .tag-pill {
-  font-family: var(--font-body); /* 👇 EXPERT FIX: Applied body font */
+  font-family: var(--font-body); 
   white-space: nowrap;
   padding: 8px 18px;
   background-color: #ffffff;
@@ -280,299 +289,176 @@
   color: inherit !important;
 }
 
-/* ========================================= */
-/* ===== NEW BOTTOM ROW STYLES (IMAGE) ===== */
-/* ========================================= */
-.hero-bottom-row {
-  display: flex;
-  gap: 30px;
-  width: 100%;
-}
+/* =================================================================== */
+/* ============ RESPONSIVE BREAKPOINTS (added for all devices) ======= */
+/* =================================================================== */
 
-.live-updates-card,
-.trending-numbered-card {
-  background: white;
-  border-radius: 12px;
-  padding: 24px;
-  box-shadow: 0 4px 15px rgba(0,0,0,0.03);
-  border: 1px solid #f1f5f9;
-}
-
-.live-updates-card { flex: 2; }
-.trending-numbered-card { flex: 1; }
-
-.live-dot {
-  width: 12px; height: 12px;
-  background-color: #fca5a5;
-  border-radius: 50%;
-}
-
-.live-item {
-  display: flex;
-  gap: 20px;
-  padding: 14px 0;
-  border-bottom: 1px solid #f1f5f9;
-}
-
-.live-item:last-child { border-bottom: none; padding-bottom: 0; }
-
-.live-time {
-  font-family: var(--font-body); /* 👇 EXPERT FIX: Applied body font */
-  color: #dc2626;
-  font-weight: 700;
-  font-size: 13px;
-  min-width: 70px;
-  white-space: nowrap;
-}
-
-.live-text {
-  font-family: var(--font-body); /* 👇 EXPERT FIX: Applied body font */
-  color: #1e293b;
-  font-size: 15px;
-  font-weight: 500;
-  line-height: 1.5;
-}
-
-.numbered-item {
-  display: flex;
-  gap: 16px;
-  align-items: center;
-  padding: 14px 0;
-  border-bottom: 1px solid #f1f5f9;
-  transition: transform 0.2s ease;
-}
-
-.numbered-item:hover { transform: translateX(4px); }
-.numbered-item:last-child { border-bottom: none; padding-bottom: 0; }
-
-.trend-rank {
-  font-family: var(--font-heading); /* 👇 EXPERT FIX: Applied heading font */
-  font-size: 32px;
-  font-weight: 400; /* 👇 EXPERT FIX: Changed to 400 for Rozha One */
-  color: #fca5a5;
-  min-width: 25px;
-  text-align: center;
-}
-
-.trend-details {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-}
-
-.trend-details h4 {
-  font-family: var(--font-heading); /* 👇 EXPERT FIX: Applied heading font */
-  font-size: 14px;
-  font-weight: 400; /* 👇 EXPERT FIX: Changed to 400 for Rozha One */
-  color: #0f172a;
-  margin: 0;
-  line-height: 1.4;
-}
-
-.trend-views {
-  font-family: var(--font-body); /* 👇 EXPERT FIX: Applied body font */
-  display: flex;
-  align-items: center;
-  gap: 5px;
-  font-size: 12px;
-  color: #64748b;
-  font-weight: 500;
-}
-
-/* ══════════════════════════════════════════════════════════════
-   RESPONSIVE BREAKPOINTS (6-Tier Professional System)
-══════════════════════════════════════════════════════════════ */
-
-/* 1. Large Desktop - 1440px */
-@media (max-width: 1440px) {
-  .hero-container {
-    max-width: 1100px;
-  }
-}
-
-/* 2. Laptop / Large Tablet - 1024px */
+/* ----- LARGE TABLET / SMALL LAPTOP (≤1024px) ----- */
 @media (max-width: 1024px) {
-  .hero-top-row, .hero-bottom-row {
-    flex-direction: row;
-    gap: 20px;
-  }
+  .hero-container { width: 92%; gap: 14px; }
 
-  .featured-title { font-size: 28px; line-height: 1.25; }
-  .featured-article { min-height: 380px; }
-  .featured-excerpt { font-size: 14px; margin-bottom: 12px; -webkit-line-clamp: 2; line-clamp: 2;}
+  .hero-top-row { gap: 20px; }
 
-  .trending-img { width: 90px; height: 80px; }
-  .trending-title { font-size: 13px; }
+  .featured-article { min-height: 420px; }
+
+  .featured-title { font-size: 28px; }
+
+  .featured-excerpt { font-size: 14px; max-width: 100%; }
+
+  .trending-img { width: 120px; height: 90px; }
+
+  .section-header h2 { font-size: 20px; }
 }
 
-/* 3. Standard Tablet - 768px */
-@media (max-width: 768px) {
-  .hero-top-row, .hero-bottom-row {
+/* ----- TABLET (≤900px): stack featured article above trending sidebar ----- */
+@media (max-width: 900px) {
+  .hero-top-row {
     flex-direction: column;
-    gap: 32px;
   }
 
-  .trending-list {
-    display: grid;
-    grid-template-columns: repeat(2, 1fr);
-    gap: 20px;
-  }
-
-  .trending-card {
-    flex-direction: column;
-    align-items: stretch;
-  }
-
-  .trending-img {
+  .featured-article {
+    flex: none;
     width: 100%;
-    height: 180px;
-    border-radius: 8px 8px 0 0;
+    min-height: 380px;
   }
 
-  .trending-info {
-    padding: 4px 4px 8px 4px;
+  .trending-sidebar {
+    flex: none;
+    width: 100%;
+  }
+
+  /* Let trending cards use available width instead of a fixed thumbnail ratio */
+  .trending-img {
+    width: 130px;
+    height: 100px;
+  }
+}
+
+/* ----- MOBILE LANDSCAPE / LARGE PHONE (≤768px) ----- */
+@media (max-width: 758px) {
+  .hero-section { padding: 10px 0 30px 0; }
+
+  .hero-container { width: 94%; gap: 12px; }
+
+  .featured-article {
+    min-height: 320px;
+    border-radius: 10px;
+  }
+
+  .featured-overlay { padding: 24px 18px; }
+
+  .category-badge {
+    font-size: 10px;
+    padding: 4px 12px;
+    margin-bottom: 10px;
   }
 
   .featured-title {
-  font-size: 32px;
-  line-height: 1.45;
-  display: -webkit-box;
-  -webkit-line-clamp: 2;
-  line-clamp: 2;
-  -webkit-box-orient: vertical;
-  overflow: hidden;
-}
-  .featured-excerpt { font-size: 15px; }
-  .featured-article { min-height: 400px; }
-
-  .tag-scroll-btn { display: none; }
-  .tags-scroll-wrapper { margin: 0; padding-left: 5px; padding-right: 5px; }
-}
-
-/* 4. Mobile L - 425px */
-@media (max-width: 425px) {
-  .trending-list {
-    display: grid;
-    grid-template-columns: repeat(2, 1fr);
-    gap: 12px; /* Perfect spacing between the two columns */
-  }
-
-  .trending-card {
-    flex-direction: column;
-    align-items: stretch;
-    background: #ffffff; /* Solid white background like the screenshot */
-    padding: 0;
-    gap: 0;
-    border-radius: 8px;
-    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.06); /* Soft floating shadow */
-    border: 1px solid #e2e8f0;
-    overflow: hidden;
-  }
-
-  .trending-img {
-    width: 100%;
-    height: 110px;
-    border-radius: 0;
-    margin: 0;
-  }
-
-  .trending-info {
-    padding: 12px;
-    display: flex;
-    flex-direction: column;
-    flex-grow: 1;
-  }
-
-  .trending-info-header {
+    font-size: 22px;
     margin-bottom: 8px;
   }
 
-  .trending-category {
-    background-color: #e60000; /* Solid red background */
-    color: #ffffff;            /* White text */
-    padding: 4px 8px;
-    border-radius: 4px;
-    display: inline-block;
-  }
-
-  .trending-title {
+  .featured-excerpt {
     font-size: 13px;
-    line-height: 1.45;
-    margin-bottom: 10px;
-    -webkit-line-clamp: 3;
-    line-clamp: 3;
-    -webkit-box-orient: vertical;
-    overflow: hidden;
+    -webkit-line-clamp: 2;
   }
 
-  .trending-time {
-    margin-top: auto; /* Pushes the clock/date to the very bottom */
+  .featured-meta {
+    gap: 14px;
+    font-size: 12px;
+  }
+
+  .section-header h2 { font-size: 18px; }
+
+  .trending-card { padding: 8px; gap: 10px; }
+
+  .trending-img { width: 110px; height: 85px; }
+
+  .trending-title { font-size: 14px; }
+
+  .trending-category { font-size: 9px; }
+
+  .trending-time { font-size: 10px; }
+
+  .tag-pill { padding: 7px 14px; font-size: 12px; }
+
+  .tag-scroll-btn { width: 32px; height: 32px; }
+}
+
+/* ----- MOBILE (≤480px) ----- */
+@media (max-width: 480px) {
+  .hero-container { width: 95%; gap: 10px; }
+
+  .featured-article { min-height: 260px; border-radius: 8px; }
+
+  .featured-overlay { padding: 18px 14px; }
+
+  .featured-title {
+    font-size: 19px;
+    line-height: 1.3;
+  }
+
+  .featured-excerpt {
+    font-size: 12.5px;
+    line-height: 1.5;
+    margin-bottom: 14px;
+  }
+
+  .featured-meta {
+    flex-wrap: wrap;
+    gap: 10px 16px;
     font-size: 11px;
   }
 
-  /* 👇 EXPERT FIX: Stops the dark overlay from swallowing the whole image! 👇 */
-  .featured-article { 
-    min-height: 380px; /* Gives the image much more physical room at the top */
-  }
-  
-  .featured-overlay { 
-    padding: 60px 20px 20px 20px; /* Extra top padding pushes the text down */
-    /* Fades to transparent much faster so the top of the image stays bright */
-    background: linear-gradient(to top, rgba(0, 0, 0, 0.95) 0%, rgba(0, 0, 0, 0.5) 60%, transparent 100%);
-  }
-  
-  .featured-title { font-size: 22px; line-height: 1.3; }
-  .featured-excerpt { font-size: 13px; margin-bottom: 12px; }
-  
-  .live-item { flex-direction: column; gap: 8px; }
-  .live-time { font-size: 12px; }
-  .live-text { font-size: 14px; }
-  .live-updates-card, .trending-numbered-card { padding: 20px 16px; }
-}
+  .section-header { margin-bottom: 12px; }
+  .section-header h2 { font-size: 17px; }
+  .header-underline { width: 40px; height: 3px; }
 
-/* 5. Mobile M - 375px */
-@media (max-width: 375px) {
-  .featured-title { font-size: 20px; }
-  .featured-article { min-height: 360px; } /* Adjusted for smaller screens */
-
-  .trending-img {
-    height: 95px;
-  }
-  
-  .trending-title {
-    font-size: 12px;
-  }
-}
-
-/* 6. Mobile S - 320px */
-@media (max-width: 320px) {
-  .featured-title { font-size: 18px; }
-  .featured-excerpt { display: none; } 
-  .featured-article { min-height: 300px; }
-  
-  .featured-meta { 
-    font-size: 12px; 
-    flex-direction: column; 
-    gap: 8px; 
-  }
-
-  /* Drop to 1 column only if the screen is microscopically small */
-  .trending-list {
-    grid-template-columns: 1fr;
-  }
-  
+  /* Trending cards switch to a stacked layout on very narrow screens
+     so the thumbnail doesn't crowd out the text */
   .trending-card {
     flex-direction: row;
+    padding: 8px;
+    gap: 10px;
   }
-  
+
   .trending-img {
-    width: 100px;
-    height: 80px;
+    width: 96px;
+    height: 96px;
   }
-  
-  .trending-info {
-    padding: 10px;
+
+  .trending-title {
+    font-size: 13.5px;
+    -webkit-line-clamp: 3;
   }
-  
-  .live-updates-card, .trending-numbered-card { padding: 16px 12px; }
+
+  .trending-category { font-size: 9px; }
+  .trending-time { font-size: 10px; }
+
+  .tags-scroll-wrapper { margin: 0 6px; gap: 8px; }
+  .tag-pill { padding: 6px 12px; font-size: 11.5px; }
+  .tag-scroll-btn { width: 28px; height: 28px; }
+}
+
+/* ----- SMALL MOBILE (≤360px) ----- */
+@media (max-width: 360px) {
+  .featured-article { min-height: 220px; }
+
+  .featured-title { font-size: 17px; }
+
+  .featured-excerpt { font-size: 12px; -webkit-line-clamp: 2; }
+
+  .trending-img { width: 80px; height: 80px; }
+
+  .trending-title { font-size: 13px; -webkit-line-clamp: 2; }
+}
+
+/* ----- Respect users who prefer reduced motion ----- */
+@media (prefers-reduced-motion: reduce) {
+  .featured-bg-img,
+  .trending-card,
+  .tag-pill,
+  .tag-scroll-btn {
+    transition: none;
+  }
 }
