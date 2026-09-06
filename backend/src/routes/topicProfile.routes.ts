@@ -3,6 +3,7 @@ import { Router } from "express";
 import {
   createProfile,
   getProfiles,
+  getPublicProfiles,
   updateProfile,
   deleteProfile,
 } from "../controllers/topicProfile.controller";
@@ -13,6 +14,10 @@ import {
 } from "../middleware/auth.middleware";
 
 const router = Router();
+
+// ─── PUBLIC (USER-SIDE) ──────────────────────────────────────────────────────
+// No auth — this is what the public website should call.
+router.get("/public", getPublicProfiles);
 
 // ─── CREATE ────────────────────────────────────────────────────────────────
 

@@ -71,7 +71,29 @@ export const createProfile = async (
   }
 };
 
-// ─── GET ALL ───────────────────────────────────────────────────────────────
+// ─── GET ALL (PUBLIC / USER-SIDE) ───────────────────────────────────────────
+// No auth required — used by the public website to list topic profiles.
+export const getPublicProfiles = async (
+  _req: Request,
+  res: Response
+) => {
+  try {
+    const profiles = await TopicProfile.find(
+      {},
+      "name slug caption description fullDetails instagram facebook twitter imageUrl createdAt"
+    ).sort({ createdAt: -1 });
+
+    res.json(profiles);
+  } catch (err) {
+    console.error("Get public topic profiles error:", err);
+
+    res.status(500).json({
+      message: "Error fetching profiles",
+    });
+  }
+};
+
+// ─── GET ALL (ADMIN) ─────────────────────────────────────────────────────────
 export const getProfiles = async (
   _req: AuthRequest,
   res: Response
@@ -216,4 +238,4 @@ export const deleteProfile = async (
       message: "Error deleting profile",
     });
   }
-};  
+};
