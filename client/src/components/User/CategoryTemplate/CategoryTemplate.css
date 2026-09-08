@@ -16,7 +16,7 @@
 }
 
 .ct-root {
-  background: var(--ct-bg);
+  background: #ffff;
   min-height: 100vh;
   font-family: var(--font-body);
   color: var(--ct-text);
@@ -31,7 +31,7 @@
 
 .ct-section { padding: 10px 0 30px; }
 .ct-section--top { padding: 32px 0 30px; }
-.ct-section--gray { background: #f1f5f9; border-top: 1px solid var(--ct-border); }
+.ct-section--gray { background: #ffff;}
 
 /* ── Badges ────────────────────────────────────────── */
 .ct-badge {
@@ -723,16 +723,16 @@
 
   /* 👇 THE FIX FOR LAPTOP: Keeps Recent News Sidebar locked to the right side */
   .ct-hero-layout { 
-    grid-template-columns: 1fr 280px; 
+    grid-template-columns: 1fr; 
     gap: 20px; 
     align-items: flex-start; /* Prevents the sidebar from stretching awkwardly */
   }
   
   /* Stacks the Big Card over the 4 Small Cards in the left column */
-  .ct-hero-left { 
+  /* .ct-hero-left { 
     grid-template-columns: 1fr; 
     gap: 20px; 
-  }
+  } */
   
   /* 👇 THE FIX FOR DISAPPEARING IMAGE: Forces the Big Card to stay open when stacked */
   .ct-hero { 
@@ -801,15 +801,15 @@
     grid-template-columns: 1fr; /* 4 small cards stack to a single column */
   }
   
-  .ct-stack__imgwrap { 
-    height: 200px; /* Taller image looks better at full mobile width */
-  }
+  /* .ct-stack__imgwrap { 
+    height: 200px; 
+  } */
 }
 
 /* 5. Mobile Normal - 425px */
 @media (max-width: 425px) {
   .ct-hero { min-height: 320px; } 
-  .ct-stack__imgwrap { height: 180px; }
+  /* .ct-stack__imgwrap { height: 180px; } */
   
   .ct-hero__title { font-size: 1.5rem; }
   .ct-news-title { font-size: 1.8rem; }
@@ -819,7 +819,7 @@
 /* 6. Mobile Small - 320px */
 @media (max-width: 320px) {
   .ct-hero { min-height: 260px; }
-  .ct-stack__imgwrap { height: 150px; }
+  /* .ct-stack__imgwrap { height: 150px; } */
   
   .ct-hero__title { font-size: 1.3rem; }
   .ct-news-title { font-size: 1.5rem; }

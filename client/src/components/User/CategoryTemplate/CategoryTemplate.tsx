@@ -307,7 +307,7 @@ export default function CategoryTemplate() {
                   <div className="ct-panel-line" style={{ background: color }} />
                 </div>
                 <ul className="ct-recent-list">
-  {recentNews.slice(0, 5).map((item, index) => (
+  {recentNews.slice(0, 6).map((item, index) => (
     <li key={`recent-${item.id ?? item._id ?? index}`}>
       <Link
         to={`/article/${item.slug || item._id || item.id}`}

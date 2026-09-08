@@ -110,15 +110,22 @@ export default function EditCategoryModal({ isOpen, onClose, category, onSave, c
           </div>
 
           <div className="toggles-row">
-            <label className="toggle-group">
-              <button 
-                className={`modal-toggle${form.featured ? " on" : ""}`} 
-                onClick={() => setForm({ ...form, featured: !form.featured })}
-              >
-                <span />
-              </button>
-              <span>Featured</span>
-            </label>
+            {!form.parentId && (
+  <label className="toggle-group">
+    <button
+      className={`modal-toggle${form.featured ? " on" : ""}`}
+      onClick={() =>
+        setForm({
+          ...form,
+          featured: !form.featured,
+        })
+      }
+    >
+      <span />
+    </button>
+    <span>Featured</span>
+  </label>
+)}
             
             <label className="toggle-group">
               <button 
@@ -151,7 +158,9 @@ export default function EditCategoryModal({ isOpen, onClose, category, onSave, c
                 <h4>{form.name || "Category Name"}</h4>
                 <p>/{slug || "slug"}</p>
               </div>
-              {form.featured && <span className="preview-featured">Featured</span>}
+             {!form.parentId && form.featured && (
+  <span className="preview-featured">Featured</span>
+)}
             </div>
           </div>
         </div>

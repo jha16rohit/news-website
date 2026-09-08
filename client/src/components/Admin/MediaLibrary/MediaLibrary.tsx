@@ -380,14 +380,14 @@ const emptySlots = items.filter(item => !item.url).length;
                         <>
                           <button
                             className="ml-card-action"
-                            title="Download"
+                           
                             onClick={() => handleDownload(item.url as string, filename)}
                           >
                             <Download size={15} />
                           </button>
                           <button
                             className="ml-card-action danger"
-                            title="Delete"
+                           
                             disabled={isDeleting}
                             onClick={() => {
     setDeleteNewsId(item.newsId);
@@ -400,7 +400,7 @@ const emptySlots = items.filter(item => !item.url).length;
                       ) : (
                         <button
                           className="ml-card-action upload"
-                          title="Upload"
+                         
                           disabled={isUploading}
                           onClick={() => openFilePicker(item.newsId)}
                         >

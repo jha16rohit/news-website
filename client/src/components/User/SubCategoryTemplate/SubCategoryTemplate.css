@@ -103,10 +103,9 @@
   width: 100%;
   height: 100%;
   object-fit: fill;
-  transition: transform 0.5s ease;
 }
 
-.sct-card:hover .sct-card-img { transform: scale(1.08); }
+
 
 .sct-badge {
   font-family: var(--font-body); /* 👇 EXPERT FIX: Explicit body font */

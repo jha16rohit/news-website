@@ -23,6 +23,7 @@ import {
   markNotificationRead,
   type UserNotificationItem,
 } from "../../../api/user/notifications";
+import { getTopicProfiles } from "../../../api/user/topicProfile";
 
 // Shape returned by GET /api/tags/trending (see tags.controller.ts's getTrendingTags)
 interface TrendingTag {
@@ -86,6 +87,7 @@ const UserNavbar: React.FC = () => {
   const [notifications, setNotifications] = useState<UserNotificationItem[]>([]);
   const [notifLoading, setNotifLoading] = useState(false);
   const [notifError, setNotifError] = useState<string | null>(null);
+  const [topics, setTopics] = useState<any[]>([]);
 
   const unreadCount = useMemo(
     () => notifications.filter(n => !n.read).length,
@@ -98,6 +100,24 @@ const UserNavbar: React.FC = () => {
       : notifications.filter(n => getNotifBucket(n.createdAt) === notifTab)),
     [notifications, notifTab]
   );
+  useEffect(() => {
+  const loadTopics = async () => {
+    try {
+      const response = await getTopicProfiles();
+
+      const topicData = Array.isArray(response)
+        ? response
+        : response?.data || response?.topics || [];
+
+      setTopics(topicData);
+    } catch (error) {
+      console.error("Failed to load topics:", error);
+      setTopics([]);
+    }
+  };
+
+  loadTopics();
+}, []);
 
   const fetchNotifications = async () => {
     setNotifLoading(true);
@@ -532,7 +552,15 @@ const UserNavbar: React.FC = () => {
                 );
               })}
 
-              <NavLink to="/Topic"   className="mobile-link" onClick={() => setMobileMenuOpen(false)}>Topic</NavLink>
+              {topics.length > 0 && (
+  <NavLink
+    to="/Topic"
+    className="mobile-link"
+    onClick={() => setMobileMenuOpen(false)}
+  >
+    Topic
+  </NavLink>
+)}
               <div className="dropdown-divider" />
               <NavLink to="/about"   className="mobile-link" onClick={() => setMobileMenuOpen(false)}>About Us</NavLink>
               <NavLink to="/contact" className="mobile-link" onClick={() => setMobileMenuOpen(false)}>Contact Us</NavLink>
