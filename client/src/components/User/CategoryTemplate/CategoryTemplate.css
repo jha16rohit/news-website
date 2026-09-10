@@ -169,6 +169,7 @@
   display: grid;
   gap: 12px; 
   height: 100%;
+  align-content: start;
 }
 
 .ct-stack {
@@ -180,7 +181,7 @@
   overflow: hidden;
   box-shadow: var(--ct-shadow-sm);
   cursor: pointer;
-  height: 100%; 
+  height: 120px; 
   transition: var(--ct-transition);
   border: 1px solid #ffffff;
 }
@@ -719,7 +720,7 @@
 
 /* 2. Laptop & Large Tablet - 1024px */
 @media (max-width: 1024px) {
-  .ct-wrap { max-width: 95%; padding: 0 16px; }
+  .ct-wrap { max-width: 95%; padding: 0 0px; }
 
   /* 👇 THE FIX FOR LAPTOP: Keeps Recent News Sidebar locked to the right side */
   .ct-hero-layout { 
@@ -772,7 +773,6 @@
 
 /* 3. Standard Tablet - 768px */
 @media (max-width: 768px) {
-  /* NOW Recent News safely drops to the bottom for Tablets */
   .ct-hero-layout { grid-template-columns: 1fr; }
   
   .ct-hero-left {
@@ -780,9 +780,46 @@
     gap: 24px;
   }
   
-  /* Keeps the Big Card visible on tablets */
+  /* 👇 EXPERT FIX: Transforms the cinematic hero into a standard white card! */
   .ct-hero {
-    min-height: 380px; 
+    min-height: auto;
+    background-color: #ffffff;
+    border: 1px solid var(--ct-border);
+    box-shadow: var(--ct-shadow-sm);
+    display: flex;
+    flex-direction: column;
+  }
+
+  .ct-hero__img {
+    position: relative; /* Removes absolute positioning */
+    height: auto;
+    aspect-ratio: 16/9; /* Perfect wide rectangle */
+    border-radius: var(--ct-radius) var(--ct-radius) 0 0; /* Rounds top corners only */
+    opacity: 1;
+    z-index: 1;
+  }
+
+  .ct-hero__overlay {
+    position: relative;
+    background: none; /* Removes the dark shadow gradient */
+    padding: 20px;
+    z-index: 2;
+    justify-content: flex-start;
+  }
+
+  .ct-hero__title {
+    color: var(--ct-text); /* Dark text */
+    text-shadow: none; /* Removes the cinematic text shadow */
+    font-size: 24px;
+    margin-bottom: 12px;
+  }
+
+  .ct-hero__sub {
+    color: var(--ct-muted); /* Dark gray text */
+  }
+
+  .ct-hero .ct-meta {
+    color: #94a3b8; /* Light gray for date/views */
   }
 
   .ct-stacks {

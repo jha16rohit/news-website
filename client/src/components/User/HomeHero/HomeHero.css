@@ -296,30 +296,58 @@
 /* ----- LARGE TABLET / SMALL LAPTOP (≤1024px) ----- */
 @media (max-width: 1024px) {
   .hero-container { width: 92%; gap: 14px; }
-
   .hero-top-row { gap: 20px; }
-
   .featured-article { min-height: 420px; }
-
   .featured-title { font-size: 28px; }
-
   .featured-excerpt { font-size: 14px; max-width: 100%; }
-
   .trending-img { width: 120px; height: 90px; }
-
   .section-header h2 { font-size: 20px; }
 }
 
-/* ----- TABLET (≤900px): stack featured article above trending sidebar ----- */
+/* ----- TABLET (≤900px): stack featured article & transform to standard card ----- */
 @media (max-width: 900px) {
   .hero-top-row {
     flex-direction: column;
   }
 
+  /* 👇 EXPERT FIX: Transforms the cinematic hero into a standard white card! */
   .featured-article {
     flex: none;
     width: 100%;
-    min-height: 380px;
+    min-height: auto; 
+    background-color: #ffffff; /* Solid white background */
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
+    justify-content: flex-start;
+  }
+
+  .featured-bg-img {
+    position: relative; /* Removes absolute positioning */
+    height: auto;
+    aspect-ratio: 16/9; /* Perfect wide rectangle */
+    border-radius: 8px 8px 0 0; /* Rounds only the top corners */
+  }
+
+  .featured-overlay {
+    background: none; /* Removes the dark shadow gradient */
+    padding: 20px;
+  }
+
+  .featured-title {
+    color: #0f172a; /* Dark text */
+    text-shadow: none; /* Removes the cinematic text shadow */
+    font-size: 24px;
+    margin-bottom: 12px;
+    font-weight: 500;
+  }
+
+  .featured-excerpt {
+    color: #475569; /* Dark gray text */
+  }
+
+  .featured-meta {
+    color: #94a3b8; /* Light gray for date/views */
   }
 
   .trending-sidebar {
@@ -327,61 +355,44 @@
     width: 100%;
   }
 
-  /* Let trending cards use available width instead of a fixed thumbnail ratio */
   .trending-img {
     width: 130px;
     height: 100px;
   }
 }
 
-/* ----- MOBILE LANDSCAPE / LARGE PHONE (≤768px) ----- */
+/* ----- MOBILE LANDSCAPE / LARGE PHONE (≤758px) ----- */
 @media (max-width: 758px) {
   .hero-section { padding: 10px 0 30px 0; }
-
   .hero-container { width: 94%; gap: 12px; }
 
-  .featured-article {
-    min-height: 320px;
-    border-radius: 10px;
-  }
-
-  .featured-overlay { padding: 24px 18px; }
-
+  /* Adjustments to match the new 900px card design */
+  .featured-overlay { padding: 16px; }
   .category-badge {
     font-size: 10px;
     padding: 4px 12px;
     margin-bottom: 10px;
   }
-
   .featured-title {
-    font-size: 22px;
+    font-size: 20px;
     margin-bottom: 8px;
   }
-
   .featured-excerpt {
     font-size: 13px;
     -webkit-line-clamp: 2;
   }
-
   .featured-meta {
     gap: 14px;
     font-size: 12px;
   }
 
   .section-header h2 { font-size: 18px; }
-
   .trending-card { padding: 8px; gap: 10px; }
-
   .trending-img { width: 110px; height: 85px; }
-
   .trending-title { font-size: 14px; }
-
   .trending-category { font-size: 9px; }
-
   .trending-time { font-size: 10px; }
-
   .tag-pill { padding: 7px 14px; font-size: 12px; }
-
   .tag-scroll-btn { width: 32px; height: 32px; }
 }
 
@@ -389,25 +400,20 @@
 @media (max-width: 480px) {
   .hero-container { width: 95%; gap: 10px; }
 
-  .featured-article { min-height: 260px; border-radius: 8px; }
-
-  .featured-overlay { padding: 18px 14px; }
-
+  .featured-overlay { padding: 14px; }
   .featured-title {
-  font-size: 19px;
-  line-height: 1.4;
-  display: -webkit-box;
-  -webkit-box-orient: vertical;
-  -webkit-line-clamp: 2;
-  overflow: hidden;
-}
-
+    font-size: 18px;
+    line-height: 1.4;
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+    overflow: hidden;
+  }
   .featured-excerpt {
     font-size: 12.5px;
     line-height: 1.5;
     margin-bottom: 14px;
   }
-
   .featured-meta {
     flex-wrap: wrap;
     gap: 10px 16px;
@@ -418,24 +424,19 @@
   .section-header h2 { font-size: 17px; }
   .header-underline { width: 40px; height: 3px; }
 
-  /* Trending cards switch to a stacked layout on very narrow screens
-     so the thumbnail doesn't crowd out the text */
   .trending-card {
     flex-direction: row;
     padding: 8px;
     gap: 10px;
   }
-
   .trending-img {
     width: 96px;
     height: 96px;
   }
-
   .trending-title {
     font-size: 13.5px;
     -webkit-line-clamp: 3;
   }
-
   .trending-category { font-size: 9px; }
   .trending-time { font-size: 10px; }
 
@@ -446,14 +447,9 @@
 
 /* ----- SMALL MOBILE (≤360px) ----- */
 @media (max-width: 360px) {
-  .featured-article { min-height: 220px; }
-
-  .featured-title { font-size: 17px; }
-
+  .featured-title { font-size: 16px; }
   .featured-excerpt { font-size: 12px; -webkit-line-clamp: 2; }
-
   .trending-img { width: 80px; height: 80px; }
-
   .trending-title { font-size: 13px; -webkit-line-clamp: 2; }
 }
 
