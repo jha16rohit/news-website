@@ -1,8 +1,16 @@
 import { useEffect, useState } from "react";
 import { useParams, Link } from "react-router-dom";
 import {
-  Clock, Eye, ChevronRight, Cloud, Sun, CloudRain,
-  Calendar, MapPin, Thermometer, ArrowRight
+  Clock,
+  Eye,
+  ChevronRight,
+  Cloud,
+  Sun,
+  CloudRain,
+  Calendar,
+  MapPin,
+  Thermometer,
+  ArrowRight
 } from "lucide-react";
 import { useCategories } from "../../../hooks/useCategories";
 
@@ -10,33 +18,16 @@ import "./CategoryTemplate.css";
 import Advertisement from "../Advertisment/Advertisment";
 import SubCategoryTemplate from "../SubCategoryTemplate/SubCategoryTemplate";
 import { getCategoryNews } from "../../../api/user/categoryNews";
+import {
+  getWeather,
+  getCityName,
+  type WeatherData,
+} from "../../../api/user/weather";
 import Preloader from "../../Admin/Preloader/Preloder";
 
 import { getRecentNews } from "../../../api/user/recentNews";
 import { getAdvertisementPool, type Advertisement as AdType } from "../../../api/user/advertisementPool";
 
-// ─── Static placeholder data ──────────────────────────────────────────────────
-const STATIC_ARTICLES = [
-  { id: 1001, title: "Champions League Final: Historic Night Under the Lights", subtitle: "An electrifying finale saw two European giants battle for continental glory in a packed stadium that will be remembered for decades.", category: "Sports", published: "2 hours ago", views: "34.2K", img: "https://images.unsplash.com/photo-1508098682722-e99c43a406b2?w=900&q=80" },
-  { id: 1002, title: "Slam Dunk Contest Sets New Viewership Record", subtitle: "The annual contest drew the highest ratings in a decade as athletes defied gravity.", category: "Sports", published: "3 hours ago", views: "18.1K", img: "https://images.unsplash.com/photo-1546519638-68e109498ffc?w=600&q=80" },
-  { id: 1003, title: "World Swimming Championships Deliver Stunning Upsets", subtitle: "Defending champions fell as rising stars claimed gold in dramatic fashion.", category: "Sports", published: "5 hours ago", views: "12.4K", img: "https://images.unsplash.com/photo-1519315901367-f34ff9154487?w=600&q=80" },
-  { id: 1004, title: "Clay Court Season Opens With Dramatic Five-Set Thriller", subtitle: "Rain delays and a comeback for the ages made it one of the most watched opens in years.", category: "Sports", published: "6 hours ago", views: "9.8K", img: "https://images.unsplash.com/photo-1554068865-24cecd4e34b8?w=600&q=80" },
-  { id: 1005, title: "India Clinches Historic Test Series Win Against Australia 3-1", subtitle: "A thrilling final day in Sydney saw India seal their greatest overseas triumph.", category: "Sports", published: "3 hours ago", views: "22.3K", img: "https://images.unsplash.com/photo-1540747913346-19212a4e3b4a?w=600&q=80" },
-  { id: 1006, title: "Formula 1 Season Opener Ends in Chaotic Multi-Car Crash", subtitle: "Safety cars and red flags dominated as teams scramble to understand new regulations.", category: "Sports", published: "4 hours ago", views: "15.6K", img: "https://images.unsplash.com/photo-1614162692292-7ac56d7f7f1e?w=600&q=80" },
-  { id: 1007, title: "Rugby World Cup Hosts Announce Record Ticket Sales", subtitle: "Organisers report a sell-out across all group stages as global interest surges.", category: "Sports", published: "7 hours ago", views: "8.2K", img: "https://images.unsplash.com/photo-1567620905732-2d1ec7ab7445?w=600&q=80" },
-  { id: 1008, title: "Olympic Marathon Route Revealed for Summer Games", subtitle: "Athletes will tackle a challenging coastal course with significant elevation in the final 10km.", category: "Sports", published: "8 hours ago", views: "6.9K", img: "https://images.unsplash.com/photo-1476480862126-209bfaa8edc8?w=600&q=80" },
-  { id: 1009, title: "Badminton Super Series: Local Hero Stuns World Number One", subtitle: "An underdog story for the ages as a wildcard dispatched the reigning champion in straight sets.", category: "Sports", published: "9 hours ago", views: "5.4K", img: "https://images.unsplash.com/photo-1599391398131-cd12dfc6e0b9?w=600&q=80" },
-  { id: 1010, title: "Tennis Legend Announces Retirement After Glorious Career", subtitle: "Fans around the world bid farewell to a player who defined an era with grace and unparalleled skill.", category: "Sports", published: "10 hours ago", views: "20.1K", img: "https://images.unsplash.com/photo-1508264165352-258a9bfc09c4?w=600&q=80" },
-  { id: 1011, title: "NBA Finals MVP Delivers Emotional Speech Amidst Championship Glory", subtitle: "Tears and triumph as the star player reflects on the journey to the title and thanks fans worldwide.", category: "Sports", published: "11 hours ago", views: "25.3K", img: "https://images.unsplash.com/photo-1517649763962-0c623066013b?w=600&q=80" },
-];
-
-const FORECAST = [
-  { day: "Fri", icon: <Sun size={14} />, hi: 36, lo: 29 },
-  { day: "Sat", icon: <Cloud size={14} />, hi: 38, lo: 30 },
-  { day: "Sun", icon: <CloudRain size={14} />, hi: 34, lo: 27 },
-  { day: "Mon", icon: <Sun size={14} />, hi: 40, lo: 31 },
-  { day: "Tue", icon: <Sun size={14} />, hi: 41, lo: 30 },
-];
 
 function buildCalendar() {
   const now   = new Date();
@@ -55,7 +46,15 @@ function buildCalendar() {
   return { cells, today, label: now.toLocaleDateString("en-US", { month: "long", year: "numeric" }) };
 }
 
-type Article = typeof STATIC_ARTICLES[0];
+interface Article {
+  id: string | number;
+  title: string;
+  subtitle: string;
+  category: string;
+  published: string;
+  views: string;
+  img: string;
+}
 
 interface CardProps {
   a: Article;
@@ -116,28 +115,165 @@ function GridCard({ a, color, delay = 0 }: CardProps) {
   );
 }
 
-function WeatherWidget({ color }: { color: string }) {
-  return (
-    <div className="ct-weather" style={{ background: `linear-gradient(135deg, ${color} 0%, #1a1a2e 100%)` }}>
-      <div className="ct-weather__head">
-        <div className="ct-weather__head-left"><Cloud size={16} /><span>Weather</span></div>
-        <div className="ct-weather__head-right"><MapPin size={12} /><span>India</span></div>
-      </div>
-      <div className="ct-weather__main">
-        <Thermometer size={36} />
-        <div>
-          <div className="ct-weather__temp">27<sup>°C</sup></div>
-          <div className="ct-weather__label">Clear Sky</div>
+function WeatherWidget({
+  color,
+  weather,
+  loading,
+  locationAllowed,
+}: {
+  color: string;
+  weather: WeatherData | null;
+  loading: boolean;
+  locationAllowed: boolean;
+}) {
+  const getIcon = (icon: string) => {
+    switch (icon) {
+      case "sun":
+        return <Sun size={14} />;
+
+      case "rain":
+        return <CloudRain size={14} />;
+
+      case "storm":
+        return <CloudRain size={14} />;
+
+      default:
+        return <Cloud size={14} />;
+    }
+  };
+
+  if (loading) {
+    return (
+      <div
+        className="ct-weather"
+        style={{
+          background: `linear-gradient(
+            135deg,
+            ${color} 0%,
+            #1a1a2e 100%
+          )`,
+        }}
+      >
+        <div className="ct-weather__head">
+          <div className="ct-weather__head-left">
+            <Cloud size={16} />
+            <span>Weather</span>
+          </div>
+        </div>
+
+        <div className="ct-weather__main">
+          <div>
+            <div className="ct-weather__label">
+              Loading weather...
+            </div>
+          </div>
         </div>
       </div>
+    );
+  }
+
+if (!weather) {
+  return (
+    <div
+      className="ct-weather"
+      style={{
+        background: `linear-gradient(
+          135deg,
+          ${color} 0%,
+          #1a1a2e 100%
+        )`,
+      }}
+    >
+      <div className="ct-weather__head">
+        <div className="ct-weather__head-left">
+          <Cloud size={16} />
+          <span>Weather</span>
+        </div>
+
+        <div className="ct-weather__head-right">
+          <MapPin size={12} />
+          <span>India</span>
+        </div>
+      </div>
+
+      <div className="ct-weather__main">
+        <div>
+          <div className="ct-weather__label">
+            Location not available
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+  return (
+    <div
+      className="ct-weather"
+      style={{
+        background: `linear-gradient(
+          135deg,
+          ${color} 0%,
+          #1a1a2e 100%
+        )`,
+      }}
+    >
+      {/* Header */}
+      <div className="ct-weather__head">
+        <div className="ct-weather__head-left">
+          <Cloud size={16} />
+          <span>Weather</span>
+        </div>
+
+        <div className="ct-weather__head-right">
+          <MapPin size={12} />
+          <span>
+  {locationAllowed && weather
+    ? weather.location
+    : "India"}
+</span>
+        </div>
+      </div>
+
+      {/* Current Weather */}
+      <div className="ct-weather__main">
+        <Thermometer size={36} />
+
+        <div>
+          <div className="ct-weather__temp">
+            {weather.temperature}
+            <sup>°C</sup>
+          </div>
+
+          <div className="ct-weather__label">
+            {weather.condition}
+          </div>
+        </div>
+      </div>
+
+      {/* Forecast */}
       <div className="ct-weather__forecast">
-        {FORECAST.map((f) => (
-          <div key={f.day} className="ct-weather__day">
-            <span className="ct-weather__dname">{f.day}</span>
-            <span className="ct-weather__icon">{f.icon}</span>
+        {weather.forecast.map((day) => (
+          <div
+            key={day.day}
+            className="ct-weather__day"
+          >
+            <span className="ct-weather__dname">
+              {day.day}
+            </span>
+
+            <span className="ct-weather__icon">
+              {getIcon(day.icon)}
+            </span>
+
             <div className="ct-weather__hilow">
-              <span className="ct-weather__hi">{f.hi}°</span>
-              <span className="ct-weather__lo">{f.lo}°</span>
+              <span className="ct-weather__hi">
+                {day.high}°
+              </span>
+
+              <span className="ct-weather__lo">
+                {day.low}°
+              </span>
             </div>
           </div>
         ))}
@@ -185,6 +321,9 @@ export default function CategoryTemplate() {
   const [categoryNews, setCategoryNews] = useState<any[]>([]);
   const [recentNews, setRecentNews] = useState<any[]>([]);  
   const [loading, setLoading] = useState(true);
+  const [weather, setWeather] = useState<WeatherData | null>(null);
+const [weatherLoading, setWeatherLoading] = useState(true);
+const [locationAllowed, setLocationAllowed] = useState(false);
 
   const [ads, setAds] = useState<{
     cards: AdType[];
@@ -204,7 +343,93 @@ export default function CategoryTemplate() {
 
   const color = "#e60000";
 
+const fetchWeather = async () => {
+  try {
+    setWeatherLoading(true);
+
+    // ------------------------------------
+    // 1. Load Delhi weather immediately
+    // ------------------------------------
+    const delhiWeather = await getWeather(
+      28.6139,
+      77.2090,
+      "Delhi"
+    );
+
+    setWeather(delhiWeather);
+
+    // ------------------------------------
+    // 2. Delhi weather is ready
+    //    Page can continue loading
+    // ------------------------------------
+    setWeatherLoading(false);
+
+    // ------------------------------------
+    // 3. Try to get user's precise location
+    //    This happens in background
+    // ------------------------------------
+    if (!navigator.geolocation) {
+      setLocationAllowed(false);
+      return;
+    }
+
+    navigator.geolocation.getCurrentPosition(
+      async (position) => {
+        try {
+          setLocationAllowed(true);
+
+          const { latitude, longitude } = position.coords;
+
+          // Get actual city
+          const city = await getCityName(
+            latitude,
+            longitude
+          );
+
+          // Get exact weather
+          const preciseWeather = await getWeather(
+            latitude,
+            longitude,
+            city
+          );
+
+          // Replace Delhi weather
+          setWeather(preciseWeather);
+
+        } catch (error) {
+          console.error(
+            "Precise weather error:",
+            error
+          );
+
+          // Keep Delhi weather if precise location fails
+        }
+      },
+
+      // User denied location
+      () => {
+        setLocationAllowed(false);
+
+        // Keep Delhi weather
+        // Do NOT set weather to null
+      },
+
+      {
+        enableHighAccuracy: true,
+        timeout: 10000,
+        maximumAge: 0,
+      }
+    );
+
+  } catch (error) {
+    console.error("Weather error:", error);
+
+    setWeatherLoading(false);
+  }
+};
+
   useEffect(() => {
+    fetchWeather();
     async function fetchNews() {
       try {
         setLoading(true);
@@ -377,7 +602,7 @@ export default function CategoryTemplate() {
               </div>
 
               <aside className="ct-news-sidebar">
-                <WeatherWidget color={color} />
+                <WeatherWidget color={color} weather={weather} loading={weatherLoading} locationAllowed={locationAllowed} />
                 <CalendarWidget />
                 <Advertisement
                   adData={ads.cards[0] ?? null}
