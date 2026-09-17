@@ -2,12 +2,12 @@
 import React, { useState, useEffect, useRef, useCallback } from "react";
 import { useParams, Link, useNavigate } from "react-router-dom";
 import {
-  Calendar, Clock, User, Share2, Facebook, Instagram,
+  Calendar, Clock, User, Share2, Facebook,
   ThumbsUp, ThumbsDown, MessageSquare, MoreHorizontal,
   ChevronDown, Flag, Copy, Tag, MapPin, ArrowRight,
   Zap, Camera, Trash2,
 } from "lucide-react";
-import { FaXTwitter } from "react-icons/fa6";
+import { FaXTwitter, FaWhatsapp } from "react-icons/fa6";
 import "./ArticalDetails.css";
 import Advertisement from "../Advertisment/Advertisment";
 import { votePoll } from "../../../api/user/poll";
@@ -559,21 +559,91 @@ setAds(adResponse);
   // ig/copy/native don't map to a specific network in the schema, so they
   // log as "other". Add a real WhatsApp button + map it here if you want
   // whatsapp to show up in Share Platforms.
-  const SHARE_PLATFORM_MAP: Record<string, "whatsapp" | "facebook" | "twitter" | "linkedin"| "Instagram" | "other"> = {
-    fb: "facebook",
-    tw: "twitter",
-    ig: "Instagram",
-    copy: "other",
-    native: "other",
-  };
+  const SHARE_PLATFORM_MAP: Record<
+  string,
+  "whatsapp" | "facebook" | "twitter" | "linkedin" | "other"
+> = {
+  fb: "facebook",
+  tw: "twitter",
+  whatsapp: "whatsapp",
+  copy: "other",
+  native: "other",
+};
 
-  const handleShare = (platform: "fb" | "tw" | "ig" | "copy" | "native") => {
-    const url   = encodeURIComponent(window.location.href);
-    const title = encodeURIComponent(article?.headline ?? "");
-    if (platform === "fb")     window.open(`https://www.facebook.com/sharer/sharer.php?u=${url}`, "_blank");
-    if (platform === "tw")     window.open(`https://twitter.com/intent/tweet?url=${url}&text=${title}`, "_blank");
-    if (platform === "ig")     window.open(`https://www.instagram.com/?url=${url}`, "_blank");
-    if (platform === "copy")   { navigator.clipboard.writeText(window.location.href); alert("Link copied!"); }
+  const handleShare = (
+  platform: "fb" | "tw" | "whatsapp" | "copy" | "native"
+) => {
+    if (platform === "fb") {
+  const slug = article?.slug;
+
+  if (!slug) return;
+
+  const shareUrl = `http://localhost:5001/share/news/${encodeURIComponent(
+    slug
+  )}`;
+
+  window.open(
+    `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(
+      shareUrl
+    )}`,
+    "_blank",
+    "width=600,height=500"
+  );
+
+  return;
+}
+if (platform === "tw") {
+  const slug = article?.slug;
+
+  if (!slug) return;
+
+  const backendBaseUrl = BASE.replace(/\/api$/, "");
+
+  const shareUrl = `${backendBaseUrl}/share/news/${encodeURIComponent(
+    slug
+  )}`;
+
+  window.open(
+    `https://twitter.com/intent/tweet?url=${encodeURIComponent(
+      shareUrl
+    )}&text=${encodeURIComponent(article?.headline ?? "")}`,
+    "_blank",
+    "width=600,height=500"
+  );
+
+  return;
+}
+if (platform === "whatsapp") {
+  const slug = article?.slug;
+
+  if (!slug) return;
+
+  // Remove /api from the existing backend API URL
+  const backendBaseUrl = BASE.replace(/\/api$/, "");
+
+  // This URL will contain the OG image/title/description
+  const shareUrl = `${backendBaseUrl}/share/news/${encodeURIComponent(slug)}`;
+
+  window.open(
+    `https://wa.me/?text=${encodeURIComponent(
+      `${article?.headline ?? ""}\n${shareUrl}`
+    )}`,
+    "_blank"
+  );
+}
+    if (platform === "copy") {
+  const slug = article?.slug;
+
+  if (!slug) return;
+
+  const backendBaseUrl = BASE.replace(/\/api$/, "");
+
+  const shareUrl = `${backendBaseUrl}/share/news/${encodeURIComponent(slug)}`;
+
+  navigator.clipboard.writeText(shareUrl);
+  alert("Link copied!");
+  return;
+}
     if (platform === "native" && navigator.share) navigator.share({ title: article?.headline, url: window.location.href });
 
     // Personal share tracking (per logged-in site user)
@@ -811,7 +881,13 @@ setAds(adResponse);
             <div className="ad-meta-right">
               <span className="ad-share-label"><Share2 size={14} /> Share:</span>
               <button className="ad-share-btn fb"   onClick={() => handleShare("fb")}   title="Share on Facebook"><Facebook size={14} /></button>
-              <button className="ad-share-btn ig"   onClick={() => handleShare("ig")}   title="Share on Instagram"><Instagram size={14} /></button>
+              <button
+  className="ad-share-btn whatsapp"
+  onClick={() => handleShare("whatsapp")}
+  title="Share on WhatsApp"
+>
+  <FaWhatsapp size={15} />
+</button>
               <button className="ad-share-btn tw"   onClick={() => handleShare("tw")}   title="Share on X"><FaXTwitter size={14} /></button>
               <button className="ad-share-btn copy" onClick={() => handleShare("copy")} title="Copy link"><Copy size={14} /></button>
             </div>
@@ -1132,7 +1208,7 @@ setAds(adResponse);
         </main>
 
         {/* ── SIDEBAR ── */}
-        <aside className="ad-sidebar">
+        <aside className="ad-sidebar ad-sticky-widget">
 
           {/* LIVE UPDATES WIDGET */}
           {article.isLive && liveUpdates.length > 0 && (
@@ -1191,7 +1267,7 @@ setAds(adResponse);
 
 
           {/* ── SIDEBAR ── */}
-        <aside className="ad-sidebar ad-abc">
+        {/* <aside className="ad-sidebar ad-abc"> */}
 
           {/* ... (Keep your Live Updates, Recent News, and Advertisement code the same here) ... */}
 
@@ -1244,7 +1320,7 @@ setAds(adResponse);
 />
           {/* 👆 END OF STICKY WRAPPER 👆 */}
 
-        </aside>
+        {/* </aside> */}
           
         </aside>
       </div>

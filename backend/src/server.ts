@@ -35,11 +35,9 @@ async function startServer() {
 
     // Daily Cleanup Job
     cron.schedule("0 2 * * *", async () => {
-      console.log("Running scheduled cleanup...");
       await cleanupPendingInquiries();
     });
 
-    console.log("Cleanup scheduler started.");
 
     // Start Server
     httpServer.listen(PORT, () => {

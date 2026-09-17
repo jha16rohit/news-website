@@ -26,6 +26,7 @@ import newsletterRouter from "./routes/newsletter.routes";
 import pushRoutes from "./routes/push.routes";
 import userNotificationRoutes from "./routes/userNotification.routes";
 import adminUserRoutes from "./routes/adminUser.routes";
+import shareRoutes from "./routes/share.routes";
 
 import path from "path";
 
@@ -58,6 +59,7 @@ startScheduler();
 
 app.use("/api/auth", authRoutes);
 app.use("/api/news", newsRoutes);
+app.use("/share", shareRoutes);
 
 // ── Admin User Management ─────────────────────────
 app.use("/api/admin/users", adminUserRoutes);

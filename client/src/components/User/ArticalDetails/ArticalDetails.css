@@ -239,7 +239,9 @@
 }
 .ad-share-btn:hover { opacity: 0.85; transform: scale(1.08); }
 .ad-share-btn.fb   { background-color: #1877F2; }
-.ad-share-btn.ig   { background-color: #E4405F; }
+.ad-share-btn.whatsapp {
+  background-color: #25D366;
+}
 .ad-share-btn.tw   { background-color: #000000; }
 .ad-share-btn.copy { background-color: #475569; }
 
@@ -766,6 +768,12 @@
   display: flex;
   flex-direction: column;
   gap: 24px;
+
+  /* Sticky sidebar */
+  position: sticky;
+  top: 120px;
+  align-self: flex-start;
+  z-index: 10;
 }
 
 .ad-sidebar-widget {
@@ -940,7 +948,7 @@
   line-height: 1.65;
   margin: 0;
   display: -webkit-box;
-  line-clamp: 2;
+  -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
   overflow: hidden;
 }
@@ -980,7 +988,7 @@
   font-weight: 600;
   font-family: Noto Sans Devanagari; /* 👇 EXPERT FIX: Applied heading font */
   display: -webkit-box;
-  line-clamp: 2;
+  -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
   overflow: hidden;
 }

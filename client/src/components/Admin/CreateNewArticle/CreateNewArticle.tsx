@@ -258,19 +258,24 @@ interface TopicLinkModalProps {
   savedRange: Range | null;
   editorRef:  React.RefObject<HTMLDivElement | null>;
   onClose:    () => void;
+  initialProfiles: TopicProfile[];
 }
-const TopicLinkModal: React.FC<TopicLinkModalProps> = ({ savedRange, editorRef, onClose }) => {
+const TopicLinkModal: React.FC<TopicLinkModalProps> = ({ savedRange, editorRef, onClose, initialProfiles }) => {
   const [query,      setQuery]      = useState("");
-  const [profiles,   setProfiles]   = useState<TopicProfile[]>([]);
-  const [filtered,   setFiltered]   = useState<TopicProfile[]>([]);
+  const [profiles,   setProfiles]   = useState<TopicProfile[]>(initialProfiles);
+  const [filtered,   setFiltered]   = useState<TopicProfile[]>(initialProfiles);
   const [manualSlug, setManualSlug] = useState("");
   const [tab,        setTab]        = useState<"search" | "manual">("search");
   const inputRef = useRef<HTMLInputElement>(null);
 
-  useEffect(() => {
-    fetchTopicProfiles().then(data => { setProfiles(data); setFiltered(data); });
-    setTimeout(() => inputRef.current?.focus(), 50);
-  }, []);
+useEffect(() => {
+  setProfiles(initialProfiles);
+  setFiltered(initialProfiles);
+
+  setTimeout(() => {
+    inputRef.current?.focus();
+  }, 50);
+}, [initialProfiles]);
 
   useEffect(() => {
     const q = query.toLowerCase().trim();
@@ -575,13 +580,13 @@ const LocationSearch: React.FC<{ value: string; onChange: (v: string) => void }>
   );
 };
 
-interface ScheduleModalProps { onClose: () => void; onConfirm: (datetime: string) => void; }
+interface ScheduleModalProps { onClose: () => void; onConfirm: (datetime: string) => void;   isSubmitting: boolean;}
 const MONTHS       = ["January","February","March","April","May","June","July","August","September","October","November","December"];
 const DAYS_OF_WEEK = ["SUN","MON","TUE","WED","THU","FRI","SAT"];
 function getDaysInMonth(year: number, month: number) { return new Date(year, month + 1, 0).getDate(); }
 function getFirstDayOfMonth(year: number, month: number) { return new Date(year, month, 1).getDay(); }
 
-const ScheduleModal: React.FC<ScheduleModalProps> = ({ onClose, onConfirm }) => {
+const ScheduleModal: React.FC<ScheduleModalProps> = ({ onClose, onConfirm , isSubmitting}) => {
   const now = new Date();
   const [viewMonth, setViewMonth] = useState(now.getMonth());
   const [viewYear,  setViewYear]  = useState(now.getFullYear());
@@ -702,9 +707,14 @@ const ScheduleModal: React.FC<ScheduleModalProps> = ({ onClose, onConfirm }) => 
                   );
                 })}
               </div>
-              <button className="cna-cal-confirm-btn" onClick={handleConfirm}>
-                <CalendarClock size={15} /> Schedule Article
-              </button>
+              <button
+  className="cna-cal-confirm-btn"
+  onClick={handleConfirm}
+  disabled={isSubmitting}
+>
+  <CalendarClock size={15} />
+  {isSubmitting ? "Scheduling..." : "Schedule Article"}
+</button>
             </div>
             <div className="cna-clock-col">
               <div className="cna-clock-wrap">
@@ -912,6 +922,7 @@ const CreateNewArticle: React.FC = () => {
   const [savedRange,        setSavedRange]        = useState<Range | null>(null);
   const [submitError,       setSubmitError]       = useState<string | null>(null);
   const [isSubmitting,      setIsSubmitting]      = useState(false);
+  const [showSubmitPreloader, setShowSubmitPreloader] = useState(false);
   const [isSavingDraft, setIsSavingDraft] = useState(false);
   const [currentUser, setCurrentUser] = useState<{
   role: "ADMIN" | "EDITOR";
@@ -969,6 +980,7 @@ const canSchedule =
 
   const [dbTags,          setDbTags]          = useState<TagType[]>([]);
   const [trendingDbTags,  setTrendingDbTags]  = useState<TagType[]>([]);
+  const [topicProfiles, setTopicProfiles] = useState<TopicProfile[]>([]);
   const [tagDropdown,     setTagDropdown]     = useState<string[]>([]);
   const [tagDropdownOpen, setTagDropdownOpen] = useState(false);
   const [showFloatingPublish, setShowFloatingPublish] = useState(false);
@@ -989,14 +1001,21 @@ const canSchedule =
   return () => observer.disconnect();
 }, []);
 
-  useEffect(() => {
-    Promise.all([getAllTags(), getTrendingTags()])
-      .then(([all, trending]) => {
-        setDbTags(Array.isArray(all) ? all : []);
-        setTrendingDbTags(Array.isArray(trending) ? trending : []);
-      })
-      .catch(() => {});
-  }, []);
+useEffect(() => {
+  Promise.all([
+    getAllTags(),
+    getTrendingTags(),
+    fetchTopicProfiles(),
+  ])
+    .then(([all, trending, topics]) => {
+      setDbTags(Array.isArray(all) ? all : []);
+      setTrendingDbTags(Array.isArray(trending) ? trending : []);
+      setTopicProfiles(Array.isArray(topics) ? topics : []);
+    })
+    .catch((err) => {
+      console.error("Failed to load initial article data:", err);
+    });
+}, []);
 
   useEffect(() => {
     if (slugManuallyEdited) return;
@@ -1373,53 +1392,91 @@ const canSchedule =
     }
   };
 
-  const handleScheduleConfirm = async (isoDatetime: string) => {
-    setSubmitError(null);
-    if (!validate()) { setShowScheduleModal(false); return; }
-    setIsSubmitting(true);
+const handleScheduleConfirm = async (isoDatetime: string) => {
+  if (isSubmitting) return;
 
-    try {
-      const payload = buildPayload("SCHEDULED", isoDatetime);
+  setSubmitError(null);
 
-      if (isEdit && editId) {
-        await updateNews(editId, payload);
-      } else {
-        if (mediaFile) {
-          const formData = new FormData();
-          Object.entries(payload).forEach(([key, value]) => {
-            if (value === undefined || value === null) return;
-            if (Array.isArray(value)) {
-              // If array contains objects, send as a single JSON-encoded field
-              if (value.length > 0 && typeof value[0] === "object") {
-                formData.append(key, JSON.stringify(value));
-              } else {
-                // Primitive arrays (strings) — repeated key[]
-                value.forEach((v: any) => formData.append(`${key}[]`, String(v)));
-              }
-            } else if (typeof value === "object") {
+  if (!validate()) {
+    setShowScheduleModal(false);
+    return;
+  }
+
+  setIsSubmitting(true);
+  setShowScheduleModal(false);
+
+  // Start preloader immediately when Schedule Article is clicked
+  setShowSubmitPreloader(true);
+
+  const preloaderStartTime = Date.now();
+  const MIN_PRELOADER_TIME = 1800;
+
+  try {
+    const payload = buildPayload("SCHEDULED", isoDatetime);
+
+    if (isEdit && editId) {
+      await updateNews(editId, payload);
+    } else {
+      if (mediaFile) {
+        const formData = new FormData();
+
+        Object.entries(payload).forEach(([key, value]) => {
+          if (value === undefined || value === null) return;
+
+          if (Array.isArray(value)) {
+            if (value.length > 0 && typeof value[0] === "object") {
               formData.append(key, JSON.stringify(value));
             } else {
-              formData.append(key, String(value));
+              value.forEach((v: any) => {
+                formData.append(`${key}[]`, String(v));
+              });
             }
-          });
-          formData.append("image", mediaFile);
-          await createNewsWithMedia(formData);
-        } else {
-          await createNews(payload);
-        }
+          } else if (typeof value === "object") {
+            formData.append(key, JSON.stringify(value));
+          } else {
+            formData.append(key, String(value));
+          }
+        });
+
+        formData.append("image", mediaFile);
+
+        await createNewsWithMedia(formData);
+      } else {
+        await createNews(payload);
       }
-
-      clearDraft(draftKey);
-      setShowScheduleModal(false);
-      navigate("/admin/schedule");
-    } catch (err: any) {
-      setSubmitError(err?.message || "Failed to schedule. Please try again.");
-      setShowScheduleModal(false);
-    } finally {
-      setIsSubmitting(false);
     }
-  };
 
+    // Make sure the preloader is visible for at least 1.8 seconds
+    const elapsed = Date.now() - preloaderStartTime;
+    const remaining = Math.max(
+      0,
+      MIN_PRELOADER_TIME - elapsed
+    );
+
+    if (remaining > 0) {
+      await new Promise(resolve =>
+        setTimeout(resolve, remaining)
+      );
+    }
+
+    clearDraft(draftKey);
+
+    // Hide preloader only after API + minimum animation time
+    setShowSubmitPreloader(false);
+    setIsSubmitting(false);
+
+    // Then go to Scheduled Posts
+    navigate("/admin/schedule");
+
+  } catch (err: any) {
+    setShowSubmitPreloader(false);
+    setIsSubmitting(false);
+
+    setSubmitError(
+      err?.message || "Failed to schedule. Please try again."
+    );
+  }
+};
   const handleDelete = async (mode: "instant" | "interval") => {
     setSubmitError(null);
     setIsSubmitting(true);
@@ -1451,6 +1508,8 @@ const canSchedule =
 
   return (
     <div className="cna-root">
+
+    {showSubmitPreloader && <Preloader />}
       <div
   ref={publishSentinelRef}
   className="cna-publish-sentinel"
@@ -1527,8 +1586,8 @@ const canSchedule =
       {showRestoreModal && pendingDraft && (
         <RestoreDraftModal draft={pendingDraft} onRestore={handleRestoreDraft} onDiscard={handleDiscardDraft} />
       )}
-      {showScheduleModal && <ScheduleModal onClose={() => setShowScheduleModal(false)} onConfirm={handleScheduleConfirm} />}
-      {showTopicModal    && <TopicLinkModal savedRange={savedRange} editorRef={editorRef} onClose={() => setShowTopicModal(false)} />}
+      {showScheduleModal && <ScheduleModal onClose={() => setShowScheduleModal(false)} onConfirm={handleScheduleConfirm}  isSubmitting={isSubmitting} />}
+      {showTopicModal    && <TopicLinkModal savedRange={savedRange} editorRef={editorRef} onClose={() => setShowTopicModal(false)} initialProfiles={topicProfiles} />}
       {showDeleteModal && (
         <div className="cna-modal-overlay" onClick={e => { if (e.target === e.currentTarget) setShowDeleteModal(false); }}>
           <div className="cna-modal" role="dialog" aria-modal="true" style={{ maxWidth: 420 }}>
@@ -1778,18 +1837,45 @@ const canSchedule =
                 </div>
               </div>
             )}
-            {seoTab === "google" && (
-              <div className="cna-seo-panel">
-                <div className="cna-google-preview">
-                  <div className="cna-google-url-row">
-                    <Globe size={14} className="cna-google-globe" />
-                    <span className="cna-google-url">{googlePreviewUrl}</span>
-                  </div>
-                  <p className="cna-google-title">{googlePreviewTitle}</p>
-                  <p className="cna-google-desc">{googlePreviewDesc}</p>
-                </div>
-              </div>
-            )}
+{seoTab === "google" && (
+  <div className="cna-seo-panel">
+    <div className="cna-google-preview">
+
+      {/* 1. URL at the top */}
+      <div className="cna-google-url-row">
+        <Globe size={14} className="cna-google-globe" />
+        <span className="cna-google-url">
+          {googlePreviewUrl}
+        </span>
+      </div>
+
+      {/* 2. Image left + title + description right */}
+<div className="cna-google-bottom">
+
+  {mediaPreview && (
+    <div className="cna-google-thumbnail">
+      <img
+        src={mediaPreview}
+        alt="Featured article"
+      />
+    </div>
+  )}
+
+  <div className="cna-google-text">
+    <p className="cna-google-title">
+      {googlePreviewTitle}
+    </p>
+
+    <p className="cna-google-desc">
+      {googlePreviewDesc}
+    </p>
+  </div>
+
+</div>
+
+    </div>
+  </div>
+)}
           </section>
         </main>
 

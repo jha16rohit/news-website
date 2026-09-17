@@ -157,7 +157,6 @@ const Footer: React.FC = () => {
       // Categories (public, unauthenticated — matches the public nav/menu)
       const categoryData = await getPublicCategories();
 
-      console.log("Categories Response:", categoryData);
 
       setCategories(
         categoryData.categories ||
