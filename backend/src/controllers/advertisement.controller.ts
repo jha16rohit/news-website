@@ -38,7 +38,7 @@ async function sendAdInquiryNotification(inquiry: {
   }
 
   const adminUrl = `${
-    process.env.SITE_URL?.trim() || "http://localhost:3000"
+    process.env.FRONTEND_URL?.trim() || "http://localhost:5173"
   }/admin/advertisements`;
   
 

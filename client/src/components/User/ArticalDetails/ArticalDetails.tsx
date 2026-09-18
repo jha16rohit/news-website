@@ -92,7 +92,7 @@ interface ArticleData {
 }
 
 // ─── Constants ────────────────────────────────────────────────────────────────
-const BASE = "http://localhost:5001/api";
+const BASE = import.meta.env.VITE_API_URL || "http://localhost:5001/api";
 
 // ─── Helpers ───────────────────────────────────────────────────────────────────
 function formatDate(iso?: string): string {
@@ -578,7 +578,7 @@ setAds(adResponse);
 
   if (!slug) return;
 
-  const shareUrl = `http://localhost:5001/share/news/${encodeURIComponent(
+  const shareUrl = `${import.meta.env.VITE_SOCKET_URL || "http://localhost:5001"}/share/news/${encodeURIComponent(
     slug
   )}`;
 

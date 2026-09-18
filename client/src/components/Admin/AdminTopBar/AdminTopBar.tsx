@@ -11,6 +11,7 @@ import {
 } from "lucide-react";
 import { getMe, logoutUser } from "../../../api/auth";
 import { fetchAdminNews } from "../../../api/news";
+import { useAdminNotifications } from "../../../hooks/useAdminNotifications";
 
 interface AdminTopBarProps {
   onMenuClick: () => void;
@@ -29,6 +30,8 @@ const AdminTopBar: React.FC<AdminTopBarProps> = ({ onMenuClick }) => {
   const [profileOpen, setProfileOpen] = useState(false);
   const [liveCount, setLiveCount] = useState(0);
   const [user, setUser] = useState<AuthUser | null>(null);
+
+  const { unreadCount: unreadNotificationCount } = useAdminNotifications();
 
   const navigate = useNavigate();
   const profileRef = useRef<HTMLDivElement>(null);
@@ -184,7 +187,9 @@ const AdminTopBar: React.FC<AdminTopBarProps> = ({ onMenuClick }) => {
             onClick={handleNotificationClick}
           >
             <Bell size={20} />
-            <span className="notification-count">3</span>
+            {unreadNotificationCount > 0 && (
+              <span className="notification-count">{unreadNotificationCount}</span>
+            )}
           </div>
         )}
 

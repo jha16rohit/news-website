@@ -14,8 +14,10 @@ type Screen =
   | "reset-password"; // set new password
 
 // ─── API helpers ───────────────────────────────────────────────────────────────
+const API_BASE = import.meta.env.VITE_API_URL || "http://localhost:5001/api";
+
 async function apiFetch(endpoint: string, body: object) {
-  const res = await fetch(`http://localhost:5001${endpoint}`, {
+  const res = await fetch(`${API_BASE}${endpoint}`, {
     method:      "POST",
     credentials: "include",
     headers:     { "Content-Type": "application/json" },

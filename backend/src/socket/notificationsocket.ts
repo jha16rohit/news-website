@@ -25,7 +25,7 @@ const TRENDING_ARTICLE_VIEWS_PER_HOUR = 50;  // per-article "trending" threshold
 
 type NotificationInput = Pick<
   INotification,
-  "type" | "tab" | "title" | "description" | "dedupeKey"
+  "type" | "tab" | "title" | "description" | "dedupeKey" | "link"
 >;
 
 // Upserts a notification by dedupeKey. Only emits the socket event when the
@@ -58,6 +58,7 @@ async function scanBreakingPublished(io: SocketServer) {
       title: "Breaking Published",
       description: `"${a.headline}" has been published as breaking news.`,
       dedupeKey: `breaking-published-${a._id}`,
+      link: `/admin/news/${a._id}`,
     });
   }
 }
@@ -85,6 +86,7 @@ async function scanScheduledReminders(io: SocketServer) {
       title: "Scheduled Article Publishing Soon",
       description: `"${a.headline}" is scheduled to publish in ${mins} minute${mins === 1 ? "" : "s"}.`,
       dedupeKey: `scheduled-reminder-${a._id}`,
+      link: `/admin/news/${a._id}`,
     });
   }
 }
@@ -115,6 +117,7 @@ async function scanNewComments(io: SocketServer) {
       title: "New Comment",
       description: `A new comment was posted on "${headline}".`,
       dedupeKey: `comment-new-${c._id}`,
+      link: `/admin/comments?newsId=${c.newsId}`,
     });
   }
 }
@@ -137,6 +140,7 @@ async function scanFlaggedComments(io: SocketServer) {
       title: "Comment Flagged",
       description: `A comment on "${headline}" was reported and needs review.`,
       dedupeKey: `flagged-comment-${c._id}`,
+      link: `/admin/comments?newsId=${c.newsId}`,
     });
   }
 }
@@ -170,6 +174,7 @@ async function scanTrafficSpike(io: SocketServer) {
     // Bucketed by hour so a spike that persists across an hour only alerts once,
     // but a *new* spike the following hour will alert again.
     dedupeKey: `traffic-spike-${hourBucket(now)}`,
+    link: `/admin/dashboard`,
   });
 }
 
@@ -195,6 +200,7 @@ async function scanTrendingArticles(io: SocketServer) {
       title: "Article Trending",
       description: `"${headline}" is trending with ${r.views} views in the last hour.`,
       dedupeKey: `trending-${r._id}-${hourBucket(new Date())}`,
+      link: `/admin/news/${r._id}`,
     });
   }
 }

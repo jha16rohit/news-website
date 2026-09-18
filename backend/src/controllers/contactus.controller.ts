@@ -35,7 +35,7 @@ async function sendContactNotification(msg: {
   }
 
   const adminUrl = `${
-    process.env.SITE_URL?.trim() || "http://localhost:3000"
+    process.env.FRONTEND_URL?.trim() || "http://localhost:5173"
   }/admin/contact`;
 
   const { error } = await getResend().emails.send({

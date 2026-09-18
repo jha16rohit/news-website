@@ -5,6 +5,9 @@ import { Router } from "express";
 import {
   getNotifications,
   markAllNotificationsRead,
+  markNotificationRead,
+  markNotificationUnread,
+  deleteNotification,
 } from "../controllers/notification.controller";
 
 import {
@@ -31,6 +34,24 @@ notificationRouter.get(
 notificationRouter.post(
   "/mark-all-read",
   markAllNotificationsRead
+);
+
+// PATCH /api/notifications/:id/read
+notificationRouter.patch(
+  "/:id/read",
+  markNotificationRead
+);
+
+// PATCH /api/notifications/:id/unread
+notificationRouter.patch(
+  "/:id/unread",
+  markNotificationUnread
+);
+
+// DELETE /api/notifications/:id (soft delete)
+notificationRouter.delete(
+  "/:id",
+  deleteNotification
 );
 
 export default notificationRouter;

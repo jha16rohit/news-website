@@ -64,7 +64,8 @@ interface TopicProfile {
 
 async function fetchTopicProfiles(): Promise<TopicProfile[]> {
   try {
-    const res = await fetch("http://localhost:5001/api/topic-profiles", { credentials: "include" });
+    const baseUrl = import.meta.env.VITE_API_URL || "http://localhost:5001/api";
+    const res = await fetch(`${baseUrl}/topic-profiles`, { credentials: "include" });
     if (!res.ok) return [];
     return await res.json();
   } catch {
