@@ -2,10 +2,24 @@
 
 /* ── ROOT ── */
 .ml-root {
-  background: #F8F9FA;
+
   min-height: 100vh;
   font-family: 'DM Sans', sans-serif;
   color: #1A1814;
+}
+
+/* ── FULL PAGE LOADER ── */
+.ml-page-loader {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: calc(100vh - 60px); /* Account for admin topbar */
+  padding: 24px;
+  box-sizing: border-box;
+}
+
+.ml-page-loader .content-preloader {
+  background: transparent;
 }
 
 /* ── TOPBAR ── */

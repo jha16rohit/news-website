@@ -54,10 +54,6 @@ export const getAdvertisementPool = async (
       `/api/advertisement-pool/pool?${qs.toString()}`
     );
 
-    // 👇 UNPACK AND PRINT THE ARRAYS DIRECTLY TO THE CONSOLE
-    console.log("✅ AD DEBUG - Cards Found:", response.data?.cards);
-    console.log("✅ AD DEBUG - Strips Found:", response.data?.strips);
-
     if (response && response.data) {
       return response.data;
     }

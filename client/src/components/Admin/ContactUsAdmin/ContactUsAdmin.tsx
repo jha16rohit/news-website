@@ -5,6 +5,7 @@ import {
 } from "lucide-react";
 import "./ContactUsAdmin.css";
 import { apiClient } from "../../../api/client";
+import { FullPageContentPreloader } from "../Preloader/FullPageContentPreloader";
 
 // ─── TYPES ─────────────────────────────────────────────────────────
 export interface ContactInfo {
@@ -158,8 +159,9 @@ const ContactUsAdmin: React.FC = () => {
         heroTitle:          settings.heroTitle,
         heroSubtitle:       settings.heroSubtitle,
         contactInfoVisible: settings.contactInfoVisible,
+        // Normalize contact info IDs from Mongo subdocuments (`_id` -> `id`)[cite: 3]
         contactInfo:        (settings.contactInfo ?? []).map((c: any) => ({
-          id:      c.id,
+          id:      c.id ?? c._id,
           type:    c.type,
           label:   c.label,
           value:   c.value,
@@ -172,15 +174,17 @@ const ContactUsAdmin: React.FC = () => {
         subjectOptions: settings.subjectOptions ?? [],
         faqVisible:     settings.faqVisible,
         faqTitle:       settings.faqTitle,
+        // Normalize FAQ item IDs[cite: 3]
         faq:            (settings.faq ?? []).map((f: any) => ({
-          id:       f.id,
+          id:       f.id ?? f._id,
           question: f.question,
           answer:   f.answer,
           visible:  f.visible,
         })),
       });
 
-      setMessages(msgs ?? []);
+      // Normalize message IDs (`_id` -> `id`) to fix missing key warnings and delete failures[cite: 3]
+      setMessages((msgs ?? []).map((m: any) => ({ ...m, id: m.id ?? m._id })));
     } catch (err) {
       console.error("Failed to load contact settings:", err);
     } finally {
@@ -247,9 +251,10 @@ const ContactUsAdmin: React.FC = () => {
         method: "PATCH",
         body: JSON.stringify({ replyText: text }),
       });
-      setMessages(ms => ms.map(m => m.id === id ? { ...m, ...updated } : m));
-      // Update the open modal's data too
-      setOpenMsg(prev => prev?.id === id ? { ...prev, ...updated } : prev);
+      // Normalize reply response IDs[cite: 3]
+      const normalized = { ...updated, id: updated.id ?? updated._id };
+      setMessages(ms => ms.map(m => m.id === id ? { ...m, ...normalized } : m));
+      setOpenMsg(prev => prev?.id === id ? { ...prev, ...normalized } : prev);
     } catch (err: any) {
       alert("Reply failed: " + err.message);
     }
@@ -276,11 +281,7 @@ const ContactUsAdmin: React.FC = () => {
   ];
 
   if (loading) {
-    return (
-      <div className="cu-admin" style={{ display: "flex", alignItems: "center", justifyContent: "center", minHeight: 300 }}>
-        <Loader2 size={32} className="spin" />
-      </div>
-    );
+    return <FullPageContentPreloader message="Loading contact settings..." />;
   }
 
   return (
@@ -514,11 +515,6 @@ const ContactUsAdmin: React.FC = () => {
           </div>
         )}
       </div>
-
-      {/* Float Save */}
-      {/* <button className={`cu-float-save ${saved ? "saved" : ""}`} onClick={save} disabled={saving}>
-        {saving ? <Loader2 size={17} className="spin" /> : saved ? <CheckCircle size={17} /> : <Save size={17} />}
-      </button> */}
 
       {/* Message Modal */}
       {openMsg && (

@@ -21,8 +21,6 @@ export const startScheduler = () => {
           status: "PUBLISHED",
           publishedAt: now,
         });
-
-        console.log(`✅ Published: ${post.headline}`);
       }
 
       // ============================
@@ -39,12 +37,6 @@ export const startScheduler = () => {
           },
         }
       );
-
-      if (result.modifiedCount > 0) {
-        console.log(
-          `✅ ${result.modifiedCount} advertisement(s) expired automatically.`
-        );
-      }
     } catch (err) {
       console.error("Scheduler error:", err);
     }

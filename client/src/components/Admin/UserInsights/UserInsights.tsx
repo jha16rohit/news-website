@@ -13,7 +13,7 @@ import "./UserInsights.css";
 // NOTE: adjust this relative path if UserInsights.tsx lives somewhere
 // other than one level below src/api/admin/ in your project structure.
 import { fetchUserInsights } from "../../../api/analytics";
-import Preloader from "../Preloader/Preloder";
+import { FullPageContentPreloader } from "../Preloader/FullPageContentPreloader";
 
 /* ------------------------------------------------------------------ */
 /*  Real data — shape returned by GET /api/admin/analytics/user-insights */
@@ -30,7 +30,7 @@ interface UserInsightsResponse {
     activeUsers: { value: number; pctActive: number };
     growthRate: { value: number };
     newUsers: { value: number };
-    adRequests: { value: number; pending: number };
+    subscribers: { value: number; newThisMonth: number };
     returningUsers: { pct: number };
   };
   growthChart: { monthly: GrowthPoint[]; yearly: GrowthPoint[] };
@@ -40,7 +40,6 @@ interface UserInsightsResponse {
     average: number;
     current: number;
   };
-  adRequestSummary: { pending: number; approved: number; rejected: number; total: number };
   loginActivity: { key: string; label: string; range: string; logins: number }[];
   engagement: { avgLoginsPerUser: number; avgSessionMinutes: number; avgArticlesRead: number };
 }
@@ -88,11 +87,10 @@ const IconNewUser: React.FC<IconProps> = ({ className }) => (
   </svg>
 );
 
-const IconAd: React.FC<IconProps> = ({ className }) => (
+const IconSubscribers: React.FC<IconProps> = ({ className }) => (
   <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
-    <rect x="3" y="5" width="18" height="12" rx="2" />
-    <path d="M7 20h10M9 17v3M15 17v3" strokeLinecap="round" />
-    <path d="M6.5 13.5l3-3 2.5 2 4-4.5" strokeLinecap="round" strokeLinejoin="round" />
+    <path d="M22 6h-4v-4h-4v4H6v4h4v4h4v-4h4v-4Z" strokeLinecap="round" strokeLinejoin="round" />
+    <path d="M12 16v-8M16 12h-8" strokeLinecap="round" strokeLinejoin="round" />
   </svg>
 );
 
@@ -311,10 +309,7 @@ const UserInsights: React.FC = () => {
   }, [data]);
 
   if (loading) {
-    return <>(
-        <Preloader />
-    )
-    </>;
+    return <FullPageContentPreloader message="Loading user insights..." />;
   }
 
   if (error || !data) {
@@ -368,10 +363,10 @@ const UserInsights: React.FC = () => {
             icon={<IconNewUser className="uid-icon" />}
           />
           <StatCard
-            title="Advertisement Requests"
-            value={stats.adRequests.value.toLocaleString()}
-            bottomText={`${stats.adRequests.pending} Pending`}
-            icon={<IconAd className="uid-icon" />}
+            title="Subscribers"
+            value={stats.subscribers.value.toLocaleString()}
+            bottomText={stats.subscribers.newThisMonth > 0 ? `+${stats.subscribers.newThisMonth} this month` : "Active subscribers"}
+            icon={<IconSubscribers className="uid-icon" />}
           />
           <StatCard
             title="Returning Users"

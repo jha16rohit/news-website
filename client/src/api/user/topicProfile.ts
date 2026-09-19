@@ -5,7 +5,7 @@ export const getTopicProfiles =
     try {
       const response =
         await apiClient(
-          "/api/topic-profiles"
+          "/api/topic-profiles/public"
         );
 
       return response;

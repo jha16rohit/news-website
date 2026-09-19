@@ -122,16 +122,17 @@
   }
 }
 
-/* 2. Laptop - 1024px */
+/* 2. Laptop/Tablet - 1024px */
 @media (max-width: 1024px) {
   .ad-image-wrapper, 
   .ad-image-wrapper--strip {
-    max-width: 800px;
+    max-width: 100%; /* 👇 EXPERT FIX: Allows strips to fill space dynamically */
     height: 110px;
   }
   .ad-image-wrapper--card {
-    width: 280px;
-    height: 233px;
+    width: 100%;     /* 👇 EXPERT FIX: Forces the card to stretch and fill the wide tablet row */
+    max-width: 100%; /* Overrides the default restriction */
+    height: 180px;   /* Adjusted height so it acts like a wide banner instead of a massive square */
   }
 }
 
@@ -144,7 +145,7 @@
   }
   .ad-image-wrapper--card {
     width: 100%;
-    max-width: 300px;
+    max-width: 300px; /* Goes back to being a normal sized card when stacked on smaller screens */
     height: 250px;
     margin: 0 auto;
   }

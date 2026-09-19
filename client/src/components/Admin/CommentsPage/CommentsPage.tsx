@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
+import { useNavigate } from "react-router-dom";
 import "./CommentsPage.css";
 import {
   Clock,
@@ -15,11 +16,13 @@ import {
 } from "lucide-react";
 import {
   adminFetchCommentStats,
+  adminFetchComments,
   adminApproveComment,
   adminRejectComment,
   adminDeleteComment,
   adminReplyComment,
 } from "../../../api/user/comment";
+import { FullPageContentPreloader } from "../Preloader/FullPageContentPreloader";
 
 type Status = "all" | "pending" | "approved" | "reported";
 
@@ -63,11 +66,12 @@ const computeColumns = (width: number) => {
 const ROWS_PER_PAGE = 2;
 
 const CommentsPage = () => {
+  const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState<Status>("all");
   const [search, setSearch] = useState("");
   const [comments, setComments] = useState<Comment[]>([]);
   const [stats, setStats] = useState<Stats>({ total: 0, pending: 0, reported: 0, approvedToday: 0 });
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
 
   // ✅ Reply popup (modal) state — replaces the old inline reply box
   const [replyModalComment, setReplyModalComment] = useState<Comment | null>(null);
@@ -84,13 +88,6 @@ const CommentsPage = () => {
     const handleResize = () => setColumns(computeColumns(window.innerWidth));
     window.addEventListener("resize", handleResize);
     return () => window.removeEventListener("resize", handleResize);
-  }, []);
-
-  const getAuthHeaders = useCallback(() => {
-    const headers: Record<string, string> = { "Content-Type": "application/json" };
-    const token = localStorage.getItem("token") || localStorage.getItem("adminToken");
-    if (token) headers["Authorization"] = `Bearer ${token}`;
-    return headers;
   }, []);
 
   const loadStats = async () => {
@@ -112,20 +109,13 @@ const CommentsPage = () => {
   const loadComments = useCallback(async () => {
     setLoading(true);
     try {
-      const qs = new URLSearchParams();
-      if (activeTab !== "all") qs.set("status", activeTab);
-      if (search.trim()) qs.set("search", search);
-      qs.set("limit", "50");
-
-      const res = await fetch(`http://localhost:5001/api/admin/comments?${qs.toString()}`, {
-        method: "GET",
-        headers: getAuthHeaders(),
-        credentials: "include" 
+      const data = await adminFetchComments({
+        status: activeTab === "all" ? undefined : activeTab,
+        search: search.trim() || undefined,
+        limit: 50,
       });
 
-      if (res.ok) {
-        const data = await res.json();
-        if (data && data.comments) {
+      if (data && data.comments) {
           const mapped = data.comments.map((c: any) => {
             let timeLabel = "Some time ago";
             if (c.time) {
@@ -152,14 +142,13 @@ const CommentsPage = () => {
             };
           });
           setComments(mapped);
-        }
       }
     } catch (err) {
       console.error("Error fetching comments list:", err);
     } finally {
       setLoading(false);
     }
-  }, [activeTab, search, getAuthHeaders]);
+  }, [activeTab, search]);
 
   useEffect(() => {
     loadStats();
@@ -215,6 +204,10 @@ const CommentsPage = () => {
 
   const visibleComments = comments.slice(0, visibleCount);
   const hasMore = comments.length > visibleCount;
+
+  if (loading && comments.length === 0) {
+    return <FullPageContentPreloader message="Loading comments..." />;
+  }
 
   return (
     <div className="comments-page">
@@ -330,7 +323,16 @@ const CommentsPage = () => {
 
                   <p className="cci-text">{c.text}</p>
 
-                  <a className="cci-article-link" title={c.article}>on {c.article} ↗</a>
+                  <a
+  className="cci-article-link"
+  href={`/admin/news/${c.newsId}`}
+  onClick={(e) => {
+    e.preventDefault();
+    navigate(`/article/${c.newsId}`);
+  }}
+>
+  on {c.article} ↗
+</a>
 
                   <div className="cci-footer">
                     <span className="cci-likes">

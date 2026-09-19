@@ -7,6 +7,7 @@ import {
   logoutUser,
 } from "../../../api/auth";
 import { useNavigate } from "react-router-dom";
+import { FullPageContentPreloader } from "../Preloader/FullPageContentPreloader";
 
 const AccountSettings: React.FC = () => {
   const navigate = useNavigate();
@@ -97,14 +98,16 @@ const fullName = `${profile.firstName} ${profile.lastName}`.trim();
 
       alert("Password updated! Please login again 🔐");
 
-      navigate("/admin/login-xyzsft");
+      navigate("/admin/lnz-control-7x9k2m8p/login");
     } catch (err: any) {
       console.error(err);
       alert(err?.message || "Error updating password ❌");
     }
   };
 
-  if (loading) return <div>Loading...</div>;
+  if (loading) {
+    return <FullPageContentPreloader message="Loading account settings..." />;
+  }
 
   return (
     <div className="settings-page">

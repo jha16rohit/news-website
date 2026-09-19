@@ -1,43 +1,55 @@
-import { useEffect, useState } from "react";
+// import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { ArrowRight, Clock } from "lucide-react";
-import { getCategories } from "../../../api/category.api";
-import { fetchAllNews } from "../../../api/news";
+// import { getPublicCategories } from "../../../api/user/categoryNews";
+// import { fetchAllNews } from "../../../api/news";
 import type { Category } from "../../../types/category";
 import "./CategoryShowcase.css";
+
+interface CategoryShowcaseProps {
+  categories: Category[];
+  articles: any[];
+}
 
 const slugOf = (text: string) =>
   text ? text.toLowerCase().replace(/\s+/g, "-") : "";
 
+// Inline SVG placeholder — no network request, never fails, unlike
+// via.placeholder.com which is unreliable / can go down.
+// const PLACEHOLDER_IMG =
+//   "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='400' height='260'%3E%3Crect width='100%25' height='100%25' fill='%23e5e7eb'/%3E%3Ctext x='50%25' y='50%25' font-family='sans-serif' font-size='20' fill='%239ca3af' text-anchor='middle' dominant-baseline='middle'%3ENo Image%3C/text%3E%3C/svg%3E";
+
 const LAYOUT_STYLES = [
   "hero-sidebar",
   "grid-3",
-  "hero-reversed",
-  "grid-4",
   "split-sidebar",
+  "grid-4",
 ];
 
-const CategoryShowcase: React.FC = () => {
-  const [categories, setCategories] = useState<Category[]>([]);
-  const [articles, setArticles] = useState<any[]>([]);
+const CategoryShowcase: React.FC<CategoryShowcaseProps> = ({
+  categories,
+  articles,
+}) => {
+  // const [categories, setCategories] = useState<Category[]>([]);
+  // const [articles, setArticles] = useState<any[]>([]);
 
-  useEffect(() => {
-    const fetchData = async () => {
-      try {
-        // Categories
-        const categoryData = await getCategories();
-        setCategories(categoryData || []);
+  // useEffect(() => {
+  //   const fetchData = async () => {
+  //     try {
+  //       // Categories
+  //       const categoryData = await getPublicCategories();
+  //       setCategories(categoryData || []);
 
-        // News
-        const newsData = await fetchAllNews();
-        setArticles(newsData?.news || []);
-      } catch (error) {
-        console.error("Category showcase fetch error:", error);
-      }
-    };
+  //       // News
+  //       const newsData = await fetchAllNews();
+  //       setArticles(newsData?.news || []);
+  //     } catch (error) {
+  //       console.error("Category showcase fetch error:", error);
+  //     }
+  //   };
 
-    fetchData();
-  }, []);
+  //   fetchData();
+  // }, []);
 
   const showcaseCategories = categories.filter(
     (c) => c.inShowcase && c.enabled,
@@ -68,18 +80,31 @@ const CategoryShowcase: React.FC = () => {
           )
           .map((a: any) => ({
             id: a._id || a.id,
-
             title: a.headline || a.title || "Untitled News",
-
             subtitle: a.excerpt || a.shortTitle || "Read full story",
 
-            img: a.featuredImage || a.imageUrl || a.img || "",
+            // Always resolve to a usable src — never an empty string.
+            // img: a.featuredImage || a.imageUrl || a.img || PLACEHOLDER_IMG,
+
+            img: a.featuredImage || a.imageUrl || a.img || "https://placehold.co/400x225/e2e8f0/64748b?text=No+Image",
 
             category:
               a?.categoryId?.name || a?.categoryName || a?.category || "News",
 
-            time: a.createdAt || a.publishedAt || "Just now",
+            // 👇 EXPERT FIX: Converts the raw ISO string into a human-readable date!
+            time:
+              a.createdAt || a.publishedAt
+                ? new Date(a.createdAt || a.publishedAt).toLocaleDateString(
+                    "en-IN",
+                    {
+                      day: "numeric",
+                      month: "short",
+                      year: "numeric",
+                    },
+                  )
+                : "Just now",
           }));
+
         const displayArticles = realArticles.slice(0, 10);
 
         if (displayArticles.length === 0) {
@@ -110,7 +135,7 @@ const CategoryShowcase: React.FC = () => {
                       className="cs-dark-card"
                     >
                       <div className="cs-img-wrap">
-                        <img src={displayArticles[0].img} alt="" />
+                        <img src={displayArticles[0].img} />
                       </div>
                       <div className="cs-card-body">
                         <span className="cs-card-badge">
@@ -130,6 +155,56 @@ const CategoryShowcase: React.FC = () => {
                   </div>
                   <div className="cs-sidebar-col">
                     {displayArticles.slice(1, 5).map((article, i) => (
+                      <Link
+                        to={`/article/${article.id}`}
+                        key={article.id || i}
+                        className="cs-list-item"
+                      >
+                        <img src={article.img} className="cs-list-img" />
+                        <div className="cs-list-content">
+                          <span className="cs-list-cat">
+                            {article.category}
+                          </span>
+                          <h4 className="cs-list-title">{article.title}</h4>
+                          <div className="cs-card-time">
+                            <Clock size={14} /> {article.time}
+                          </div>
+                        </div>
+                      </Link>
+                    ))}
+                  </div>
+                </>
+              )}
+
+              {/* LAYOUT 2: SPLIT + SIDEBAR */}
+              {layout === "split-sidebar" && (
+                <>
+                  <div className="cs-split-col">
+                    <Link
+                      to={`/article/${displayArticles[0].id}`}
+                      className="cs-dark-card"
+                    >
+                      <div className="cs-img-wrap">
+                        <img src={displayArticles[0].img} alt="" />
+                      </div>
+                      <div className="cs-card-body">
+                        <span className="cs-card-badge">
+                          {displayArticles[0].category}
+                        </span>
+                        <h3 className="cs-card-title">
+                          {displayArticles[0].title}
+                        </h3>
+                        <p className="cs-card-sub">
+                          {displayArticles[0].subtitle}
+                        </p>
+                        <div className="cs-card-time">
+                          <Clock size={14} /> {displayArticles[0].time}
+                        </div>
+                      </div>
+                    </Link>
+                  </div>
+                  <div className="cs-sidebar-col">
+                    {displayArticles.slice(2, 6).map((article, i) => (
                       <Link
                         to={`/article/${article.id}`}
                         key={article.id || i}
@@ -160,11 +235,35 @@ const CategoryShowcase: React.FC = () => {
                     className="cs-dark-card"
                   >
                     <div className="cs-img-wrap">
-                      {article.img && <img src={article.img} alt="" />}
+                      <img src={article.img} alt="" />
                     </div>
                     <div className="cs-card-body">
                       <span className="cs-card-badge">{article.category}</span>
                       <h3 className="cs-card-title">{article.title}</h3>
+                      <p className="cs-card-sub">{article.subtitle}</p>
+                      <div className="cs-card-time">
+                        <Clock size={14} /> {article.time}
+                      </div>
+                    </div>
+                  </Link>
+                ))}
+
+              {/* LAYOUT 4: 4-COLUMN GRID */}
+              {layout === "grid-4" &&
+                displayArticles.slice(0, 8).map((article, i) => (
+                  <Link
+                    to={`/article/${article.id}`}
+                    key={article.id || i}
+                    className="cs-dark-card"
+                  >
+                    <div className="cs-img-wrap">
+                      {article.img && <img src={article.img} alt="" />}
+                    </div>
+                    <div className="cs-card-body">
+                      <span className="cs-card-badge">{article.category}</span>
+                      <h3 className="cs-card-title cs-grid-title-small">
+                        {article.title}
+                      </h3>
                       <p className="cs-card-sub">{article.subtitle}</p>
                       <div className="cs-card-time">
                         <Clock size={14} /> {article.time}
@@ -232,7 +331,7 @@ const CategoryShowcase: React.FC = () => {
                     className="cs-dark-card"
                   >
                     <div className="cs-img-wrap">
-                      {article.img && <img src={article.img} alt="" />}
+                      <img src={article.img} alt="" />
                     </div>
                     <div className="cs-card-body">
                       <span className="cs-card-badge">{article.category}</span>
@@ -246,56 +345,6 @@ const CategoryShowcase: React.FC = () => {
                     </div>
                   </Link>
                 ))}
-
-              {/* LAYOUT 2: SPLIT + SIDEBAR */}
-              {layout === "split-sidebar" && (
-                <>
-                  <div className="cs-split-col">
-                    <Link
-                      to={`/article/${displayArticles[0].id}`}
-                      className="cs-dark-card"
-                    >
-                      <div className="cs-img-wrap">
-                        <img src={displayArticles[0].img} alt="" />
-                      </div>
-                      <div className="cs-card-body">
-                        <span className="cs-card-badge">
-                          {displayArticles[0].category}
-                        </span>
-                        <h3 className="cs-card-title">
-                          {displayArticles[0].title}
-                        </h3>
-                        <p className="cs-card-sub">
-                          {displayArticles[0].subtitle}
-                        </p>
-                        <div className="cs-card-time">
-                          <Clock size={14} /> {displayArticles[0].time}
-                        </div>
-                      </div>
-                    </Link>
-                  </div>
-                  <div className="cs-sidebar-col">
-                    {displayArticles.slice(2, 6).map((article, i) => (
-                      <Link
-                        to={`/article/${article.id}`}
-                        key={article.id || i}
-                        className="cs-list-item"
-                      >
-                        <img src={article.img} alt="" className="cs-list-img" />
-                        <div className="cs-list-content">
-                          <span className="cs-list-cat">
-                            {article.category}
-                          </span>
-                          <h4 className="cs-list-title">{article.title}</h4>
-                          <div className="cs-card-time">
-                            <Clock size={14} /> {article.time}
-                          </div>
-                        </div>
-                      </Link>
-                    ))}
-                  </div>
-                </>
-              )}
             </div>
           </section>
         );

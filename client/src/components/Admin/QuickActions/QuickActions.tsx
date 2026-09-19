@@ -1,3 +1,4 @@
+import { useState, useEffect } from "react";
 import "./QuickActions.css";
 import {
   FileText,
@@ -10,9 +11,21 @@ import {
   Settings,
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import { FullPageContentPreloader } from "../Preloader/FullPageContentPreloader";
 
 const QuickActions = () => {
   const navigate = useNavigate();
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    // Simulate loading for quick actions
+    const timer = setTimeout(() => setLoading(false), 300);
+    return () => clearTimeout(timer);
+  }, []);
+
+  if (loading) {
+    return <FullPageContentPreloader message="Loading quick actions..." />;
+  }
 
   return (
     <div className="quick-actions">

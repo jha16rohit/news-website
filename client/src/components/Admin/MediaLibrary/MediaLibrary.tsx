@@ -22,7 +22,7 @@ import {
 } from "../../../api/news";
 import "./MediaLibrary.css";
 import toast from "react-hot-toast";
-import Preloader from "../Preloader/Preloder";
+import ContentPreloader from "../Preloader/ContentPreloader";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -221,7 +221,18 @@ const uploadedImages = items.filter(item => item.url).length;
 
 const emptySlots = items.filter(item => !item.url).length;
 
-  // ── Render ──────────────────────────────────────────────────────────────────
+  // ── Render ────────────────────────────────────────────────────────────────
+
+  // Initial loading state - show full-page preloader in content area
+  if (loading) {
+    return (
+      <div className="ml-root">
+        <div className="ml-page-loader">
+          <ContentPreloader message="Loading media library..." />
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="ml-root">
@@ -335,7 +346,7 @@ const emptySlots = items.filter(item => !item.url).length;
         </div>
 
         {/* Loading state */}
-        {loading && <Preloader />}
+        
 
         {/* Error state */}
         {!loading && error && (
@@ -380,14 +391,14 @@ const emptySlots = items.filter(item => !item.url).length;
                         <>
                           <button
                             className="ml-card-action"
-                            title="Download"
+                           
                             onClick={() => handleDownload(item.url as string, filename)}
                           >
                             <Download size={15} />
                           </button>
                           <button
                             className="ml-card-action danger"
-                            title="Delete"
+                           
                             disabled={isDeleting}
                             onClick={() => {
     setDeleteNewsId(item.newsId);
@@ -400,7 +411,7 @@ const emptySlots = items.filter(item => !item.url).length;
                       ) : (
                         <button
                           className="ml-card-action upload"
-                          title="Upload"
+                         
                           disabled={isUploading}
                           onClick={() => openFilePicker(item.newsId)}
                         >

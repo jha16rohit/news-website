@@ -239,7 +239,9 @@
 }
 .ad-share-btn:hover { opacity: 0.85; transform: scale(1.08); }
 .ad-share-btn.fb   { background-color: #1877F2; }
-.ad-share-btn.ig   { background-color: #E4405F; }
+.ad-share-btn.whatsapp {
+  background-color: #25D366;
+}
 .ad-share-btn.tw   { background-color: #000000; }
 .ad-share-btn.copy { background-color: #475569; }
 
@@ -252,8 +254,9 @@
 
 .ad-hero-image {
   width: 100%;
-  height: 420px;
-  object-fit: fill;
+  height: auto;
+  aspect-ratio: 16/9; /* 👇 EXPERT FIX: Locks in a perfect cinematic rectangle */
+  object-fit: cover;  /* 👇 EXPERT FIX: Ensures the image NEVER squishes */
   border-radius: 10px;
   display: block;
 }
@@ -310,15 +313,47 @@
   font-size: 17px;
   line-height: 1.65;
   font-family: Noto Sans Devanagari; 
- color: #334155;
+  color: #334155;
   margin-bottom: 40px;
-  font-family: Noto Sans Devanagari;
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
+  overflow-wrap: break-word; 
+  word-break: break-word;
+}
+
+/* 👇 EXPERT FIX: Strips out hidden inline styles (like white-space AND fixed widths) 
+   often caused by copying/pasting from MS Word into the admin text editor */
+.ad-article-body p,
+.ad-article-body span,
+.ad-article-body div,
+.ad-article-body h1,
+.ad-article-body h2,
+.ad-article-body h3,
+.ad-article-body h4,
+.ad-article-body h5,
+.ad-article-body h6 {
+  white-space: normal !important; 
+  word-wrap: break-word !important;
+  max-width: 100% !important;
+  width: auto !important; /* 👇 THE MAGIC FIX: Destroys hidden fixed widths from MS Word! */
+  box-sizing: border-box !important;
+}
+
+/* Ensures images and videos inside the article scale cleanly on mobile */
+.ad-article-body img,
+.ad-article-body iframe,
+.ad-article-body video,
+.ad-article-body figure {
+  max-width: 100% !important;
+  height: auto !important;
+  box-sizing: border-box !important;
 }
 
 .ad-article-body p { margin-bottom: 22px; }
 .ad-article-body h1, .ad-article-body h2 {
-  font-family: var(--font-heading); /* 👇 EXPERT FIX: Applied heading font */
-  font-weight: 400; /* 👇 EXPERT FIX: Changed to 400 for Rozha One */
+  font-family: var(--font-heading); 
+  font-weight: 400; 
   color: #0f172a;
   margin: 36px 0 14px;
 }
@@ -329,8 +364,8 @@
 .ad-article-body strong { color: #0f172a; }
 .ad-article-body a { color: #e60000; text-underline-offset: 3px; }
 .ad-article-body blockquote {
-  font-family: var(--font-heading); /* 👇 EXPERT FIX: Applied heading font */
-  font-weight: 400; /* 👇 EXPERT FIX */
+  font-family: var(--font-heading); 
+  font-weight: 400; 
   font-size: 22px;
   font-style: italic;
   color: #0f172a;
@@ -733,6 +768,12 @@
   display: flex;
   flex-direction: column;
   gap: 24px;
+
+  /* Sticky sidebar */
+  position: sticky;
+  top: 120px;
+  align-self: flex-start;
+  z-index: 10;
 }
 
 .ad-sidebar-widget {
@@ -907,7 +948,7 @@
   line-height: 1.65;
   margin: 0;
   display: -webkit-box;
-  line-clamp: 2;
+  -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
   overflow: hidden;
 }
@@ -947,7 +988,7 @@
   font-weight: 600;
   font-family: Noto Sans Devanagari; /* 👇 EXPERT FIX: Applied heading font */
   display: -webkit-box;
-  line-clamp: 2;
+  -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
   overflow: hidden;
 }
@@ -1293,32 +1334,38 @@
 
 /* 2. Laptop & Tablet (Side-by-Side Grid) - 1024px to 641px */
 @media (max-width: 1024px) {
-  .ad-container { flex-direction: column; gap: 40px; }
+  .ad-container { flex-direction: column; gap: 40px; align-items: stretch; }
   
-  .ad-sidebar {
+  .ad-main-content {
     width: 100%;
-    display: grid;
-    grid-template-columns: repeat(2, 1fr);
-    gap: 24px;
+    max-width: 100%;
+    box-sizing: border-box;
   }
 
+  /* 👇 EXPERT FIX: Changed to flex-column so all widgets stack full-width one below the other! */
+  .ad-sidebar {
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+    box-sizing: border-box;
+  }
+
+  /* 👇 EXPERT FIX: Stacked the sticky widget container as well */
   .ad-sticky-widget {
     position: static;
-    grid-column: 1 / -1; 
-    display: grid;
-    grid-template-columns: repeat(2, 1fr);
+    display: flex;
+    flex-direction: column;
     gap: 24px;
   }
   
   .ad-sidebar-widget { width: 100%; box-sizing: border-box; }
   .ad-headline { font-size: 34px; }
   .ad-subheadline { font-size: 17px; }
-  .ad-hero-image { height: 360px; }
 }
 
 /* 3. ALL Mobile Phones (Single Column) - 640px and below */
 @media (max-width: 640px) {
-  /* 👇 THIS IS THE MAGIC FIX: Kills the grid for ALL phones 👇 */
   .ad-sidebar, 
   .ad-sticky-widget { 
     display: flex !important;
@@ -1327,10 +1374,14 @@
     gap: 24px !important;
   }
 
-  .ad-container { width: 100%; padding: 24px 16px 0 16px; }
+  .ad-container { 
+    width: 100%; 
+    padding: 24px 16px 0 16px; 
+    box-sizing: border-box; 
+  }
+
   .ad-headline { font-size: 26px; margin-bottom: 12px; }
   .ad-subheadline { font-size: 15px; margin-bottom: 20px; }
-  .ad-hero-image { height: 240px; }
   
   .ad-meta-row { 
     flex-direction: column; 
@@ -1339,12 +1390,28 @@
   }
   .ad-meta-right { align-self: flex-start; }
   
-  .ad-article-body { font-size: 16px; margin-bottom: 30px; }
+  /* 👇 EXPERT FIX: Prevents large text or images inside the article from breaking the layout */
+  .ad-article-body { 
+    font-size: 16px; 
+    margin-bottom: 30px; 
+    word-wrap: break-word; 
+    overflow-wrap: break-word; 
+  }
+  .ad-article-body img, .ad-article-body iframe { 
+    max-width: 100%; 
+    height: auto; 
+  }
+  
   .ad-article-body h1 { font-size: 26px; margin: 28px 0 12px; }
   .ad-article-body h2 { font-size: 22px; margin: 28px 0 12px; }
   
   .ad-share-strip { flex-direction: column; align-items: flex-start; gap: 16px; }
-  .ad-main-live-section { padding: 24px 16px; }
+  
+  .ad-main-live-section { 
+    padding: 24px 16px; 
+    box-sizing: border-box; 
+    width: 100%; 
+  }
   
   .cmt-header { flex-direction: column; align-items: flex-start; gap: 14px; }
   .cmt-actions { flex-wrap: wrap; }
@@ -1353,7 +1420,6 @@
 /* 4. Small Mobile - 375px & 320px */
 @media (max-width: 375px) {
   .ad-headline { font-size: 24px; }
-  .ad-hero-image { height: 210px; }
   .ad-article-body h1 { font-size: 24px; }
   .ad-article-body h2 { font-size: 20px; }
   

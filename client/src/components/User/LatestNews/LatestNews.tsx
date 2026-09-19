@@ -1,49 +1,50 @@
-import React, { useState,useEffect } from "react"; // 👇 FIX: Added useEffect here!
-import { Clock} from "lucide-react"; 
+import React, { useState } from "react"; // 👇 FIX: Added useEffect here!
+import { Clock } from "lucide-react";
 import { Link } from "react-router-dom";
 import "./LatestNews.css";
-import { getTrendingNews } from "../../../api/user/trendingNews";
+// import { getTrendingNews } from "../../../api/user/trendingNews";
 
-const LatestNews: React.FC = () => {
+interface LatestNewsProps {
+  newsData: any[];
+}
+
+const LatestNews: React.FC<LatestNewsProps> = ({ newsData }) => {
   const [showAll, setShowAll] = useState(false);
 
+  // const [newsData, setNewsData] = useState<any[]>([]);
 
+  //   useEffect(() => {
+  //   const fetchNews = async () => {
+  //     try {
+  //       const response =
+  //         await getTrendingNews();
 
-  const [newsData, setNewsData] = useState<any[]>([]);
+  //       setNewsData(
+  //         response.news || []
+  //       );
+  //     } catch (error) {
+  //       console.error(error);
+  //     }
+  //   };
 
-  useEffect(() => {
-  const fetchNews = async () => {
-    try {
-      const response =
-        await getTrendingNews();
+  //   fetchNews();
 
-      setNewsData(
-        response.news || []
-      );
-    } catch (error) {
-      console.error(error);
-    }
-  };
+  //   const interval =
+  //     setInterval(
+  //       fetchNews,
+  //       60 * 60 * 1000
+  //     ); // 1 hour
 
-  fetchNews();
+  //   return () =>
+  //     clearInterval(interval);
 
-  const interval =
-    setInterval(
-      fetchNews,
-      60 * 60 * 1000
-    ); // 1 hour
+  // }, []);
 
-  return () =>
-    clearInterval(interval);
-
-}, []);
-
-  const visibleArticles = showAll ? newsData : newsData.slice(0, 6);
+  const visibleArticles = showAll ? newsData : newsData.slice(0, 8);
 
   return (
     <section className="latest-news-section">
       <div className="latest-news-container">
-        
         {/* Section Header */}
         <div className="section-header">
           <h2>Trending News</h2>
@@ -53,49 +54,49 @@ const LatestNews: React.FC = () => {
         {/* News Grid */}
         <div className="news-grid">
           {visibleArticles.map((article) => (
-            
-            <Link 
+            <Link
               to={`/news/${article.slug}`}
-              className="news-card text-decoration-none" 
+              className="news-card text-decoration-none"
               key={article._id}
             >
               <div className="news-img-wrapper">
                 <img
-  src={article.featuredImage}
-  alt={article.headline}
-  className="news-img"
-/>
+                  src={
+                    article.featuredImage ||
+                    "https://placehold.co/400x225/e2e8f0/64748b?text=No+Image"
+                  }
+                  alt={article.headline}
+                  className="news-img"
+                />
               </div>
-              
+
               <div className="news-content">
                 <span className="card-badge">{article.category}</span>
-               <h3 className="news-title">
-  {article.headline}
-</h3>
+                <h3 className="news-title">{article.headline}</h3>
                 <p className="news-excerpt">{article.excerpt}</p>
-                
+
                 <div className="news-meta">
-                  <span><Clock size={16} />{new Date(
-  article.createdAt
-).toLocaleDateString()}</span>
-                  
+                  <span>
+                    <Clock size={16} />
+                    {new Date(article.createdAt).toLocaleDateString()}
+                  </span>
                 </div>
               </div>
             </Link>
-
           ))}
         </div>
 
         {/* Show More Button */}
-        <div className="show-more-wrapper">
-          <button 
-             className="show-more-btn"
-             onClick={() => setShowAll(!showAll)}
-          >
-             {showAll ? 'SHOW LESS' : 'SHOW MORE'}
-          </button>
-        </div>
-
+        {newsData.length > 6 && (
+          <div className="show-more-wrapper">
+            <button
+              className="show-more-btn"
+              onClick={() => setShowAll(!showAll)}
+            >
+              {showAll ? "SHOW LESS" : "SHOW MORE"}
+            </button>
+          </div>
+        )}
       </div>
     </section>
   );

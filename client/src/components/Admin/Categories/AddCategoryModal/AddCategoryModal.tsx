@@ -83,7 +83,14 @@ export default function AddCategoryModal({ isOpen, onClose, onAdd, categories }:
             <div className="add-select-wrap">
               <select
                 value={parentId ?? ""}
-                onChange={e => setParentId(e.target.value || null)}
+                onChange={e => {
+  const value = e.target.value || null;
+  setParentId(value);
+
+  if (value) {
+    setFeatured(false);
+  }
+}}
                 className="add-select"
               >
                 <option value="">None (top-level)</option>
@@ -134,10 +141,17 @@ export default function AddCategoryModal({ isOpen, onClose, onAdd, categories }:
           </div>
 
           <div className="add-toggles-row">
-            <label className="add-toggle-group">
-              <button className={`add-modal-toggle${featured ? " on" : ""}`} onClick={() => setFeatured(!featured)}><span /></button>
-              <span>Featured</span>
-            </label>
+            {!parentId && (
+  <label className="add-toggle-group">
+    <button
+      className={`add-modal-toggle${featured ? " on" : ""}`}
+      onClick={() => setFeatured(!featured)}
+    >
+      <span />
+    </button>
+    <span>Featured</span>
+  </label>
+)}
             <label className="add-toggle-group">
               <button className={`add-modal-toggle${inShowcase ? " on" : ""}`} onClick={() => setInShowcase(!inShowcase)}><span /></button>
               <span>Showcase</span>

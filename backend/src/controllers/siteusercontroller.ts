@@ -6,6 +6,7 @@ import { Request, Response } from "express";
 import mongoose from "mongoose";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
+import { OAuth2Client } from "google-auth-library";
 import SiteUser from "../models/SiteUser";
 import LoginLog from "../models/LoginLog";
 import UserReadHistory from "../models/UserReadHistory";
@@ -16,17 +17,75 @@ const JWT_SECRET = process.env.JWT_SECRET || "your_jwt_secret";
 const JWT_EXPIRES = "7d";
 const GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID || "";
 
-// ── Decode Google JWT payload without google-auth-library ─────────────────────
-function decodeGoogleJwt(token: string): Record<string, any> | null {
-  try {
-    const base64Url = token.split(".")[1];
-    if (!base64Url) return null;
-    const base64 = base64Url.replace(/-/g, "+").replace(/_/g, "/");
-    const json = Buffer.from(base64, "base64").toString("utf8");
-    return JSON.parse(json);
-  } catch {
-    return null;
+// ════════════════════════════════════════════════════════════════
+// Google ID Token Verification using google-auth-library
+// ═══════════════════════════════════════════════════════════════
+const googleClient = new OAuth2Client(GOOGLE_CLIENT_ID);
+
+async function verifyGoogleIdToken(credential: string): Promise<{
+  sub: string;
+  email: string;
+  email_verified: boolean;
+  name?: string;
+  picture?: string;
+  aud: string;
+  iss: string;
+  exp: number;
+}> {
+  if (!GOOGLE_CLIENT_ID) {
+    throw new Error("GOOGLE_CLIENT_ID is not configured");
   }
+
+  const ticket = await googleClient.verifyIdToken({
+    idToken: credential,
+    audience: GOOGLE_CLIENT_ID,
+  });
+
+  const payload = ticket.getPayload();
+
+  if (!payload) {
+    throw new Error("Invalid Google token: no payload");
+  }
+
+  if (!payload.email_verified) {
+    throw new Error("Google email not verified");
+  }
+
+  if (!payload.email) {
+    throw new Error("Google token missing email");
+  }
+
+  if (!payload.sub) {
+    throw new Error("Google token missing subject");
+  }
+
+  // Verify the token is from Google
+  const validIssuers = ["accounts.google.com", "https://accounts.google.com"];
+  if (!validIssuers.includes(payload.iss)) {
+    throw new Error("Invalid token issuer");
+  }
+
+  // Verify token is not expired (verifyIdToken does this, but double-check)
+  const now = Math.floor(Date.now() / 1000);
+  if (payload.exp && payload.exp < now) {
+    throw new Error("Google token expired");
+  }
+
+  // Verify audience matches our client ID
+  if (payload.aud !== GOOGLE_CLIENT_ID) {
+    throw new Error("Invalid token audience");
+  }
+
+  return {
+    sub: payload.sub,
+    email: payload.email,
+    email_verified: payload.email_verified,
+    name: payload.name,
+    picture: payload.picture,
+    aud: payload.aud,
+    iss: payload.iss,
+    exp: payload.exp,
+  };
 }
 
 // ── helper: sign our own JWT ──────────────────────────────────────────────────
@@ -175,20 +234,27 @@ export const googleAuthUser = async (req: Request, res: Response) => {
         .json({ message: "Google credential missing." });
     }
 
-    // 1. Decode Google JWT payload (no external library needed)
-    const payload = decodeGoogleJwt(credential);
-    if (!payload || !payload.email) {
-      return res
-        .status(401)
-        .json({ message: "Invalid Google token. Please try again." });
-    }
-
-    const { sub: googleId, email, name, picture } = payload as {
+// 1. Securely verify Google ID token
+    let payload: {
       sub: string;
       email: string;
+      email_verified: boolean;
       name?: string;
       picture?: string;
+      aud: string;
+      iss: string;
+      exp: number;
     };
+
+    try {
+      payload = await verifyGoogleIdToken(credential);
+    } catch (verifyErr: any) {
+      return res
+        .status(401)
+        .json({ message: verifyErr.message || "Invalid Google token. Please try again." });
+    }
+
+const { sub: googleId, email, name, picture } = payload;
 
     // 2. Find or create user
     let user = await SiteUser.findOne({
@@ -201,7 +267,7 @@ export const googleAuthUser = async (req: Request, res: Response) => {
           user._id,
           {
             googleId,
-profilePic: user.profilePic || picture || undefined,
+            profilePic: user.profilePic || picture || undefined,
           },
           { returnDocument: 'after' }
         );
@@ -211,7 +277,7 @@ profilePic: user.profilePic || picture || undefined,
         name: name || email.split("@")[0],
         email,
         googleId,
-profilePic: picture || undefined,
+        profilePic: picture || undefined,
       });
     }
 

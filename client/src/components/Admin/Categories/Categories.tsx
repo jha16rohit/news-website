@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import "./Categories.css";
 import EditCategoryModal from "./EditCategoryModal/EditCategoryModal";
 import AddCategoryModal from "./AddCategoryModal/AddCategoryModal";
-import { Folder, FileText, Eye, Pencil, Trash2, CheckCircle, ChevronRight } from "lucide-react";
+import { Folder, FileText,  Pencil, Trash2, CheckCircle, ChevronRight } from "lucide-react";
 import {
   getCategories,
   createCategory,
@@ -11,8 +11,9 @@ import {
   toggleActive,
 } from "../../../api/category.api";
 import type { Category } from "../../../types/category";
+import { FullPageContentPreloader } from "../Preloader/FullPageContentPreloader";
 
-const FEATURED_LIMIT = 5;
+const FEATURED_LIMIT = 6;
 
 export default function Categories() {
   const [categories, setCategories] = useState<Category[]>([]);
@@ -21,6 +22,7 @@ export default function Categories() {
   const [search,           setSearch]           = useState("");
   const [toastMsg,         setToastMsg]         = useState("");
   const [isAddModalOpen,   setIsAddModalOpen]   = useState(false);
+  const [loading,        setLoading]          = useState(true);
 
   const showToast = (msg: string) => {
     setToastMsg(msg);
@@ -33,8 +35,13 @@ export default function Categories() {
   }, []);
 
   const fetchCategories = async () => {
-    const data = await getCategories();
-    setCategories(data);
+    setLoading(true);
+    try {
+      const data = await getCategories();
+      setCategories(data);
+    } finally {
+      setLoading(false);
+    }
   };
 
   const getBreadcrumb = (cat: Category): string => {
@@ -84,36 +91,34 @@ await deleteCategoryApi(categoryToDelete.id);
   // ✅ FIXED UPDATE
  const handleEdit = async (updatedCat: Category) => {
   const otherFeatured = categories.filter(
-    c => c.featured && c.id !== updatedCat.id
-  ).length;
+  c => !c.parentId && c.featured && c.id !== updatedCat.id
+).length;
 
-  if (updatedCat.featured && otherFeatured >= FEATURED_LIMIT) {
-    showToast(
-      "Limit reached: only 5 categories can be featured. Saved as unfeatured."
-    );
+if (updatedCat.featured && otherFeatured >= FEATURED_LIMIT) {
+  showToast(
+    "Limit reached: only 6 categories can be featured. Saved as unfeatured."
+  );
 
-    await updateCategoryApi(updatedCat.id, {
-      ...updatedCat,
-      featured: false,
-    });
+  await updateCategoryApi(updatedCat.id, {
+    ...updatedCat,
+    featured: false,
+  });
+} else {
+  await updateCategoryApi(updatedCat.id, {
+    ...updatedCat,
+    active: updatedCat.enabled,
+    showcase: updatedCat.inShowcase,
+  });
 
-  } else {
-
-    await updateCategoryApi(updatedCat.id, {
-      ...updatedCat,
-      active: updatedCat.enabled,
-      showcase: updatedCat.inShowcase,
-    });
-
-    showToast(`"${updatedCat.name}" updated.`);
-  }
+  showToast(`"${updatedCat.name}" updated.`);
+}
 
   await fetchCategories();
 };
 
   // ✅ FIXED CREATE
   const handleAdd = async (newCat: Omit<Category, "id">) => {
-    const featuredCount = categories.filter(c => c.featured).length;
+    const featuredCount = categories.filter(c => !c.parentId && c.featured).length;
 
     if (newCat.featured && featuredCount >= FEATURED_LIMIT) {
       showToast("Limit reached: only 5 categories can be featured. Created as unfeatured.");
@@ -142,9 +147,12 @@ await deleteCategoryApi(categoryToDelete.id);
   const stats = [
     { icon: <Folder size={20} />,   val: categories.filter(c => !c.parentId).length, label: "Parent Categories", bg: "bg-gray"  },
     { icon: <FileText size={20} />, val: categories.filter(c => c.parentId).length,  label: "Sub-Categories",    bg: "bg-green" },
-    { icon: <Eye size={20} />,      val: "16.8M",                                    label: "Total Views",        bg: "bg-light" },
-    { icon: <Folder size={20} />,   val: categories.filter(c => c.featured).length,  label: "Featured",           bg: "bg-gray"  },
+    { icon: <Folder size={20} />,   val: categories.filter(c => !c.parentId && c.featured).length,  label: "Featured",           bg: "bg-gray"  },
   ];
+
+  if (loading) {
+    return <FullPageContentPreloader message="Loading categories..." />;
+  }
 
   return (
     <div className="cat-root">
@@ -227,7 +235,9 @@ await deleteCategoryApi(categoryToDelete.id);
                     <h3>{c.name}</h3>
                   </div>
                   <div className="cat-badges">
-                    {c.featured && <span className="cat-featured">Featured</span>}
+                    {!c.parentId && c.featured && (
+  <span className="cat-featured">Featured</span>
+)}
                     {!c.parentId && childCountOf(c.id) > 0 && (
                       <span className="cat-child-count">{childCountOf(c.id)} sub</span>
                     )}

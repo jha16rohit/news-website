@@ -9,6 +9,52 @@
   z-index: 9999;
 }
 
+/* FULL PAGE CONTENT AREA PRELOADER */
+.admin-full-page-loader {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: calc(100vh - 60px); /* Account for admin topbar */
+  padding: 24px;
+  box-sizing: border-box;
+}
+
+@media (max-width: 1024px) {
+  .admin-full-page-loader {
+    min-height: calc(100vh - 60px);
+  }
+}
+
+/* CONTENT-AREA PRELOADER */
+.content-preloader {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 300px;
+  padding: 48px 24px;
+  background: transparent;
+  z-index: 1;
+}
+
+.content-preloader-message {
+  margin-top: 16px;
+  font-size: 14px;
+  color: #6b7280;
+  text-align: center;
+}
+
+/* SIZE VARIANTS */
+.content-preloader.pl--sm .pl {
+  width: 3em;
+  height: 3em;
+}
+
+.content-preloader.pl--lg .pl {
+  width: 8em;
+  height: 8em;
+}
+
 /* SVG SIZE */
 .pl {
   width: 6em;

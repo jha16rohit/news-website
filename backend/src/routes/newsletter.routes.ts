@@ -1,5 +1,7 @@
 // server/src/routes/newsletter.routes.ts
+
 import { Router } from "express";
+
 import {
   subscribeToNewsletter,
   unsubscribeFromNewsletter,
@@ -7,11 +9,18 @@ import {
 
 const router = Router();
 
-/** POST /api/newsletter/subscribe          — footer subscribe box (public) */
-router.post("/subscribe", subscribeToNewsletter);
+/** POST /api/newsletter/subscribe — footer subscribe box (public) */
 
-/** GET  /api/newsletter/unsubscribe/:token — one-click link from emails (public) */
-router.get("/unsubscribe/:token", unsubscribeFromNewsletter);
+router.post(
+  "/subscribe",
+  subscribeToNewsletter
+);
+
+/** GET /api/newsletter/unsubscribe/:token — one-click link from emails (public) */
+
+router.get(
+  "/unsubscribe/:token",
+  unsubscribeFromNewsletter
+);
 
 export default router;
-

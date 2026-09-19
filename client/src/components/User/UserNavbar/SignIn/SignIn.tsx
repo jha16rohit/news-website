@@ -114,12 +114,13 @@ const SignIn: React.FC<SignInProps> = ({
     setError(null);
     try {
       const res = await googleAuth(response.credential);
+      
+      // 👇 EXPERT FIX: Save Token to Local Storage for new tabs!
+      localStorage.setItem("authToken", res.token);
 
-login(res.user);
-
-onSuccess(res.user, res.token);
-
-onClose();
+      login(res.user);
+      onSuccess(res.user, res.token);
+      onClose();
     } catch (err: any) {
       setError(err?.message || "Google login failed. Please try again.");
     } finally {
@@ -215,15 +216,16 @@ onClose();
     setLoading(true);
     try {
       const res = await loginUser({
-    email: emailInput,
-    password: passwordInput,
-});
+        email: emailInput,
+        password: passwordInput,
+      });
 
-login(res.user);
+      // 👇 EXPERT FIX: Save Token to Local Storage for new tabs!
+      localStorage.setItem("authToken", res.token);
 
-onSuccess(res.user, res.token);
-
-onClose();
+      login(res.user);
+      onSuccess(res.user, res.token);
+      onClose();
     } catch (err: any) {
       setError(err?.message || "Login failed. Please try again.");
     } finally {
@@ -245,17 +247,18 @@ onClose();
     setLoading(true);
     try {
       const res = await registerUser({
-    name: nameInput.trim(),
-    email: emailInput,
-    password: passwordInput,
-    phone: phoneInput || undefined,
-});
+        name: nameInput.trim(),
+        email: emailInput,
+        password: passwordInput,
+        phone: phoneInput || undefined,
+      });
 
-login(res.user);
+      // 👇 EXPERT FIX: Save Token to Local Storage for new tabs!
+      localStorage.setItem("authToken", res.token);
 
-onSuccess(res.user, res.token);
-
-onClose();
+      login(res.user);
+      onSuccess(res.user, res.token);
+      onClose();
     } catch (err: any) {
       setError(err?.message || "Registration failed. Please try again.");
     } finally {

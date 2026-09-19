@@ -1,5 +1,7 @@
 // server/src/routes/push.routes.ts
+
 import { Router } from "express";
+
 import {
   getVapidPublicKey,
   subscribeToPush,
@@ -8,13 +10,25 @@ import {
 
 const router = Router();
 
-/** GET  /api/push/vapid-public-key — frontend fetches this before subscribing (public) */
-router.get("/vapid-public-key", getVapidPublicKey);
+/** GET /api/push/vapid-public-key — frontend fetches this before subscribing (public) */
 
-/** POST /api/push/subscribe        — save a browser's push subscription (public) */
-router.post("/subscribe", subscribeToPush);
+router.get(
+  "/vapid-public-key",
+  getVapidPublicKey
+);
 
-/** POST /api/push/unsubscribe      — remove a browser's push subscription (public) */
-router.post("/unsubscribe", unsubscribeFromPush);
+/** POST /api/push/subscribe — save a browser's push subscription (public) */
+
+router.post(
+  "/subscribe",
+  subscribeToPush
+);
+
+/** POST /api/push/unsubscribe — remove a browser's push subscription (public) */
+
+router.post(
+  "/unsubscribe",
+  unsubscribeFromPush
+);
 
 export default router;

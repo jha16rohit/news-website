@@ -1,61 +1,56 @@
 // src/api/user/comments.ts
 // ─────────────────────────────────────────────
 // All comment-related API calls for the frontend
+//
+// FIX: previously this file used raw `fetch(...)` calls with
+// `credentials: "include"` and never attached the site-user's
+// Bearer token. Every protected route (post/reply/react/report/
+// delete/mine, and all admin actions) therefore hit the backend
+// with NO Authorization header, and `protectSiteUser` / `protect`
+// correctly rejected them with 401 "Not authorized, no token" —
+// exactly the errors visible in the console.
+//
+// The rest of the app (advertise.ts, AdvertisementManager.tsx,
+// ContactUsAdmin.tsx) already solves this correctly by going
+// through `apiClient`, which reads the token from sessionStorage
+// and attaches `Authorization: Bearer <token>` automatically.
+// This file now does the same, so logged-in users (and admins)
+// are actually authenticated on every request.
+// ─────────────────────────────────────────────
 
-const BASE = "http://localhost:5001/api";
+import { apiClient } from "../client";
 
 /** Fetch all approved comments for a news article */
 export async function fetchComments(newsId: string) {
-  const res = await fetch(`${BASE}/comments?newsId=${newsId}`, {
-    credentials: "include",
-  });
-  if (!res.ok) throw new Error("Failed to fetch comments");
-  return res.json(); // { comments, total }
+  return apiClient(`/api/comments?newsId=${encodeURIComponent(newsId)}`);
+  // -> { comments, total }
 }
 
 /** Post a top-level comment (user must be logged in) */
 export async function postComment(newsId: string, content: string) {
-  const res = await fetch(`${BASE}/comments`, {
+  return apiClient("/api/comments", {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
-    credentials: "include",
-    body: JSON.stringify({ newsId, content }),
+    body: { newsId, content },
   });
-  if (!res.ok) {
-    const err = await res.json().catch(() => ({}));
-    throw new Error(err.message ?? "Failed to post comment");
-  }
-  return res.json(); // { comment }
+  // -> { comment }
 }
 
 /** Reply to an existing comment */
 export async function postReply(parentId: string, newsId: string, content: string) {
-  const res = await fetch(`${BASE}/comments/${parentId}/reply`, {
+  return apiClient(`/api/comments/${parentId}/reply`, {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
-    credentials: "include",
-    body: JSON.stringify({ newsId, content }),
+    body: { newsId, content },
   });
-  if (!res.ok) {
-    const err = await res.json().catch(() => ({}));
-    throw new Error(err.message ?? "Failed to post reply");
-  }
-  return res.json(); // { comment }
+  // -> { comment }
 }
 
 /** Like or dislike a comment */
 export async function reactComment(commentId: string, type: "like" | "dislike") {
-  const res = await fetch(`${BASE}/comments/${commentId}/react`, {
+  return apiClient(`/api/comments/${commentId}/react`, {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
-    credentials: "include",
-    body: JSON.stringify({ type }),
+    body: { type },
   });
-  if (!res.ok) {
-    const err = await res.json().catch(() => ({}));
-    throw new Error(err.message ?? "Failed to react");
-  }
-  return res.json(); // { likes, dislikes, userVote }
+  // -> { likes, dislikes, userVote }
 }
 
 /** Fetch the logged-in user's own comments (for the profile page) */
@@ -73,47 +68,32 @@ export interface MyComment {
 }
 
 export async function fetchMyComments(): Promise<{ comments: MyComment[] }> {
-  const res = await fetch(`${BASE}/comments/mine`, {
-    credentials: "include",
-  });
-  if (!res.ok) throw new Error("Failed to fetch your comments");
-  return res.json();
+  return apiClient("/api/comments/mine");
 }
 
 /** Report a comment */
 export async function reportComment(commentId: string) {
-  const res = await fetch(`${BASE}/comments/${commentId}/report`, {
+  return apiClient(`/api/comments/${commentId}/report`, {
     method: "POST",
-    credentials: "include",
   });
-  if (!res.ok) {
-    const err = await res.json().catch(() => ({}));
-    throw new Error(err.message ?? "Failed to report");
-  }
-  return res.json();
 }
 
 /** Delete own comment */
 export async function deleteComment(commentId: string) {
-  const res = await fetch(`${BASE}/comments/${commentId}`, {
+  return apiClient(`/api/comments/${commentId}`, {
     method: "DELETE",
-    credentials: "include",
   });
-  if (!res.ok) {
-    const err = await res.json().catch(() => ({}));
-    throw new Error(err.message ?? "Failed to delete");
-  }
-  return res.json();
 }
 
 // ─── ADMIN ────────────────────────────────────────────────────
-
-const ADMIN_BASE = "http://localhost:5001/api/admin";
+// These also go through apiClient now — the admin panel uses the
+// same Bearer-token session as everything else in the app (see
+// AdvertisementManager.tsx / ContactUsAdmin.tsx), there is no
+// separate cookie-session for admins.
 
 export async function adminFetchCommentStats() {
-  const res = await fetch(`${ADMIN_BASE}/comments/stats`, { credentials: "include" });
-  if (!res.ok) throw new Error("Failed to fetch stats");
-  return res.json(); // { total, pending, reported, approvedToday }
+  return apiClient("/api/admin/comments/stats");
+  // -> { total, pending, reported, approvedToday }
 }
 
 export async function adminFetchComments(params: {
@@ -128,49 +108,32 @@ export async function adminFetchComments(params: {
   if (params.page)   q.set("page",   String(params.page));
   if (params.limit)  q.set("limit",  String(params.limit));
 
-  const res = await fetch(`${ADMIN_BASE}/comments?${q}`, { credentials: "include" });
-  if (!res.ok) throw new Error("Failed to fetch comments");
-  return res.json();
+  return apiClient(`/api/admin/comments?${q}`);
 }
 
 export async function adminApproveComment(id: string) {
-  const res = await fetch(`${ADMIN_BASE}/comments/${id}`, {
+  return apiClient(`/api/admin/comments/${id}`, {
     method: "PATCH",
-    headers: { "Content-Type": "application/json" },
-    credentials: "include",
-    body: JSON.stringify({ status: "approved" }),
+    body: { status: "approved" },
   });
-  if (!res.ok) throw new Error("Failed to approve");
-  return res.json();
 }
 
 export async function adminRejectComment(id: string) {
-  const res = await fetch(`${ADMIN_BASE}/comments/${id}`, {
+  return apiClient(`/api/admin/comments/${id}`, {
     method: "PATCH",
-    headers: { "Content-Type": "application/json" },
-    credentials: "include",
-    body: JSON.stringify({ status: "rejected" }),
+    body: { status: "rejected" },
   });
-  if (!res.ok) throw new Error("Failed to reject");
-  return res.json();
 }
 
 export async function adminDeleteComment(id: string) {
-  const res = await fetch(`${ADMIN_BASE}/comments/${id}`, {
+  return apiClient(`/api/admin/comments/${id}`, {
     method: "DELETE",
-    credentials: "include",
   });
-  if (!res.ok) throw new Error("Failed to delete");
-  return res.json();
 }
 
 export async function adminReplyComment(id: string, newsId: string, content: string) {
-  const res = await fetch(`${ADMIN_BASE}/comments/${id}/reply`, {
+  return apiClient(`/api/admin/comments/${id}/reply`, {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
-    credentials: "include",
-    body: JSON.stringify({ newsId, content }),
+    body: { newsId, content },
   });
-  if (!res.ok) throw new Error("Failed to reply");
-  return res.json();
 }

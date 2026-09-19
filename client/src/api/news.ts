@@ -1,4 +1,4 @@
-import { apiClient } from "./client";
+import { apiClient, BASE_URL, getAuthToken } from "./client";
 
 // ─── Types ─────────────────────────────────────────────────────────────────────
 
@@ -108,10 +108,17 @@ export const createNews = (data: NewsPayload) =>
 
 // 🔥 CREATE WITH MEDIA — throws on server error so callers can catch it
 export const createNewsWithMedia = async (formData: FormData): Promise<any> => {
-  const res = await fetch("/api/news/create", {
+  const token = getAuthToken();
+
+  const res = await fetch(`${BASE_URL}/api/news/create`, {
     method: "POST",
     body: formData,
-    credentials: "include",
+    // No shared cookie session — matches apiClient. Auth is via Bearer token.
+    credentials: "omit",
+    headers: {
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      // Do NOT set Content-Type — browser sets it with the correct boundary automatically.
+    },
   });
 
   const json = await res.json().catch(() => ({}));
@@ -195,11 +202,17 @@ export const updateNews = (id: string, data: Partial<NewsPayload>) =>
 // 🖼️ UPDATE WITH MEDIA — sends multipart/form-data so the featured image can be
 // replaced at the same time as other fields are updated.
 export const updateNewsWithMedia = async (id: string, formData: FormData): Promise<any> => {
-  const res = await fetch(`/api/news/${id}`, {
+  const token = getAuthToken();
+
+  const res = await fetch(`${BASE_URL}/api/news/${id}`, {
     method: "PUT",
     body: formData,
-    credentials: "include",
-    // Do NOT set Content-Type — browser sets it with the correct boundary automatically.
+    // No shared cookie session — matches apiClient. Auth is via Bearer token.
+    credentials: "omit",
+    headers: {
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      // Do NOT set Content-Type — browser sets it with the correct boundary automatically.
+    },
   });
 
   const json = await res.json().catch(() => ({}));
@@ -222,6 +235,15 @@ export const deleteNews = (
   });
 
 // ─── BREAKING ──────────────────────────────────────────────────────────────────
+
+export const fetchBreakingNewsHistory = () =>
+  apiClient("/api/news/breaking-history");
+
+export const removeBreakingStatus = (id: string) =>
+  apiClient(`/api/news/${id}/remove-breaking`, {
+    method: "PATCH",
+  });
+
 export const togglePauseBreaking = (id: string) =>
   apiClient(`/api/news/${id}/pause-toggle`, { method: "PATCH" });
 
@@ -261,10 +283,16 @@ export const uploadMediaImage = async (
 
   formData.append("image", file);
 
-  const res = await fetch(`/api/news/media-library/${newsId}/upload`, {
+  const token = getAuthToken();
+
+  const res = await fetch(`${BASE_URL}/api/news/media-library/${newsId}/upload`, {
     method: "PATCH",
     body: formData,
-    credentials: "include",
+    // No shared cookie session — matches apiClient. Auth is via Bearer token.
+    credentials: "omit",
+    headers: {
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+    },
   });
 
   const json = await res.json().catch(() => ({}));

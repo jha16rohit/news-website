@@ -1,7 +1,5 @@
 // client/src/api/footer.ts  (admin)
 
-const BASE_URL = "http://localhost:5001";
-
 import { apiClient } from "./client";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -40,22 +38,22 @@ export const saveFooterSettings = (
   });
 
 // ─── UPLOAD image file → Supabase via your backend ───────────────────────────
-// Must NOT use apiClient here because multipart/form-data
-// cannot have Content-Type: application/json set on it
+// FIX: this used a raw `fetch()` with `credentials: "include"` and never
+// attached the admin's Bearer token — same missing-auth-header bug found
+// elsewhere in this app (comment.ts, before it was fixed). This is an
+// admin-only route, so the upload was almost certainly 401ing.
+// `apiClient` already handles FormData bodies correctly (it detects
+// `instanceof FormData`, skips JSON-stringifying it, and skips forcing a
+// Content-Type header so the browser sets the correct multipart boundary)
+// and attaches the Bearer token automatically, so we just route through it.
 export const uploadFooterImageToSupabase = async (file: File): Promise<string> => {
   const formData = new FormData();
   formData.append("image", file);
 
-  const res = await fetch(`${BASE_URL}/api/footer-settings/upload-image`, {
-    method:      "POST",
-    body:        formData,
-    credentials: "include",
-    // ⚠️ Do NOT set Content-Type here — browser sets it automatically
-    // with the correct multipart boundary when using FormData
+  const json = await apiClient("/api/footer-settings/upload-image", {
+    method: "POST",
+    body: formData,
   });
-
-  const json = await res.json().catch(() => ({}));
-  if (!res.ok) throw new Error(json?.message || `Upload failed (${res.status})`);
 
   return json.url as string;
 };

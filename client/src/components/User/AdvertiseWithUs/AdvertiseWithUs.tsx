@@ -428,7 +428,7 @@ onSubmitted((res as any).id);
               </div>
             ) : (
               <div className="awu-upload-preview">
-                <img src={imagePreview} alt="Uploaded preview" />
+                {imagePreview && <img src={imagePreview} alt="Uploaded preview" />}
                 <div className="awu-upload-preview-info">
                   <span className="awu-upload-name">{imageFile.name}</span>
                   <span className="awu-upload-size">{(imageFile.size / 1024).toFixed(0)} KB</span>

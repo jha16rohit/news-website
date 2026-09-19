@@ -6,11 +6,26 @@
 const BASE        = "/api/admin/analytics";
 const PUBLIC_BASE = "/api/analytics";
 
+// Use the JWT stored in this browser tab. This keeps Admin and Editor sessions
+// independent when both panels are open at the same time.
+function getAuthHeaders(): Record<string, string> {
+  const token = sessionStorage.getItem("auth-token");
+  return token ? { Authorization: `Bearer ${token}` } : {};
+}
+
+async function authFetch(input: RequestInfo | URL, init: RequestInit = {}) {
+  return fetch(input, {
+    ...init,
+    headers: { ...(init.headers || {}), ...getAuthHeaders() },
+    credentials: "include",
+  });
+}
+
 // ── Admin API helpers ─────────────────────────────────────────
 
 async function get(path: string, range?: number) {
   const q   = range ? `?range=${range}` : "";
-  const res = await fetch(`${BASE}${path}${q}`, { credentials: "include" });
+  const res = await authFetch(`${BASE}${path}${q}`);
   if (!res.ok) throw new Error(`Analytics API error: ${path}`);
   return res.json();
 }
@@ -28,9 +43,7 @@ export async function fetchTrafficSources(range: number) {
 }
 
 export async function fetchTopArticles(range: number, limit = 10) {
-  const res = await fetch(`${BASE}/top-articles?range=${range}&limit=${limit}`, {
-    credentials: "include",
-  });
+  const res = await authFetch(`${BASE}/top-articles?range=${range}&limit=${limit}`);
   if (!res.ok) throw new Error("Analytics API error: top-articles");
   return res.json();
 }
@@ -40,7 +53,7 @@ export async function fetchLiveVisitors() {
 }
 
 export async function fetchUserInsights() {
-  const res = await fetch(`${BASE}/user-insights`, { credentials: "include" });
+  const res = await authFetch(`${BASE}/user-insights`);
   if (!res.ok) throw new Error("Analytics API error: user-insights");
   return res.json();
 }
@@ -56,8 +69,19 @@ let _emailFetched = false;
 
 async function getLoggedInEmail(): Promise<string | null> {
   if (_emailFetched) return _cachedEmail;
+  
+  // 👇 EXPERT FIX: Check for a token FIRST. 
+  // If there is no token (Guest), we instantly return null and skip the fetch entirely.
+  // This completely stops the 401 Unauthorized red console errors!
+  const headers = getAuthHeaders();
+  if (!headers.Authorization) {
+    _cachedEmail = null;
+    _emailFetched = true;
+    return null;
+  }
+
   try {
-    const res = await fetch("/api/auth/me", { credentials: "include" });
+    const res = await authFetch("/api/auth/me");
     if (!res.ok) { _cachedEmail = null; _emailFetched = true; return null; }
     const data = await res.json();
     // Support common response shapes: { email } or { user: { email } }
@@ -136,4 +160,40 @@ export function trackReadTime(newsId: string, viewId: string, seconds: number): 
       }).catch(() => {});
     }
   } catch { /* fire-and-forget */ }
+}
+
+// ── Editor analytics ────────────────────────────────────────────────────────
+
+const EDITOR_BASE = "/api/analytics/editor";
+
+async function getEditor(path: string, range?: number) {
+  const q = range ? `?range=${range}` : "";
+
+  const res = await authFetch(`${EDITOR_BASE}${path}${q}`);
+
+  if (!res.ok) {
+    throw new Error(`Editor Analytics API error: ${path}`);
+  }
+
+  return res.json();
+}
+
+export async function fetchEditorKPIs(range: number) {
+  return getEditor("/kpis", range);
+}
+
+export async function fetchEditorTrafficChart(range: number) {
+  return getEditor("/traffic", range);
+}
+
+export async function fetchEditorTopArticles(range: number, limit = 10) {
+  const res = await authFetch(
+    `${EDITOR_BASE}/top-articles?range=${range}&limit=${limit}`
+  );
+
+  if (!res.ok) {
+    throw new Error("Editor Analytics API error: top-articles");
+  }
+
+  return res.json();
 }

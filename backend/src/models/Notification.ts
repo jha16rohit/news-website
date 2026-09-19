@@ -4,6 +4,9 @@
 // creation isn't touched). Instead notificationsocket.ts periodically scans
 // News/Comment/PageView for notification-worthy conditions and upserts here,
 // using `dedupeKey` so the same event never creates a second row.
+//
+// Per-admin read state is tracked via `readBy` array (user IDs).
+// Soft delete via `isDeleted` flag.
 
 import mongoose, { Document, Schema } from "mongoose";
 
@@ -24,8 +27,10 @@ export interface INotification extends Document {
   tab: NotificationTab;
   title: string;
   description: string;
-  dedupeKey: string;   // stable per-event key, e.g. "breaking-pending-<newsId>"
-  unread: boolean;
+  dedupeKey: string;
+  readBy: string[];
+  link?: string;
+  isDeleted: boolean;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -37,7 +42,9 @@ const NotificationSchema = new Schema<INotification>(
     title: { type: String, required: true },
     description: { type: String, required: true },
     dedupeKey: { type: String, required: true, unique: true },
-    unread: { type: Boolean, default: true, index: true },
+    readBy: { type: [String], default: [], index: true },
+    link: { type: String },
+    isDeleted: { type: Boolean, default: false, index: true },
   },
   { timestamps: true },
 );

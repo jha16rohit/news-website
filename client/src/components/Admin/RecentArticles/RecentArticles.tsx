@@ -3,6 +3,7 @@ import { useState, useRef, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { MoreVertical, Pencil, Trash2, MonitorPlay } from "lucide-react";
 import { fetchAllNews, deleteNews } from "../../../api/news";
+import { FullPageContentPreloader } from "../Preloader/FullPageContentPreloader";
 
 // ── Types ──────────────────────────────────────────────────────────────────
 interface Article {
@@ -135,6 +136,10 @@ const RecentArticles = () => {
       )}
     </>
   );
+
+  if (loading) {
+    return <FullPageContentPreloader message="Loading recent articles..." />;
+  }
 
   return (
     <div className="recent-card">

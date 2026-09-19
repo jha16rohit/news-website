@@ -103,10 +103,9 @@
   width: 100%;
   height: 100%;
   object-fit: fill;
-  transition: transform 0.5s ease;
 }
 
-.sct-card:hover .sct-card-img { transform: scale(1.08); }
+
 
 .sct-badge {
   font-family: var(--font-body); /* 👇 EXPERT FIX: Explicit body font */
@@ -274,7 +273,7 @@
     max-width: 95%;
   }
   .sct-grid {
-    grid-template-columns: repeat(3, 1fr);
+    grid-template-columns: repeat(2, 1fr);
     gap: 20px;
   }
   .sct-title {
@@ -285,7 +284,7 @@
 /* 3. Standard Tablet - 768px */
 @media (max-width: 768px) {
   .sct-grid {
-    grid-template-columns: repeat(2, 1fr); /* Drop to 2 columns for tablets */
+    grid-template-columns: repeat(1, 1fr); /* Drop to 2 columns for tablets */
     gap: 20px;
   }
   .sct-header-banner {

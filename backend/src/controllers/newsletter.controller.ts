@@ -17,7 +17,7 @@ function getResend(): Resend {
   return resendClient;
 }
 
-const SITE_URL = process.env.SITE_URL?.trim() || "http://localhost:3000";
+const SITE_URL = process.env.FRONTEND_URL?.trim() || "http://localhost:5173";
 const FROM = process.env.RESEND_FROM?.trim() || "Local Newz <onboarding@resend.dev>";
 
 function isValidEmail(email: string): boolean {

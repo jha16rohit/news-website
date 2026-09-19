@@ -2,7 +2,7 @@
    ADVERTISEMENT MANAGER — adm- prefix
    ============================================================ */
 
-.adm-root { padding: 24px; background: #f8f9fb; min-height: 100vh; font-family: 'Segoe UI', sans-serif; }
+.adm-root { padding: 24px;  min-height: 100vh; font-family: 'Segoe UI', sans-serif; }
 
 .spin { animation: adm-spin 0.8s linear infinite; }
 @keyframes adm-spin { to { transform: rotate(360deg); } }

@@ -77,7 +77,6 @@ const source = news.map((a: any) => ({
   id: a._id,
 
   title:
-    a.shortTitle ||
     a.headline,
 
   subtitle:

@@ -12,6 +12,8 @@ export interface ITopicProfile extends Document {
 
   imageUrl?: string;
 
+  authorId: string;
+
   createdAt: Date;
 }
 
@@ -44,6 +46,12 @@ const TopicProfileSchema =
       twitter: String,
 
       imageUrl: String,
+
+      authorId: {
+        type: String,
+        required: true,
+        index: true,
+      },
     },
     {
       timestamps: {

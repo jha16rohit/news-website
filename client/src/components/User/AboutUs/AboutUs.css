@@ -167,11 +167,6 @@
   border-radius: 4px 0 0 4px;
 }
 
-.au-mv-card:hover {
-  transform: translateY(-3px);
-  box-shadow: 0 12px 36px rgba(11,20,35,0.09);
-}
-
 .au-mv-icon {
   font-size: 34px;
   margin-bottom: 14px;

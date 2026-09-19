@@ -1,8 +1,7 @@
 /* ── TopicProfiles.css ───────────────────────────────────────────────────── */
 
 .tp-page {
-  /* padding: 28px 32px; */
-  background: #f8f9fb;
+ 
   min-height: 100vh;
   font-family: "Segoe UI", sans-serif;
   color: #1a1d23;
@@ -228,7 +227,6 @@
 /* Card actions */
 .tp-card-actions {
   display: flex;
-  border-top: 1px solid #f3f4f6;
   padding: 10px 12px;
   gap: 4px;
   justify-content: center;
