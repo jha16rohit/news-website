@@ -26,6 +26,7 @@ import {
 import { trackPageView, trackReadTime } from "../../../api/analytics";
 import { trackRead, trackShare } from "../../../api/user/userauth";
 import { useAuth } from "../../../context/AuthContext";
+import { getApiBaseUrl } from "../../../utils/apiBase";
 // ─── Types ────────────────────────────────────────────────────────────────────
 type VoteType = "like" | "dislike" | null;
 
@@ -92,7 +93,7 @@ interface ArticleData {
 }
 
 // ─── Constants ────────────────────────────────────────────────────────────────
-const BASE = import.meta.env.VITE_API_URL || "http://localhost:5001/api";
+const BASE = getApiBaseUrl();
 
 // ─── Helpers ───────────────────────────────────────────────────────────────────
 function formatDate(iso?: string): string {
@@ -467,7 +468,7 @@ useEffect(() => {
     fetch(`${BASE}/news/recent?limit=6`)
       .then((r) => r.json())
       .then((d) => setRecentNews(d.news ?? []))
-      .catch(() => {});
+      .catch((err) => console.error("[Sidebar] Recent news fetch failed:", err));
   }, []);
 
   // ── Fetch related news ───────────────────────────────────────────────────
@@ -487,7 +488,7 @@ useEffect(() => {
 
 setAds(adResponse);
       })
-      .catch(() => {});
+      .catch((err) => console.error("[Sidebar] Related news fetch failed:", err));
   }, [article?.categoryId, article?.id]);
 
   // ── Live polling ─────────────────────────────────────────────────────────
@@ -504,7 +505,7 @@ setAds(adResponse);
           liveCountRef.current = updates.length;
           setLiveUpdates(updates);
         })
-        .catch(() => {});
+        .catch((err) => console.error("[Sidebar] Live polling failed:", err));
     }, 30_000);
     return () => clearInterval(interval);
   }, [article?.isLive, articleId]);

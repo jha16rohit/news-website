@@ -21,6 +21,7 @@ import Analytics from "../models/Analytics";
 import News from "../models/News";
 import AdInquiry from "../models/AdInquiry";
 import LoginLog from "../models/LoginLog";
+import NewsletterSubscriber from "../models/NewsletterSubscriber";
 import { broadcastLiveVisitorCount } from "../socket/analyticssocket";
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
@@ -649,6 +650,15 @@ export async function getUserInsights(req: Request, res: Response) {
     const totalArticleReads = visitorRows.reduce((s, v) => s + v.articles.length, 0);
     const avgArticlesRead = totalUsersValue > 0 ? Math.round((totalArticleReads / totalUsersValue) * 10) / 10 : 0;
 
+    // ── Subscriber statistics: from NewsletterSubscriber model ──
+    const [subscriberCount, newSubscribersThisMonth] = await Promise.all([
+      NewsletterSubscriber.countDocuments({ isActive: true }),
+      NewsletterSubscriber.countDocuments({ 
+        isActive: true, 
+        subscribedAt: { $gte: monthStart } 
+      }),
+    ]);
+
     // ── Advertisement Requests: sourced from AdInquiry (the model actually ──
     // ── used by advertisement.controller.ts). "published" is shown as     ──
     // ── "Approved" in the UI — that's the inquiry lifecycle's approval    ──
@@ -672,7 +682,7 @@ export async function getUserInsights(req: Request, res: Response) {
         activeUsers: { value: activeUsersValue, pctActive },
         growthRate: { value: growthRateValue },
         newUsers: { value: newThisMonth },
-        adRequests: { value: adRequestSummary.total, pending: adRequestSummary.pending },
+        subscribers: { value: subscriberCount, newThisMonth: newSubscribersThisMonth },
         returningUsers: { pct: returningPct },
       },
       growthChart: { monthly, yearly },

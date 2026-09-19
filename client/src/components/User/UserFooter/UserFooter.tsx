@@ -12,6 +12,7 @@ import type { FooterSettingsData } from "../../../api/user/userfooter";
 import { subscribeToNewsletter } from "../../../api/user/newsletter";
 import { getTrendingTags, type Tag as TagType } from "../../../api/tags.api";
 import { usePushNotifications } from "../../../hooks/usePushNotifications";
+import { useAuth } from "../../../context/AuthContext";
 
 // ─── Fallback shown before DB responds ───────────────────────────────────────
 const DEFAULT_FOOTER_DATA: FooterSettingsData = {
@@ -109,9 +110,16 @@ const Footer: React.FC = () => {
   const [subscribeStatus, setSubscribeStatus] = useState<"idle" | "loading" | "success" | "error">("idle");
   const [toast, setToast] = useState<ToastState | null>(null);
 
+  const { isLoggedIn, openLogin } = useAuth();
   const { permission, enable: enablePush } = usePushNotifications();
 
   const handleSubscribe = async () => {
+    // Check if user is logged in - same behavior as navbar
+    if (!isLoggedIn) {
+      openLogin(); // Open login modal
+      return;
+    }
+
     const trimmed = subscribeEmail.trim();
     if (!trimmed) {
       setSubscribeStatus("error");
@@ -126,7 +134,8 @@ const Footer: React.FC = () => {
       setSubscribeEmail("");
 
       // Offer device notifications too, right after a successful email signup.
-      if (permission === "default") {
+      // Only for logged-in users to avoid issues with anonymous users.
+      if (isLoggedIn && permission === "default") {
         enablePush(trimmed).catch(() => {
           /* silent — user can still get email, this is a nice-to-have */
         });

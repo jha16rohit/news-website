@@ -1,5 +1,6 @@
 // client/src/api/client.ts
-export const BASE_URL = import.meta.env.VITE_API_URL?.replace(/\/api\/?$/, "") || "http://localhost:5001";
+import { BASE_URL as API_BASE_URL } from "../utils/apiBase";
+export const BASE_URL = API_BASE_URL;
 
 export const getAuthToken = (): string | null => {
   try {
