@@ -98,7 +98,7 @@ const fullName = `${profile.firstName} ${profile.lastName}`.trim();
 
       alert("Password updated! Please login again 🔐");
 
-      navigate("/admin/login-xyzsft");
+      navigate("/admin/lnz-control-7x9k2m8p/login");
     } catch (err: any) {
       console.error(err);
       alert(err?.message || "Error updating password ❌");

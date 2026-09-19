@@ -163,7 +163,7 @@ export default function App() {
           ================================================================= */}
 
           <Route
-            path="/admin/login-xyzsft"
+            path="/admin/lnz-control-7x9k2m8p/login"
             element={<Login />}
           />
 

@@ -11,7 +11,7 @@ import { initAnalyticsSocket } from "./socket/analyticssocket";
 import { initNotificationSocket } from "./socket/notificationsocket";
 import { cleanupPendingInquiries } from "./services/cleanup.service";
 
-const PORT = process.env.PORT || 5001;
+const PORT = Number(process.env.PORT) || 5001;
 
 async function startServer() {
   try {
@@ -40,9 +40,9 @@ async function startServer() {
 
 
     // Start Server
-    httpServer.listen(PORT, () => {
-      console.log(`🚀 Server running on port ${PORT}`);
-    });
+    httpServer.listen(PORT, "0.0.0.0", () => {
+  console.log(`🚀 Server running on port ${PORT}`);
+});
 
   } catch (error) {
     console.error("Server startup failed:", error);

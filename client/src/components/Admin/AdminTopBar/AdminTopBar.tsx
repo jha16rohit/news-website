@@ -84,7 +84,7 @@ const AdminTopBar: React.FC<AdminTopBarProps> = ({ onMenuClick }) => {
       localStorage.removeItem("admin-token");
 
       setProfileOpen(false);
-      navigate("/admin/login-xyzsft");
+      navigate("/admin/lnz-control-7x9k2m8p/login");
     }
   };
 
