@@ -762,7 +762,7 @@
 /* ══════════════════════════════════════════════════════════════
    SIDEBAR
 ══════════════════════════════════════════════════════════════ */
-.ad-sidebar {
+.article-sidebar {
   width: 320px;
   flex-shrink: 0;
   display: flex;
@@ -1343,7 +1343,7 @@
   }
 
   /* 👇 EXPERT FIX: Changed to flex-column so all widgets stack full-width one below the other! */
-  .ad-sidebar {
+  .article-sidebar {
     width: 100%;
     display: flex;
     flex-direction: column;
@@ -1366,7 +1366,7 @@
 
 /* 3. ALL Mobile Phones (Single Column) - 640px and below */
 @media (max-width: 640px) {
-  .ad-sidebar, 
+  .article-sidebar, 
   .ad-sticky-widget { 
     display: flex !important;
     flex-direction: column !important;

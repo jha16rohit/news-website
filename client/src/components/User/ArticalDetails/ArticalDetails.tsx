@@ -1209,7 +1209,7 @@ if (platform === "whatsapp") {
         </main>
 
         {/* ── SIDEBAR ── */}
-        <aside className="ad-sidebar ad-sticky-widget">
+        <aside className="article-sidebar ad-sticky-widget">
 
           {/* LIVE UPDATES WIDGET */}
           {article.isLive && liveUpdates.length > 0 && (
