@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { Save, Plus, Trash2, CheckCircle } from "lucide-react";
 import "./AboutUsAdmin.css";
+import { FullPageContentPreloader } from "../Preloader/FullPageContentPreloader";
 
 // ─── TYPES ─────────────────────────────────────────────────────────
 export interface Stat {
@@ -78,12 +79,14 @@ const AboutUsAdmin: React.FC = () => {
   const [data, setData] = useState<AboutUsData>(DEFAULT_DATA);
   const [saved, setSaved] = useState(false);
   const [activeTab, setActiveTab] = useState<"hero" | "mission" | "values" | "stats">("hero");
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     try {
       const stored = localStorage.getItem("localNewzAboutData");
       if (stored) setData(JSON.parse(stored));
     } catch {}
+    setLoading(false);
   }, []);
 
   const save = () => {
@@ -110,6 +113,10 @@ const AboutUsAdmin: React.FC = () => {
     { key: "values",  label: "Values" },
     { key: "stats",   label: "Stats" },
   ];
+
+  if (loading) {
+    return <FullPageContentPreloader message="Loading About Us settings..." />;
+  }
 
   return (
     <div className="au-admin">

@@ -8,6 +8,7 @@ import {
   Trash2, Edit3, Eye, Send, MoreHorizontal, Search,
   AlertCircle, CheckCircle2, CalendarDays, X,
 } from "lucide-react";
+import { FullPageContentPreloader } from "../Preloader/FullPageContentPreloader";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 interface RemoteArticle {
@@ -250,6 +251,10 @@ await loadData();
     }
     return "#6b7280";
   };
+
+  if (loading) {
+    return <FullPageContentPreloader message="Loading scheduled posts..." />;
+  }
 
   return (
     <div className="sp-root">

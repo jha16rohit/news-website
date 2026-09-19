@@ -7,6 +7,7 @@ import {
 import "./Trendingnews.css";
 import { getTrendingTags, getAllTags, type Tag as TagType } from "../../../api/tags.api";
 import { fetchAllNews, type StatusEnum } from "../../../api/news";
+import { FullPageContentPreloader } from "../Preloader/FullPageContentPreloader";
 
 // ─────────────────────────────────────────────
 // Types
@@ -227,6 +228,10 @@ export default function TrendingNews() {
   const activeTagLabel = activeTagSlug === "all"
     ? null
     : filterTags.find((t) => t.slug === activeTagSlug)?.name ?? activeTagSlug;
+
+  if (loading) {
+    return <FullPageContentPreloader message="Loading trending news..." />;
+  }
 
   return (
     <div className="tn-root">

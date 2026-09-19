@@ -13,7 +13,7 @@ import {
   Upload,
 } from "lucide-react";
 import "./TopicProfiles.css";
-import Preloader from "../Preloader/Preloder";
+import { FullPageContentPreloader } from "../Preloader/FullPageContentPreloader";
 
 import { FaXTwitter } from "react-icons/fa6";
 import {
@@ -579,6 +579,10 @@ useEffect(() => {
   return String(profile.authorId) === String(currentUser.id);
 };
 
+  if (loading) {
+    return <FullPageContentPreloader message="Loading topic profiles..." />;
+  }
+
   return (
     <div className="tp-page">
       {/* Header */}
@@ -666,7 +670,6 @@ useEffect(() => {
       </div>
 
       {/* Loading / Error states */}
-      {loading && <Preloader />}
       {error && <div className="tp-empty" style={{ color: "#ef4444" }}>{error}</div>}
 
       {/* Profile Cards */}

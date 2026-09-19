@@ -11,6 +11,7 @@ import {
   toggleActive,
 } from "../../../api/category.api";
 import type { Category } from "../../../types/category";
+import { FullPageContentPreloader } from "../Preloader/FullPageContentPreloader";
 
 const FEATURED_LIMIT = 6;
 
@@ -21,6 +22,7 @@ export default function Categories() {
   const [search,           setSearch]           = useState("");
   const [toastMsg,         setToastMsg]         = useState("");
   const [isAddModalOpen,   setIsAddModalOpen]   = useState(false);
+  const [loading,        setLoading]          = useState(true);
 
   const showToast = (msg: string) => {
     setToastMsg(msg);
@@ -33,8 +35,13 @@ export default function Categories() {
   }, []);
 
   const fetchCategories = async () => {
-    const data = await getCategories();
-    setCategories(data);
+    setLoading(true);
+    try {
+      const data = await getCategories();
+      setCategories(data);
+    } finally {
+      setLoading(false);
+    }
   };
 
   const getBreadcrumb = (cat: Category): string => {
@@ -142,6 +149,10 @@ if (updatedCat.featured && otherFeatured >= FEATURED_LIMIT) {
     { icon: <FileText size={20} />, val: categories.filter(c => c.parentId).length,  label: "Sub-Categories",    bg: "bg-green" },
     { icon: <Folder size={20} />,   val: categories.filter(c => !c.parentId && c.featured).length,  label: "Featured",           bg: "bg-gray"  },
   ];
+
+  if (loading) {
+    return <FullPageContentPreloader message="Loading categories..." />;
+  }
 
   return (
     <div className="cat-root">

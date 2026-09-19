@@ -6,6 +6,7 @@ import {
   type FetchNotificationsParams,
 } from "../../../api/notification";
 import { useAdminNotifications } from "../../../hooks/useAdminNotifications";
+import { FullPageContentPreloader } from "../Preloader/FullPageContentPreloader";
 
 type FilterTab = "All" | "Unread" | "Breaking" | "Comments" | "Scheduled" | "Trending";
 type SortOrder = "latest" | "oldest";
@@ -372,6 +373,10 @@ const Notifications: React.FC = () => {
     };
     return counts;
   }, [allNotifications, unreadCount]);
+
+  if (loading) {
+    return <FullPageContentPreloader message="Loading notifications..." />;
+  }
 
   return (
     <div className="notif-page">

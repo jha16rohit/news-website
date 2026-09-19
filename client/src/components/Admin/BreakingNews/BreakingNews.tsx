@@ -17,6 +17,7 @@ import {
   removeBreakingStatus,
 } from "../../../api/news";
 // import { useNewsEvent, useNewsSubscription } from "../../../context/newscontext";
+import { FullPageContentPreloader } from "../Preloader/FullPageContentPreloader";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 interface BreakingItem {
@@ -210,6 +211,10 @@ const BreakingNews: React.FC = () => {
   };
 
   // ── Render ─────────────────────────────────────────────────────────────────
+  if (loading) {
+    return <FullPageContentPreloader message="Loading breaking news..." />;
+  }
+
   return (
     <div
       className="bn-container"

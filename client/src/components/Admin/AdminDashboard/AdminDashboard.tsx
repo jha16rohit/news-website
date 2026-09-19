@@ -7,6 +7,7 @@ import TopPerformers from "../TopPerformers/TopPerformers";
 import RecentArticles from "../RecentArticles/RecentArticles";
 import { FileText, Clock, Zap, Eye, TrendingUp, Users } from "lucide-react";
 import { fetchKPIs } from "../../../api/analytics";
+import ContentPreloader from "../Preloader/ContentPreloader";
 
 // ── Types ──────────────────────────────────────────────────────────────────
 interface KPIs {
@@ -53,6 +54,10 @@ const AdminDashboard = () => {
 
   useEffect(() => { load(); }, [load]);
 
+  if (loading) {
+    return <ContentPreloader message="Loading dashboard..." />;
+  }
+
   return (
     <div className="dashboard">
 
@@ -62,7 +67,7 @@ const AdminDashboard = () => {
           <h1>Dashboard</h1>
           <p>Welcome back! Here's what's happening in your newsroom today.</p>
         </div>
-        <span className="last-updated">Last updated: <strong>{loading ? "…" : "just now"}</strong></span>
+        <span className="last-updated">Last updated: <strong>just now</strong></span>
       </div>
 
       {/* STATS */}

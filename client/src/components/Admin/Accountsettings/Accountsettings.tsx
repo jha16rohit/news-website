@@ -7,7 +7,7 @@ import {
   logoutUser,
 } from "../../../api/auth";
 import { useNavigate } from "react-router-dom";
-import Preloader from "../Preloader/Preloder";
+import { FullPageContentPreloader } from "../Preloader/FullPageContentPreloader";
 
 const AccountSettings: React.FC = () => {
   const navigate = useNavigate();
@@ -105,11 +105,9 @@ const fullName = `${profile.firstName} ${profile.lastName}`.trim();
     }
   };
 
-  if (loading) 
-    return <>
-    <Preloader />
-    </>
-  ;
+  if (loading) {
+    return <FullPageContentPreloader message="Loading account settings..." />;
+  }
 
   return (
     <div className="settings-page">

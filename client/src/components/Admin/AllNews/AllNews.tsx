@@ -14,7 +14,7 @@ import {
   toggleHomepagePin,
 } from "../../../api/news";
 import type { ArticleTypeEnum } from "../../../api/news";
-import Preloader from "../Preloader/Preloder";
+import { FullPageContentPreloader } from "../Preloader/FullPageContentPreloader";
 import { getMe } from "../../../api/auth";
 
 
@@ -590,8 +590,8 @@ const confirmDelete = async () => {
   
 
   if (loading && articles.length === 0) {
-  return <Preloader />;
-}
+    return <FullPageContentPreloader message="Loading articles..." />;
+  }
 
   // ── Render ────────────────────────────────────────────────────────────────
   return (

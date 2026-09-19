@@ -5,6 +5,7 @@ import {
 } from "lucide-react";
 import "./ContactUsAdmin.css";
 import { apiClient } from "../../../api/client";
+import { FullPageContentPreloader } from "../Preloader/FullPageContentPreloader";
 
 // ─── TYPES ─────────────────────────────────────────────────────────
 export interface ContactInfo {
@@ -280,11 +281,7 @@ const ContactUsAdmin: React.FC = () => {
   ];
 
   if (loading) {
-    return (
-      <div className="cu-admin" style={{ display: "flex", alignItems: "center", justifyContent: "center", minHeight: 300 }}>
-        <Loader2 size={32} className="spin" />
-      </div>
-    );
+    return <FullPageContentPreloader message="Loading contact settings..." />;
   }
 
   return (

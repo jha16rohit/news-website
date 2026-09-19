@@ -22,6 +22,7 @@ import {
   adminDeleteComment,
   adminReplyComment,
 } from "../../../api/user/comment";
+import { FullPageContentPreloader } from "../Preloader/FullPageContentPreloader";
 
 type Status = "all" | "pending" | "approved" | "reported";
 
@@ -70,7 +71,7 @@ const CommentsPage = () => {
   const [search, setSearch] = useState("");
   const [comments, setComments] = useState<Comment[]>([]);
   const [stats, setStats] = useState<Stats>({ total: 0, pending: 0, reported: 0, approvedToday: 0 });
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
 
   // ✅ Reply popup (modal) state — replaces the old inline reply box
   const [replyModalComment, setReplyModalComment] = useState<Comment | null>(null);
@@ -203,6 +204,10 @@ const CommentsPage = () => {
 
   const visibleComments = comments.slice(0, visibleCount);
   const hasMore = comments.length > visibleCount;
+
+  if (loading && comments.length === 0) {
+    return <FullPageContentPreloader message="Loading comments..." />;
+  }
 
   return (
     <div className="comments-page">

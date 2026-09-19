@@ -15,7 +15,7 @@ import "./EditorDashboard.css";
 import { fetchAdminNews, deleteNews } from "../../../api/news";
 import { getMe } from "../../../api/auth";
 import { fetchEditorTrafficChart } from "../../../api/analytics";
-import Preloader from "../Preloader/Preloder";
+import { FullPageContentPreloader } from "../Preloader/FullPageContentPreloader";
 
 type Period = "today" | "7days" | "30days";
 
@@ -331,7 +331,7 @@ const EditorDashboard: React.FC = () => {
   };
 
   if (loading) {
-    return <Preloader />;
+    return <FullPageContentPreloader message="Loading editor dashboard..." />;
   }
 
   return (

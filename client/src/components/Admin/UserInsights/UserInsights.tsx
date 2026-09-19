@@ -13,7 +13,7 @@ import "./UserInsights.css";
 // NOTE: adjust this relative path if UserInsights.tsx lives somewhere
 // other than one level below src/api/admin/ in your project structure.
 import { fetchUserInsights } from "../../../api/analytics";
-import Preloader from "../Preloader/Preloder";
+import { FullPageContentPreloader } from "../Preloader/FullPageContentPreloader";
 
 /* ------------------------------------------------------------------ */
 /*  Real data — shape returned by GET /api/admin/analytics/user-insights */
@@ -311,10 +311,7 @@ const UserInsights: React.FC = () => {
   }, [data]);
 
   if (loading) {
-    return <>(
-        <Preloader />
-    )
-    </>;
+    return <FullPageContentPreloader message="Loading user insights..." />;
   }
 
   if (error || !data) {

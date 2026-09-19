@@ -8,6 +8,20 @@
   color: #1A1814;
 }
 
+/* ── FULL PAGE LOADER ── */
+.ml-page-loader {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: calc(100vh - 60px); /* Account for admin topbar */
+  padding: 24px;
+  box-sizing: border-box;
+}
+
+.ml-page-loader .content-preloader {
+  background: transparent;
+}
+
 /* ── TOPBAR ── */
 .ml-topbar {
   background: #ffffff;

@@ -11,6 +11,7 @@ import {
   deleteFooterImageFromDB,
 } from "../../../api/footer"; // ← adjust path if needed
 import type { FooterImage } from "../../../api/footer";
+import { FullPageContentPreloader } from "../Preloader/FullPageContentPreloader";
 
 // ─── Component ────────────────────────────────────────────────────────────────
 const FooterManagement: React.FC = () => {
@@ -183,27 +184,22 @@ const FooterManagement: React.FC = () => {
   };
 
   // const activeImage = images.find((img) => img.isActive);
+  if (loading) {
+    return <FullPageContentPreloader message="Loading footer settings..." />;
+  }
+
   return (
     <div className="fm-page">
-
-      {toast.visible && (
-        <div className={`fm-toast ${toast.type}`}>
-          {toast.type === "success" ? <CheckCircle size={20} /> : <AlertCircle size={20} />}
-          <span>{toast.message}</span>
-        </div>
-      )}
+      <div className={`fm-toast ${toast.type}`}>
+        {toast.type === "success" ? <CheckCircle size={20} /> : <AlertCircle size={20} />}
+        <span>{toast.message}</span>
+      </div>
 
       <div className="fm-header">
         <h2>Footer Management</h2>
       </div>
 
-      {loading ? (
-        <div className="fm-loading">
-          <Loader2 size={36} className="fm-spin" />
-          <p>Loading footer settings…</p>
-        </div>
-      ) : (
-        <div className="fm-content">
+      <div className="fm-content">
 
           <div className="fm-top-row">
             <div className="fm-card fm-inputs-card">
@@ -382,7 +378,6 @@ const FooterManagement: React.FC = () => {
           </div>
 
         </div>
-      )}
     </div>
   );
 };

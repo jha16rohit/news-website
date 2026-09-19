@@ -11,6 +11,7 @@ import {
   updateNews      as apiUpdateNews,
   appendLiveUpdate as apiAppendLiveUpdate,
 } from "../../../api/news";
+import { FullPageContentPreloader } from "../Preloader/FullPageContentPreloader";
 // import { useNewsEvent, useNewsSubscription } from "../../../context/newscontext";
 
 
@@ -1356,6 +1357,10 @@ const LiveStoriesPage: React.FC = () => {
     if (story.status === "draft") return; // drafts don't have timeline
     setDetailStory(story);
   };
+
+  if (loading) {
+    return <FullPageContentPreloader message="Loading live stories..." />;
+  }
 
   return (
     <>

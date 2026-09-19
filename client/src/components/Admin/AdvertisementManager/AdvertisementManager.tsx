@@ -6,6 +6,7 @@ import {
 } from "lucide-react";
 import { apiClient } from "../../../api/client";
 import "./AdvertisementManager.css";
+import { FullPageContentPreloader } from "../Preloader/FullPageContentPreloader";
 
 /* ─── Types ─────────────────────────────────────────────── */
 type AdType = "card" | "strip";
@@ -644,6 +645,10 @@ export default function AdvertisementManager() {
       setBusyId(null);
     }
   };
+
+  if (loading) {
+    return <FullPageContentPreloader message="Loading advertisement data..." />;
+  }
 
   return (
     <div className="adm-root">

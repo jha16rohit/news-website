@@ -19,6 +19,7 @@ import {
   setTagTrending,
   type Tag as TagType,
 } from "../../../api/tags.api";
+import { FullPageContentPreloader } from "../Preloader/FullPageContentPreloader";
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 function toSlug(name: string) {
@@ -301,6 +302,10 @@ export default function Tags() {
   };
 
   // ── Render ─────────────────────────────────────────────────────────────────
+  if (loading) {
+    return <FullPageContentPreloader message="Loading tags..." />;
+  }
+
   return (
     <div className="tags-root">
       <div className="tags-container">

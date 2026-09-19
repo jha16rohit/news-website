@@ -19,7 +19,7 @@ import {
 } from "lucide-react";
 
 import { apiClient } from "../../../api/client";
-import Preloader from "../Preloader/Preloder";
+import { FullPageContentPreloader } from "../Preloader/FullPageContentPreloader";
 
 interface Editor {
   _id: string;
@@ -379,10 +379,8 @@ const saveEdit = async (e: React.FormEvent) => {
 };
 
 if (loading) {
-  return (
-    <Preloader />
-  );
-}
+    return <FullPageContentPreloader message="Loading editors..." />;
+  }
 
   return (
     <div className="editors-page">

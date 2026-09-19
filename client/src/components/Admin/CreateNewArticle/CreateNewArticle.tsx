@@ -20,7 +20,7 @@ import {
   FileText, Tag, MapPin, User, Trash2, Search, X, CalendarClock,
   Plus, TrendingUp,
 } from "lucide-react";
-import Preloader from "../Preloader/Preloder";
+import { FullPageContentPreloader } from "../Preloader/FullPageContentPreloader";
 
 interface Category {
   id: string | number;
@@ -1493,13 +1493,8 @@ const handleScheduleConfirm = async (isoDatetime: string) => {
     } finally { setIsSubmitting(false); }
   };
 
-  if (loadingArticle) {
-    return (
-      <>
-      <Preloader />
-        
-      </>
-    );
+if (loadingArticle) {
+    return <FullPageContentPreloader message="Loading article..." />;
   }
 
   const googlePreviewUrl   = `https://yournewssite.com/news/${urlSlug || "article-slug"}`;
@@ -1509,7 +1504,7 @@ const handleScheduleConfirm = async (isoDatetime: string) => {
   return (
     <div className="cna-root">
 
-    {showSubmitPreloader && <Preloader />}
+    {showSubmitPreloader && <FullPageContentPreloader message="Publishing article..." />}
       <div
   ref={publishSentinelRef}
   className="cna-publish-sentinel"
