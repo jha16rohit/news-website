@@ -7,6 +7,7 @@ import { fetchNewsById } from "../../../api/news";
 import Preloader from "../../Admin/Preloader/Preloder";
 import NotFound404 from "../Errors/NotFound404";
 import { formatLiveTime } from "../../../utils/timezone";
+import { getLiveStatus } from "../../../utils/statusUtils";
 
 interface LiveUpdate {
   id: string;
@@ -92,7 +93,10 @@ const LiveDetail: React.FC = () => {
   }
 
   const categoryName = typeof liveArticle.categoryId === "object" ? liveArticle.categoryId?.name : liveArticle.category;
-  const status = liveArticle.statusType === "ended" ? "ENDED" : "LIVE";
+  const status = getLiveStatus({
+    articleType: liveArticle.articleType as "STANDARD" | "BREAKING" | "LIVE" | undefined,
+    statusType: liveArticle.statusType,
+  });
   const lastUpdateTime = liveArticle.liveUpdates?.[0]?.time || "Just now";
 
   // SEO Metadata

@@ -1,0 +1,154 @@
+/* client/src/components/UI/StatusBadge/StatusBadge.css */
+
+.status-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+  padding: 2px 8px;
+  border-radius: 4px;
+  line-height: 1;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.status-badge--compact {
+  padding: 1px 6px;
+  font-size: 10px;
+  gap: 3px;
+}
+
+.status-badge--inline {
+  vertical-align: middle;
+}
+
+.status-badge-group {
+  display: inline-flex;
+  gap: 4px;
+}
+
+.status-badge__dot {
+  width: 6px;
+  height: 6px;
+  background: currentColor;
+  border-radius: 50%;
+  animation: status-pulse 1.5s infinite;
+  flex-shrink: 0;
+}
+
+.status-badge__icon {
+  flex-shrink: 0;
+}
+
+.status-badge__text {
+  font-family: inherit;
+  line-height: 1;
+}
+
+@keyframes status-pulse {
+  0%, 100% {
+    opacity: 1;
+    box-shadow: 0 0 0 0 currentColor;
+  }
+  50% {
+    opacity: 0.6;
+    box-shadow: 0 0 0 4px transparent;
+  }
+}
+
+/* LIVE badge - uses the existing red color scheme */
+.status-badge--live {
+  background: #fee2e2;
+  color: #dc2626;
+  border: 1px solid #fecaca;
+}
+
+.status-badge--live .status-badge__dot {
+  background: #dc2626;
+}
+
+.status-badge--live .status-badge__text {
+  color: #dc2626;
+}
+
+/* BREAKING badge - uses the existing red/amber color scheme */
+.status-badge--breaking {
+  background: #fff7ed;
+  color: #ea580c;
+  border: 1px solid #fed7aa;
+}
+
+.status-badge--breaking .status-badge__icon {
+  color: #ea580c;
+}
+
+.status-badge--breaking .status-badge__text {
+  color: #ea580c;
+}
+
+/* Compact variant for tight spaces like sidebars and small cards */
+.status-badge--compact .status-badge__dot {
+  width: 5px;
+  height: 5px;
+}
+
+.status-badge--compact .status-badge__text {
+  font-size: 10px;
+}
+
+/* Inline variant for text-flow contexts */
+.status-badge--inline {
+  display: inline-flex;
+}
+
+/* Responsive adjustments */
+@media (max-width: 640px) {
+  .status-badge {
+    font-size: 10px;
+    padding: 2px 6px;
+  }
+
+  .status-badge--compact {
+    font-size: 9px;
+    padding: 1px 5px;
+  }
+
+  .status-badge__dot {
+    width: 5px;
+    height: 5px;
+  }
+}
+
+@media (max-width: 375px) {
+  .status-badge {
+    font-size: 9px;
+    padding: 1px 5px;
+  }
+
+  .status-badge--compact {
+    font-size: 9px;
+    padding: 1px 4px;
+  }
+
+  .status-badge__text {
+    display: none;
+  }
+
+  .status-badge--compact .status-badge__text {
+    display: inline;
+  }
+}
+
+/* Print styles */
+@media print {
+  .status-badge {
+    animation: none;
+  }
+
+  .status-badge__dot {
+    animation: none;
+  }
+}

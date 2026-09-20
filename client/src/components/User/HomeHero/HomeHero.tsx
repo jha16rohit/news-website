@@ -1,9 +1,8 @@
 import React, { useRef, useEffect, useState } from "react";
 import { Clock, Eye, ChevronLeft, ChevronRight } from "lucide-react";
 import { Link } from "react-router-dom";
-// import { getHomepageNews } from "../../../api/user/news";
-// import { getTrendingTags } from "../../../api/user/tag";
 import "./HomeHero.css";
+import { StatusBadge } from "../../UI/StatusBadge";
 
 // Inline SVG placeholders — no network request, never fails, unlike
 // via.placeholder.com which is unreliable / can go down (ERR_CONNECTION_CLOSED).
@@ -12,7 +11,7 @@ const PLACEHOLDER_IMG_LARGE =
 const PLACEHOLDER_IMG_SMALL =
   "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='150'%3E%3Crect width='100%25' height='100%25' fill='%23e5e7eb'/%3E%3Ctext x='50%25' y='50%25' font-family='sans-serif' font-size='16' fill='%239ca3af' text-anchor='middle' dominant-baseline='middle'%3ENo Image%3C/text%3E%3C/svg%3E";
 
-  interface HeroSectionProps {
+interface HeroSectionProps {
   articles: Article[];
   trendingTags: Tag[];
 }
@@ -30,6 +29,10 @@ interface Article {
     name?: string;
     color?: string;
   };
+
+  articleType?: "STANDARD" | "BREAKING" | "LIVE";
+  statusType?: string;
+  breakingNewsTicker?: boolean;
 }
 interface Tag {
   _id: string;
@@ -179,10 +182,16 @@ const HeroSection: React.FC<HeroSectionProps> = ({
               />
 
               <div className="featured-overlay">
-                <span className="category-badge politics">
-                  {featuredArticle.categoryId?.name || "NEWS"}
-                </span>
-
+                <div className="featured-badges">
+                  <StatusBadge
+                    articleType={featuredArticle.articleType}
+                    statusType={featuredArticle.statusType}
+                    variant="default"
+                  />
+                  <span className="category-badge politics">
+                    {featuredArticle.categoryId?.name || "NEWS"}
+                  </span>
+                </div>
                 <h1 className="featured-title">
                   {featuredArticle.headline}
                 </h1>
@@ -235,9 +244,12 @@ const HeroSection: React.FC<HeroSectionProps> = ({
                   />
 
                   <div className="trending-info">
-
-                    {/* Header Row: Category on left */}
                     <div className="trending-info-header">
+                      <StatusBadge
+                        articleType={article.articleType}
+                        statusType={article.statusType}
+                        variant="compact"
+                      />
                       <span className="trending-category">
                         {article.categoryId?.name || "NEWS"}
                       </span>

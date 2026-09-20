@@ -284,19 +284,32 @@
   object-fit: fill;
 }
 
-.topic-detail-live-badge {
-  font-family: var(--font-body); /* 👇 EXPERT FIX: Explicit body font */
-  position: absolute;
-  top: 12px;
-  left: 12px;
-  background: #dc2626;
-  color: white;
+/* Status Badge Integration for TopicDetail */
+.topic-detail-news-img-wrap .status-badge {
+  flex-shrink: 0;
+  margin: 8px;
+  z-index: 10;
+}
+
+.topic-detail-news-img-wrap .status-badge--live {
+  background: #fee2e2;
+  color: #dc2626;
+  border: 1px solid #fecaca;
+}
+
+.topic-detail-news-img-wrap .status-badge--breaking {
+  background: #fff7ed;
+  color: #ea580c;
+  border: 1px solid #fed7aa;
+}
+
+.topic-detail-news-img-wrap .status-badge--compact {
+  padding: 2px 6px;
   font-size: 10px;
-  font-weight: 800;
-  padding: 4px 10px;
-  border-radius: 20px;
-  letter-spacing: 0.5px;
-  box-shadow: 0 2px 5px rgba(220, 38, 38, 0.4);
+}
+
+.topic-detail-news-img-wrap .status-badge--compact .status-badge__text {
+  display: none;
 }
 
 .topic-detail-news-content {

@@ -29,6 +29,8 @@ import { useAuth } from "../../../context/AuthContext";
 import { getApiBaseUrl } from "../../../utils/apiBase";
 import NotFound404 from "../Errors/NotFound404";
 import { formatLiveTime } from "../../../utils/timezone";
+import { isLiveArticle, isBreakingArticle } from "../../../utils/statusUtils";
+import { StatusBadge } from "../../UI/StatusBadge";
 // ─── Types ────────────────────────────────────────────────────────────────────
 type VoteType = "like" | "dislike" | null;
 
@@ -121,7 +123,6 @@ function calcReadTime(html: string): string {
 }
 
 function normalizeArticle(raw: any): ArticleData {
-  const articleType = raw.articleType ?? "STANDARD";
   return {
     id:       String(raw._id ?? raw.id ?? ""),
     headline: raw.headline ?? raw.title ?? "",
@@ -145,8 +146,8 @@ function normalizeArticle(raw: any): ArticleData {
     imageUrl:     raw.featuredImage ?? raw.imageUrl ?? raw.img,
     imageCaption: raw.imageCaption,
     photoCredit:  raw.photoCredit,
-    isLive:       articleType === "LIVE" && raw.statusType !== "ended",
-    isBreaking:   articleType === "BREAKING" && raw.statusType === "published",
+    isLive:       isLiveArticle({ articleType: raw.articleType, statusType: raw.statusType } as any),
+    isBreaking:   isBreakingArticle({ articleType: raw.articleType, statusType: raw.statusType, breakingNewsTicker: raw.breakingNewsTicker } as any),
     liveUpdates:  Array.isArray(raw.liveUpdates) ? raw.liveUpdates : [],
     tags:         Array.isArray(raw.tags) ? raw.tags : [],
     views:        raw.views ?? 0,
@@ -1250,7 +1251,14 @@ if (platform === "whatsapp") {
                         <img src={item.featuredImage} alt={item.headline} className="recent-news-img" />
                       )}
                       <div className="recent-news-info">
-                        <span className="recent-news-category">{catName}</span>
+                        <div className="recent-news-header">
+                          <StatusBadge
+                            articleType={item.articleType}
+                            statusType={item.statusType}
+                            variant="compact"
+                          />
+                          <span className="recent-news-category">{catName}</span>
+                        </div>
                         <h4 className="recent-news-title">{item.shortTitle ?? item.headline}</h4>
                         <span className="recent-news-time"><Clock size={11} /> {formatDate(item.publishedAt)}</span>
                       </div>
@@ -1282,6 +1290,11 @@ if (platform === "whatsapp") {
                         />
                       )}
                       <div className="related-news-info">
+                        <StatusBadge
+                          articleType={item.articleType}
+                          statusType={item.statusType}
+                          variant="compact"
+                        />
                         <h4>{item.shortTitle ?? item.headline}</h4>
                         <span>{formatDate(item.publishedAt)}</span>
                       </div>

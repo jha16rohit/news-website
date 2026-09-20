@@ -189,9 +189,24 @@
 
 .trending-info-header {
   display: flex;
-  justify-content: space-between;
   align-items: center;
+  gap: 8px;
   margin-bottom: 4px;
+  flex-wrap: wrap;
+}
+
+.trending-info-header .status-badge {
+  flex-shrink: 0;
+}
+
+.trending-category {
+  font-family: var(--font-body);
+  color: #e60000;
+  font-size: 10px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: 0;
 }
 
 .trending-category {
@@ -594,5 +609,104 @@
   .tag-pill,
   .tag-scroll-btn {
     transition: none;
+  }
+}
+
+/* Status Badge Integration for HomeHero */
+.featured-badges {
+  display: inline-flex;
+  gap: 8px;
+  margin-bottom: 12px;
+  flex-wrap: wrap;
+}
+
+.featured-badges .status-badge {
+  flex-shrink: 0;
+}
+
+.featured-badges .status-badge--live {
+  background: #fee2e2;
+  color: #dc2626;
+  border: 1px solid #fecaca;
+}
+
+.featured-badges .status-badge--breaking {
+  background: #fff7ed;
+  color: #ea580c;
+  border: 1px solid #fed7aa;
+}
+
+.trending-info-header .status-badge {
+  flex-shrink: 0;
+}
+
+.trending-info-header .status-badge--live {
+  background: #fee2e2;
+  color: #dc2626;
+  border: 1px solid #fecaca;
+}
+
+.trending-info-header .status-badge--breaking {
+  background: #fff7ed;
+  color: #ea580c;
+  border: 1px solid #fed7aa;
+}
+
+.trending-info-header .status-badge--compact {
+  padding: 2px 6px;
+  font-size: 10px;
+}
+
+/* Responsive adjustments for status badges */
+@media (max-width: 758px) {
+  .featured-badges {
+    gap: 6px;
+    margin-bottom: 10px;
+  }
+
+  .featured-badges .status-badge {
+    padding: 2px 8px;
+    font-size: 10px;
+  }
+
+  .trending-info-header {
+    gap: 6px;
+  }
+
+  .trending-info-header .status-badge--compact {
+    padding: 2px 6px;
+    font-size: 10px;
+  }
+}
+
+@media (max-width: 480px) {
+  .featured-badges {
+    gap: 4px;
+    margin-bottom: 8px;
+  }
+
+  .featured-badges .status-badge {
+    padding: 2px 6px;
+    font-size: 9px;
+  }
+
+  .featured-badges .status-badge__text {
+    display: none;
+  }
+
+  .trending-info-header .status-badge {
+    padding: 2px 6px;
+    font-size: 9px;
+  }
+
+  .trending-info-header .status-badge__text {
+    display: none;
+  }
+}
+
+@media (max-width: 360px) {
+  .featured-badges .status-badge {
+    padding: 1px 4px;
+    font-size: 8px;
   }
 }

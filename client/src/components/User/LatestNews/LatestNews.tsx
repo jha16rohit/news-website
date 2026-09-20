@@ -1,8 +1,8 @@
-import React, { useState } from "react"; // 👇 FIX: Added useEffect here!
+import React, { useState } from "react";
 import { Clock } from "lucide-react";
 import { Link } from "react-router-dom";
 import "./LatestNews.css";
-// import { getTrendingNews } from "../../../api/user/trendingNews";
+import { StatusBadge } from "../../UI/StatusBadge";
 
 interface LatestNewsProps {
   newsData: any[];
@@ -71,7 +71,14 @@ const LatestNews: React.FC<LatestNewsProps> = ({ newsData }) => {
               </div>
 
               <div className="news-content">
-                <span className="card-badge">{article.category}</span>
+                <div className="news-badges">
+                  <StatusBadge
+                    articleType={article.articleType}
+                    statusType={article.statusType}
+                    variant="compact"
+                  />
+                  <span className="card-badge">{article.category}</span>
+                </div>
                 <h3 className="news-title">{article.headline}</h3>
                 <p className="news-excerpt">{article.excerpt}</p>
 

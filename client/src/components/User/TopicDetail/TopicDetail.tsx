@@ -15,6 +15,7 @@ import {
   type Advertisement as AdType,
 } from "../../../api/user/advertisementPool";
 import NotFound404 from "../Errors/NotFound404";
+import { StatusBadge } from "../../UI/StatusBadge";
 
 interface Profile {
   _id: string;
@@ -192,7 +193,11 @@ const TopicDetail: React.FC = () => {
           {relatedNews.map((news) => (
             <Link to={`/news/${news.slug}`}key={news.id} className="topic-detail-news-card text-decoration-none">
               <div className="topic-detail-news-img-wrap">
-                {news.isLive && <span className="topic-detail-live-badge">LIVE</span>}
+                <StatusBadge
+                  articleType={news.articleType}
+                  statusType={news.statusType}
+                  variant="compact"
+                />
                 <img src={news.featuredImage} alt={news.headline} />
               </div>
               <div className="topic-detail-news-content">

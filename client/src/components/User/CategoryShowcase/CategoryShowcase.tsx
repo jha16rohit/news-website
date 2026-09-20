@@ -5,6 +5,7 @@ import { ArrowRight, Clock } from "lucide-react";
 // import { fetchAllNews } from "../../../api/news";
 import type { Category } from "../../../types/category";
 import "./CategoryShowcase.css";
+import { StatusBadge } from "../../UI/StatusBadge";
 
 interface CategoryShowcaseProps {
   categories: Category[];
@@ -91,6 +92,9 @@ const CategoryShowcase: React.FC<CategoryShowcaseProps> = ({
             category:
               a?.categoryId?.name || a?.categoryName || a?.category || "News",
 
+            articleType: a.articleType,
+            statusType: a.statusType,
+
             // 👇 EXPERT FIX: Converts the raw ISO string into a human-readable date!
             time:
               a.createdAt || a.publishedAt
@@ -138,9 +142,17 @@ const CategoryShowcase: React.FC<CategoryShowcaseProps> = ({
                         <img src={displayArticles[0].img} />
                       </div>
                       <div className="cs-card-body">
-                        <span className="cs-card-badge">
-                          {displayArticles[0].category}
-                        </span>
+                        <div className="cs-card-badges">
+                          <StatusBadge
+                            articleType={displayArticles[0].articleType}
+                            statusType={displayArticles[0].statusType}
+
+                            variant="default"
+                          />
+                          <span className="cs-card-badge">
+                            {displayArticles[0].category}
+                          </span>
+                        </div>
                         <h3 className="cs-card-title">
                           {displayArticles[0].title}
                         </h3>
@@ -162,9 +174,17 @@ const CategoryShowcase: React.FC<CategoryShowcaseProps> = ({
                       >
                         <img src={article.img} className="cs-list-img" />
                         <div className="cs-list-content">
-                          <span className="cs-list-cat">
-                            {article.category}
-                          </span>
+                          <div className="cs-list-badges">
+                            <StatusBadge
+                              articleType={article.articleType}
+                              statusType={article.statusType}
+
+                              variant="compact"
+                            />
+                            <span className="cs-list-cat">
+                              {article.category}
+                            </span>
+                          </div>
                           <h4 className="cs-list-title">{article.title}</h4>
                           <div className="cs-card-time">
                             <Clock size={14} /> {article.time}
@@ -188,9 +208,17 @@ const CategoryShowcase: React.FC<CategoryShowcaseProps> = ({
                         <img src={displayArticles[0].img} alt="" />
                       </div>
                       <div className="cs-card-body">
-                        <span className="cs-card-badge">
-                          {displayArticles[0].category}
-                        </span>
+                        <div className="cs-card-badges">
+                          <StatusBadge
+                            articleType={displayArticles[0].articleType}
+                            statusType={displayArticles[0].statusType}
+
+                            variant="default"
+                          />
+                          <span className="cs-card-badge">
+                            {displayArticles[0].category}
+                          </span>
+                        </div>
                         <h3 className="cs-card-title">
                           {displayArticles[0].title}
                         </h3>
@@ -212,9 +240,17 @@ const CategoryShowcase: React.FC<CategoryShowcaseProps> = ({
                       >
                         <img src={article.img} alt="" className="cs-list-img" />
                         <div className="cs-list-content">
-                          <span className="cs-list-cat">
-                            {article.category}
-                          </span>
+                          <div className="cs-list-badges">
+                            <StatusBadge
+                              articleType={article.articleType}
+                              statusType={article.statusType}
+
+                              variant="compact"
+                            />
+                            <span className="cs-list-cat">
+                              {article.category}
+                            </span>
+                          </div>
                           <h4 className="cs-list-title">{article.title}</h4>
                           <div className="cs-card-time">
                             <Clock size={14} /> {article.time}
@@ -238,7 +274,15 @@ const CategoryShowcase: React.FC<CategoryShowcaseProps> = ({
                       <img src={article.img} alt="" />
                     </div>
                     <div className="cs-card-body">
-                      <span className="cs-card-badge">{article.category}</span>
+                      <div className="cs-card-badges">
+                        <StatusBadge
+                          articleType={article.articleType}
+                          statusType={article.statusType}
+
+                          variant="compact"
+                        />
+                        <span className="cs-card-badge">{article.category}</span>
+                      </div>
                       <h3 className="cs-card-title">{article.title}</h3>
                       <p className="cs-card-sub">{article.subtitle}</p>
                       <div className="cs-card-time">
@@ -260,7 +304,15 @@ const CategoryShowcase: React.FC<CategoryShowcaseProps> = ({
                       {article.img && <img src={article.img} alt="" />}
                     </div>
                     <div className="cs-card-body">
-                      <span className="cs-card-badge">{article.category}</span>
+                      <div className="cs-card-badges">
+                        <StatusBadge
+                          articleType={article.articleType}
+                          statusType={article.statusType}
+
+                          variant="compact"
+                        />
+                        <span className="cs-card-badge">{article.category}</span>
+                      </div>
                       <h3 className="cs-card-title cs-grid-title-small">
                         {article.title}
                       </h3>
@@ -284,9 +336,17 @@ const CategoryShowcase: React.FC<CategoryShowcaseProps> = ({
                       >
                         <img src={article.img} alt="" className="cs-list-img" />
                         <div className="cs-list-content">
-                          <span className="cs-list-cat">
-                            {article.category}
-                          </span>
+                          <div className="cs-list-badges">
+                            <StatusBadge
+                              articleType={article.articleType}
+                              statusType={article.statusType}
+
+                              variant="compact"
+                            />
+                            <span className="cs-list-cat">
+                              {article.category}
+                            </span>
+                          </div>
                           <h4 className="cs-list-title">{article.title}</h4>
                           <div className="cs-card-time">
                             <Clock size={14} /> {article.time}
@@ -304,9 +364,17 @@ const CategoryShowcase: React.FC<CategoryShowcaseProps> = ({
                         <img src={displayArticles[0].img} alt="" />
                       </div>
                       <div className="cs-card-body">
-                        <span className="cs-card-badge">
-                          {displayArticles[0].category}
-                        </span>
+                        <div className="cs-card-badges">
+                          <StatusBadge
+                            articleType={displayArticles[0].articleType}
+                            statusType={displayArticles[0].statusType}
+
+                            variant="default"
+                          />
+                          <span className="cs-card-badge">
+                            {displayArticles[0].category}
+                          </span>
+                        </div>
                         <h3 className="cs-card-title">
                           {displayArticles[0].title}
                         </h3>
@@ -322,7 +390,7 @@ const CategoryShowcase: React.FC<CategoryShowcaseProps> = ({
                 </>
               )}
 
-              {/* LAYOUT 4: 4-COLUMN GRID */}
+{/* LAYOUT 4: 4-COLUMN GRID */}
               {layout === "grid-4" &&
                 displayArticles.slice(0, 8).map((article, i) => (
                   <Link
@@ -331,10 +399,18 @@ const CategoryShowcase: React.FC<CategoryShowcaseProps> = ({
                     className="cs-dark-card"
                   >
                     <div className="cs-img-wrap">
-                      <img src={article.img} alt="" />
+                      {article.img && <img src={article.img} alt="" />}
                     </div>
                     <div className="cs-card-body">
-                      <span className="cs-card-badge">{article.category}</span>
+                      <div className="cs-card-badges">
+                        <StatusBadge
+                          articleType={article.articleType}
+                          statusType={article.statusType}
+
+                          variant="compact"
+                        />
+                        <span className="cs-card-badge">{article.category}</span>
+                      </div>
                       <h3 className="cs-card-title cs-grid-title-small">
                         {article.title}
                       </h3>

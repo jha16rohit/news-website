@@ -424,3 +424,101 @@
     font-size: 9px;
   }
 }
+
+/* Status Badge Integration for CategoryShowcase */
+.cs-card-badges,
+.cs-list-badges,
+.cs-hero-badges {
+  display: inline-flex;
+  gap: 6px;
+  margin-bottom: 8px;
+  flex-wrap: wrap;
+}
+
+.cs-card-badges {
+  margin-bottom: 10px;
+}
+
+.cs-list-badges {
+  margin-bottom: 6px;
+}
+
+.cs-hero-badges {
+  margin-bottom: 12px;
+}
+
+.cs-card-badges .status-badge,
+.cs-list-badges .status-badge,
+.cs-hero-badges .status-badge {
+  flex-shrink: 0;
+}
+
+.cs-card-badges .status-badge--compact,
+.cs-list-badges .status-badge--compact,
+.cs-hero-badges .status-badge--compact {
+  padding: 2px 6px;
+  font-size: 10px;
+}
+
+.cs-card-badges .status-badge--live,
+.cs-list-badges .status-badge--live,
+.cs-hero-badges .status-badge--live {
+  background: #fee2e2;
+  color: #dc2626;
+  border: 1px solid #fecaca;
+}
+
+.cs-card-badges .status-badge--breaking,
+.cs-list-badges .status-badge--breaking,
+.cs-hero-badges .status-badge--breaking {
+  background: #fff7ed;
+  color: #ea580c;
+  border: 1px solid #fed7aa;
+}
+
+.cs-list-badges {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 6px;
+  flex-wrap: wrap;
+}
+
+.cs-list-badges .status-badge {
+  flex-shrink: 0;
+}
+
+.cs-hero-badges {
+  display: inline-flex;
+  gap: 8px;
+  margin-bottom: 12px;
+  flex-wrap: wrap;
+}
+
+.cs-hero-badges .status-badge {
+  flex-shrink: 0;
+}
+
+@media (max-width: 640px) {
+  .cs-card-badges .status-badge--compact,
+  .cs-list-badges .status-badge--compact,
+  .cs-hero-badges .status-badge--compact {
+    padding: 2px 6px;
+    font-size: 9px;
+  }
+
+  .cs-card-badges .status-badge__text,
+  .cs-list-badges .status-badge__text,
+  .cs-hero-badges .status-badge__text {
+    display: none;
+  }
+}
+
+@media (max-width: 375px) {
+  .cs-card-badges .status-badge--compact,
+  .cs-list-badges .status-badge--compact,
+  .cs-hero-badges .status-badge--compact {
+    padding: 1px 4px;
+    font-size: 8px;
+  }
+}

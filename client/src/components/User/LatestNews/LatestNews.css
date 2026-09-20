@@ -107,6 +107,17 @@
   flex-grow: 1;
 }
 
+.news-badges {
+  display: inline-flex;
+  gap: 6px;
+  margin-bottom: 8px;
+  flex-wrap: wrap;
+}
+
+.news-badges .status-badge {
+  flex-shrink: 0;
+}
+
 .card-badge {
   font-family: var(--font-body);
   background-color: #e60000;
@@ -120,6 +131,24 @@
   letter-spacing: 0.5px;
   display: inline-block;
   line-height: 1;
+}
+
+/* Status badge integration */
+.news-badges .status-badge--live {
+  background: #fee2e2;
+  color: #dc2626;
+  border: 1px solid #fecaca;
+}
+
+.news-badges .status-badge--breaking {
+  background: #fff7ed;
+  color: #ea580c;
+  border: 1px solid #fed7aa;
+}
+
+.news-badges .status-badge--compact {
+  padding: 2px 6px;
+  font-size: 10px;
 }
 
 .news-title {
@@ -368,5 +397,24 @@
 
   .news-card:hover .news-img {
     transform: none;
+  }
+}
+
+/* Responsive adjustments for status badges */
+@media (max-width: 640px) {
+  .news-badges .status-badge--compact {
+    padding: 2px 6px;
+    font-size: 9px;
+  }
+
+  .news-badges .status-badge__text {
+    display: none;
+  }
+}
+
+@media (max-width: 360px) {
+  .news-badges .status-badge--compact {
+    padding: 1px 4px;
+    font-size: 8px;
   }
 }

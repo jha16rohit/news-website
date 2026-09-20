@@ -4,14 +4,15 @@ import { Radio } from "lucide-react";
 import "./LiveEventsPage.css";
 import { fetchAdminNews } from "../../../api/news";
 import Preloader from "../../Admin/Preloader/Preloder";
+import { getLiveStatus } from "../../../utils/statusUtils";
 
 interface LiveStory {
   _id: string;
   headline: string;
   category: string;
   categoryId?: { name: string; color: string } | string;
-  status: string;
   statusType?: string;
+  articleType?: string;
   views: number;
   publishedAt?: string;
   featuredImage?: string;
@@ -136,7 +137,11 @@ const LiveEventsPage: React.FC = () => {
             const updateCount = item.liveUpdates?.length ?? 0;
             const lastUpdate = item.liveUpdates?.[0];
             const lastUpdateTime = lastUpdate ? lastUpdate.time : (item.publishedAt ? new Date(item.publishedAt).toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit" }) : "Just now");
-            const status = item.statusType === "ended" ? "ENDED" : "LIVE";
+            // Cast to StatusArticle for type compatibility
+            const status = getLiveStatus({
+              articleType: item.articleType as "STANDARD" | "BREAKING" | "LIVE" | undefined,
+              statusType: item.statusType,
+            });
 
             return (
               <Link

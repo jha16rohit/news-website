@@ -61,6 +61,168 @@
   font-size: 0.6rem; 
 }
 
+/* Status Badge containers for different card layouts */
+.ct-hero__badges,
+.ct-stack__badges,
+.ct-gcard__badges,
+.ct-recent-header {
+  display: inline-flex;
+  gap: 6px;
+  margin-bottom: 8px;
+  flex-wrap: wrap;
+}
+
+.ct-hero__badges {
+  margin-bottom: 12px;
+}
+
+.ct-stack__badges {
+  margin-bottom: 6px;
+}
+
+.ct-gcard__badges {
+  margin-bottom: 8px;
+}
+
+.ct-recent-header {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  margin-bottom: 4px;
+}
+
+.ct-recent-header .status-badge {
+  flex-shrink: 0;
+}
+
+/* Status badge integration with existing badge styles */
+.ct-hero__badges .status-badge--live,
+.ct-stack__badges .status-badge--live,
+.ct-gcard__badges .status-badge--live,
+.ct-recent-header .status-badge--live {
+  background: #fee2e2;
+  color: #dc2626;
+  border: 1px solid #fecaca;
+}
+
+.ct-hero__badges .status-badge--breaking,
+.ct-stack__badges .status-badge--breaking,
+.ct-gcard__badges .status-badge--breaking,
+.ct-recent-header .status-badge--breaking {
+  background: #fff7ed;
+  color: #ea580c;
+  border: 1px solid #fed7aa;
+}
+
+/* Compact status badge for tight spaces */
+.ct-stack__badges .status-badge--compact,
+.ct-gcard__badges .status-badge--compact,
+.ct-recent-header .status-badge--compact {
+  padding: 2px 6px;
+  font-size: 10px;
+}
+
+.ct-recent-header {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  margin-bottom: 4px;
+}
+
+.ct-recent-header .status-badge {
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+
+/* Stack card badges container */
+.ct-stack__badges {
+  display: inline-flex;
+  gap: 6px;
+  margin-bottom: 6px;
+  flex-wrap: wrap;
+}
+
+/* Grid card badges container */
+.ct-gcard__badges {
+  display: inline-flex;
+  gap: 6px;
+  margin-bottom: 8px;
+  flex-wrap: wrap;
+}
+
+.ct-gcard__badges .ct-badge {
+  /* Keep category badge styling */
+}
+
+/* Hero badges container */
+.ct-hero__badges {
+  display: inline-flex;
+  gap: 8px;
+  margin-bottom: 12px;
+  flex-wrap: wrap;
+}
+
+.ct-hero__badges .ct-badge {
+  background: #e60000;
+  color: #fff;
+}
+
+/* Stack badges container */
+.ct-stack__badges {
+  display: inline-flex;
+  gap: 6px;
+  margin-bottom: 6px;
+  flex-wrap: wrap;
+}
+
+.ct-stack__badges .ct-badge {
+  font-family: var(--font-body);
+  background: #e60000;
+  color: white;
+  padding: 3px 8px;
+  border-radius: 4px;
+  font-size: 0.6rem;
+  font-weight: 700;
+  align-self: flex-start;
+  margin-bottom: 2px;
+}
+
+/* Grid card badges container */
+.ct-gcard__badges {
+  display: inline-flex;
+  gap: 6px;
+  margin-bottom: 8px;
+  flex-wrap: wrap;
+}
+
+/* Recent header for sidebar items */
+.ct-recent-header {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  margin-bottom: 4px;
+}
+
+.ct-recent-header .status-badge {
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+
+.ct-recent-header .ct-recent-title {
+  margin: 0;
+  line-height: 1.35;
+}
+
+/* Ensure status badge doesn't break text wrapping */
+.ct-recent-header > * {
+  flex-shrink: 0;
+}
+
+.ct-recent-title {
+  flex: 1;
+  min-width: 0;
+}
+
 /* ── Meta row (Date/Views) ─────────────────────────── */
 .ct-meta {
   font-family: var(--font-body);

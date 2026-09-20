@@ -28,6 +28,7 @@ import Preloader from "../../Admin/Preloader/Preloder";
 import { getRecentNews } from "../../../api/user/recentNews";
 import { getAdvertisementPool, type Advertisement as AdType } from "../../../api/user/advertisementPool";
 import NotFound404 from "../Errors/NotFound404";
+import { StatusBadge } from "../../UI/StatusBadge";
 
 
 function buildCalendar() {
@@ -55,6 +56,8 @@ interface Article {
   published: string;
   views: string;
   img: string;
+  articleType?: "STANDARD" | "BREAKING" | "LIVE";
+  statusType?: string;
 }
 
 interface CardProps {
@@ -68,7 +71,14 @@ function HeroCard({ a, color }: CardProps) {
     <Link to={`/article/${a.id}`} className="ct-hero" style={{ textDecoration: "none", color: "inherit" }}>
       <img src={a.img} alt={a.title} className="ct-hero__img" />
       <div className="ct-hero__overlay">
-        <span className="ct-badge" style={{ background: color }}>{a.category}</span>
+        <div className="ct-hero__badges">
+          <StatusBadge
+            articleType={a.articleType}
+            statusType={a.statusType}
+            variant="default"
+          />
+          <span className="ct-badge" style={{ background: color }}>{a.category}</span>
+        </div>
         <h2 className="ct-hero__title">{a.title}</h2>
         <p className="ct-hero__sub">{a.subtitle}</p>
         <div className="ct-meta"><Clock size={14} /><span>{a.published}</span></div>
@@ -84,7 +94,14 @@ function StackCard({ a }: CardProps) {
         <img src={a.img} alt={a.title} className="ct-stack__img" />
       </div>
       <div className="ct-stack__body">
-        <span className="ct-badge">{a.category}</span>
+        <div className="ct-stack__badges">
+          <StatusBadge
+            articleType={a.articleType}
+            statusType={a.statusType}
+            variant="compact"
+          />
+          <span className="ct-badge">{a.category}</span>
+        </div>
         <p className="ct-stack__title">{a.title}</p>
         <div className="ct-meta"><Clock size={12} /><span>{a.published}</span></div>
       </div>
@@ -100,6 +117,13 @@ function GridCard({ a, color, delay = 0 }: CardProps) {
         <span className="ct-badge ct-badge--sm" style={{ background: color }}>{a.category}</span>
       </div>
       <div className="ct-gcard__body">
+        <div className="ct-gcard__badges">
+          <StatusBadge
+            articleType={a.articleType}
+            statusType={a.statusType}
+            variant="compact"
+          />
+        </div>
         <h4 className="ct-gcard__title">{a.title}</h4>
         <p className="ct-gcard__sub">{a.subtitle}</p>
         <div className="ct-meta-row">
@@ -489,6 +513,8 @@ const fetchWeather = async () => {
       : "Recently",
     views: String(a.views || 0),
     img: a.featuredImage ,
+    articleType: a.articleType,
+    statusType: a.statusType,
   }));
 
   const hero = source[0];
@@ -557,9 +583,16 @@ const fetchWeather = async () => {
         </div>
 
         <div>
-          <p className="ct-recent-title">
-            {item.shortTitle || item.headline}
-          </p>
+          <div className="ct-recent-header">
+            <StatusBadge
+              articleType={item.articleType}
+              statusType={item.statusType}
+              variant="compact"
+            />
+            <p className="ct-recent-title">
+              {item.shortTitle || item.headline}
+            </p>
+          </div>
 
           <span className="ct-recent-date">
             {item.publishedAt

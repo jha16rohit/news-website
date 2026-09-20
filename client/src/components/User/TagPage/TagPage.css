@@ -1020,3 +1020,66 @@
     padding: 12px 20px;
   }
 }
+
+/* Status Badge Integration for TagPage */
+.tp-list-badges,
+.tp-trend-badges {
+  display: inline-flex;
+  gap: 6px;
+  margin-bottom: 6px;
+  flex-wrap: wrap;
+}
+
+.tp-list-badges .status-badge,
+.tp-trend-badges .status-badge {
+  flex-shrink: 0;
+}
+
+.tp-list-badges .status-badge--compact,
+.tp-trend-badges .status-badge--compact {
+  padding: 2px 6px;
+  font-size: 10px;
+}
+
+.tp-list-badges .status-badge--live,
+.tp-trend-badges .status-badge--live {
+  background: #fee2e2;
+  color: #dc2626;
+  border: 1px solid #fecaca;
+}
+
+.tp-list-badges .status-badge--breaking,
+.tp-trend-badges .status-badge--breaking {
+  background: #fff7ed;
+  color: #ea580c;
+  border: 1px solid #fed7aa;
+}
+
+.tp-trend-badges {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 6px;
+  flex-wrap: wrap;
+}
+
+@media (max-width: 640px) {
+  .tp-list-badges .status-badge--compact,
+  .tp-trend-badges .status-badge--compact {
+    padding: 2px 6px;
+    font-size: 9px;
+  }
+
+  .tp-list-badges .status-badge__text,
+  .tp-trend-badges .status-badge__text {
+    display: none;
+  }
+}
+
+@media (max-width: 375px) {
+  .tp-list-badges .status-badge--compact,
+  .tp-trend-badges .status-badge--compact {
+    padding: 1px 4px;
+    font-size: 8px;
+  }
+}

@@ -12,6 +12,7 @@ import {
 } from "../../../api/user/advertisementPool";
 import Advertisement from "../Advertisment/Advertisment";
 import NotFound404 from "../Errors/NotFound404";
+import { StatusBadge } from "../../UI/StatusBadge";
 
 
 const TagPage: React.FC = () => {
@@ -143,7 +144,7 @@ if (tagNotFound) {
 
               {/* List cards */}
               <div className="tp-list-feed">
-                {visibleArticles.map((article) => (
+{visibleArticles.map((article) => (
                   <Link
                     to={`/news/${article.slug}`}
                     key={article.id}
@@ -153,9 +154,16 @@ if (tagNotFound) {
 <img
   src={article.featuredImage}
   alt={article.headline}
-/>                    </div>
+ />                    </div>
                     <div className="tp-list-body">
-                      <span className="tp-list-cat">{displayTag}</span>
+                      <div className="tp-list-badges">
+                        <StatusBadge
+                          articleType={article.articleType}
+                          statusType={article.statusType}
+                          variant="compact"
+                        />
+                        <span className="tp-list-cat">{displayTag}</span>
+                      </div>
                       <h4 className="tp-list-title">{article.headline}</h4>
                       <p className="tp-trend-excerpt">{article.excerpt}</p>
                       <div className="tp-list-time">
@@ -202,18 +210,25 @@ if (tagNotFound) {
                 <div className="tp-section-head">
                   <h2 className="tp-section-title">Recent News</h2>
                 </div>
-                <div className="tp-trending-list">
+<div className="tp-trending-list">
                   {recentNews.slice(0, 5).map((article) => (
                     <Link
                       to={`/news/${article.slug}`}
-  key={article._id}
+                      key={article._id}
                       className="tp-trending-item text-decoration-none"
                     >
                       <span className="tp-trend-arrow">
                         <ChevronRight size={18} />
                       </span>
                       <div className="tp-trend-body">
-                        <span className="tp-trend-cat">{article.category}</span>
+                        <div className="tp-trend-badges">
+                          <StatusBadge
+                            articleType={article.articleType}
+                            statusType={article.statusType}
+                            variant="compact"
+                          />
+                          <span className="tp-trend-cat">{article.category}</span>
+                        </div>
                         <p className="tp-trend-title">{article.shortTitle || article.headline}</p>
                         <span className="tp-trend-time">
                           <Clock size={11} /> {article.publishedAt
