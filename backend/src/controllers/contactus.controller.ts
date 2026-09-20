@@ -40,9 +40,9 @@ async function sendContactNotification(msg: {
     return;
   }
 
-  const adminUrl = `${
-    process.env.FRONTEND_URL?.trim() || "http://localhost:5173"
-  }/admin/contact`;
+  // Use PUBLIC_FRONTEND_URL for generated public links (single URL, not comma-separated CORS origins)
+  const adminBaseUrl = process.env.PUBLIC_FRONTEND_URL?.trim() || process.env.FRONTEND_URL?.split(",")[0]?.trim() || "http://localhost:5173";
+  const adminUrl = `${adminBaseUrl}/admin/contact-manager`;
 
   const { error } = await getResend().emails.send({
     from: FROM,
@@ -213,6 +213,17 @@ export const getMessageById = async (req: Request, res: Response) => {
     const id = Array.isArray(req.params.id) ? req.params.id[0] : req.params.id;
     const msg = await ContactMessage.findById(id);
     if (!msg) return res.status(404).json({ message: "Message not found" });
+
+    // If user is authenticated, verify they own this message
+    const authReq = req as any;
+    if (authReq.userId) {
+      const SiteUser = (await import("../models/SiteUser")).default;
+      const user = await SiteUser.findById(authReq.userId).select("email");
+      if (user && msg.email.toLowerCase() !== user.email.toLowerCase()) {
+        return res.status(403).json({ message: "Cannot access another user's message" });
+      }
+    }
+
     res.json(msg);
   } catch (err: any) {
     res.status(500).json({ message: err.message });
@@ -223,9 +234,48 @@ export const getMessageById = async (req: Request, res: Response) => {
 export const getMessagesByEmail = async (req: Request, res: Response) => {
   try {
     const emailParam = Array.isArray(req.params.email) ? req.params.email[0] : req.params.email;
-    const messages = await ContactMessage.find({ 
-      email: { $regex: new RegExp(`^${emailParam}$`, "i") } 
+
+    // If user is authenticated, verify the email matches
+    const authReq = req as any;
+    if (authReq.userId) {
+      // Fetch the user to get their email
+      const SiteUser = (await import("../models/SiteUser")).default;
+      const user = await SiteUser.findById(authReq.userId).select("email");
+      if (user && user.email.toLowerCase() !== emailParam.toLowerCase()) {
+        return res.status(403).json({ message: "Cannot access another user's messages" });
+      }
+    }
+
+    const messages = await ContactMessage.find({
+      email: { $regex: new RegExp(`^${emailParam}$`, "i") }
     }).sort({ receivedAt: -1 });
+    res.json(messages);
+  } catch (err: any) {
+    res.status(500).json({ message: err.message });
+  }
+};
+
+// Get authenticated user's own messages
+export const getMyMessages = async (req: Request, res: Response) => {
+  try {
+    const authReq = req as any;
+    const userId = authReq.userId;
+
+    if (!userId) {
+      return res.status(401).json({ message: "Not authorized" });
+    }
+
+    // Fetch the user to get their email
+    const SiteUser = (await import("../models/SiteUser")).default;
+    const user = await SiteUser.findById(userId).select("email name");
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    const messages = await ContactMessage.find({
+      email: { $regex: new RegExp(`^${user.email}$`, "i") }
+    }).sort({ receivedAt: -1 });
+
     res.json(messages);
   } catch (err: any) {
     res.status(500).json({ message: err.message });
@@ -236,8 +286,28 @@ export const createMessage = async (req: Request, res: Response) => {
   try {
     const { name, email, phone, subject, message } = req.body;
 
+    // If user is authenticated, use their info and verify email matches
+    const authReq = req as any;
+    let finalName = name;
+    let finalEmail = email;
+    let finalPhone = phone;
+
+    if (authReq.userId) {
+      const SiteUser = (await import("../models/SiteUser")).default;
+      const user = await SiteUser.findById(authReq.userId).select("name email phone");
+      if (user) {
+        finalName = user.name;
+        finalEmail = user.email;
+        finalPhone = user.phone || phone;
+        // Verify the provided email matches the authenticated user's email
+        if (email && email.toLowerCase() !== user.email.toLowerCase()) {
+          return res.status(403).json({ message: "Email must match your authenticated account" });
+        }
+      }
+    }
+
     const msg = await ContactMessage.create({
-      name, email, phone, subject, message,
+      name: finalName, email: finalEmail, phone: finalPhone, subject, message,
     });
 
     sendContactNotification({

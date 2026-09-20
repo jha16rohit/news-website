@@ -6,6 +6,7 @@ import {
   getMessages,
   getMessageById,
   getMessagesByEmail,
+  getMyMessages,
   createMessage,
   markMessageRead,
   replyToMessage,
@@ -16,6 +17,8 @@ import {
   protect,
   hasPermission,
 } from "../middleware/auth.middleware";
+
+import { protectSiteUser } from "../middleware/Siteuserauth.middleware";
 
 const router = Router();
 
@@ -35,22 +38,31 @@ router.put(
   updateContactUsSettings
 );
 
-// ─── Public: users can submit Contact Us messages ───────────────────────────
+// ─── Protected: users must be logged in to submit Contact Us messages ─────────
 
 router.post(
   "/messages",
+  protectSiteUser,
   createMessage
 );
 
-// Public: fetch all past messages and replies for a user by email
+// Protected: fetch authenticated user's own messages
+router.get(
+  "/my-messages",
+  protectSiteUser,
+  getMyMessages
+);
+
+// Public: fetch all past messages and replies for a user by email (with ownership check)
 router.get(
   "/messages/email/:email",
   getMessagesByEmail
 );
 
-// Public: allow users to poll and view their specific message thread & reply
+// Protected: allow users to view their specific message thread (with ownership check)
 router.get(
   "/messages/:id",
+  protectSiteUser,
   getMessageById
 );
 

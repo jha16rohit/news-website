@@ -42,9 +42,9 @@ async function sendAdInquiryNotification(inquiry: {
     return;
   }
 
-  const adminUrl = `${
-    process.env.FRONTEND_URL?.trim() || "http://localhost:5173"
-  }/admin/advertisements`;
+  // Use PUBLIC_FRONTEND_URL for generated public links (single URL, not comma-separated CORS origins)
+  const adminBaseUrl = process.env.PUBLIC_FRONTEND_URL?.trim() || process.env.FRONTEND_URL?.split(",")[0]?.trim() || "http://localhost:5173";
+  const adminUrl = `${adminBaseUrl}/admin/advertisements`;
   
 
   const { error } = await getResend().emails.send({

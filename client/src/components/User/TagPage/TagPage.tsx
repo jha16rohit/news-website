@@ -11,6 +11,7 @@ import {
   type Advertisement as AdType,
 } from "../../../api/user/advertisementPool";
 import Advertisement from "../Advertisment/Advertisment";
+import NotFound404 from "../Errors/NotFound404";
 
 
 const TagPage: React.FC = () => {
@@ -20,13 +21,15 @@ const TagPage: React.FC = () => {
   const [recentNews, setRecentNews] = useState<any[]>([]);
   const [trendingTags, setTrendingTags] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
-  const [ads, setAds] = useState<{
+const [ads, setAds] = useState<{
     cards: AdType[];
     strips: AdType[];
-}>({
+  }>({
     cards: [],
     strips: [],
-});
+  });
+
+  const [tagNotFound, setTagNotFound] = useState(false);
 
   const currentTagSlug = tagSlug || "budget-2026";
   const displayTag = currentTagSlug
@@ -38,6 +41,7 @@ const TagPage: React.FC = () => {
   const fetchTagNews = async () => {
     try {
       setLoading(true);
+      setTagNotFound(false);
 
       const response =
         await getTagNews(currentTagSlug);
@@ -70,12 +74,18 @@ const adResponse =
 setAds(adResponse);
 
 
-    } catch (error) {
+    } catch (error: any) {
 
       console.error(
         "Failed to fetch tag news:",
         error
       );
+
+      // Check if it's a 404 - tag not found
+      const errorMessage = error?.message || "";
+      if (errorMessage.includes("not found") || errorMessage.includes("404")) {
+        setTagNotFound(true);
+      }
 
       setArticles([]);
 
@@ -106,13 +116,16 @@ setAds(adResponse);
   );
 }
 
+if (tagNotFound) {
+  return <NotFound404 />;
+}
 
   return (
     <div className="tp-wrapper">
       <div className="tp-container">
 
         {/* ── HERO ── */}
-        
+
 
         {/* ── TAG NAV ── */}
 
@@ -126,7 +139,7 @@ setAds(adResponse);
                 <h2 className="tp-section-title">Latest Stories</h2>
               </div>
 
-              
+
 
               {/* List cards */}
               <div className="tp-list-feed">
@@ -184,7 +197,7 @@ setAds(adResponse);
             {/* ── RIGHT: SIDEBAR ── */}
             <aside className="tp-sidebar">
 
-              
+
               <div className="tp-sidebar-widget">
                 <div className="tp-section-head">
                   <h2 className="tp-section-title">Recent News</h2>
@@ -219,7 +232,7 @@ setAds(adResponse);
     adData={ads.cards[0] ?? null}
     variant="card"
 />
-            
+
 
               {/* Tag cloud */}
               <div className="tp-sidebar-widget">
@@ -243,7 +256,7 @@ setAds(adResponse);
           </div>
         ) : (
           <div className="tp-empty-state">
-            
+
           </div>
         )}
       </div>

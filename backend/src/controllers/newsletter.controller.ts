@@ -17,7 +17,11 @@ function getResend(): Resend {
   return resendClient;
 }
 
-const SITE_URL = process.env.FRONTEND_URL?.trim() || "http://localhost:5173";
+// Use PUBLIC_FRONTEND_URL for generated public links (single URL, not comma-separated CORS origins)
+function getPublicFrontendUrl(): string {
+  return process.env.PUBLIC_FRONTEND_URL?.trim() || process.env.FRONTEND_URL?.split(",")[0]?.trim() || "http://localhost:5173";
+}
+
 const FROM = process.env.RESEND_FROM?.trim() || "Local Newz <onboarding@resend.dev>";
 
 function isValidEmail(email: string): boolean {
@@ -97,7 +101,8 @@ export const unsubscribeFromNewsletter = async (req: Request, res: Response) => 
 
 // ── Welcome email ─────────────────────────────────────────────────────────────
 async function sendWelcomeEmail(email: string, unsubscribeToken: string): Promise<void> {
-  const unsubscribeUrl = `${SITE_URL.replace(/\/$/, "")}/api/newsletter/unsubscribe/${unsubscribeToken}`;
+  const baseUrl = getPublicFrontendUrl();
+  const unsubscribeUrl = `${baseUrl.replace(/\/$/, "")}/api/newsletter/unsubscribe/${unsubscribeToken}`;
 
   const { data, error } = await getResend().emails.send({
     from: FROM,
@@ -153,7 +158,7 @@ async function notifyPushSubscribersOfNewArticle(article: {
   const payload = JSON.stringify({
     title: "📰 Local Newz",
     body: article.headline,
-    url: `${SITE_URL.replace(/\/$/, "")}/article/${article.slug}`,
+    url: `${getPublicFrontendUrl().replace(/\/$/, "")}/article/${article.slug}`,
   });
 
   const results = await Promise.allSettled(
@@ -229,7 +234,8 @@ async function notifyEmailSubscribersOfNewArticle(article: {
   );
   if (subscribers.length === 0) return;
 
-  const articleUrl = `${SITE_URL.replace(/\/$/, "")}/article/${article.slug}`;
+  const baseUrl = getPublicFrontendUrl();
+  const articleUrl = `${baseUrl.replace(/\/$/, "")}/article/${article.slug}`;
 
   // Resend doesn't cleanly support one bulk call with per-recipient unsubscribe
   // links, so we send individually in small batches to stay under rate limits.
@@ -238,7 +244,7 @@ async function notifyEmailSubscribersOfNewArticle(article: {
     const batch = subscribers.slice(i, i + BATCH_SIZE);
     const results = await Promise.allSettled(
       batch.map((sub) => {
-        const unsubscribeUrl = `${SITE_URL.replace(/\/$/, "")}/api/newsletter/unsubscribe/${sub.unsubscribeToken}`;
+        const unsubscribeUrl = `${baseUrl.replace(/\/$/, "")}/api/newsletter/unsubscribe/${sub.unsubscribeToken}`;
         return getResend().emails.send({
           from: FROM,
           to: [sub.email],

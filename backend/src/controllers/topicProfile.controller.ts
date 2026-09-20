@@ -93,6 +93,36 @@ export const getPublicProfiles = async (
   }
 };
 
+// ─── GET SINGLE (PUBLIC / USER-SIDE) ──────────────────────────────────────────
+// No auth required — used by the public website to get a single topic profile by slug.
+export const getPublicProfileBySlug = async (
+  req: Request,
+  res: Response
+) => {
+  try {
+    const { slug } = req.params;
+
+    const profile = await TopicProfile.findOne(
+      { slug },
+      "name slug caption description fullDetails instagram facebook twitter imageUrl createdAt"
+    );
+
+    if (!profile) {
+      return res.status(404).json({
+        message: "Topic not found",
+      });
+    }
+
+    res.json(profile);
+  } catch (err) {
+    console.error("Get public topic profile by slug error:", err);
+
+    res.status(500).json({
+      message: "Error fetching profile",
+    });
+  }
+};
+
 // ─── GET ALL (ADMIN) ─────────────────────────────────────────────────────────
 export const getProfiles = async (
   _req: AuthRequest,

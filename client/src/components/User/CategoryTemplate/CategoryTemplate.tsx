@@ -27,6 +27,7 @@ import Preloader from "../../Admin/Preloader/Preloder";
 
 import { getRecentNews } from "../../../api/user/recentNews";
 import { getAdvertisementPool, type Advertisement as AdType } from "../../../api/user/advertisementPool";
+import NotFound404 from "../Errors/NotFound404";
 
 
 function buildCalendar() {
@@ -333,6 +334,8 @@ const [locationAllowed, setLocationAllowed] = useState(false);
     strips: [],
   });  
 
+  const [categoryNotFound, setCategoryNotFound] = useState(false);
+
   const category = categories.find(
     (c) => c.slug === slug
   );
@@ -433,6 +436,7 @@ const fetchWeather = async () => {
     async function fetchNews() {
       try {
         setLoading(true);
+        setCategoryNotFound(false);
 
         const data = await getCategoryNews(slug!);
 
@@ -457,8 +461,13 @@ const fetchWeather = async () => {
           });
         }
 
-      } catch (error) {
+      } catch (error: any) {
         console.error("Category news fetch error:", error);
+        // Check if it's a 404 - category not found
+        const errorMessage = error?.message || "";
+        if (errorMessage.includes("not found") || errorMessage.includes("404")) {
+          setCategoryNotFound(true);
+        }
       } finally {
         setLoading(false);
       }
@@ -509,6 +518,10 @@ const fetchWeather = async () => {
         <Preloader />
       </>
     );
+  }
+
+  if (categoryNotFound) {
+    return <NotFound404 />;
   }
 
   return (

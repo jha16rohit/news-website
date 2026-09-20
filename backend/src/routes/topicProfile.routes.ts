@@ -4,6 +4,7 @@ import {
   createProfile,
   getProfiles,
   getPublicProfiles,
+  getPublicProfileBySlug,
   updateProfile,
   deleteProfile,
 } from "../controllers/topicProfile.controller";
@@ -18,6 +19,7 @@ const router = Router();
 // ─── PUBLIC (USER-SIDE) ──────────────────────────────────────────────────────
 // No auth — this is what the public website should call.
 router.get("/public", getPublicProfiles);
+router.get("/public/:slug", getPublicProfileBySlug);
 
 // ─── CREATE ────────────────────────────────────────────────────────────────
 

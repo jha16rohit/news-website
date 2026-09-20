@@ -27,6 +27,7 @@ import { trackPageView, trackReadTime } from "../../../api/analytics";
 import { trackRead, trackShare } from "../../../api/user/userauth";
 import { useAuth } from "../../../context/AuthContext";
 import { getApiBaseUrl } from "../../../utils/apiBase";
+import NotFound404 from "../Errors/NotFound404";
 // ─── Types ────────────────────────────────────────────────────────────────────
 type VoteType = "like" | "dislike" | null;
 
@@ -813,14 +814,7 @@ if (platform === "whatsapp") {
   }
 
   if (error || !article) {
-    return (
-      <div className="error-wrapper">
-        <div className="error-icon">📰</div>
-        <h2>Article Not Found</h2>
-        <p>{error ?? "This article may have been removed or is unavailable."}</p>
-        <button className="error-btn" onClick={() => navigate(-1)}>← Go Back</button>
-      </div>
-    );
+    return <NotFound404 />;
   }
 
   const displayCategory =

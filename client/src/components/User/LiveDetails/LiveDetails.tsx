@@ -1,50 +1,65 @@
-import React from "react";
-import { Link } from "react-router-dom";
+import React, { useEffect, useState } from "react";
+import { Link, useParams } from "react-router-dom";
 import { Clock, Facebook, Twitter, AlertCircle } from "lucide-react";
 import "./LiveDetails.css";
+import { getLiveEventById } from "../../../api/user/liveEvent";
+import Preloader from "../../Admin/Preloader/Preloder";
+import NotFound404 from "../Errors/NotFound404";
+
+interface LiveEvent {
+  _id: string;
+  title: string;
+  category: string;
+  status: string;
+  viewers: string;
+  lastUpdated: string;
+  videoUrl?: string;
+  updates: Array<{
+    id: string;
+    time: string;
+    title: string;
+    content: string;
+    isImportant: boolean;
+    imageUrl?: string;
+  }>;
+  createdAt: string;
+}
 
 const LiveDetail: React.FC = () => {
-  // const { eventId } = useParams();
+  const { eventId } = useParams<{ eventId: string }>();
+  const [liveEvent, setLiveEvent] = useState<LiveEvent | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [notFound, setNotFound] = useState(false);
 
-  // Mock data for a Live Event
-  const liveEvent = {
-    title: "Parliament Session Live: Budget Bill Debate Continues",
-    category: "Politics",
-    status: "LIVE", // Can be "LIVE" or "ENDED"
-    viewers: "12.5K",
-    lastUpdated: "Just now",
-    videoUrl: "https://images.unsplash.com/photo-1540910419892-4a36d2c3266c?auto=format&fit=crop&q=80&w=1200", // Placeholder for video thumbnail
-    updates: [
-      {
-        id: 1,
-        time: "10:45 AM",
-        title: "Finance Minister Takes the Floor",
-        content: "The Finance Minister has begun addressing the opposition's concerns regarding the proposed healthcare budget cuts.",
-        isImportant: true,
-      },
-      {
-        id: 2,
-        time: "10:30 AM",
-        title: "Session Resumes After Brief Recess",
-        content: "Members of Parliament have returned to their seats. The Speaker has called the house to order.",
-        isImportant: false,
-      },
-      {
-        id: 3,
-        time: "09:15 AM",
-        title: "Opposition Demands Clarification on Tech Subsidies",
-        content: "Several opposition leaders have walked to the well of the house demanding a detailed breakdown of the subsidies proposed for foreign tech companies.",
-        isImportant: true,
-      },
-      {
-        id: 4,
-        time: "09:00 AM",
-        title: "Session Begins",
-        content: "The parliamentary session has officially started for the day. Attendance is at 95%.",
-        isImportant: false,
+  useEffect(() => {
+    const fetchEvent = async () => {
+      try {
+        setLoading(true);
+        setNotFound(false);
+        const data = await getLiveEventById(eventId!);
+        setLiveEvent(data);
+      } catch (error: any) {
+        console.error("Failed to fetch live event:", error);
+        const errorMessage = error?.message || "";
+        if (errorMessage.includes("not found") || errorMessage.includes("404")) {
+          setNotFound(true);
+        }
+      } finally {
+        setLoading(false);
       }
-    ]
-  };
+    };
+    if (eventId) {
+      fetchEvent();
+    }
+  }, [eventId]);
+
+  if (loading) {
+    return <Preloader />;
+  }
+
+  if (notFound || !liveEvent) {
+    return <NotFound404 />;
+  }
 
   return (
     <div className="live-page">
@@ -64,7 +79,7 @@ const LiveDetail: React.FC = () => {
             <div className="live-badges">
               <span className="live-indicator">
                 <span className="pulsing-dot"></span>
-                LIVE
+                {liveEvent.status}
               </span>
               <span className="live-category">{liveEvent.category}</span>
             </div>

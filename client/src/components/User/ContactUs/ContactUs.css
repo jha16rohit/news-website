@@ -95,8 +95,299 @@
   max-width: 480px;
 }
 
-/* ── MAIN SECTION ── */
-.cu-main-section {
+/* ── BREADCRUMB ── */
+.cu-breadcrumb {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0 0 24px;
+  font-size: 13px;
+  color: #64748b;
+}
+
+.cu-breadcrumb-link {
+  color: #e10600;
+  text-decoration: none;
+}
+
+.cu-breadcrumb-sep {
+  color: #e2e8f0;
+  margin: 0 8px;
+}
+
+.cu-breadcrumb-current {
+  color: #0b1423;
+  font-weight: 600;
+}
+
+/* ── LOGIN GATE ── */
+.cu-login-gate {
+  background: #f8fafc;
+  border-radius: 14px;
+  padding: clamp(40px, 6vw, 72px) 20px;
+  text-align: center;
+}
+
+.cu-gate-icon {
+  width: 60px;
+  height: 60px;
+  background: #e10600;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto 20px;
+  color: #fff;
+}
+
+.cu-btn-primary {
+  background: #e10600;
+  color: #fff;
+  border: none;
+  padding: 12px 30px;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  margin-top: 16px;
+  width: 100%;
+}
+
+.cu-btn-secondary {
+  background: #f1f5f9;
+  color: #334155;
+  border: 1px solid #cbd5e1;
+  padding: 8px 16px;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  margin-top: 8px;
+}
+
+/* ── HISTORY VIEW ── */
+.cu-history-view {
+  background: #fff;
+}
+
+.cu-history-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin: 0 0 24px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.cu-history-title {
+  font-size: 18px;
+  font-weight: 700;
+  color: #0b1423;
+  margin: 0;
+}
+
+.cu-history-subtitle {
+  font-size: 12px;
+  color: #64748b;
+  margin: 4px 0 0;
+}
+
+.cu-history-actions {
+  display: flex;
+  gap: 8px;
+}
+
+/* ── LOADING/EMPTY ── */
+.cu-loading {
+  text-align: center;
+  padding: 40px 20px;
+}
+
+.cu-empty-state {
+  text-align: center;
+  padding: 40px 20px;
+  color: #64748b;
+}
+
+/* ── THREAD SELECTOR ── */
+.cu-thread-selector {
+  margin: 0 0 16px;
+}
+
+.cu-thread-label {
+  font-size: 11px;
+  font-weight: 600;
+  color: #334155;
+  margin-bottom: 8px;
+  display: block;
+}
+
+.cu-thread-select {
+  width: 100%;
+  padding: 8px 12px;
+  border-radius: 6px;
+  border: 1px solid #cbd5e1;
+  font-size: 12px;
+  background: #fff;
+  color: #0b1423;
+}
+
+/* ── CHAT THREAD ── */
+.cu-chat-thread {
+  background: #fff;
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+.cu-thread-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 14px 18px;
+  border-bottom: 1px solid #e2e8f0;
+  background: #f8fafc;
+}
+
+.cu-thread-subject {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  color: #e10600;
+  letter-spacing: 0.05em;
+}
+
+.cu-thread-date {
+  font-size: 11px;
+  color: #94a3b8;
+}
+
+.cu-status-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  padding: 4px 10px;
+  border-radius: 20px;
+}
+
+.cu-status-replied {
+  background: #dcfce7;
+  color: #15803d;
+}
+
+.cu-status-pending {
+  background: #fef9c3;
+  color: #a16207;
+}
+
+/* ── MESSAGES ── */
+.cu-thread-messages {
+  padding: 18px;
+}
+
+.cu-message {
+  margin-bottom: 24px;
+  padding-bottom: 24px;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.cu-message:last-child {
+  margin-bottom: 0;
+  padding-bottom: 0;
+  border-bottom: none;
+}
+
+.cu-message-sender {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+  font-weight: 600;
+  color: #64748b;
+  margin-bottom: 8px;
+}
+
+.cu-message-bubble {
+  background: #f1f5f9;
+  border-radius: 10px;
+  padding: 12px 14px;
+  font-size: 13px;
+  line-height: 1.5;
+  color: #1e293b;
+}
+
+/* User message */
+.cu-message-bubble-user {
+  background: #eff6ff;
+  margin-left: auto;
+  max-width: 80%;
+}
+
+/* Admin message */
+.cu-message-bubble-admin {
+  background: #fff;
+  margin-right: auto;
+  max-width: 80%;
+}
+
+/* ── REPLY AREA ── */
+.cu-reply-area {
+  padding: 16px 18px;
+  border-top: 1px solid #e2e8f0;
+  background: #f8fafc;
+}
+
+.cu-reply-label {
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  color: #64748b;
+  margin-bottom: 8px;
+}
+
+.cu-reply-error {
+  color: #ef4444;
+  font-size: 11px;
+  margin-bottom: 8px;
+}
+
+.cu-reply-textarea {
+  width: 100%;
+  padding: 10px 12px;
+  border-radius: 6px;
+  border: 1px solid #cbd5e1;
+  font-size: 13px;
+  font-family: var(--font-body);
+  color: #1a1f2e;
+  background: #fff;
+  resize: vertical;
+  margin-bottom: 8px;
+  box-sizing: border-box;
+}
+
+.cu-reply-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.cu-loading-full {
+  min-height: 400px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
   padding: clamp(40px, 6vw, 72px) 0;
   background: #f8fafc;
 }
@@ -178,6 +469,10 @@
 }
 
 .cu-form-panel .cu-panel-title { color: #0b1423; border-bottom-color: #e2e8f0; }
+
+.cu-form-panel-wrapper {
+  width: 100%;
+}
 
 .cu-form-subtitle {
   font-size: 14px;

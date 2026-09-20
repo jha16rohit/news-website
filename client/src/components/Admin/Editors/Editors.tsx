@@ -50,10 +50,10 @@ const editorPermissionPages = [
 
 const Editors: React.FC = () => {
   const [editors, setEditors] = useState<Editor[]>([]);
-const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<"All" | "Active" | "Inactive" | "Deleted">("All");
-  
+
 
   const [showAddEditor, setShowAddEditor] = useState(false);
   const [showDetails, setShowDetails] = useState<Editor | null>(null);
@@ -65,280 +65,280 @@ const [loading, setLoading] = useState(true);
   const [openMenu, setOpenMenu] = useState<string | null>(null);
   const [editingEditor, setEditingEditor] = useState<Editor | null>(null);
   const [newEditorPermissions, setNewEditorPermissions] = useState<string[]>([
-     "scheduled",
-  "create-news",
+    "scheduled",
+    "create-news",
   ]);
   const [permissionEditor, setPermissionEditor] = useState<Editor | null>(null);
-const [selectedPermissions, setSelectedPermissions] = useState<string[]>([]);
+  const [selectedPermissions, setSelectedPermissions] = useState<string[]>([]);
 
   const [newEditor, setNewEditor] = useState({
-  name: "",
-  email: "",
-  phone: "",
-  userId: "",
-});
-
-
-
-const getEditors = () =>
-  apiClient("/api/admin/users");
-
-const createEditor = (data: {
-  name: string;
-  email: string;
-  password: string;
-  phone?: string;
-  permissions: string[];
-}) =>
-  apiClient("/api/admin/users", {
-    method: "POST",
-    body: JSON.stringify(data),
+    name: "",
+    email: "",
+    phone: "",
+    userId: "",
   });
 
-const updateEditor = (
-  id: string,
-  data: {
-    name?: string;
-    email?: string;
+
+
+  const getEditors = () =>
+    apiClient("/api/admin/users");
+
+  const createEditor = (data: {
+    name: string;
+    email: string;
+    password: string;
     phone?: string;
-    password?: string;
-  }
-) =>
-  apiClient(`/api/admin/users/${id}`, {
-    method: "PUT",
-    body: JSON.stringify(data),
-  });
+    permissions: string[];
+  }) =>
+    apiClient("/api/admin/users", {
+      method: "POST",
+      body: JSON.stringify(data),
+    });
 
-const updateEditorPermissions = (
-  id: string,
-  permissions: string[]
-) =>
-  apiClient(`/api/admin/users/${id}/permissions`, {
-    method: "PUT",
-    body: JSON.stringify({ permissions }),
-  });
+  const updateEditor = (
+    id: string,
+    data: {
+      name?: string;
+      email?: string;
+      phone?: string;
+      password?: string;
+    }
+  ) =>
+    apiClient(`/api/admin/users/${id}`, {
+      method: "PUT",
+      body: JSON.stringify(data),
+    });
 
-    const updateEditorStatus = (
-  id: string,
-  status: "Active" | "Inactive"
-) =>
-  apiClient(`/api/admin/users/${id}/status`, {
-    method: "PATCH",
-    body: JSON.stringify({ status }),
+  const updateEditorPermissions = (
+    id: string,
+    permissions: string[]
+  ) =>
+    apiClient(`/api/admin/users/${id}/permissions`, {
+      method: "PUT",
+      body: JSON.stringify({ permissions }),
+    });
+
+  const updateEditorStatus = (
+    id: string,
+    status: "Active" | "Inactive"
+  ) =>
+    apiClient(`/api/admin/users/${id}/status`, {
+      method: "PATCH",
+      body: JSON.stringify({ status }),
 
 
-  });
+    });
 
-const deleteEditor = (id: string) =>
-  apiClient(`/api/admin/users/${id}`, {
-    method: "DELETE",
-  });
+  const deleteEditor = (id: string) =>
+    apiClient(`/api/admin/users/${id}`, {
+      method: "DELETE",
+    });
 
   useEffect(() => {
-  const loadEditors = async () => {
-    try {
-      const res = await getEditors();
-      setEditors(res.editors || []);
-    } catch (error) {
-      console.error("Failed to load editors:", error);
-    } finally {
-      setLoading(false);
-    }
-  };
+    const loadEditors = async () => {
+      try {
+        const res = await getEditors();
+        setEditors(res.editors || []);
+      } catch (error) {
+        console.error("Failed to load editors:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
 
-  loadEditors();
-}, []);
+    loadEditors();
+  }, []);
 
   useEffect(() => {
-  const handleClickOutside = (event: MouseEvent) => {
-    const target = event.target as HTMLElement;
+    const handleClickOutside = (event: MouseEvent) => {
+      const target = event.target as HTMLElement;
 
-    if (!target.closest(".more-wrapper")) {
-      setOpenMenu(null);
-    }
-  };
+      if (!target.closest(".more-wrapper")) {
+        setOpenMenu(null);
+      }
+    };
 
-  document.addEventListener("mousedown", handleClickOutside);
+    document.addEventListener("mousedown", handleClickOutside);
 
-  return () => {
-    document.removeEventListener("mousedown", handleClickOutside);
-  };
-}, []);
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, []);
 
- const filteredEditors = editors.filter((editor) => {
-  const query = search.toLowerCase();
+  const filteredEditors = editors.filter((editor) => {
+    const query = search.toLowerCase();
 
-  const matchesSearch =
-    editor.name.toLowerCase().includes(query) ||
-    editor.userId.toLowerCase().includes(query) ||
-    editor.email.toLowerCase().includes(query);
+    const matchesSearch =
+      editor.name.toLowerCase().includes(query) ||
+      editor.userId.toLowerCase().includes(query) ||
+      editor.email.toLowerCase().includes(query);
 
-const matchesStatus =
-  statusFilter === "All"
-    ? editor.status !== "Deleted"
-    : editor.status === statusFilter;
+    const matchesStatus =
+      statusFilter === "All"
+        ? editor.status !== "Deleted"
+        : editor.status === statusFilter;
 
-  return matchesSearch && matchesStatus;
-});
+    return matchesSearch && matchesStatus;
+  });
 
 
-const toggleEditorPermission = (permissionId: string) => {
-  setNewEditorPermissions((prev) =>
-    prev.includes(permissionId)
-      ? prev.filter((id) => id !== permissionId)
-      : [...prev, permissionId]
-  );
-};
-
-const openManagePermissions = (editor: Editor) => {
-  setPermissionEditor({ ...editor });
-  setSelectedPermissions([...editor.permissions]);
-  setOpenMenu(null);
-};
-
-const togglePermission = (permissionId: string) => {
-  setSelectedPermissions((prev) =>
-    prev.includes(permissionId)
-      ? prev.filter((id) => id !== permissionId)
-      : [...prev, permissionId]
-  );
-};
-
-const savePermissions = async () => {
-  if (!permissionEditor) return;
-
-  try {
-    const res = await updateEditorPermissions(
-      permissionEditor._id,
-      selectedPermissions
+  const toggleEditorPermission = (permissionId: string) => {
+    setNewEditorPermissions((prev) =>
+      prev.includes(permissionId)
+        ? prev.filter((id) => id !== permissionId)
+        : [...prev, permissionId]
     );
+  };
 
-    const updatedEditor = res.user;
+  const openManagePermissions = (editor: Editor) => {
+    setPermissionEditor({ ...editor });
+    setSelectedPermissions([...editor.permissions]);
+    setOpenMenu(null);
+  };
 
-    setEditors((prev) =>
-      prev.map((editor) =>
-        editor._id === permissionEditor._id
-          ? {
+  const togglePermission = (permissionId: string) => {
+    setSelectedPermissions((prev) =>
+      prev.includes(permissionId)
+        ? prev.filter((id) => id !== permissionId)
+        : [...prev, permissionId]
+    );
+  };
+
+  const savePermissions = async () => {
+    if (!permissionEditor) return;
+
+    try {
+      const res = await updateEditorPermissions(
+        permissionEditor._id,
+        selectedPermissions
+      );
+
+      const updatedEditor = res.user;
+
+      setEditors((prev) =>
+        prev.map((editor) =>
+          editor._id === permissionEditor._id
+            ? {
               ...editor,
               ...updatedEditor,
             }
-          : editor
-      )
-    );
+            : editor
+        )
+      );
 
-    setPermissionEditor(null);
-    setSelectedPermissions([]);
-  } catch (error) {
-    console.error("Failed to update permissions:", error);
-  }
-};
+      setPermissionEditor(null);
+      setSelectedPermissions([]);
+    } catch (error) {
+      console.error("Failed to update permissions:", error);
+    }
+  };
 
 
-const handleAddEditor = async (e: React.FormEvent) => {
-  e.preventDefault();
+  const handleAddEditor = async (e: React.FormEvent) => {
+    e.preventDefault();
 
-  if (!newEditor.name || !newEditor.email || !newEditor.phone) {
-    return;
-  }
-
-  try {
-    // Temporary password generated for the new Editor.
-    // Email delivery can be connected separately.
-    const temporaryPassword = `Editor@${Math.random()
-      .toString(36)
-      .slice(-8)}`;
-
-    const res = await createEditor({
-      name: newEditor.name.trim(),
-      email: newEditor.email.trim(),
-      phone: newEditor.phone.trim(),
-      password: temporaryPassword,
-      permissions: newEditorPermissions,
-    });
-
-    if (res.user) {
-      setEditors((prev) => [res.user, ...prev]);
+    if (!newEditor.name || !newEditor.email || !newEditor.phone) {
+      return;
     }
 
-    setNewEditor({
-      name: "",
-      email: "",
-      phone: "",
-      userId: "",
-    });
+    try {
+      // Temporary password generated for the new Editor.
+      // Email delivery can be connected separately.
+      const temporaryPassword = `Editor@${Math.random()
+        .toString(36)
+        .slice(-8)}`;
 
-    setNewEditorPermissions([
-      "scheduled",
-      "create-news",
-    ]);
+      const res = await createEditor({
+        name: newEditor.name.trim(),
+        email: newEditor.email.trim(),
+        phone: newEditor.phone.trim(),
+        password: temporaryPassword,
+        permissions: newEditorPermissions,
+      });
 
-    setShowAddEditor(false);
-  } catch (error) {
-    console.error("Failed to create editor:", error);
-  }
-};
+      if (res.user) {
+        setEditors((prev) => [res.user, ...prev]);
+      }
+
+      setNewEditor({
+        name: "",
+        email: "",
+        phone: "",
+        userId: "",
+      });
+
+      setNewEditorPermissions([
+        "scheduled",
+        "create-news",
+      ]);
+
+      setShowAddEditor(false);
+    } catch (error) {
+      console.error("Failed to create editor:", error);
+    }
+  };
 
   // DELETE
 
-const handleDelete = async () => {
-  if (!showDeleteConfirm) return;
+  const handleDelete = async () => {
+    if (!showDeleteConfirm) return;
 
-  try {
-    const res = await deleteEditor(showDeleteConfirm._id);
+    try {
+      const res = await deleteEditor(showDeleteConfirm._id);
 
-    const updatedEditor = res.user;
+      const updatedEditor = res.user;
 
-    setEditors((prev) =>
-      prev.map((editor) =>
-        editor._id === showDeleteConfirm._id
-          ? {
+      setEditors((prev) =>
+        prev.map((editor) =>
+          editor._id === showDeleteConfirm._id
+            ? {
               ...editor,
               ...updatedEditor,
               status: "Deleted",
             }
-          : editor
-      )
-    );
+            : editor
+        )
+      );
 
-    setShowDeleteConfirm(null);
-    setOpenMenu(null);
-  } catch (error) {
-    console.error("Failed to delete editor:", error);
-  }
-};
+      setShowDeleteConfirm(null);
+      setOpenMenu(null);
+    } catch (error) {
+      console.error("Failed to delete editor:", error);
+    }
+  };
   // ACTIVATE / DEACTIVATE
 
-const toggleStatus = async (id: string) => {
-  const editor = editors.find((item) => item._id === id);
+  const toggleStatus = async (id: string) => {
+    const editor = editors.find((item) => item._id === id);
 
-  if (!editor || editor.status === "Deleted") {
-    return;
-  }
+    if (!editor || editor.status === "Deleted") {
+      return;
+    }
 
-  const newStatus =
-    editor.status === "Active" ? "Inactive" : "Active";
+    const newStatus =
+      editor.status === "Active" ? "Inactive" : "Active";
 
-  try {
-    const res = await updateEditorStatus(id, newStatus);
+    try {
+      const res = await updateEditorStatus(id, newStatus);
 
-    const updatedEditor = res.user;
+      const updatedEditor = res.user;
 
-    setEditors((prev) =>
-      prev.map((item) =>
-        item._id === id
-          ? {
+      setEditors((prev) =>
+        prev.map((item) =>
+          item._id === id
+            ? {
               ...item,
               ...updatedEditor,
             }
-          : item
-      )
-    );
+            : item
+        )
+      );
 
-    setOpenMenu(null);
-  } catch (error) {
-    console.error("Failed to update editor status:", error);
-  }
-};
+      setOpenMenu(null);
+    } catch (error) {
+      console.error("Failed to update editor status:", error);
+    }
+  };
 
   // EDIT
 
@@ -347,38 +347,54 @@ const toggleStatus = async (id: string) => {
     setOpenMenu(null);
   };
 
-const saveEdit = async (e: React.FormEvent) => {
-  e.preventDefault();
+  const saveEdit = async (e: React.FormEvent) => {
+    e.preventDefault();
 
-  if (!editingEditor) return;
+    if (!editingEditor) return;
 
-  try {
-    const res = await updateEditor(editingEditor._id, {
-      name: editingEditor.name.trim(),
-      email: editingEditor.email.trim(),
-      phone: editingEditor.phone.trim(),
-    });
+    try {
+      const res = await updateEditor(editingEditor._id, {
+        name: editingEditor.name.trim(),
+        email: editingEditor.email.trim(),
+        phone: editingEditor.phone.trim(),
+      });
 
-    const updatedEditor = res.user;
+      const updatedEditor = res.user;
 
-    setEditors((prev) =>
-      prev.map((editor) =>
-        editor._id === editingEditor._id
-          ? {
+      setEditors((prev) =>
+        prev.map((editor) =>
+          editor._id === editingEditor._id
+            ? {
               ...editor,
               ...updatedEditor,
             }
-          : editor
-      )
-    );
+            : editor
+        )
+      );
 
-    setEditingEditor(null);
-  } catch (error) {
-    console.error("Failed to update editor:", error);
-  }
-};
+      setEditingEditor(null);
+    } catch (error) {
+      console.error("Failed to update editor:", error);
+    }
+  };
 
-if (loading) {
+  const formatDate = (dateString: string) => {
+    if (!dateString) return "—";
+
+    const date = new Date(dateString);
+
+    if (Number.isNaN(date.getTime())) {
+      return "—";
+    }
+
+    return date.toLocaleDateString("en-GB", {
+      day: "2-digit",
+      month: "short",
+      year: "numeric",
+    });
+  };
+
+  if (loading) {
     return <FullPageContentPreloader message="Loading editors..." />;
   }
 
@@ -388,7 +404,7 @@ if (loading) {
 
       <div className="editors-header">
         <div className="page-title-row">
-          
+
 
           <div>
             <h1>Editors</h1>
@@ -407,94 +423,90 @@ if (loading) {
 
       {/* STATS */}
 
-<div className="editor-stats">
+      <div className="editor-stats">
 
-  {/* TOTAL */}
-  <button
-    type="button"
-    className={`editor-stat-card ${
-      statusFilter === "All" ? "stat-card-selected" : ""
-    }`}
-    onClick={() => setStatusFilter("All")}
-  >
-    <div className="stat-icon">
-      <User size={18} />
-    </div>
+        {/* TOTAL */}
+        <button
+          type="button"
+          className={`editor-stat-card ${statusFilter === "All" ? "stat-card-selected" : ""
+            }`}
+          onClick={() => setStatusFilter("All")}
+        >
+          <div className="stat-icon">
+            <User size={18} />
+          </div>
 
-    <div>
-      <span>Total Editors</span>
-      <strong>
-  {editors.filter(
-    (editor) =>
-      editor.status === "Active" ||
-      editor.status === "Inactive" ||
-      editor.status === "Deleted"
-  ).length}
-</strong>
-    </div>
-  </button>
+          <div>
+            <span>Total Editors</span>
+            <strong>
+              {editors.filter(
+                (editor) =>
+                  editor.status === "Active" ||
+                  editor.status === "Inactive" ||
+                  editor.status === "Deleted"
+              ).length}
+            </strong>
+          </div>
+        </button>
 
-  {/* ACTIVE */}
-  <button
-    type="button"
-    className={`editor-stat-card ${
-      statusFilter === "Active" ? "stat-card-selected" : ""
-    }`}
-    onClick={() => setStatusFilter("Active")}
-  >
-    <div className="stat-icon active-stat">
-      <ShieldCheck size={18} />
-    </div>
+        {/* ACTIVE */}
+        <button
+          type="button"
+          className={`editor-stat-card ${statusFilter === "Active" ? "stat-card-selected" : ""
+            }`}
+          onClick={() => setStatusFilter("Active")}
+        >
+          <div className="stat-icon active-stat">
+            <ShieldCheck size={18} />
+          </div>
 
-    <div>
-      <span>Active Editors</span>
-      <strong>
-        {editors.filter((editor) => editor.status === "Active").length}
-      </strong>
-    </div>
-  </button>
+          <div>
+            <span>Active Editors</span>
+            <strong>
+              {editors.filter((editor) => editor.status === "Active").length}
+            </strong>
+          </div>
+        </button>
 
-  {/* INACTIVE */}
-  <button
-    type="button"
-    className={`editor-stat-card ${
-      statusFilter === "Inactive" ? "stat-card-selected" : ""
-    }`}
-    onClick={() => setStatusFilter("Inactive")}
-  >
-    <div className="stat-icon inactive-stat">
-      <Power size={18} />
-    </div>
+        {/* INACTIVE */}
+        <button
+          type="button"
+          className={`editor-stat-card ${statusFilter === "Inactive" ? "stat-card-selected" : ""
+            }`}
+          onClick={() => setStatusFilter("Inactive")}
+        >
+          <div className="stat-icon inactive-stat">
+            <Power size={18} />
+          </div>
 
-    <div>
-      <span>Inactive Editors</span>
-      <strong>
-        {editors.filter((editor) => editor.status === "Inactive").length}
-      </strong>
-    </div>
-  </button>
+          <div>
+            <span>Inactive Editors</span>
+            <strong>
+              {editors.filter((editor) => editor.status === "Inactive").length}
+            </strong>
+          </div>
+        </button>
 
-  {/* DELETED */}
-<button
-  type="button"
-  className={`editor-stat-card ${
-    statusFilter === "Deleted" ? "stat-card-selected" : ""
-  }`}
-  onClick={() => setStatusFilter("Deleted")}
->
-  <div className="stat-icon deleted-stat">
-    <Trash2 size={18} />
-  </div>
+        {/* DELETED */}
+        <button
+          type="button"
+          className={`editor-stat-card ${statusFilter === "Deleted" ? "stat-card-selected" : ""
+            }`}
+          onClick={() => setStatusFilter("Deleted")}
+        >
+          <div className="stat-icon deleted-stat">
+            <Trash2 size={18} />
+          </div>
 
-  <div>
-    <span>Deleted Editors</span>
-    <strong>
-      {editors.filter((editor) => editor.status === "Deleted").length}
-    </strong>
-  </div>
-</button>
+          <div>
+            <span>Deleted Editors</span>
+            <strong>
+              {editors.filter((editor) => editor.status === "Deleted").length}
+            </strong>
+          </div>
+        </button>
 
-</div>
+      </div>
 
       {/* EDITORS CARD */}
 
@@ -527,14 +539,14 @@ if (loading) {
           <table className="editors-table">
             <thead>
               <tr>
-<th>Editor</th>
-<th>User ID</th>
-<th>Email</th>
-<th>Pages</th>
-<th>Status</th>
-<th>Created On</th>
-<th>News</th>
-<th className="actions-heading">Actions</th>
+                <th>Editor</th>
+                <th>User ID</th>
+                <th>Email</th>
+                <th>Pages</th>
+                <th>Status</th>
+                <th>Created On</th>
+                <th>News</th>
+                <th className="actions-heading">Actions</th>
               </tr>
             </thead>
 
@@ -570,18 +582,17 @@ if (loading) {
                     </td>
 
                     <td>
-  <span className="editor-pages-count">
-    {editor.permissions.length}
-  </span>
-</td>
+                      <span className="editor-pages-count">
+                        {editor.permissions.length}
+                      </span>
+                    </td>
 
                     <td>
                       <span
-                        className={`status-badge ${
-                          editor.status === "Active"
-                            ? "status-active"
-                            : "status-inactive"
-                        }`}
+                        className={`status-badge ${editor.status === "Active"
+                          ? "status-active"
+                          : "status-inactive"
+                          }`}
                       >
                         <span className="status-dot" />
                         {editor.status}
@@ -590,18 +601,18 @@ if (loading) {
 
                     <td>
                       <span className="created-date">
-                        {editor.createdAt}
+                        {formatDate(editor.createdAt)}
                       </span>
                     </td>
                     <td>
-  <span className="editor-news-count">
-    {editor.newsCount ?? 0}
-  </span>
-</td>
+                      <span className="editor-news-count">
+                        {editor.newsCount ?? 0}
+                      </span>
+                    </td>
 
                     <td>
                       <div className="editor-actions">
-                        
+
 
                         <div className="more-wrapper">
                           <button
@@ -638,7 +649,7 @@ if (loading) {
                                 Manage Permissions
                               </button>
 
-                             
+
 
                               <button
                                 onClick={() => toggleStatus(editor._id)}
@@ -728,21 +739,21 @@ if (loading) {
                 <div className="form-input-wrapper">
                   <User size={17} />
 
-<input
-  type="text"
-  placeholder="Enter editor name"
-  value={newEditor.name}
-  onChange={(e) => {
-    setNewEditor((prev) => ({
-      ...prev,
-      name: e.target.value,
-    }));
-  }}
-/>
+                  <input
+                    type="text"
+                    placeholder="Enter editor name"
+                    value={newEditor.name}
+                    onChange={(e) => {
+                      setNewEditor((prev) => ({
+                        ...prev,
+                        name: e.target.value,
+                      }));
+                    }}
+                  />
                 </div>
               </div>
 
-              
+
 
               <div className="form-field">
                 <label>Email</label>
@@ -789,58 +800,57 @@ if (loading) {
               </div>
 
 
-<div className="permissions-section">
-  <div className="permissions-section-header">
-    <div>
-      <h3>Page Permissions</h3>
-      <p>Select which pages this Editor can access.</p>
-    </div>
+              <div className="permissions-section">
+                <div className="permissions-section-header">
+                  <div>
+                    <h3>Page Permissions</h3>
+                    <p>Select which pages this Editor can access.</p>
+                  </div>
 
-    <span className="permissions-count">
-      {newEditorPermissions.length} selected
-    </span>
-  </div>
+                  <span className="permissions-count">
+                    {newEditorPermissions.length} selected
+                  </span>
+                </div>
 
-  <div className="permissions-grid">
-    {editorPermissionPages.map((page) => (
-      <label
-        key={page.id}
-        className={`permission-checkbox ${
-          newEditorPermissions.includes(page.id)
-            ? "permission-checkbox-selected"
-            : ""
-        }`}
-      >
-        <input
-          type="checkbox"
-          checked={newEditorPermissions.includes(page.id)}
-          onChange={() => toggleEditorPermission(page.id)}
-        />
+                <div className="permissions-grid">
+                  {editorPermissionPages.map((page) => (
+                    <label
+                      key={page.id}
+                      className={`permission-checkbox ${newEditorPermissions.includes(page.id)
+                        ? "permission-checkbox-selected"
+                        : ""
+                        }`}
+                    >
+                      <input
+                        type="checkbox"
+                        checked={newEditorPermissions.includes(page.id)}
+                        onChange={() => toggleEditorPermission(page.id)}
+                      />
 
-        <span className="custom-checkbox">
-          {newEditorPermissions.includes(page.id) && "✓"}
-        </span>
+                      <span className="custom-checkbox">
+                        {newEditorPermissions.includes(page.id) && "✓"}
+                      </span>
 
-        <span className="permission-label">
-          {page.label}
-        </span>
-      </label>
-    ))}
-  </div>
-</div>
+                      <span className="permission-label">
+                        {page.label}
+                      </span>
+                    </label>
+                  ))}
+                </div>
+              </div>
 
               <div className="temporary-password-info">
-  <KeyRound size={17} />
+                <KeyRound size={17} />
 
-  <div>
-    <strong>Temporary password</strong>
+                <div>
+                  <strong>Temporary password</strong>
 
-    <p>
-      A temporary password will be generated automatically for this
-      Editor account.
-    </p>
-  </div>
-</div>
+                  <p>
+                    A temporary password will be generated automatically for this
+                    Editor account.
+                  </p>
+                </div>
+              </div>
 
               <div className="modal-actions">
                 <button
@@ -863,103 +873,102 @@ if (loading) {
 
       {/* MANAGE PERMISSIONS */}
 
-{permissionEditor && (
-  <div
-    className="editor-modal-overlay"
-    onClick={() => setPermissionEditor(null)}
-  >
-    <div
-      className="editor-modal permissions-modal"
-      onClick={(e) => e.stopPropagation()}
-    >
-      <div className="modal-header">
-        <div className="modal-heading">
-          <div className="modal-icon">
-            <Settings2 size={21} />
-          </div>
-
-          <div>
-            <h2>Manage Permissions</h2>
-            <p>
-              Manage which pages{" "}
-              <strong>{permissionEditor.name}</strong> can access.
-            </p>
-          </div>
-        </div>
-
-        <button
-          className="modal-close-btn"
+      {permissionEditor && (
+        <div
+          className="editor-modal-overlay"
           onClick={() => setPermissionEditor(null)}
         >
-          <X size={20} />
-        </button>
-      </div>
+          <div
+            className="editor-modal permissions-modal"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="modal-header">
+              <div className="modal-heading">
+                <div className="modal-icon">
+                  <Settings2 size={21} />
+                </div>
 
-      <div className="permissions-section">
-        <div className="permissions-section-header">
-          <div>
-            <h3>Page Permissions</h3>
-            <p>Select the pages this Editor can access.</p>
-          </div>
+                <div>
+                  <h2>Manage Permissions</h2>
+                  <p>
+                    Manage which pages{" "}
+                    <strong>{permissionEditor.name}</strong> can access.
+                  </p>
+                </div>
+              </div>
 
-          <span className="permissions-count">
-            {selectedPermissions.length} selected
-          </span>
-        </div>
-
-        <div className="permissions-grid">
-          {editorPermissionPages.map((page) => {
-            const isSelected = selectedPermissions.includes(page.id);
-
-            return (
-              <label
-                key={page.id}
-                className={`permission-checkbox ${
-                  isSelected
-                    ? "permission-checkbox-selected"
-                    : ""
-                }`}
+              <button
+                className="modal-close-btn"
+                onClick={() => setPermissionEditor(null)}
               >
-                <input
-                  type="checkbox"
-                  checked={isSelected}
-                  onChange={() => togglePermission(page.id)}
-                />
+                <X size={20} />
+              </button>
+            </div>
 
-                <span className="custom-checkbox">
-                  {isSelected && "✓"}
-                </span>
+            <div className="permissions-section">
+              <div className="permissions-section-header">
+                <div>
+                  <h3>Page Permissions</h3>
+                  <p>Select the pages this Editor can access.</p>
+                </div>
 
-                <span className="permission-label">
-                  {page.label}
+                <span className="permissions-count">
+                  {selectedPermissions.length} selected
                 </span>
-              </label>
-            );
-          })}
+              </div>
+
+              <div className="permissions-grid">
+                {editorPermissionPages.map((page) => {
+                  const isSelected = selectedPermissions.includes(page.id);
+
+                  return (
+                    <label
+                      key={page.id}
+                      className={`permission-checkbox ${isSelected
+                        ? "permission-checkbox-selected"
+                        : ""
+                        }`}
+                    >
+                      <input
+                        type="checkbox"
+                        checked={isSelected}
+                        onChange={() => togglePermission(page.id)}
+                      />
+
+                      <span className="custom-checkbox">
+                        {isSelected && "✓"}
+                      </span>
+
+                      <span className="permission-label">
+                        {page.label}
+                      </span>
+                    </label>
+                  );
+                })}
+              </div>
+            </div>
+
+            <div className="modal-actions">
+              <button
+                type="button"
+                className="cancel-btn"
+                onClick={() => setPermissionEditor(null)}
+              >
+                Cancel
+              </button>
+
+              <button
+                type="button"
+                className="create-editor-btn"
+                onClick={savePermissions}
+              >
+                <Settings2 size={17} />
+                Save Permissions
+              </button>
+            </div>
+          </div>
         </div>
-      </div>
-
-      <div className="modal-actions">
-        <button
-          type="button"
-          className="cancel-btn"
-          onClick={() => setPermissionEditor(null)}
-        >
-          Cancel
-        </button>
-
-        <button
-          type="button"
-          className="create-editor-btn"
-          onClick={savePermissions}
-        >
-          <Settings2 size={17} />
-          Save Permissions
-        </button>
-      </div>
-    </div>
-  </div>
-)}
+      )}
 
       {/* DETAILS */}
 
@@ -1021,9 +1030,9 @@ if (loading) {
                 </div>
 
                 <div className="detail-item">
-  <span>Phone Number</span>
-  <strong>{showDetails.phone}</strong>
-</div>
+                  <span>Phone Number</span>
+                  <strong>{showDetails.phone}</strong>
+                </div>
 
                 <div className="detail-item">
                   <span>Status</span>
@@ -1036,36 +1045,36 @@ if (loading) {
                 </div>
               </div>
               <div className="details-permissions">
-  <div className="details-permissions-header">
-    <span>Page Permissions</span>
-    <strong>{showDetails.permissions.length} Pages</strong>
-  </div>
+                <div className="details-permissions-header">
+                  <span>Page Permissions</span>
+                  <strong>{showDetails.permissions.length} Pages</strong>
+                </div>
 
-  <div className="details-permissions-list">
-    {showDetails.permissions.length > 0 ? (
-      showDetails.permissions.map((permissionId) => {
-        const page = editorPermissionPages.find(
-          (item) => item.id === permissionId
-        );
+                <div className="details-permissions-list">
+                  {showDetails.permissions.length > 0 ? (
+                    showDetails.permissions.map((permissionId) => {
+                      const page = editorPermissionPages.find(
+                        (item) => item.id === permissionId
+                      );
 
-        return page ? (
-          <span
-            key={permissionId}
-            className="details-permission-item"
-          >
-            {page.label}
-          </span>
-        ) : null;
-      })
-    ) : (
-      <span className="details-no-permissions">
-        No pages assigned
-      </span>
-    )}
-  </div>
-</div>
+                      return page ? (
+                        <span
+                          key={permissionId}
+                          className="details-permission-item"
+                        >
+                          {page.label}
+                        </span>
+                      ) : null;
+                    })
+                  ) : (
+                    <span className="details-no-permissions">
+                      No pages assigned
+                    </span>
+                  )}
+                </div>
+              </div>
             </div>
-            
+
 
             <div className="details-footer">
               <button
@@ -1169,24 +1178,24 @@ if (loading) {
               </div>
 
               <div className="form-field">
-  <label>Phone Number</label>
+                <label>Phone Number</label>
 
-  <div className="form-input-wrapper">
-    <Phone size={17} />
+                <div className="form-input-wrapper">
+                  <Phone size={17} />
 
-    <input
-      type="tel"
-      placeholder="Enter editor phone number"
-      value={editingEditor.phone}
-      onChange={(e) =>
-        setEditingEditor({
-          ...editingEditor,
-          phone: e.target.value,
-        })
-      }
-    />
-  </div>
-</div>
+                  <input
+                    type="tel"
+                    placeholder="Enter editor phone number"
+                    value={editingEditor.phone}
+                    onChange={(e) =>
+                      setEditingEditor({
+                        ...editingEditor,
+                        phone: e.target.value,
+                      })
+                    }
+                  />
+                </div>
+              </div>
 
               <div className="modal-actions">
                 <button

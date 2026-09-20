@@ -593,3 +593,254 @@
     font-size: 22px; 
   }
 }
+
+/* ================================================================
+   RESPONSIVE FIXES FOR CURRENT CLASS NAMES (max-width: 711px)
+   The above rules target legacy classes. This section targets
+   the ACTUAL class names used in UserProfile.tsx.
+   ================================================================ */
+
+@media (max-width: 711px) {
+  /* Content wrapper - prevent horizontal overflow */
+  .up-content-wrapper {
+    width: calc(100% - 24px);
+    max-width: 1200px;
+    margin: 0 auto;
+  }
+
+  /* HERO CARD - stack columns vertically */
+  .up-hero-card {
+    flex-direction: column;
+    min-height: auto;
+  }
+
+  .up-hero-left {
+    width: 100%;
+    padding: 32px 20px;
+    border-radius: 12px 12px 0 0;
+  }
+
+  .up-hero-left::before {
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 4px;
+  }
+
+  .up-hero-right {
+    width: 100%;
+    padding: 28px 20px;
+    border-radius: 0 0 12px 12px;
+  }
+
+  .up-r-top {
+    flex-direction: column;
+    gap: 24px;
+  }
+
+  .up-r-info-block {
+    max-width: 100%;
+  }
+
+  .up-r-name {
+    font-size: 28px;
+    overflow-wrap: anywhere;
+    word-break: break-word;
+  }
+
+  .up-r-contact span {
+    overflow-wrap: anywhere;
+    word-break: break-word;
+  }
+
+  .up-r-graphic {
+    width: 100%;
+    max-width: 200px;
+    height: 160px;
+    margin: 20px auto 0;
+  }
+
+  .up-hero-btns {
+    width: 100%;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    justify-content: flex-start;
+  }
+
+  .up-hero-btns .up-btn {
+    flex: 1;
+    min-width: 120px;
+    justify-content: center;
+  }
+
+  /* TABS - horizontal scroll, no page overflow */
+  .up-tabs-container {
+    overflow-x: auto;
+    white-space: nowrap;
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+    padding-bottom: 8px;
+    gap: 20px;
+    flex-wrap: nowrap;
+  }
+
+  .up-tabs-container::-webkit-scrollbar {
+    display: none;
+  }
+
+  .up-tab {
+    flex-shrink: 0;
+    white-space: nowrap;
+  }
+
+  /* READING HISTORY CARDS - single column */
+  .up-cards-grid {
+    grid-template-columns: 1fr;
+  }
+
+  /* ANALYTICS - single column */
+  .up-analytics-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .up-acard-wide {
+    grid-column: 1;
+  }
+
+  /* HERO STATS - keep readable on very small screens */
+  .up-left-stats {
+    flex-wrap: wrap;
+    gap: 16px;
+    padding: 16px 0;
+  }
+
+  .up-lstat-divider {
+    display: none;
+  }
+
+  .up-lstat {
+    flex: 1;
+    min-width: 80px;
+  }
+
+  .up-lstat strong {
+    font-size: 16px;
+  }
+
+  .up-left-name {
+    font-size: 20px;
+  }
+
+  /* MODAL - stay within viewport */
+  .up-modal {
+    width: calc(100% - 24px);
+    max-width: 460px;
+    padding: 24px;
+    margin: 12px;
+  }
+
+  .up-modal-top {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 16px;
+  }
+
+  .up-modal-av {
+    width: 64px;
+    height: 64px;
+    font-size: 20px;
+  }
+
+  .up-modal-actions {
+    flex-direction: column;
+  }
+
+  .up-btn-ghost,
+  .up-btn-primary {
+    width: 100%;
+    text-align: center;
+    justify-content: center;
+  }
+
+  /* INTEREST TAGS - prevent overflow */
+  .up-r-interests-tags {
+    flex-wrap: wrap;
+  }
+
+  .up-interest-tag {
+    white-space: nowrap;
+  }
+
+  /* PLATFORM ROW - responsive grid */
+  .up-plat-row {
+    grid-template-columns: 10px 70px 1fr 32px;
+  }
+}
+
+/* Extra small screens - 425px and below */
+@media (max-width: 425px) {
+  .up-r-name {
+    font-size: 24px;
+  }
+
+  .up-left-name {
+    font-size: 18px;
+  }
+
+  .up-hero-left {
+    padding: 28px 16px;
+  }
+
+  .up-hero-right {
+    padding: 24px 16px;
+  }
+
+  .up-hero-btns .up-btn {
+    min-width: 100px;
+    padding: 10px 14px;
+    font-size: 12px;
+  }
+
+  .up-tab {
+    font-size: 14px;
+    padding: 0 0 14px 0;
+  }
+
+  .up-content-wrapper {
+    width: calc(100% - 16px);
+  }
+
+  .up-modal {
+    width: calc(100% - 16px);
+    padding: 20px;
+    margin: 8px;
+    border-radius: 12px;
+  }
+}
+
+/* Very small screens - 375px and below */
+@media (max-width: 375px) {
+  .up-r-name {
+    font-size: 22px;
+  }
+
+  .up-lstat strong {
+    font-size: 14px;
+  }
+
+  .up-avatar-ring {
+    padding: 3px;
+  }
+
+  .up-avatar {
+    width: 90px;
+    height: 90px;
+    font-size: 28px;
+  }
+
+  .up-r-graphic {
+    max-width: 180px;
+    height: 140px;
+  }
+}

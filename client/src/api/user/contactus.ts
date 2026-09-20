@@ -74,7 +74,7 @@ export const submitContactMessage = async (
   };
 };
 
-// Poll for reply on a specific message (public)
+// Poll for reply on a specific message (protected)
 export const getMessageById = async (id: string): Promise<ContactMessageResponse> => {
   const data: any = await apiClient(`/api/contact/messages/${id}`);
   return {
@@ -82,4 +82,10 @@ export const getMessageById = async (id: string): Promise<ContactMessageResponse
     id: data?.id ?? data?._id,
     replyText: data?.replyText ?? data?.reply,
   };
+};
+
+// Get authenticated user's own messages
+export const getMyMessages = async (): Promise<ContactMessageResponse[]> => {
+  const data: any = await apiClient("/api/contact/my-messages");
+  return Array.isArray(data) ? data.map(item => ({ ...item, id: item?.id ?? item?._id })) : [];
 };

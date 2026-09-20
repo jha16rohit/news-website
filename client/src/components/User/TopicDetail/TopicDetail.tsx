@@ -5,7 +5,7 @@ import { FaXTwitter } from "react-icons/fa6";
 import { Link, useParams } from "react-router-dom";
 import Advertisement from "../Advertisment/Advertisment";
 
-import { getTopicProfiles } from "../../../api/user/topicProfile";
+import { getTopicProfileBySlug } from "../../../api/user/topicProfile";
 
 import Preloader from "../../Admin/Preloader/Preloder";
 
@@ -14,6 +14,7 @@ import {
   getAdvertisementPool,
   type Advertisement as AdType,
 } from "../../../api/user/advertisementPool";
+import NotFound404 from "../Errors/NotFound404";
 
 interface Profile {
   _id: string;
@@ -21,7 +22,7 @@ interface Profile {
   slug: string;
   caption: string;
   description: string;
-  fullDetails?: string; 
+  fullDetails?: string;
   instagram: string;
   facebook: string;
   twitter: string;
@@ -29,94 +30,87 @@ interface Profile {
 }
 
 
-
 const TopicDetail: React.FC = () => {
   const [isExpanded, setIsExpanded] = useState(false);
   const [topic, setTopic] = useState<Profile | null>(null);
-  const [relatedNews,setRelatedNews] =  useState<any[]>([]);
+  const [relatedNews, setRelatedNews] = useState<any[]>([]);
   const [ads, setAds] = useState<{
-  cards: AdType[];
-  strips: AdType[];
-}>({
-  cards: [],
-  strips: [],
-});
-  
+    cards: AdType[];
+    strips: AdType[];
+  }>({
+    cards: [],
+    strips: [],
+  });
+  const [topicNotFound, setTopicNotFound] = useState(false);
+
   const { slug } = useParams<{ slug: string }>();
 
   useEffect(() => {
 
-  const fetchTopic = async () => {
+    const fetchTopic = async () => {
 
-    try {
+      try {
 
-      setLoading(true);
+        setLoading(true);
+        setTopicNotFound(false);
 
-      const response =
-        await getTopicProfiles();
+        const profileResponse =
+          await getTopicProfileBySlug(slug!);
 
-      const foundTopic =
-        response.find(
-          (t: Profile) =>
-            t.slug === slug
+        setTopic(profileResponse);
+
+        const newsResponse =
+          await getTopicNews(slug!);
+
+        setRelatedNews(
+          newsResponse.news || []
         );
 
-      setTopic(
-        foundTopic || null
-      );
-      const newsResponse =
-  await getTopicNews(
-    slug!
-  );
+        const adResponse =
+          await getAdvertisementPool({
+            cards: 0,
+            strips: 1,
+          });
 
-setRelatedNews(
-  newsResponse.news || []
-);
+        setAds(adResponse);
 
-const adResponse =
-    await getAdvertisementPool({
-        cards: 0,
-        strips: 1,
-    });
+      } catch (error: any) {
 
-setAds(adResponse);
+        console.error(error);
 
-    } catch (error) {
+        // Check if it's a 404 - topic not found
+        const errorMessage = error?.message || "";
+        if (errorMessage.includes("not found") || errorMessage.includes("404")) {
+          setTopicNotFound(true);
+        }
 
-      console.error(error);
+      } finally {
 
-    } finally {
+        setLoading(false);
+      }
+    };
 
-      setLoading(false);
-    }
-  };
+    fetchTopic();
 
-  fetchTopic();
-
-}, [slug]);
+  }, [slug]);
 
   const [loading, setLoading] = useState(true);
 
- 
 
   if (loading) {
-  return (
-    <div>
-      <Preloader />
-    </div>
-  );
-}
+    return (
+      <div>
+        <Preloader />
+      </div>
+    );
+  }
 
- if (!topic) {
-  return (
-    <div>
-      Topic not found
-    </div>
-  );
-}
+  if (topicNotFound || !topic) {
+    return <NotFound404 />;
+  }
   return (
     <div className="topic-detail-wrapper">
-      
+
       <div className="topic-detail-container">
         <nav className="topic-detail-breadcrumb">
           <Link to="/">Home</Link>
@@ -125,16 +119,16 @@ setAds(adResponse);
           <ChevronRight size={14} />
           <span className="topic-detail-current">{topic.name.toUpperCase()}</span>
         </nav>
-        
+
         <h1 className="topic-detail-main-title">{topic.name}</h1>
       </div>
 
       <div className="topic-detail-container topic-detail-grid">
         <div className="topic-detail-left">
-          
+
           <div className="topic-detail-info-card">
             <div className="topic-detail-info-body">
-              
+
               {/* 👇 The Image Box (Now set up to float) 👇 */}
               <div className="topic-detail-img-box">
                 {topic.imageUrl ? (
@@ -151,17 +145,17 @@ setAds(adResponse);
 
               {/* 👇 The Text Content (No longer trapped in a column!) 👇 */}
               <h3 className="topic-detail-label">{topic.caption}</h3>
-              
+
               <div className={`topic-detail-bio ${isExpanded ? "expanded" : "collapsed"}`}>
                 {topic.description}
                 {topic.fullDetails && `\n\n${topic.fullDetails}`}
               </div>
 
-              <button 
-                className="topic-detail-read-more" 
+              <button
+                className="topic-detail-read-more"
                 onClick={() => setIsExpanded(!isExpanded)}
               >
-                {isExpanded ? "Show Less" : "Read More"} 
+                {isExpanded ? "Show Less" : "Read More"}
                 <ChevronDown size={14} style={{ transform: isExpanded ? 'rotate(180deg)' : 'none', transition: '0.3s' }} />
               </button>
 
@@ -175,23 +169,23 @@ setAds(adResponse);
                 {topic.twitter && <button onClick={() => window.open(topic.twitter)}><FaXTwitter size={16} /></button>}
               </div>
             </div>
-            
+
           </div>
         </div>
       </div>
-      
+
       {/* Permanent Ad Section */}
       <div className="topic-detail-ad-fullwidth">
         <Advertisement
     adData={ads.strips[0] ?? null}
 />
       </div>
-      
+
       {/* Related News Section */}
       <div className="topic-detail-container topic-detail-related-section">
         <div className="topic-detail-related-header">
           <h2>Related News</h2>
-          
+
         </div>
 
         <div className="topic-detail-related-list">

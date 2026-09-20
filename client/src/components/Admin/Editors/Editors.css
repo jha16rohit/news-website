@@ -33,7 +33,7 @@
 }
 
 .editors-header h1 {
-    font-family: Times New Roman, Times, serif;
+  font-family: Times New Roman, Times, serif;
   margin: 0;
   font-size: 28px;
   font-weight: 700;
@@ -106,6 +106,7 @@
   background: #f2f3f4;
   color: #7b8086;
 }
+
 .deleted-stat {
   background: #fff1f1;
   color: #b34646;
@@ -198,10 +199,15 @@
 
 .editors-table-wrapper {
   width: 100%;
+  max-width: 100%;
+  overflow-x: auto;
+  overflow-y: visible;
+  -webkit-overflow-scrolling: touch;
 }
 
 .editors-table {
   width: 100%;
+  min-width: 1100px;
   border-collapse: collapse;
   table-layout: fixed;
 }
@@ -647,6 +653,7 @@
 .editor-stat-card:focus {
   outline: none;
 }
+
 .form-input-wrapper input {
   width: 100%;
   height: 100%;
@@ -910,6 +917,7 @@
   color: #92979d;
   font-size: 11px;
 }
+
 .delete-modal .modal-actions {
   margin-top: 22px;
 }
@@ -1044,6 +1052,7 @@
   color: #182230;
   font-weight: 600;
 }
+
 .editor-pages-count {
   display: inline-flex;
   align-items: center;
@@ -1063,6 +1072,7 @@
   font-size: 13px;
   font-weight: 600;
 }
+
 .editor-news-count {
   display: inline-flex !important;
   align-items: center;
@@ -1117,10 +1127,18 @@
 @media (max-width: 1000px) {
   .editors-page {
     padding: 24px 20px 35px;
+    max-width: 100%;
+    box-sizing: border-box;
+  }
+
+  .editors-table-wrapper {
+    overflow-x: auto;
+    overflow-y: visible;
   }
 
   .editors-table {
-    table-layout: auto;
+    min-width: 1100px;
+    table-layout: fixed;
   }
 
   .editors-table th,
@@ -1133,6 +1151,8 @@
 @media (max-width: 768px) {
   .editors-page {
     padding: 20px 16px 30px;
+    max-width: 100%;
+    box-sizing: border-box;
   }
 
   .editors-header {
@@ -1158,8 +1178,16 @@
     width: 100%;
   }
 
+  .editors-table-wrapper {
+    width: 100%;
+    max-width: 100%;
+    overflow-x: auto;
+    overflow-y: visible;
+  }
+
   .editors-table {
-    table-layout: auto;
+    min-width: 1100px;
+    table-layout: fixed;
   }
 
   .editors-table th,
@@ -1173,63 +1201,5 @@
 
   .details-grid {
     grid-template-columns: 1fr;
-  }
-}
-
-@media (max-width: 520px) {
-  .editors-page {
-    padding: 16px 12px 25px;
-  }
-
-  .editors-header h1 {
-    font-size: 22px;
-  }
-
-  .page-title-row {
-    align-items: flex-start;
-  }
-
-  .editor-stat-card {
-    padding: 14px;
-  }
-
-  .editors-table th,
-  .editors-table td {
-    padding: 10px 8px;
-  }
-
-  .editor-role {
-    display: none;
-  }
-
-  .editor-avatar {
-    width: 32px;
-    height: 32px;
-  }
-
-  .editor-actions {
-    gap: 1px;
-  }
-
-  .action-btn {
-    width: 28px;
-    height: 28px;
-  }
-
-  .editor-modal-overlay {
-    padding: 12px;
-  }
-
-  .modal-header {
-    padding: 18px;
-  }
-
-  .editor-modal form {
-    padding: 18px;
-  }
-
-  .delete-modal {
-    margin: 12px;
-    padding: 22px;
   }
 }

@@ -47,6 +47,7 @@ import userNotificationRoutes from "./routes/userNotification.routes";
 import adminUserRoutes from "./routes/adminUser.routes";
 
 import shareRoutes from "./routes/share.routes";
+import liveEventRoutes from "./routes/liveEvent.routes";
 
 import path from "path";
 
@@ -134,6 +135,8 @@ app.use("/api/notifications", notificationRoutes);
 app.use("/api/users", siteUserRoutes);
 
 app.use("/api/newsletter", newsletterRouter);
+
+app.use("/api/live-events", liveEventRoutes);
 
 app.use(
   "/uploads",
