@@ -256,6 +256,25 @@ export const appendLiveUpdate = (id: string, payload: LiveUpdatePayload): Promis
     body: JSON.stringify(payload),
   });
 
+// Edit an existing live update
+export const editLiveUpdate = (newsId: string, updateId: string, payload: LiveUpdatePayload): Promise<any> =>
+  apiClient(`/api/news/${newsId}/live-update/${updateId}`, {
+    method: "PUT",
+    body: JSON.stringify(payload),
+  });
+
+// Delete a live update
+export const deleteLiveUpdate = (newsId: string, updateId: string): Promise<any> =>
+  apiClient(`/api/news/${newsId}/live-update/${updateId}`, {
+    method: "DELETE",
+  });
+
+// End a live story
+export const endLiveStory = (newsId: string): Promise<any> =>
+  apiClient(`/api/news/${newsId}/end-live`, {
+    method: "PATCH",
+  });
+
 // ─── MEDIA LIBRARY ─────────────────────────────────────────────────────────────
 export const fetchMediaLibrary = (params?: { page?: number; limit?: number }) => {
   const qs = new URLSearchParams();

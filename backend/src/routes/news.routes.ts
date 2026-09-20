@@ -9,6 +9,9 @@ import {
   deleteNews,
   purgeDeletedNews,
   addLiveUpdate,
+  editLiveUpdate,
+  deleteLiveUpdate,
+  endLiveStory,
   voteOnPoll,
   togglePauseBreaking,
   getBreakingNewsHistory,
@@ -218,7 +221,7 @@ router.delete(
   purgeDeletedNews
 );
 
-// ─── ID lookup (for ArticleDetail page) ─────────────────────────
+// ─── Add live update ─────────────────────────────────────────────────────────────
 // This catches MongoDB ObjectIds and slug strings.
 
 router.get(
@@ -234,6 +237,27 @@ router.get(
     // Otherwise treat as slug
     return getNewsBySlug(req, res);
   }
+);
+
+router.put(
+  "/:id/live-update/:updateId",
+  protect,
+  hasPermission("live-news"),
+  editLiveUpdate
+);
+
+router.delete(
+  "/:id/live-update/:updateId",
+  protect,
+  hasPermission("live-news"),
+  deleteLiveUpdate
+);
+
+router.patch(
+  "/:id/end-live",
+  protect,
+  hasPermission("live-news"),
+  endLiveStory
 );
 
 export default router;

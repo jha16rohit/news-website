@@ -1562,13 +1562,188 @@ export const addLiveUpdate = async (req: AuthRequest, res: Response) => {
       { returnDocument: 'after' },
     );
 
-    res.json({ success: true, update: newUpdate, news: updated });
+res.json({ success: true, update: newUpdate, news: updated });
   } catch (error) {
     console.error("addLiveUpdate error:", error);
     res.status(500).json({ message: "Error adding live update" });
   }
 };
 
+// ─── EDIT LIVE UPDATE ──────────────────────────────────────────────────────────
+export const editLiveUpdate = async (req: AuthRequest, res: Response) => {
+  try {
+    const { id, updateId } = req.params;
+    const news = await News.findById(id);
+    if (!news) return res.status(404).json({ message: "News not found" });
+    if (news.articleType !== "LIVE")
+      return res.status(400).json({ message: "Not a live article" });
+    if (req.user?.role !== "ADMIN") {
+      return res.status(403).json({
+        message: "Only ADMIN can edit live updates.",
+      });
+    }
+
+    const updateIndex = (news.liveUpdates ?? []).findIndex(
+      (u: any) => String(u.id) === String(updateId)
+    );
+    if (updateIndex === -1) {
+      return res.status(404).json({ message: "Live update not found" });
+    }
+
+    const {
+      text,
+      title,
+      imageUrl,
+      imageCaption,
+      imageCredit,
+      tweetUrl,
+      poll,
+      sourceUrl,
+      sourceLabel,
+      tags,
+      isHighlight,
+      isBreaking,
+    } = req.body;
+
+    const existingUpdate = (news.liveUpdates ?? [])[updateIndex];
+
+    const hasContent =
+      text?.trim() ||
+      title?.trim() ||
+      imageUrl?.trim() ||
+      tweetUrl?.trim() ||
+      sourceUrl?.trim() ||
+      (poll && poll.question?.trim()) ||
+      (Array.isArray(tags) && tags.length > 0);
+
+    if (!hasContent) {
+      return res.status(400).json({
+        message:
+          "Update must have at least one field (text, title, image, tweet, poll, source, or tags).",
+      });
+    }
+
+    const updatedUpdate = {
+      ...existingUpdate,
+      ...(text?.trim() && { text: text.trim() }),
+      ...(title?.trim() && { title: title.trim() }),
+      ...(imageUrl?.trim() &&
+        !imageUrl.startsWith("blob:") && { imageUrl: imageUrl.trim() }),
+      ...(imageCaption?.trim() && { imageCaption: imageCaption.trim() }),
+      ...(imageCredit?.trim() && { imageCredit: imageCredit.trim() }),
+      ...(tweetUrl?.trim() && { tweetUrl: tweetUrl.trim() }),
+      ...(sourceUrl?.trim() && { sourceUrl: sourceUrl.trim() }),
+      ...(sourceLabel?.trim() && { sourceLabel: sourceLabel.trim() }),
+      ...(Array.isArray(tags) && tags.length > 0 && { tags }),
+      ...(isHighlight !== undefined && { isHighlight: Boolean(isHighlight) }),
+      ...(isBreaking !== undefined && { isBreaking: Boolean(isBreaking) }),
+      ...(poll &&
+        typeof poll.question === "string" &&
+        poll.question.trim() &&
+        Array.isArray(poll.options) &&
+        poll.options.length >= 2 && {
+          poll: {
+            question: poll.question.trim(),
+            totalVotes: existingUpdate.poll?.totalVotes ?? 0,
+            options: poll.options
+              .filter((o: any) => o && (o.label || o).toString().trim())
+              .map((o: any, index: number) => ({
+                id: typeof o === "string" ? `opt_${index}` : o.id ?? `opt_${index}`,
+                label: typeof o === "string" ? o : o.label,
+                votes:
+                  typeof o === "object" && o.id
+                    ? existingUpdate.poll?.options?.find((eo: any) => eo.id === o.id)?.votes ??
+                      0
+                    : 0,
+              })),
+          },
+        }),
+    };
+
+    const updatedUpdates = [...(news.liveUpdates ?? [])];
+    updatedUpdates[updateIndex] = updatedUpdate;
+
+    const updated = await News.findByIdAndUpdate(
+      id,
+      { liveUpdates: updatedUpdates },
+      { returnDocument: 'after' }
+    );
+
+    res.json({ success: true, update: updatedUpdate, news: updated });
+  } catch (error) {
+    console.error("editLiveUpdate error:", error);
+    res.status(500).json({ message: "Error editing live update" });
+  }
+};
+
+// ─── DELETE LIVE UPDATE ────────────────────────────────────────────────────────
+export const deleteLiveUpdate = async (req: AuthRequest, res: Response) => {
+  try {
+    const { id, updateId } = req.params;
+    const news = await News.findById(id);
+    if (!news) return res.status(404).json({ message: "News not found" });
+    if (news.articleType !== "LIVE")
+      return res.status(400).json({ message: "Not a live article" });
+    if (req.user?.role !== "ADMIN") {
+      return res.status(403).json({
+        message: "Only ADMIN can delete live updates.",
+      });
+    }
+
+    const updateIndex = (news.liveUpdates ?? []).findIndex(
+      (u: any) => String(u.id) === String(updateId)
+    );
+    if (updateIndex === -1) {
+      return res.status(404).json({ message: "Live update not found" });
+    }
+
+    const updatedUpdates = [...(news.liveUpdates ?? [])];
+    updatedUpdates.splice(updateIndex, 1);
+
+    const updated = await News.findByIdAndUpdate(
+      id,
+      { liveUpdates: updatedUpdates },
+      { returnDocument: 'after' }
+    );
+
+    res.json({ success: true, message: "Live update deleted", news: updated });
+  } catch (error) {
+    console.error("deleteLiveUpdate error:", error);
+    res.status(500).json({ message: "Error deleting live update" });
+  }
+};
+
+// ─── END LIVE STORY ────────────────────────────────────────────────────────────
+export const endLiveStory = async (req: AuthRequest, res: Response) => {
+  try {
+    const { id } = req.params;
+    const news = await News.findById(id);
+    if (!news) return res.status(404).json({ message: "News not found" });
+    if (news.articleType !== "LIVE")
+      return res.status(400).json({ message: "Not a live article" });
+    if (req.user?.role !== "ADMIN") {
+      return res.status(403).json({
+        message: "Only ADMIN can end live stories.",
+      });
+    }
+
+    const now = new Date();
+    const updated = await News.findByIdAndUpdate(
+      id,
+      {
+        statusType: "ended",
+        updatedAt: now,
+        $set: { endedAt: now },
+      },
+      { returnDocument: 'after' }
+    );
+
+    res.json({ success: true, message: "Live story ended", news: updated });
+  } catch (error) {
+    console.error("endLiveStory error:", error);
+    res.status(500).json({ message: "Error ending live story" });
+  }
+};
 
 export const voteOnPoll = async (
   req: Request,

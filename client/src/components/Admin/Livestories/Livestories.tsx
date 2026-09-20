@@ -2,22 +2,22 @@ import React, { useState, useRef, useEffect, useCallback } from "react";
 import "./Livestories.css";
 import { useNavigate } from "react-router-dom";
 import {
-  // Live Stories must see every status (DRAFT/SCHEDULED/PUBLISHED/etc.), not
-  // just PUBLISHED, otherwise draft live stories never appear here and the
-  // "Draft (Ready)" stat is permanently stuck at 0 — use the admin-only
-  // endpoint, same one AllNews.tsx uses, so both pages agree on what exists.
   fetchAdminNews,
   deleteNews      as apiDeleteNews,
   updateNews      as apiUpdateNews,
   appendLiveUpdate as apiAppendLiveUpdate,
+  editLiveUpdate as apiEditLiveUpdate,
+  deleteLiveUpdate as apiDeleteLiveUpdate,
+  endLiveStory as apiEndLiveStory,
 } from "../../../api/news";
 import { FullPageContentPreloader } from "../Preloader/FullPageContentPreloader";
+import toast from "react-hot-toast";
 // import { useNewsEvent, useNewsSubscription } from "../../../context/newscontext";
 
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 interface LiveUpdate {
-  id:            number;
+  id:            string;
   time:          string;
   text:          string;
   timestamp:     string;
@@ -134,6 +134,10 @@ articleCategory: n.categoryId?.name || "",
 }
 
 let nextUpdateId = 1000;
+
+function generateUpdateId(): string {
+  return `upd_${Date.now()}_${nextUpdateId++}`;
+}
 
 // ─── SVG Icons ────────────────────────────────────────────────────────────────
 const IconBroadcast = () => (
@@ -252,8 +256,8 @@ const IconActivity = ({ size = 28 }) => (
     <polyline points="22 12 18 12 15 21 9 3 6 12 2 12" />
   </svg>
 );
-const IconSpinner = () => (
-  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"
+const IconSpinner = ({ size = 14 }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"
     style={{ animation: "spin 1s linear infinite" }}>
     <circle cx="12" cy="12" r="9" strokeDasharray="28 56" />
   </svg>
@@ -474,10 +478,12 @@ interface AddUpdatePanelProps {
   editingUpdate?: LiveUpdate | null;   // if set → edit mode
   onPost:        (storyId: string, update: Partial<LiveUpdate>) => void;
   onClose:       () => void;
+  isPosting?:    boolean;
+  isEditing?:    boolean;
 }
 
-const AddUpdatePanel: React.FC<AddUpdatePanelProps> = ({ storyId, editingUpdate, onPost, onClose }) => {
-  const isEditing = !!editingUpdate;
+const AddUpdatePanel: React.FC<AddUpdatePanelProps> = ({ storyId, editingUpdate, onPost, onClose, isPosting, isEditing }) => {
+  const isEditingMode = !!editingUpdate;
 
   const [title,          setTitle]          = useState(editingUpdate?.title ?? "");
   const [text,           setText]           = useState(editingUpdate?.text ?? "");
@@ -805,9 +811,13 @@ const AddUpdatePanel: React.FC<AddUpdatePanelProps> = ({ storyId, editingUpdate,
               </div>
             )}
             <div className="aup-footer-actions">
-              <button className="aup-btn-cancel" onClick={onClose}>Cancel</button>
-              <button className="aup-btn-post" onClick={handlePost} disabled={!canPost}>
-                {isEditing ? <><IconEdit size={14} /> Save Changes</> : <><IconBroadcast /> Post Update</>}
+              <button className="aup-btn-cancel" onClick={onClose} disabled={isPosting}>Cancel</button>
+              <button className="aup-btn-post" onClick={handlePost} disabled={!canPost || isPosting}>
+                {isPosting
+                  ? <><IconSpinner size={14} /> {isEditingMode ? "Saving…" : "Posting…"}</>
+                  : isEditingMode
+                    ? <><IconEdit size={14} /> Save Changes</>
+                    : <><IconBroadcast /> Post Update</>}
               </button>
             </div>
           </div>
@@ -827,17 +837,22 @@ interface StoryDetailPanelProps {
   onClose:        () => void;
   onAddUpdate:    (storyId: string, update: Partial<LiveUpdate>) => void;
   onEditUpdate:   (storyId: string, update: Partial<LiveUpdate>) => void;
-  onDeleteUpdate: (storyId: string, updateId: number) => void;
+  onDeleteUpdate: (storyId: string, updateId: string) => void;
   canManageUpdates: boolean;
 }
 
-const StoryDetailPanel: React.FC<StoryDetailPanelProps> = ({
-  story, onClose, onAddUpdate, onEditUpdate, onDeleteUpdate, canManageUpdates
+const StoryDetailPanel: React.FC<StoryDetailPanelProps & {
+  addingUpdateId: string | null;
+  editingUpdateId: string | null;
+  deletingUpdateId: string | null;
+}> = ({
+  story, onClose, onAddUpdate, onEditUpdate, onDeleteUpdate, canManageUpdates,
+  addingUpdateId, editingUpdateId, deletingUpdateId
 }) => {
-  const [openMenuUpdateId,  setOpenMenuUpdateId]  = useState<number | null>(null);
+  const [openMenuUpdateId,  setOpenMenuUpdateId]  = useState<string | null>(null);
   const [addUpdateOpen,     setAddUpdateOpen]      = useState(false);
   const [editingUpdate,     setEditingUpdate]      = useState<LiveUpdate | null>(null);
-  const [deleteUpdateModal, setDeleteUpdateModal]  = useState<number | null>(null);
+  const [deleteUpdateModal, setDeleteUpdateModal]  = useState<string | null>(null);
 
   // Close dropdown on outside click
   useEffect(() => {
@@ -1068,17 +1083,21 @@ const StoryDetailPanel: React.FC<StoryDetailPanelProps> = ({
           storyId={story.id}
           onPost={(sid, upd) => { onAddUpdate(sid, upd); setAddUpdateOpen(false); }}
           onClose={() => setAddUpdateOpen(false)}
+          isPosting={addingUpdateId === story.id}
+          isEditing={false}
         />
       )}
 
       {/* Edit Update panel */}
       {editingUpdate && (
         <AddUpdatePanel
-          key={editingUpdate.id}
+          key={String(editingUpdate.id)}
           storyId={story.id}
           editingUpdate={editingUpdate}
           onPost={(sid, upd) => { onEditUpdate(sid, upd); setEditingUpdate(null); }}
           onClose={() => setEditingUpdate(null)}
+          isPosting={editingUpdateId === String(editingUpdate.id)}
+          isEditing={true}
         />
       )}
 
@@ -1091,7 +1110,9 @@ const StoryDetailPanel: React.FC<StoryDetailPanelProps> = ({
             <p>This update will be permanently removed from the live story.</p>
             <div className="ls-modal-actions">
               <button className="ls-modal-cancel" onClick={() => setDeleteUpdateModal(null)}>Cancel</button>
-              <button className="ls-modal-confirm" onClick={handleDeleteUpdateConfirm}>Yes, Delete</button>
+              <button className="ls-modal-confirm" onClick={handleDeleteUpdateConfirm} disabled={deletingUpdateId === deleteUpdateModal}>
+                {deletingUpdateId === deleteUpdateModal ? <IconSpinner size={14} /> : "Yes, Delete"}
+              </button>
             </div>
           </div>
         </div>
@@ -1099,8 +1120,7 @@ const StoryDetailPanel: React.FC<StoryDetailPanelProps> = ({
     </>
   );
 };
-
-// ─── Component ────────────────────────────────────────────────────────────────
+  // ─── Component ────────────────────────────────────────────────────────────────
 const LiveStoriesPage: React.FC = () => {
   const navigate = useNavigate();
   // const { dispatch } = useNewsEvent();
@@ -1108,13 +1128,16 @@ const LiveStoriesPage: React.FC = () => {
   // // Re-fetch whenever another page changes a news item
   // useNewsSubscription(() => { loadData(); });
 
-  const [stories,          setStories]          = useState<LiveStory[]>([]);
+const [stories,          setStories]          = useState<LiveStory[]>([]);
   const [loading,          setLoading]           = useState(true);
   const [openMenuId,       setOpenMenuId]        = useState<string | null>(null);
   const [addUpdateId,      setAddUpdateId]       = useState<string | null>(null);
   const [search,           setSearch]            = useState("");
   const [deleteModal,      setDeleteModal]       = useState<string | null>(null);
-  const [endingId,         setEndingId]          = useState<string | null>(null);
+  const [addingUpdateId, setAddingUpdateId] = useState<string | null>(null);
+  const [editingUpdateId, setEditingUpdateId] = useState<string | null>(null);
+  const [deletingUpdateId, setDeletingUpdateId] = useState<string | null>(null);
+  const [endingStoryId, setEndingStoryId] = useState<string | null>(null);
   const [detailStory,      setDetailStory]       = useState<LiveStory | null>(null);
 
   const loadData = useCallback(async () => {
@@ -1148,7 +1171,7 @@ const LiveStoriesPage: React.FC = () => {
     search ? list.filter(s => s.title.toLowerCase().includes(search.toLowerCase())) : list;
 
   const filteredLive  = filterStories(liveArticles);
-  const filteredEnded = filterStories(endedArticles);
+const filteredEnded = filterStories(endedArticles);
   const filteredDraft = filterStories(draftArticles);
   const totalUpdates  = stories.reduce((s, a) => s + (a.liveUpdates?.length ?? 0), 0);
 
@@ -1157,10 +1180,13 @@ const LiveStoriesPage: React.FC = () => {
   // rich payload (title, imageUrl, poll, tweetUrl, sourceUrl, tags, etc.) and
   // persists it to the DB's liveUpdates JSON array.
   const handleAddUpdate = async (storyId: string, partialUpdate: Partial<LiveUpdate>) => {
+    if (addingUpdateId === storyId) return;
+    setAddingUpdateId(storyId);
+
     const now = new Date();
     // Optimistic local update so the UI feels instant
     const optimistic: LiveUpdate = {
-      id:        nextUpdateId++,
+      id:        generateUpdateId(),
       time:      now.toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit" }),
       text:      partialUpdate.text || "",
       timestamp: now.toISOString(),
@@ -1178,7 +1204,7 @@ const LiveStoriesPage: React.FC = () => {
       if (partialUpdate.text?.trim())        payload.text         = partialUpdate.text;
       if (partialUpdate.title?.trim())       payload.title        = partialUpdate.title;
       if (partialUpdate.imageUrl?.trim() && !partialUpdate.imageUrl.startsWith("blob:"))
-                                             payload.imageUrl     = partialUpdate.imageUrl;
+                                               payload.imageUrl     = partialUpdate.imageUrl;
       if (partialUpdate.imageCaption?.trim()) payload.imageCaption = partialUpdate.imageCaption;
       if (partialUpdate.imageCredit?.trim())  payload.imageCredit  = partialUpdate.imageCredit;
       if (partialUpdate.tweetUrl?.trim())    payload.tweetUrl     = partialUpdate.tweetUrl;
@@ -1190,11 +1216,13 @@ const LiveStoriesPage: React.FC = () => {
       if (partialUpdate.isBreaking  !== undefined) payload.isBreaking  = partialUpdate.isBreaking;
 
       await apiAppendLiveUpdate(storyId, payload as any);
+      toast.success("Live update posted");
       
       // Reload from server so our local IDs/timestamps match the DB record
       await loadData();
     } catch (err) {
       console.error("Failed to add update:", err);
+      toast.error("Failed to post update");
       // Rollback the optimistic update on failure
       setStories(prev =>
         prev.map(s =>
@@ -1203,18 +1231,24 @@ const LiveStoriesPage: React.FC = () => {
             : s
         )
       );
+    } finally {
+      setAddingUpdateId(null);
     }
   };
 
   // ── Edit a specific update ──
-  // Fix: read stories BEFORE setStories to avoid stale closure sending old data to DB
+  // Uses the dedicated PUT /:id/live-update/:updateId endpoint
   const handleEditUpdate = async (storyId: string, updatedPartial: Partial<LiveUpdate>) => {
+    const updateId = String(updatedPartial.id);
+    if (editingUpdateId === updateId) return;
+    setEditingUpdateId(updateId);
+
     const story = stories.find(s => s.id === storyId);
     if (!story) return;
 
     // Build the new list once — used for both optimistic UI and the DB call
     const updatedList = story.liveUpdates.map(u =>
-      u.id === updatedPartial.id ? { ...u, ...updatedPartial } : u
+      String(u.id) === updateId ? { ...u, ...updatedPartial } : u
     );
 
     setStories(prev =>
@@ -1222,53 +1256,65 @@ const LiveStoriesPage: React.FC = () => {
     );
 
     try {
-      await apiUpdateNews(storyId, { liveUpdates: updatedList } as any);
+      await apiEditLiveUpdate(storyId, updateId, updatedPartial as any);
+      toast.success("Live update saved");
       
       await loadData();
     } catch (err) {
       console.error("Failed to edit update:", err);
+      toast.error("Failed to update live update");
       // Rollback to original on failure
       setStories(prev =>
         prev.map(s => s.id === storyId ? { ...s, liveUpdates: story.liveUpdates } : s)
       );
+    } finally {
+      setEditingUpdateId(null);
     }
   };
 
   // ── Delete a specific update ──
-  // Fix: read stories BEFORE setStories to avoid stale closure sending old data to DB
-  const handleDeleteUpdate = async (storyId: string, updateId: number) => {
+  // Uses the dedicated DELETE /:id/live-update/:updateId endpoint
+  const handleDeleteUpdate = async (storyId: string, updateId: string) => {
+    if (deletingUpdateId === updateId) return;
+    setDeletingUpdateId(updateId);
+
     const story = stories.find(s => s.id === storyId);
     if (!story) return;
 
     // Build the filtered list once — used for both optimistic UI and the DB call
-    const updatedList = story.liveUpdates.filter(u => u.id !== updateId);
+    const updatedList = story.liveUpdates.filter(u => String(u.id) !== updateId);
 
     setStories(prev =>
       prev.map(s => s.id === storyId ? { ...s, liveUpdates: updatedList } : s)
     );
 
     try {
-      await apiUpdateNews(storyId, { liveUpdates: updatedList } as any);
+      await apiDeleteLiveUpdate(storyId, updateId);
+      toast.success("Live update deleted");
       
       await loadData();
     } catch (err) {
       console.error("Failed to delete update:", err);
+      toast.error("Failed to delete update");
       // Rollback to original on failure
       setStories(prev =>
         prev.map(s => s.id === storyId ? { ...s, liveUpdates: story.liveUpdates } : s)
       );
+    } finally {
+      setDeletingUpdateId(null);
     }
   };
 
-  // ── End Live ────────────────────────────────────────────────────────────────
-  // Backend is the final authority for ownership. The UI only exposes this
-  // button when canChangeStatus is true (ADMIN or the story owner).
+// ── End Live ────────────────────────────────────────────────────────────────
+  // Uses the dedicated PATCH /:id/end-live endpoint
   const handleEndLive = async (storyId: string) => {
+    if (endingStoryId === storyId) return;
+    setEndingStoryId(storyId);
+
     const story = stories.find(s => s.id === storyId);
     if (!story || story.status !== "live" || !story.canChangeStatus) return;
 
     const now = new Date();
-    setEndingId(storyId);
 
     setStories(prev =>
       prev.map(s =>
@@ -1276,6 +1322,7 @@ const LiveStoriesPage: React.FC = () => {
           ? {
               ...s,
               status: "ended",
+              statusType: "ended",
               endedAt: now.toISOString(),
               published: formatDate(now.toISOString()),
             }
@@ -1283,19 +1330,17 @@ const LiveStoriesPage: React.FC = () => {
       )
     );
 
-    try {
-      await apiUpdateNews(storyId, {
-        status: "PUBLISHED",
-        statusType: "ended",
-        articleType: "LIVE",
-      } as any);
+try {
+      await apiEndLiveStory(storyId);
+      toast.success("Live story ended");
 
       await loadData();
     } catch (err) {
       console.error("Failed to end live:", err);
+      toast.error("Failed to end live story");
       await loadData();
     } finally {
-      setEndingId(null);
+      setEndingStoryId(null);
     }
   };
 
@@ -1459,18 +1504,18 @@ const LiveStoriesPage: React.FC = () => {
                 </div>
                 <div className="ls-story-actions" onClick={e => e.stopPropagation()}>
                   {story.canManage && (
-                    <button className="ls-btn-add-update" onClick={() => setAddUpdateId(story.id)}>
-                      <IconAdd /> Add Update
+                    <button className="ls-btn-add-update" onClick={() => setAddUpdateId(story.id)} disabled={addingUpdateId === story.id}>
+                      {addingUpdateId === story.id ? <IconSpinner size={12} /> : <IconAdd />} {addingUpdateId === story.id ? "Adding…" : "Add Update"}
                     </button>
                   )}
                   {story.canChangeStatus && (
                     <button
                       className="ls-btn-end-live"
                       onClick={() => handleEndLive(story.id)}
-                      disabled={endingId === story.id}
+                      disabled={endingStoryId === story.id}
                     >
-                    {endingId === story.id ? <IconSpinner /> : <IconStop />}
-                      {endingId === story.id ? "Ending…" : "End Live"}
+                      {endingStoryId === story.id ? <IconSpinner size={12} /> : <IconStop />}
+                      {endingStoryId === story.id ? "Ending…" : "End Live"}
                     </button>
                   )}
                   {story.canManage && <div className="ls-more-wrap">
@@ -1627,6 +1672,9 @@ const LiveStoriesPage: React.FC = () => {
           onEditUpdate={handleEditUpdate}
           onDeleteUpdate={handleDeleteUpdate}
           canManageUpdates={Boolean(detailStory.canManage)}
+          addingUpdateId={addingUpdateId}
+          editingUpdateId={editingUpdateId}
+          deletingUpdateId={deletingUpdateId}
         />
       )}
     </>

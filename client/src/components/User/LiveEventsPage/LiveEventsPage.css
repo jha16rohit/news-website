@@ -248,6 +248,41 @@
   }
 }
 
+/* Empty State */
+.live-events-empty {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 400px;
+  padding: 40px 20px;
+}
+
+.empty-state {
+  text-align: center;
+  padding: 40px 20px;
+  max-width: 400px;
+}
+
+.empty-icon {
+  color: #e60000;
+  margin-bottom: 16px;
+  opacity: 0.6;
+}
+
+.empty-state h2 {
+  font-size: 20px;
+  font-weight: 700;
+  color: #1a1d23;
+  margin: 0 0 12px;
+}
+
+.empty-state p {
+  font-size: 15px;
+  color: #64748b;
+  margin: 0;
+  line-height: 1.5;
+}
+
 /* 6. Mobile S - 320px */
 @media (max-width: 320px) {
   .header-title-wrapper h1 {
@@ -261,5 +296,11 @@
   }
   .card-overlay {
     padding: 16px;
+  }
+  .empty-state h2 {
+    font-size: 18px;
+  }
+  .empty-state p {
+    font-size: 14px;
   }
 }
