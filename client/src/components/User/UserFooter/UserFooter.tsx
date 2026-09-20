@@ -290,7 +290,7 @@ const Footer: React.FC = () => {
               <ul className="f-links">
                 <li>
                   <Link to="/">
-                    <ChevronRight size={14} className="f-arrow" /> Home
+                    <ChevronRight size={14} className="f-arrow" /> होम
                   </Link>
                 </li>
                 {displayCategories.map((cat: any) => (
