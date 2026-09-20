@@ -8,6 +8,12 @@ import ContactMessage from "../models/ContactMessage";
 import UserNotification from "../models/UserNotification";
 
 // ── Resend client ─────────────────────────────────────────────────────────────
+
+const FROM =
+  process.env.RESEND_FROM?.trim() ||
+  "Local Newz <onboarding@resend.dev>";
+
+
 let resendClient: Resend | null = null;
 
 function getResend(): Resend {
@@ -39,7 +45,7 @@ async function sendContactNotification(msg: {
   }/admin/contact`;
 
   const { error } = await getResend().emails.send({
-    from: "Local Newz <onboarding@resend.dev>",
+    from: FROM,
     to: [adminEmail],
     subject: `📬 New Contact Message: ${
       msg.subject || "General Enquiry"
@@ -293,7 +299,7 @@ export const replyToMessage = async (req: Request, res: Response) => {
     // Send reply email to user
     try {
       const { error } = await getResend().emails.send({
-        from: "Local Newz <onboarding@resend.dev>",
+        from: FROM,
         to: [msg.email],
         subject: `Reply to your enquiry - ${msg.subject || "General Enquiry"}`,
         html: `

@@ -46,6 +46,11 @@ setInterval(() => {
   });
 }, 5 * 60 * 1000);
 
+const FROM =
+  process.env.RESEND_FROM?.trim() ||
+  "Local Newz <onboarding@resend.dev>";
+
+
 // ── Resend client (lazy init) ──────────────────────────────────────────────────
 let resendClient: Resend | null = null;
 function getResend(): Resend {
@@ -67,7 +72,7 @@ async function sendEmailOtp(email: string, otp: string): Promise<void> {
   const expireMinutes = process.env.OTP_EXPIRE_MINUTES?.trim() ?? "10";
 
   const { error } = await getResend().emails.send({
-    from: "Local Newz <onboarding@resend.dev>",
+    from: FROM,
     to: [process.env.RESEND_TO_EMAIL?.trim() || email],
     subject: "Your OTP for Local Newz Password Reset",
     html: `

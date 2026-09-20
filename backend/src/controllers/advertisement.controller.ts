@@ -6,6 +6,11 @@ import PublishedAd from "../models/PublishedAd";
 import AdvertisementPool from "../models/AdvertisementPool";
 
 // ── Resend client ─────────────────────────────────────────────────────────────
+
+const FROM =
+  process.env.RESEND_FROM?.trim() ||
+  "Local Newz <onboarding@resend.dev>";
+
 let resendClient: Resend | null = null;
 function getResend(): Resend {
   if (!resendClient) {
@@ -43,7 +48,7 @@ async function sendAdInquiryNotification(inquiry: {
   
 
   const { error } = await getResend().emails.send({
-    from: "Local Newz <onboarding@resend.dev>",
+    from: FROM,
     to: [adminEmail],
     subject: `📢 New Ad Inquiry from ${inquiry.name}${
       inquiry.company ? ` (${inquiry.company})` : ""
