@@ -171,24 +171,24 @@ const PollBlock: React.FC<PollProps> = ({ update, onVote }) => {
   const total      = update.poll.options.reduce((s, o) => s + o.votes, 0);
 
   return (
-    <div className="ad-live-update-poll">
-      <p className="ad-live-poll-q">{update.poll.question}</p>
+    <div className="live-update-poll">
+      <p className="live-poll-q">{update.poll.question}</p>
       {update.poll.options.map((opt, i) => {
         const pct        = total > 0 ? Math.round((opt.votes / total) * 100) : 0;
         const isSelected = selectedId === opt.id;
 
         if (hasVoted) {
           return (
-            <div key={i} className={`ad-live-poll-option${isSelected ? " ad-live-poll-option--selected" : ""}`}>
-              <div className="ad-live-poll-option-top">
-                <span className="ad-live-poll-option-label">
+            <div key={i} className={`live-poll-option${isSelected ? " live-poll-option--selected" : ""}`}>
+              <div className="live-poll-option-top">
+                <span className="live-poll-option-label">
                   {isSelected && <span style={{ marginRight: 6, fontSize: 12 }}>✔</span>}
                   {opt.label}
                 </span>
-                <span className="ad-live-poll-pct">{pct}%</span>
+                <span className="live-poll-pct">{pct}%</span>
               </div>
-              <div className="ad-live-poll-bar-wrap">
-                <div className="ad-live-poll-bar" style={{ width: `${pct}%` }} />
+              <div className="live-poll-bar-wrap">
+                <div className="live-poll-bar" style={{ width: `${pct}%` }} />
               </div>
             </div>
           );
@@ -197,7 +197,7 @@ const PollBlock: React.FC<PollProps> = ({ update, onVote }) => {
         return (
           <button
             key={i}
-            className="ad-live-poll-btn"
+            className="live-poll-btn"
             onClick={() => { localStorage.setItem(storageKey, opt.id); onVote(String(update.id), opt.id); }}
           >
             {opt.label}
@@ -205,7 +205,7 @@ const PollBlock: React.FC<PollProps> = ({ update, onVote }) => {
         );
       })}
       {hasVoted && total > 0 && (
-        <p className="ad-live-poll-votes">{total.toLocaleString()} {total === 1 ? "vote" : "votes"}</p>
+        <p className="live-poll-votes">{total.toLocaleString()} {total === 1 ? "vote" : "votes"}</p>
       )}
     </div>
   );
@@ -830,79 +830,79 @@ if (platform === "whatsapp") {
 
   // ─── Render ───────────────────────────────────────────────────────────────
   return (
-    <div className="ad-page-wrapper">
+    <div className="article-page-wrapper">
       {/* ── BREAKING BANNER ── */}
       {article.isBreaking && (
-        <div className="ad-breaking-banner">
+        <div className="breaking-banner">
           <Zap size={14} />
-          <span className="ad-breaking-label">BREAKING NEWS</span>
-          <span className="ad-breaking-text">{article.shortTitle ?? article.headline}</span>
+          <span className="breaking-label">BREAKING NEWS</span>
+          <span className="breaking-text">{article.shortTitle ?? article.headline}</span>
         </div>
       )}
 
-      <div className="ad-container">
-        <main className="ad-main-content">
+      <div className="article-container">
+        <main className="article-main-content">
 
           {/* ── BREADCRUMB ── */}
-          <div className="ad-breadcrumb">
-            <Link to="/" className="ad-bc-link">Home</Link>
-            <span className="ad-bc-sep">/</span>
-            <Link to={`/category/${article.category.toLowerCase()}`} className="ad-bc-link">
+          <div className="breadcrumb">
+            <Link to="/" className="bc-link">Home</Link>
+            <span className="bc-sep">/</span>
+            <Link to={`/category/${article.category.toLowerCase()}`} className="bc-link">
               {displayCategory}
             </Link>
-            <span className="ad-bc-sep">/</span>
-            <span className="ad-bc-current">{article.headline}</span>
+            <span className="bc-sep">/</span>
+            <span className="bc-current">{article.headline}</span>
           </div>
 
           {/* ── BADGES ── */}
-          <div className="ad-badges-row">
-            <span className="ad-category-badge">{article.category}</span>
+          <div className="badges-row">
+            <span className="category-badge">{article.category}</span>
             {article.isLive && (
-              <span className="ad-live-badge"><span className="ad-live-dot-sm" /> LIVE</span>
+              <span className="live-badge"><span className="live-dot-sm" /> LIVE</span>
             )}
             {article.isBreaking && (
-              <span className="ad-breaking-badge"><Zap size={10} /> BREAKING</span>
+              <span className="breaking-badge"><Zap size={10} /> BREAKING</span>
             )}
           </div>
 
           {/* ── HEADLINE ── */}
-          <h1 className="ad-headline">{article.headline}</h1>
+          <h1 className="article-headline">{article.headline}</h1>
 
           {article.excerpt && (
-            <p className="ad-subheadline">{article.excerpt}</p>
+            <p className="article-subheadline">{article.excerpt}</p>
           )}
 
           {/* ── META ROW ── */}
-          <div className="ad-meta-row">
-            <div className="ad-meta-left">
+          <div className="meta-row">
+            <div className="meta-left">
               <span><User size={14} /> {article.author}</span>
               <span><Calendar size={14} /> {formatDate(article.publishedAt)}</span>
               {article.location && <span><MapPin size={14} /> {article.location}</span>}
             </div>
-            <div className="ad-meta-right">
-              <span className="ad-share-label"><Share2 size={14} /> Share:</span>
-              <button className="ad-share-btn fb"   onClick={() => handleShare("fb")}   title="Share on Facebook"><Facebook size={14} /></button>
+            <div className="meta-right">
+              <span className="share-label"><Share2 size={14} /> Share:</span>
+              <button className="share-btn fb"   onClick={() => handleShare("fb")}   title="Share on Facebook"><Facebook size={14} /></button>
               <button
-  className="ad-share-btn whatsapp"
+  className="share-btn whatsapp"
   onClick={() => handleShare("whatsapp")}
   title="Share on WhatsApp"
 >
   <FaWhatsapp size={15} />
 </button>
-              <button className="ad-share-btn tw"   onClick={() => handleShare("tw")}   title="Share on X"><FaXTwitter size={14} /></button>
-              <button className="ad-share-btn copy" onClick={() => handleShare("copy")} title="Copy link"><Copy size={14} /></button>
+              <button className="share-btn tw"   onClick={() => handleShare("tw")}   title="Share on X"><FaXTwitter size={14} /></button>
+              <button className="share-btn copy" onClick={() => handleShare("copy")} title="Copy link"><Copy size={14} /></button>
             </div>
           </div>
 
           {/* ── HERO IMAGE ── */}
           {article.imageUrl && (
-            <figure className="ad-hero-figure">
-              <img src={article.imageUrl} alt={article.headline} className="ad-hero-image" />
+            <figure className="hero-figure">
+              <img src={article.imageUrl} alt={article.headline} className="hero-image" />
               {(article.imageCaption || article.photoCredit) && (
-                <figcaption className="ad-hero-caption">
+                <figcaption className="hero-caption">
                   {article.imageCaption && <span>{article.imageCaption}</span>}
                   {article.photoCredit && (
-                    <span className="ad-photo-credit"><Camera size={18} /> {article.photoCredit}</span>
+                    <span className="photo-credit"><Camera size={18} /> {article.photoCredit}</span>
                   )}
                 </figcaption>
               )}
@@ -910,7 +910,7 @@ if (platform === "whatsapp") {
           )}
 
           {/* ── ARTICLE BODY ── */}
-          <div className="ad-article-body" dangerouslySetInnerHTML={{ __html: article.content }} />
+          <div className="article-body" dangerouslySetInnerHTML={{ __html: article.content }} />
 
           <div style={{ margin: "50px 0" }}>
   <Advertisement
@@ -920,34 +920,34 @@ if (platform === "whatsapp") {
 
           {/* ── LIVE UPDATES ── */}
           {article.isLive && liveUpdates.length > 0 && (
-            <div className="ad-main-live-section" ref={liveRef} id="main-detailed-live-updates">
-              <div className="ad-main-live-header">
-                <span className="ad-main-live-dot" />
+            <div className="main-live-section" ref={liveRef} id="main-detailed-live-updates">
+              <div className="main-live-header">
+                <span className="main-live-dot" />
                 <h2>LIVE UPDATES</h2>
-                <span className="ad-live-count-badge">{liveUpdates.length} updates</span>
+                <span className="live-count-badge">{liveUpdates.length} updates</span>
               </div>
-              <div className="ad-main-live-timeline">
+              <div className="main-live-timeline">
                 {liveUpdates.map((update, index) => (
-                  <div key={update.id ?? index} className="ad-main-live-item">
-                    <div className="ad-main-live-time">
+                  <div key={update.id ?? index} className="main-live-item">
+                    <div className="main-live-time">
                       <Clock size={15} />
                       {update.time}
-                      {update.isBreaking  && <span className="ad-live-update-badge ad-live-update-badge--breaking">BREAKING</span>}
-                      {update.isHighlight && <span className="ad-live-update-badge ad-live-update-badge--highlight">HIGHLIGHT</span>}
+                      {update.isBreaking  && <span className="live-update-badge live-update-badge--breaking">BREAKING</span>}
+                      {update.isHighlight && <span className="live-update-badge live-update-badge--highlight">HIGHLIGHT</span>}
                     </div>
-                    <div className="ad-main-live-content">
-                      {update.title && <h4 className="ad-live-update-title">{update.title}</h4>}
+                    <div className="main-live-content">
+                      {update.title && <h4 className="live-update-title">{update.title}</h4>}
                       {update.text && update.text.replace(/<[^>]*>/g, "").trim() && (
-                        <div className="ad-live-update-text" dangerouslySetInnerHTML={{ __html: update.text }} />
+                        <div className="live-update-text" dangerouslySetInnerHTML={{ __html: update.text }} />
                       )}
                       {update.imageUrl && (
-                        <div className="ad-live-update-image-wrap">
+                        <div className="live-update-image-wrap">
                           <img src={update.imageUrl} alt={update.imageCaption ?? ""} />
                           {(update.imageCaption || update.imageCredit) && (
-                            <div className="ad-live-update-caption">
+                            <div className="live-update-caption">
                               {update.imageCaption}
                               {update.imageCredit && (
-                                <span className="ad-live-update-credit"><Camera size={18} /> {update.imageCredit}</span>
+                                <span className="live-update-credit"><Camera size={18} /> {update.imageCredit}</span>
                               )}
                             </div>
                           )}
@@ -960,7 +960,7 @@ if (platform === "whatsapp") {
                       )}
                       {update.poll && <PollBlock update={update} onVote={handlePollVote} />}
                       {update.sourceUrl && (
-                        <div className="ad-live-update-source">
+                        <div className="live-update-source">
                           Source:{" "}
                           <a href={update.sourceUrl} target="_blank" rel="noopener noreferrer">
                             {update.sourceLabel ?? update.sourceUrl}
@@ -968,8 +968,8 @@ if (platform === "whatsapp") {
                         </div>
                       )}
                       {update.tags && update.tags.length > 0 && (
-                        <div className="ad-live-update-tags">
-                          {update.tags.map((t) => <span key={t} className="ad-live-update-tag">#{t}</span>)}
+                        <div className="live-update-tags">
+                          {update.tags.map((t) => <span key={t} className="live-update-tag">#{t}</span>)}
                         </div>
                       )}
                     </div>
