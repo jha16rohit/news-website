@@ -1512,13 +1512,9 @@ export const addLiveUpdate = async (req: AuthRequest, res: Response) => {
       });
     }
 
-    const now = new Date();
+const now = new Date();
     const newUpdate: Record<string, unknown> = {
-     id: randomUUID(),
-      time: now.toLocaleTimeString("en-IN", {
-        hour: "2-digit",
-        minute: "2-digit",
-      }),
+      id: randomUUID(),
       timestamp: now.toISOString(),
       ...(text?.trim() && { text: text.trim() }),
       ...(title?.trim() && { title: title.trim() }),

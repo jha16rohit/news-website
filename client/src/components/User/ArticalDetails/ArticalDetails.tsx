@@ -28,6 +28,7 @@ import { trackRead, trackShare } from "../../../api/user/userauth";
 import { useAuth } from "../../../context/AuthContext";
 import { getApiBaseUrl } from "../../../utils/apiBase";
 import NotFound404 from "../Errors/NotFound404";
+import { formatLiveTime } from "../../../utils/timezone";
 // ─── Types ────────────────────────────────────────────────────────────────────
 type VoteType = "like" | "dislike" | null;
 
@@ -925,7 +926,7 @@ if (platform === "whatsapp") {
                   <div key={update.id ?? index} className="main-live-item">
                     <div className="main-live-time">
                       <Clock size={15} />
-                      {update.time}
+                      {update.timestamp ? formatLiveTime(update.timestamp) : update.time}
                       {update.isBreaking  && <span className="live-update-badge live-update-badge--breaking">BREAKING</span>}
                       {update.isHighlight && <span className="live-update-badge live-update-badge--highlight">HIGHLIGHT</span>}
                     </div>
@@ -1219,7 +1220,7 @@ if (platform === "whatsapp") {
               <div className="live-list">
                 {liveUpdates.slice(0, 4).map((update, index) => (
                   <div key={update.id ?? index} className="live-item" onClick={scrollToLive} style={{ cursor: "pointer" }}>
-                    <span className="live-time">{update.time}</span>
+                    <span className="live-time">{update.timestamp ? formatLiveTime(update.timestamp) : update.time}</span>
                     <p className="live-text">
                       {(update.title || update.text?.replace(/<[^>]*>/g, "") || update.poll?.question || "Live Update").slice(0, 55)}
                     </p>

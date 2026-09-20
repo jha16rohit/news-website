@@ -6,6 +6,7 @@ import "./LiveDetails.css";
 import { fetchNewsById } from "../../../api/news";
 import Preloader from "../../Admin/Preloader/Preloder";
 import NotFound404 from "../Errors/NotFound404";
+import { formatLiveTime } from "../../../utils/timezone";
 
 interface LiveUpdate {
   id: string;
@@ -191,7 +192,7 @@ const LiveDetail: React.FC = () => {
                     </div>
                     {/* The content */}
                     <div className="timeline-content">
-                      <span className="update-time">{update.time}</span>
+                      <span className="update-time">{update.timestamp ? formatLiveTime(update.timestamp) : update.time}</span>
                       {update.title && <h3 className="update-title">{update.title}</h3>}
                       {update.text && update.text.replace(/<[^>]*>/g, "").trim() && (
                         <p className="update-text" dangerouslySetInnerHTML={{ __html: update.text }} />

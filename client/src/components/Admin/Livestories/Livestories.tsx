@@ -12,6 +12,7 @@ import {
 } from "../../../api/news";
 import { FullPageContentPreloader } from "../Preloader/FullPageContentPreloader";
 import toast from "react-hot-toast";
+import { formatLiveTime, formatLiveDate, timeSince } from "../../../utils/timezone";
 // import { useNewsEvent, useNewsSubscription } from "../../../context/newscontext";
 
 
@@ -82,19 +83,6 @@ function restoreSelection(range: Range | null) {
 }
 
 // ─── helpers ──────────────────────────────────────────────────────────────────
-function timeSince(isoStr?: string | null): string {
-  if (!isoStr) return "—";
-  const diff = Date.now() - new Date(isoStr).getTime();
-  const mins = Math.floor(diff / 60000);
-  if (mins < 60) return `${mins} min ago`;
-  const hrs = Math.floor(mins / 60);
-  return `${hrs} hr${hrs !== 1 ? "s" : ""} ago`;
-}
-
-function formatDate(iso?: string | null): string {
-  if (!iso) return "—";
-  return new Date(iso).toLocaleDateString("en-IN", { dateStyle: "medium" });
-}
 
 function mapStory(n: any): LiveStory {
   let status: LiveStory["status"] = "live";
@@ -103,14 +91,14 @@ function mapStory(n: any): LiveStory {
   return {
     id:              n.id,
     title:           n.headline,
-articleCategory: n.categoryId?.name || "",
+    articleCategory: n.categoryId?.name || "",
     status,
     views:           String(n.views ?? 0),
     liveStartedAt:   n.publishedAt || null,
     endedAt:         n.statusType === "ended" ? (n.updatedAt || null) : null,
     liveUpdates:     (n.liveUpdates ?? []).map((u: any, i: number) => ({
       id:           u.id ?? (i + 1),
-      time:         u.time || new Date(u.timestamp || Date.now()).toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit" }),
+      time:         u.timestamp ? formatLiveTime(u.timestamp) : "—",
       text:         u.text,
       timestamp:    u.timestamp || new Date().toISOString(),
       title:        u.title,
@@ -126,7 +114,7 @@ articleCategory: n.categoryId?.name || "",
       tags:         u.tags,
     })),
     published: n.statusType === "ended"
-      ? formatDate(n.updatedAt || n.publishedAt)
+      ? formatLiveDate(n.updatedAt || n.publishedAt)
       : "Live",
     canChangeStatus: Boolean(n.canChangeStatus),
     canManage: Boolean(n.canManage),
@@ -893,7 +881,7 @@ const StoryDetailPanel: React.FC<StoryDetailPanelProps & {
                 {story.status === "live" && story.liveStartedAt && (
                   <span className="sdp-meta-item">
                     <IconClock size={12} />
-                    Started {new Date(story.liveStartedAt).toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit" })}
+                    Started {story.liveStartedAt ? formatLiveTime(story.liveStartedAt) : "—"}
                   </span>
                 )}
                 {story.status === "ended" && (
@@ -955,9 +943,9 @@ const StoryDetailPanel: React.FC<StoryDetailPanelProps & {
                       {/* Card header: time + badges + actions */}
                       <div className="sdp-update-card-header">
                         <div className="sdp-update-time-wrap">
-                          <span className="sdp-update-time">{update.time}</span>
+                          <span className="sdp-update-time">{update.timestamp ? formatLiveTime(update.timestamp) : update.time}</span>
                           <span className="sdp-update-date">
-                            {new Date(update.timestamp).toLocaleDateString("en-IN", { dateStyle: "medium" })}
+                            {update.timestamp ? formatLiveDate(update.timestamp) : "—"}
                           </span>
                           <div className="sdp-update-badges">
                             {update.isBreaking  && <span className="sdp-update-badge sdp-update-badge--breaking">BREAKING</span>}
@@ -1185,9 +1173,10 @@ const filteredEnded = filterStories(endedArticles);
 
     const now = new Date();
     // Optimistic local update so the UI feels instant
+    // Use shared formatter so optimistic time matches server-rendered time
     const optimistic: LiveUpdate = {
       id:        generateUpdateId(),
-      time:      now.toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit" }),
+      time:      formatLiveTime(now),
       text:      partialUpdate.text || "",
       timestamp: now.toISOString(),
       ...partialUpdate,
@@ -1324,7 +1313,7 @@ const filteredEnded = filterStories(endedArticles);
               status: "ended",
               statusType: "ended",
               endedAt: now.toISOString(),
-              published: formatDate(now.toISOString()),
+              published: formatLiveDate(now.toISOString()),
             }
           : s
       )
@@ -1491,9 +1480,7 @@ try {
                   <div className="ls-story-meta">
                     <span className="ls-meta-item">
                       <IconClock /> Started:{" "}
-                      {story.liveStartedAt
-                        ? new Date(story.liveStartedAt).toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit" })
-                        : "—"}
+                      {story.liveStartedAt ? formatLiveTime(story.liveStartedAt) : "—"}
                     </span>
                     <span className="ls-meta-item"><IconMsg /> {story.liveUpdates?.length ?? 0} updates</span>
                     <span className="ls-meta-item"><IconEye /> {story.views} views</span>
