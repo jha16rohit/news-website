@@ -1,10 +1,12 @@
 // src/api/admin/analytics.ts
 // All analytics API calls consumed by the admin dashboard
 
+import { API_BASE_URL } from "../utils/apiBase";
+
 // Use relative URLs so the Vite proxy forwards requests to localhost:5001
 // and session cookies are included correctly.
-const BASE        = "/api/admin/analytics";
-const PUBLIC_BASE = "/api/analytics";
+const BASE        = `${API_BASE_URL}/admin/analytics`;
+const PUBLIC_BASE = `${API_BASE_URL}/analytics`;
 
 // Use the JWT stored in this browser tab. This keeps Admin and Editor sessions
 // independent when both panels are open at the same time.
@@ -81,7 +83,7 @@ async function getLoggedInEmail(): Promise<string | null> {
   }
 
   try {
-    const res = await authFetch("/api/auth/me");
+    const res = await authFetch(`${API_BASE_URL}/auth/me`);
     if (!res.ok) { _cachedEmail = null; _emailFetched = true; return null; }
     const data = await res.json();
     // Support common response shapes: { email } or { user: { email } }
@@ -164,7 +166,7 @@ export function trackReadTime(newsId: string, viewId: string, seconds: number): 
 
 // ── Editor analytics ────────────────────────────────────────────────────────
 
-const EDITOR_BASE = "/api/analytics/editor";
+const EDITOR_BASE = `${API_BASE_URL}/analytics/editor`;
 
 async function getEditor(path: string, range?: number) {
   const q = range ? `?range=${range}` : "";

@@ -1,6 +1,8 @@
 // src/api/admin/notifications.ts
 
-const BASE = "/api/notifications";
+import { API_BASE_URL } from "../utils/apiBase";
+
+const BASE = `${API_BASE_URL}/notifications`;
 
 function getAuthHeaders(): Record<string, string> {
   const token = sessionStorage.getItem("auth-token");

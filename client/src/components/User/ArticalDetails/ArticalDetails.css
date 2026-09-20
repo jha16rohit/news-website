@@ -1,14 +1,14 @@
-/* ══════════════════════════════════════════════════════════════
+/* ============================================================
    PAGE LAYOUT (Dynamic Variables Applied)
-══════════════════════════════════════════════════════════════ */
-.ad-page-wrapper {
+============================================================ */
+.article-page-wrapper {
   background-color: #ffffff;
   padding: 0 0 60px;
   width: 100%;
-  font-family: var(--font-body); /* 👇 EXPERT FIX: Applied global body font */
+  font-family: var(--font-body);
 }
 
-.ad-container {
+.article-container {
   width: 95%;
   max-width: 1200px;
   margin: 0 auto;
@@ -18,15 +18,15 @@
   padding-top: 32px;
 }
 
-.ad-main-content {
+.article-main-content {
   flex: 1;
   min-width: 0;
 }
 
-/* ══════════════════════════════════════════════════════════════
+/* ============================================================
    BREAKING BANNER
-══════════════════════════════════════════════════════════════ */
-.ad-breaking-banner {
+============================================================ */
+.breaking-banner {
   display: flex;
   align-items: center;
   gap: 12px;
@@ -39,7 +39,7 @@
   overflow: hidden;
 }
 
-.ad-breaking-label {
+.breaking-label {
   flex-shrink: 0;
   background: #fff;
   color: #e60000;
@@ -50,16 +50,16 @@
   letter-spacing: 0.08em;
 }
 
-.ad-breaking-text {
+.breaking-text {
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
 }
 
-/* ══════════════════════════════════════════════════════════════
+/* ============================================================
    BREADCRUMB
-══════════════════════════════════════════════════════════════ */
-.ad-breadcrumb {
+============================================================ */
+.breadcrumb {
   display: flex;
   align-items: center;
   font-size: 12px;
@@ -69,16 +69,16 @@
   gap: 2px;
 }
 
-.ad-bc-link {
+.bc-link {
   color: #e60000;
   font-weight: 700;
   text-decoration: none;
 }
-.ad-bc-link:hover { text-decoration: underline; }
+.bc-link:hover { text-decoration: underline; }
 
-.ad-bc-sep { margin: 0 6px; color: #cbd5e1; }
+.bc-sep { margin: 0 6px; color: #cbd5e1; }
 
-.ad-bc-current {
+.bc-current {
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -86,10 +86,10 @@
   color: #64748b;
 }
 
-/* ══════════════════════════════════════════════════════════════
+/* ============================================================
    BADGES ROW
-══════════════════════════════════════════════════════════════ */
-.ad-badges-row {
+============================================================ */
+.badges-row {
   display: flex;
   align-items: center;
   gap: 8px;
@@ -97,7 +97,7 @@
   margin-bottom: 16px;
 }
 
-.ad-category-badge {
+.category-badge {
   display: inline-block;
   background-color: #e60000;
   color: #ffffff;
@@ -109,7 +109,7 @@
   text-transform: uppercase;
 }
 
-.ad-live-badge {
+.live-badge {
   display: inline-flex;
   align-items: center;
   gap: 5px;
@@ -123,15 +123,15 @@
   letter-spacing: 0.06em;
 }
 
-.ad-live-dot-sm {
+.live-dot-sm {
   width: 7px;
   height: 7px;
   background: #e60000;
   border-radius: 50%;
-  animation: ad-pulse 1.5s infinite;
+  animation: live-pulse 1.5s infinite;
 }
 
-.ad-breaking-badge {
+.breaking-badge {
   display: inline-flex;
   align-items: center;
   gap: 4px;
@@ -144,7 +144,7 @@
   letter-spacing: 0.06em;
 }
 
-.ad-lang-badge {
+.lang-badge {
   display: inline-block;
   background: #f1f5f9;
   color: #475569;
@@ -155,36 +155,35 @@
   font-weight: 600;
 }
 
-/* ══════════════════════════════════════════════════════════════
+/* ============================================================
    HEADLINE & SUBHEADLINE
-══════════════════════════════════════════════════════════════ */
-.ad-headline {
-  /* font-family: var(--font-heading);  */
-  font-family:  Noto Sans Devanagari; /* 👇 EXPERT FIX: Applied heading font */
+============================================================ */
+.article-headline {
+  font-family: Noto Sans Devanagari;
   font-size: 40px;
-  font-weight: 700; /* 👇 EXPERT FIX: Changed to 400 for Rozha One */
+  font-weight: 700;
   line-height: 1.3;
   color: #0f172a;
   margin: 0 0 16px 0;
   letter-spacing: -0.5px;
 }
 
-.ad-subheadline {
+.article-subheadline {
   font-size: 18px;
   font-weight: 500;
   line-height: 1.65;
-  font-family: Noto Sans Devanagari; 
+  font-family: Noto Sans Devanagari;
   color: #475569;
   margin: 0 0 24px 0;
   border-left: 4px solid #e60000;
   padding-left: 16px;
-   font-family:  Noto Sans Devanagari;
+  font-family: Noto Sans Devanagari;
 }
 
-/* ══════════════════════════════════════════════════════════════
+/* ============================================================
    META ROW
-══════════════════════════════════════════════════════════════ */
-.ad-meta-row {
+============================================================ */
+.meta-row {
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -195,7 +194,7 @@
   gap: 16px;
 }
 
-.ad-meta-left {
+.meta-left {
   display: flex;
   flex-wrap: wrap;
   gap: 16px;
@@ -203,20 +202,20 @@
   font-size: 13px;
 }
 
-.ad-meta-left span {
+.meta-left span {
   display: flex;
   align-items: center;
   gap: 5px;
 }
 
-.ad-meta-right {
+.meta-right {
   display: flex;
   align-items: center;
   gap: 8px;
   flex-shrink: 0;
 }
 
-.ad-share-label {
+.share-label {
   font-size: 13px;
   font-weight: 600;
   color: #334155;
@@ -225,7 +224,7 @@
   gap: 5px;
 }
 
-.ad-share-btn {
+.share-btn {
   width: 30px;
   height: 30px;
   border-radius: 50%;
@@ -237,31 +236,29 @@
   cursor: pointer;
   transition: opacity 0.2s, transform 0.15s;
 }
-.ad-share-btn:hover { opacity: 0.85; transform: scale(1.08); }
-.ad-share-btn.fb   { background-color: #1877F2; }
-.ad-share-btn.whatsapp {
-  background-color: #25D366;
-}
-.ad-share-btn.tw   { background-color: #000000; }
-.ad-share-btn.copy { background-color: #475569; }
+.share-btn:hover { opacity: 0.85; transform: scale(1.08); }
+.share-btn.fb   { background-color: #1877F2; }
+.share-btn.whatsapp { background-color: #25D366; }
+.share-btn.tw   { background-color: #000000; }
+.share-btn.copy { background-color: #475569; }
 
-/* ══════════════════════════════════════════════════════════════
+/* ============================================================
    HERO IMAGE
-══════════════════════════════════════════════════════════════ */
-.ad-hero-figure {
+============================================================ */
+.hero-figure {
   margin: 0 0 32px;
 }
 
-.ad-hero-image {
+.hero-image {
   width: 100%;
   height: auto;
-  aspect-ratio: 16/9; /* 👇 EXPERT FIX: Locks in a perfect cinematic rectangle */
-  object-fit: cover;  /* 👇 EXPERT FIX: Ensures the image NEVER squishes */
+  aspect-ratio: 16/9;
+  object-fit: cover;
   border-radius: 10px;
   display: block;
 }
 
-.ad-hero-caption {
+.hero-caption {
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -275,16 +272,16 @@
   gap: 12px;
 }
 
-.ad-photo-credit {
+.photo-credit {
   color: #94a3b8;
   font-size: 11px;
   white-space: nowrap;
 }
 
-/* ══════════════════════════════════════════════════════════════
+/* ============================================================
    TAGS (above content)
-══════════════════════════════════════════════════════════════ */
-.ad-tags-row {
+============================================================ */
+.tags-row {
   display: flex;
   align-items: center;
   gap: 8px;
@@ -293,7 +290,7 @@
   color: #94a3b8;
 }
 
-.ad-tag-chip {
+.tag-chip {
   text-decoration: none;
   background: #f1f5f9;
   color: #475569;
@@ -304,68 +301,68 @@
   font-weight: 600;
   transition: background 0.15s, color 0.15s;
 }
-.ad-tag-chip:hover { background: #e60000; color: #fff; border-color: #e60000; }
+.tag-chip:hover { background: #e60000; color: #fff; border-color: #e60000; }
 
-/* ══════════════════════════════════════════════════════════════
+/* ============================================================
    ARTICLE BODY
-══════════════════════════════════════════════════════════════ */
-.ad-article-body {
+============================================================ */
+.article-body {
   font-size: 17px;
   line-height: 1.65;
-  font-family: Noto Sans Devanagari; 
+  font-family: Noto Sans Devanagari;
   color: #334155;
   margin-bottom: 40px;
   width: 100%;
   max-width: 100%;
   box-sizing: border-box;
-  overflow-wrap: break-word; 
+  overflow-wrap: break-word;
   word-break: break-word;
 }
 
-/* 👇 EXPERT FIX: Strips out hidden inline styles (like white-space AND fixed widths) 
+/* Strips out hidden inline styles (like white-space AND fixed widths)
    often caused by copying/pasting from MS Word into the admin text editor */
-.ad-article-body p,
-.ad-article-body span,
-.ad-article-body div,
-.ad-article-body h1,
-.ad-article-body h2,
-.ad-article-body h3,
-.ad-article-body h4,
-.ad-article-body h5,
-.ad-article-body h6 {
-  white-space: normal !important; 
+.article-body p,
+.article-body span,
+.article-body div,
+.article-body h1,
+.article-body h2,
+.article-body h3,
+.article-body h4,
+.article-body h5,
+.article-body h6 {
+  white-space: normal !important;
   word-wrap: break-word !important;
   max-width: 100% !important;
-  width: auto !important; /* 👇 THE MAGIC FIX: Destroys hidden fixed widths from MS Word! */
+  width: auto !important;
   box-sizing: border-box !important;
 }
 
 /* Ensures images and videos inside the article scale cleanly on mobile */
-.ad-article-body img,
-.ad-article-body iframe,
-.ad-article-body video,
-.ad-article-body figure {
+.article-body img,
+.article-body iframe,
+.article-body video,
+.article-body figure {
   max-width: 100% !important;
   height: auto !important;
   box-sizing: border-box !important;
 }
 
-.ad-article-body p { margin-bottom: 22px; }
-.ad-article-body h1, .ad-article-body h2 {
-  font-family: var(--font-heading); 
-  font-weight: 400; 
+.article-body p { margin-bottom: 22px; }
+.article-body h1, .article-body h2 {
+  font-family: var(--font-heading);
+  font-weight: 400;
   color: #0f172a;
   margin: 36px 0 14px;
 }
-.ad-article-body h2 { font-size: 26px; }
-.ad-article-body h1 { font-size: 32px; }
-.ad-article-body ul, .ad-article-body ol { padding-left: 24px; margin-bottom: 22px; }
-.ad-article-body li { margin-bottom: 8px; }
-.ad-article-body strong { color: #0f172a; }
-.ad-article-body a { color: #e60000; text-underline-offset: 3px; }
-.ad-article-body blockquote {
-  font-family: var(--font-heading); 
-  font-weight: 400; 
+.article-body h2 { font-size: 26px; }
+.article-body h1 { font-size: 32px; }
+.article-body ul, .article-body ol { padding-left: 24px; margin-bottom: 22px; }
+.article-body li { margin-bottom: 8px; }
+.article-body strong { color: #0f172a; }
+.article-body a { color: #e60000; text-underline-offset: 3px; }
+.article-body blockquote {
+  font-family: var(--font-heading);
+  font-weight: 400;
   font-size: 22px;
   font-style: italic;
   color: #0f172a;
@@ -377,7 +374,7 @@
   border-radius: 0 8px 8px 0;
 }
 
-.ad-tag-pill {
+.tag-pill {
   text-decoration: none;
   background: #fff;
   color: #334155;
@@ -388,12 +385,12 @@
   font-weight: 500;
   transition: all 0.15s;
 }
-.ad-tag-pill:hover { background: #e60000; color: #fff; border-color: #e60000; }
+.tag-pill:hover { background: #e60000; color: #fff; border-color: #e60000; }
 
-/* ══════════════════════════════════════════════════════════════
+/* ============================================================
    SHARE STRIP
-══════════════════════════════════════════════════════════════ */
-.ad-share-strip {
+============================================================ */
+.share-strip {
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -408,13 +405,13 @@
   font-weight: 500;
 }
 
-.ad-share-strip-btns {
+.share-strip-btns {
   display: flex;
   gap: 10px;
   flex-wrap: wrap;
 }
 
-.ad-share-strip-btns button {
+.share-strip-btns button {
   display: flex;
   align-items: center;
   gap: 6px;
@@ -428,12 +425,12 @@
   cursor: pointer;
   transition: background 0.15s;
 }
-.ad-share-strip-btns button:hover { background: rgba(255,255,255,0.16); }
+.share-strip-btns button:hover { background: rgba(255,255,255,0.16); }
 
-/* ══════════════════════════════════════════════════════════════
+/* ============================================================
    MAIN LIVE TIMELINE
-══════════════════════════════════════════════════════════════ */
-.ad-main-live-section {
+============================================================ */
+.main-live-section {
   background: #fff;
   border: 1px solid #e2e8f0;
   border-radius: 12px;
@@ -442,7 +439,7 @@
   box-shadow: 0 4px 20px rgba(0,0,0,0.03);
 }
 
-.ad-main-live-header {
+.main-live-header {
   display: flex;
   align-items: center;
   gap: 12px;
@@ -451,25 +448,25 @@
   border-bottom: 1px solid #f1f5f9;
 }
 
-.ad-main-live-header h2 {
-  font-family: var(--font-heading); /* 👇 EXPERT FIX: Applied heading font */
-  font-size: 24px; /* Slightly bumped from 20px to accommodate Rozha's proportions */
-  font-weight: 400; /* 👇 EXPERT FIX: Changed to 400 */
+.main-live-header h2 {
+  font-family: var(--font-heading);
+  font-size: 24px;
+  font-weight: 400;
   color: #0f172a;
   margin: 0;
   letter-spacing: 0.5px;
 }
 
-.ad-main-live-dot {
+.main-live-dot {
   width: 13px;
   height: 13px;
   background-color: #e60000;
   border-radius: 50%;
-  animation: ad-pulse 2s infinite;
+  animation: live-pulse 2s infinite;
   flex-shrink: 0;
 }
 
-.ad-live-count-badge {
+.live-count-badge {
   margin-left: auto;
   font-size: 12px;
   font-weight: 700;
@@ -480,13 +477,13 @@
   border-radius: 20px;
 }
 
-@keyframes ad-pulse {
+@keyframes live-pulse {
   0%   { box-shadow: 0 0 0 0 rgba(230,0,0,0.5); }
   70%  { box-shadow: 0 0 0 7px rgba(230,0,0,0); }
   100% { box-shadow: 0 0 0 0 rgba(230,0,0,0); }
 }
 
-.ad-main-live-timeline {
+.main-live-timeline {
   position: relative;
   margin-left: 10px;
   padding-left: 30px;
@@ -496,11 +493,11 @@
   gap: 28px;
 }
 
-.ad-main-live-item {
+.main-live-item {
   position: relative;
 }
 
-.ad-main-live-item::before {
+.main-live-item::before {
   content: '';
   position: absolute;
   left: -38px;
@@ -515,7 +512,7 @@
   pointer-events: none;
 }
 
-.ad-main-live-time {
+.main-live-time {
   display: flex;
   align-items: center;
   gap: 7px;
@@ -525,37 +522,37 @@
   margin-bottom: 10px;
 }
 
-.ad-live-update-badge {
+.live-update-badge {
   font-size: 10px;
   font-weight: 700;
   padding: 2px 6px;
   border-radius: 3px;
   letter-spacing: 0.4px;
 }
-.ad-live-update-badge--breaking { background: #e60000; color: #fff; }
-.ad-live-update-badge--highlight { background: #f59e0b; color: #fff; }
+.live-update-badge--breaking { background: #e60000; color: #fff; }
+.live-update-badge--highlight { background: #f59e0b; color: #fff; }
 
-.ad-main-live-content {
+.main-live-content {
   display: flex;
   flex-direction: column;
   gap: 10px;
 }
 
-.ad-live-update-title {
+.live-update-title {
   font-size: 16px;
   font-weight: 700;
   color: #0f172a;
   margin: 0;
 }
 
-.ad-live-update-text {
+.live-update-text {
   font-size: 15px;
   color: #334155;
   line-height: 1.65;
   margin: 0;
 }
-.ad-live-update-text ul, .ad-live-update-text ol { padding-left: 18px; margin: 4px 0; }
-.ad-live-update-text blockquote {
+.live-update-text ul, .live-update-text ol { padding-left: 18px; margin: 4px 0; }
+.live-update-text blockquote {
   border-left: 3px solid #e60000;
   padding: 6px 12px;
   background: #fff5f5;
@@ -563,19 +560,19 @@
   font-style: italic;
   color: #475569;
 }
-.ad-live-update-text a { color: #e60000; }
+.live-update-text a { color: #e60000; }
 
-.ad-live-update-image-wrap {
+.live-update-image-wrap {
   border-radius: 8px;
   overflow: hidden;
 }
-.ad-live-update-image-wrap img {
+.live-update-image-wrap img {
   width: 100%;
   max-height: 260px;
   object-fit: fill;
   display: block;
 }
-.ad-live-update-caption {
+.live-update-caption {
   padding: 7px 10px;
   background: #f8fafc;
   font-size: 12px;
@@ -584,9 +581,9 @@
   justify-content: space-between;
   gap: 8px;
 }
-.ad-live-update-credit { color: #94a3b8; }
+.live-update-credit { color: #94a3b8; }
 
-.ad-live-update-tweet {
+.live-update-tweet {
   display: flex;
   align-items: center;
   gap: 8px;
@@ -596,18 +593,18 @@
   border-radius: 7px;
   font-size: 13px;
 }
-.ad-live-update-tweet a { color: #1a73e8; text-overflow: ellipsis; overflow: hidden; }
+.live-update-tweet a { color: #1a73e8; text-overflow: ellipsis; overflow: hidden; }
 
-.ad-live-update-source {
+.live-update-source {
   font-size: 12px;
   color: #64748b;
   border-top: 1px solid #f1f5f9;
   padding-top: 6px;
 }
-.ad-live-update-source a { color: #1a73e8; }
+.live-update-source a { color: #1a73e8; }
 
-.ad-live-update-tags { display: flex; flex-wrap: wrap; gap: 5px; }
-.ad-live-update-tag {
+.live-update-tags { display: flex; flex-wrap: wrap; gap: 5px; }
+.live-update-tag {
   font-size: 11px;
   padding: 2px 8px;
   background: #eef2ff;
@@ -616,10 +613,10 @@
   font-weight: 500;
 }
 
-/* ══════════════════════════════════════════════════════════════
+/* ============================================================
    POLL — FULLY REDESIGNED
-══════════════════════════════════════════════════════════════ */
-.ad-live-update-poll {
+============================================================ */
+.live-update-poll {
   display: flex;
   flex-direction: column;
   gap: 10px;
@@ -633,7 +630,7 @@
   overflow: visible;
 }
 
-.ad-live-poll-q {
+.live-poll-q {
   font-size: 14px;
   font-weight: 700;
   color: #0f172a;
@@ -641,7 +638,7 @@
   line-height: 1.4;
 }
 
-.ad-live-poll-btn {
+.live-poll-btn {
   display: block;
   width: 100%;
   text-align: left;
@@ -658,21 +655,21 @@
   box-sizing: border-box;
 }
 
-.ad-live-poll-btn:hover {
+.live-poll-btn:hover {
   border-color: #e60000;
   background: #fff5f5;
   color: #e60000;
   transform: translateX(3px);
 }
 
-.ad-live-poll-btn--active {
+.live-poll-btn--active {
   border-color: #e60000;
   background: #fff0f0;
   color: #e60000;
   font-weight: 600;
 }
 
-.ad-live-poll-option {
+.live-poll-option {
   display: flex;
   flex-direction: column;
   gap: 6px;
@@ -685,12 +682,12 @@
   transition: border-color 0.2s;
 }
 
-.ad-live-poll-option--selected {
+.live-poll-option--selected {
   border-color: #e60000;
   background: #fff8f8;
 }
 
-.ad-live-poll-option-top {
+.live-poll-option-top {
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -699,7 +696,7 @@
   z-index: 1;
 }
 
-.ad-live-poll-option-label {
+.live-poll-option-label {
   font-size: 13px;
   color: #334155;
   font-weight: 500;
@@ -710,12 +707,12 @@
   text-overflow: ellipsis;
 }
 
-.ad-live-poll-option--selected .ad-live-poll-option-label {
+.live-poll-option--selected .live-poll-option-label {
   color: #c00000;
   font-weight: 700;
 }
 
-.ad-live-poll-pct {
+.live-poll-pct {
   font-size: 13px;
   font-weight: 700;
   color: #64748b;
@@ -723,11 +720,11 @@
   flex-shrink: 0;
 }
 
-.ad-live-poll-option--selected .ad-live-poll-pct {
+.live-poll-option--selected .live-poll-pct {
   color: #e60000;
 }
 
-.ad-live-poll-bar-wrap {
+.live-poll-bar-wrap {
   width: 100%;
   background: #e2e8f0;
   border-radius: 6px;
@@ -737,7 +734,7 @@
   z-index: 1;
 }
 
-.ad-live-poll-bar {
+.live-poll-bar {
   height: 100%;
   background: linear-gradient(90deg, #e60000, #ff4444);
   border-radius: 6px;
@@ -745,11 +742,11 @@
   min-width: 4px;
 }
 
-.ad-live-poll-option--selected .ad-live-poll-bar {
+.live-poll-option--selected .live-poll-bar {
   background: linear-gradient(90deg, #c00000, #e60000);
 }
 
-.ad-live-poll-votes {
+.live-poll-votes {
   font-size: 11px;
   color: #94a3b8;
   font-weight: 500;
@@ -759,9 +756,9 @@
   gap: 4px;
 }
 
-/* ══════════════════════════════════════════════════════════════
+/* ============================================================
    SIDEBAR
-══════════════════════════════════════════════════════════════ */
+============================================================ */
 .article-sidebar {
   width: 320px;
   flex-shrink: 0;
@@ -776,7 +773,7 @@
   z-index: 10;
 }
 
-.ad-sidebar-widget {
+.sidebar-widget {
   background: #ffffff;
   border: 1px solid #e2e8f0;
   border-radius: 10px;
@@ -784,34 +781,9 @@
   box-shadow: 0 2px 12px rgba(0,0,0,0.04);
 }
 
-.ad-card-ad-widget {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 8px;
-  padding: 14px;
-}
+.live-updates-widget { border-top: 4px solid #e60000; }
 
-.ad-card-ad-label {
-  font-size: 10px;
-  font-weight: 700;
-  color: #94a3b8;
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
-  align-self: flex-start;
-}
-
-.ad-card-ad-image {
-  width: 100%;
-  max-width: 300px;
-  height: auto;
-  border-radius: 8px;
-  display: block;
-}
-
-.ad-live-widget { border-top: 4px solid #e60000; }
-
-.ad-widget-title {
+.widget-title {
   font-size: 15px;
   font-weight: 800;
   margin: 0;
@@ -820,30 +792,30 @@
   gap: 6px;
 }
 
-.ad-widget-divider {
+.widget-divider {
   height: 2px;
   width: 30px;
   background-color: #e60000;
   margin: 12px 0 16px;
 }
-.ad-live-widget .ad-widget-divider { display: none; }
+.live-updates-widget .widget-divider { display: none; }
 
-.ad-live-header {
+.live-header {
   display: flex;
   align-items: center;
   gap: 10px;
   margin-bottom: 16px;
 }
-.ad-live-dot {
+.live-dot {
   width: 10px;
   height: 10px;
   background-color: #e60000;
   border-radius: 50%;
-  animation: ad-pulse 2s infinite;
+  animation: live-pulse 2s infinite;
   flex-shrink: 0;
 }
 
-.ad-new-update-badge {
+.new-update-badge {
   margin-left: auto;
   font-size: 11px;
   font-weight: 700;
@@ -853,18 +825,18 @@
   border-radius: 20px;
 }
 
-.ad-live-list { display: flex; flex-direction: column; gap: 12px; }
-.ad-live-item {
+.live-list { display: flex; flex-direction: column; gap: 12px; }
+.live-item {
   display: flex;
   gap: 10px;
   padding-bottom: 12px;
   border-bottom: 1px solid #f1f5f9;
 }
-.ad-live-item:last-child { border-bottom: none; padding-bottom: 0; }
-.ad-live-time { font-size: 11px; font-weight: 700; color: #e60000; min-width: 58px; margin-top: 2px; }
-.ad-live-text { font-size: 12px; color: #334155; margin: 0; line-height: 1.5; font-weight: 500; }
+.live-item:last-child { border-bottom: none; padding-bottom: 0; }
+.live-time { font-size: 11px; font-weight: 700; color: #e60000; min-width: 58px; margin-top: 2px; }
+.live-text { font-size: 12px; color: #334155; margin: 0; line-height: 1.5; font-weight: 500; }
 
-.ad-live-view-all {
+.live-view-all {
   display: flex;
   align-items: center;
   justify-content: center;
@@ -881,24 +853,24 @@
   cursor: pointer;
   transition: background 0.15s;
 }
-.ad-live-view-all:hover { background: #ffe4e4; }
+.live-view-all:hover { background: #ffe4e4; }
 
-.ad-info-list { display: flex; flex-direction: column; gap: 10px; }
-.ad-info-row {
+.info-list { display: flex; flex-direction: column; gap: 10px; }
+.info-row {
   display: flex;
   align-items: center;
   gap: 8px;
   font-size: 13px;
   color: #475569;
 }
-.ad-info-row svg { color: #94a3b8; flex-shrink: 0; }
+.info-row svg { color: #94a3b8; flex-shrink: 0; }
 
-.ad-sidebar-tags {
+.tags-widget {
   display: flex;
   flex-wrap: wrap;
   gap: 6px;
 }
-.ad-sidebar-tag {
+.tag-item {
   text-decoration: none;
   background: #f1f5f9;
   color: #475569;
@@ -909,41 +881,41 @@
   font-weight: 600;
   transition: all 0.15s;
 }
-.ad-sidebar-tag:hover { background: #e60000; color: #fff; border-color: #e60000; }
+.tag-item:hover { background: #e60000; color: #fff; border-color: #e60000; }
 
-.ad-recent-list { display: flex; flex-direction: column; gap: 14px; }
-.ad-recent-item {
+.recent-news-list { display: flex; flex-direction: column; gap: 14px; }
+.recent-news-item {
   display: flex;
   gap: 10px;
   text-decoration: none;
   color: inherit;
   transition: opacity 0.15s;
 }
-.ad-recent-item:hover { opacity: 0.8; }
-.ad-recent-img {
+.recent-news-item:hover { opacity: 0.8; }
+.recent-news-img {
   width: 64px;
   height: 64px;
   object-fit: fill;
   border-radius: 6px;
   flex-shrink: 0;
 }
-.ad-recent-info {
+.recent-news-info {
   flex: 1;
   display: flex;
   flex-direction: column;
   gap: 3px;
 }
-.ad-recent-cat {
+.recent-news-category {
   font-size: 10px;
   font-weight: 700;
   color: #e60000;
   text-transform: uppercase;
   letter-spacing: 0.05em;
 }
-.ad-recent-title {
+.recent-news-title {
   font-size: 13px;
   font-weight: 600;
-  font-family: Noto Sans Devanagari; /* 👇 EXPERT FIX: Applied heading font */
+  font-family: Noto Sans Devanagari;
   color: #0f172a;
   line-height: 1.65;
   margin: 0;
@@ -952,8 +924,8 @@
   -webkit-box-orient: vertical;
   overflow: hidden;
 }
-.ad-recent-title:hover { color: #e60000; }
-.ad-recent-time {
+.recent-news-title:hover { color: #e60000; }
+.recent-news-time {
   display: flex;
   align-items: center;
   gap: 4px;
@@ -961,9 +933,9 @@
   color: #94a3b8;
 }
 
-.ad-info-widget { border-left: 3px solid #e2e8f0; }
+.info-widget { border-left: 3px solid #e2e8f0; }
 
-.ad-related-item {
+.related-news-item {
   display: flex;
   gap: 12px;
   margin-bottom: 14px;
@@ -971,34 +943,34 @@
   color: inherit;
   transition: opacity 0.15s;
 }
-.ad-related-item:hover { opacity: 0.8; }
-.ad-related-item:last-child { margin-bottom: 0; }
-.ad-related-item img {
+.related-news-item:hover { opacity: 0.8; }
+.related-news-item:last-child { margin-bottom: 0; }
+.related-news-item img {
   width: 68px;
   height: 68px;
   object-fit: fill;
   border-radius: 6px;
   flex-shrink: 0;
 }
-.ad-related-info h4 {
+.related-news-info h4 {
   font-size: 13px;
   margin: 0 0 5px;
   line-height: 1.65;
   color: #0f172a;
   font-weight: 600;
-  font-family: Noto Sans Devanagari; /* 👇 EXPERT FIX: Applied heading font */
+  font-family: Noto Sans Devanagari;
   display: -webkit-box;
   -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
   overflow: hidden;
 }
-.ad-related-info h4:hover { color: #e60000; }
-.ad-related-info span { font-size: 11px; color: #64748b; }
+.related-news-info h4:hover { color: #e60000; }
+.related-news-info span { font-size: 11px; color: #64748b; }
 
-/* ══════════════════════════════════════════════════════════════
+/* ============================================================
    SKELETON LOADER
-══════════════════════════════════════════════════════════════ */
-.ad-skeleton-wrapper {
+============================================================ */
+.skeleton-wrapper {
   max-width: 860px;
   margin: 40px auto;
   padding: 0 24px;
@@ -1007,39 +979,39 @@
   gap: 16px;
 }
 
-.ad-skeleton-hero,
-.ad-skeleton-title,
-.ad-skeleton-meta,
-.ad-skeleton-body {
+.skeleton-hero,
+.skeleton-title,
+.skeleton-meta,
+.skeleton-body {
   background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
   background-size: 200% 100%;
   animation: shimmer 1.4s infinite;
   border-radius: 8px;
 }
 
-.ad-skeleton-hero  { height: 380px; border-radius: 10px; }
-.ad-skeleton-title { height: 40px; width: 80%; }
-.ad-skeleton-meta  { height: 20px; width: 55%; }
-.ad-skeleton-body  { height: 18px; width: 100%; }
+.skeleton-hero  { height: 380px; border-radius: 10px; }
+.skeleton-title { height: 40px; width: 80%; }
+.skeleton-meta  { height: 20px; width: 55%; }
+.skeleton-body  { height: 18px; width: 100%; }
 
 @keyframes shimmer {
   0%   { background-position: 200% 0; }
   100% { background-position: -200% 0; }
 }
 
-/* ══════════════════════════════════════════════════════════════
+/* ============================================================
    ERROR STATE
-══════════════════════════════════════════════════════════════ */
-.ad-error-wrapper {
+============================================================ */
+.error-wrapper {
   text-align: center;
   padding: 80px 24px;
   max-width: 480px;
   margin: 0 auto;
 }
-.ad-error-icon { font-size: 56px; margin-bottom: 16px; }
-.ad-error-wrapper h2 { font-size: 24px; font-weight: 800; color: #0f172a; margin-bottom: 8px; }
-.ad-error-wrapper p { color: #64748b; margin-bottom: 24px; }
-.ad-error-btn {
+.error-icon { font-size: 56px; margin-bottom: 16px; }
+.error-wrapper h2 { font-size: 24px; font-weight: 800; color: #0f172a; margin-bottom: 8px; }
+.error-wrapper p { color: #64748b; margin-bottom: 24px; }
+.error-btn {
   background: #e60000;
   color: #fff;
   border: none;
@@ -1049,11 +1021,11 @@
   font-weight: 600;
   cursor: pointer;
 }
-.ad-error-btn:hover { background: #cc0000; }
+.error-btn:hover { background: #cc0000; }
 
-/* ══════════════════════════════════════════════════════════════
+/* ============================================================
    COMMENTS
-══════════════════════════════════════════════════════════════ */
+============================================================ */
 .cmt-input-box {
   background-color: #f8fafc;
   border-radius: 8px;
@@ -1068,7 +1040,7 @@
   border: none;
   background: transparent;
   resize: none;
-  font-family: var(--font-body); /* 👇 EXPERT FIX: Applied body font */
+  font-family: var(--font-body);
   font-size: 14px;
   color: #334155;
   outline: none;
@@ -1310,23 +1282,13 @@
 }
 .cmt-mention-btn:hover { background: #f8fafc; color: #e60000; }
 
-/* ══════════════════════════════════════════════════════════════
+/* ============================================================
    RESPONSIVE BREAKPOINTS (Bulletproof Tablet & Mobile)
-══════════════════════════════════════════════════════════════ */
-
-/* Base style for the sticky wrapper */
-.ad-sticky-widget {
-  position: sticky;
-  top: 120px;
-  z-index: 10;
-  display: flex;
-  flex-direction: column;
-  gap: 24px;
-}
+============================================================ */
 
 /* 1. Large Desktop - 1440px */
 @media (max-width: 1440px) {
-  .ad-container {
+  .article-container {
     max-width: 1100px;
     gap: 40px;
   }
@@ -1334,80 +1296,70 @@
 
 /* 2. Laptop & Tablet (Side-by-Side Grid) - 1024px to 641px */
 @media (max-width: 1024px) {
-  .ad-container { flex-direction: column; gap: 40px; align-items: stretch; }
+  .article-container { flex-direction: column; gap: 40px; align-items: stretch; }
   
-  .ad-main-content {
+  .article-main-content {
     width: 100%;
     max-width: 100%;
     box-sizing: border-box;
   }
 
-  /* 👇 EXPERT FIX: Changed to flex-column so all widgets stack full-width one below the other! */
   .article-sidebar {
     width: 100%;
     display: flex;
     flex-direction: column;
     gap: 24px;
     box-sizing: border-box;
-  }
-
-  /* 👇 EXPERT FIX: Stacked the sticky widget container as well */
-  .ad-sticky-widget {
     position: static;
-    display: flex;
-    flex-direction: column;
-    gap: 24px;
   }
   
-  .ad-sidebar-widget { width: 100%; box-sizing: border-box; }
-  .ad-headline { font-size: 34px; }
-  .ad-subheadline { font-size: 17px; }
+  .sidebar-widget { width: 100%; box-sizing: border-box; }
+  .article-headline { font-size: 34px; }
+  .article-subheadline { font-size: 17px; }
 }
 
 /* 3. ALL Mobile Phones (Single Column) - 640px and below */
 @media (max-width: 640px) {
-  .article-sidebar, 
-  .ad-sticky-widget { 
+  .article-sidebar { 
     display: flex !important;
     flex-direction: column !important;
     width: 100% !important;
     gap: 24px !important;
   }
 
-  .ad-container { 
+  .article-container { 
     width: 100%; 
     padding: 24px 16px 0 16px; 
     box-sizing: border-box; 
   }
 
-  .ad-headline { font-size: 26px; margin-bottom: 12px; }
-  .ad-subheadline { font-size: 15px; margin-bottom: 20px; }
+  .article-headline { font-size: 26px; margin-bottom: 12px; }
+  .article-subheadline { font-size: 15px; margin-bottom: 20px; }
   
-  .ad-meta-row { 
+  .meta-row { 
     flex-direction: column; 
     gap: 16px; 
     align-items: flex-start; 
   }
-  .ad-meta-right { align-self: flex-start; }
+  .meta-right { align-self: flex-start; }
   
-  /* 👇 EXPERT FIX: Prevents large text or images inside the article from breaking the layout */
-  .ad-article-body { 
+  .article-body { 
     font-size: 16px; 
     margin-bottom: 30px; 
     word-wrap: break-word; 
     overflow-wrap: break-word; 
   }
-  .ad-article-body img, .ad-article-body iframe { 
+  .article-body img, .article-body iframe { 
     max-width: 100%; 
     height: auto; 
   }
   
-  .ad-article-body h1 { font-size: 26px; margin: 28px 0 12px; }
-  .ad-article-body h2 { font-size: 22px; margin: 28px 0 12px; }
+  .article-body h1 { font-size: 26px; margin: 28px 0 12px; }
+  .article-body h2 { font-size: 22px; margin: 28px 0 12px; }
   
-  .ad-share-strip { flex-direction: column; align-items: flex-start; gap: 16px; }
+  .share-strip { flex-direction: column; align-items: flex-start; gap: 16px; }
   
-  .ad-main-live-section { 
+  .main-live-section { 
     padding: 24px 16px; 
     box-sizing: border-box; 
     width: 100%; 
@@ -1419,12 +1371,12 @@
 
 /* 4. Small Mobile - 375px & 320px */
 @media (max-width: 375px) {
-  .ad-headline { font-size: 24px; }
-  .ad-article-body h1 { font-size: 24px; }
-  .ad-article-body h2 { font-size: 20px; }
+  .article-headline { font-size: 24px; }
+  .article-body h1 { font-size: 24px; }
+  .article-body h2 { font-size: 20px; }
   
-  .ad-main-live-header h2 { font-size: 18px; }
-  .ad-live-time { font-size: 10px; min-width: 50px; }
+  .main-live-header h2 { font-size: 18px; }
+  .live-time { font-size: 10px; min-width: 50px; }
   
   .cmt-avatar { width: 32px; height: 32px; font-size: 12px; }
   .cmt-text { font-size: 13px; }

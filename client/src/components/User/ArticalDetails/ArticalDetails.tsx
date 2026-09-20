@@ -801,24 +801,24 @@ if (platform === "whatsapp") {
   // ── Loading / Error ───────────────────────────────────────────────────────
   if (loading) {
     return (
-      <div className="ad-skeleton-wrapper">
-        <div className="ad-skeleton-hero" />
-        <div className="ad-skeleton-title" />
-        <div className="ad-skeleton-meta" />
-        <div className="ad-skeleton-body" />
-        <div className="ad-skeleton-body" style={{ width: "80%" }} />
-        <div className="ad-skeleton-body" style={{ width: "60%" }} />
+      <div className="skeleton-wrapper">
+        <div className="skeleton-hero" />
+        <div className="skeleton-title" />
+        <div className="skeleton-meta" />
+        <div className="skeleton-body" />
+        <div className="skeleton-body" style={{ width: "80%" }} />
+        <div className="skeleton-body" style={{ width: "60%" }} />
       </div>
     );
   }
 
   if (error || !article) {
     return (
-      <div className="ad-error-wrapper">
-        <div className="ad-error-icon">📰</div>
+      <div className="error-wrapper">
+        <div className="error-icon">📰</div>
         <h2>Article Not Found</h2>
         <p>{error ?? "This article may have been removed or is unavailable."}</p>
-        <button className="ad-error-btn" onClick={() => navigate(-1)}>← Go Back</button>
+        <button className="error-btn" onClick={() => navigate(-1)}>← Go Back</button>
       </div>
     );
   }
@@ -1209,30 +1209,30 @@ if (platform === "whatsapp") {
         </main>
 
         {/* ── SIDEBAR ── */}
-        <aside className="article-sidebar ad-sticky-widget">
+        <aside className="article-sidebar">
 
           {/* LIVE UPDATES WIDGET */}
           {article.isLive && liveUpdates.length > 0 && (
-            <div className="ad-sidebar-widget ad-live-widget">
-              <div className="ad-live-header">
-                <span className="ad-live-dot" />
-                <h3 className="ad-widget-title">LIVE UPDATES</h3>
+            <div className="sidebar-widget live-updates-widget">
+              <div className="live-header">
+                <span className="live-dot" />
+                <h3 className="widget-title">LIVE UPDATES</h3>
                 {newUpdateCount > 0 && (
-                  <span className="ad-new-update-badge">{newUpdateCount} new</span>
+                  <span className="new-update-badge">{newUpdateCount} new</span>
                 )}
               </div>
-              <div className="ad-widget-divider" />
-              <div className="ad-live-list">
+              <div className="widget-divider" />
+              <div className="live-list">
                 {liveUpdates.slice(0, 4).map((update, index) => (
-                  <div key={update.id ?? index} className="ad-live-item" onClick={scrollToLive} style={{ cursor: "pointer" }}>
-                    <span className="ad-live-time">{update.time}</span>
-                    <p className="ad-live-text">
+                  <div key={update.id ?? index} className="live-item" onClick={scrollToLive} style={{ cursor: "pointer" }}>
+                    <span className="live-time">{update.time}</span>
+                    <p className="live-text">
                       {(update.title || update.text?.replace(/<[^>]*>/g, "") || update.poll?.question || "Live Update").slice(0, 55)}
                     </p>
                   </div>
                 ))}
               </div>
-              <button className="ad-live-view-all" onClick={scrollToLive}>
+              <button className="live-view-all" onClick={scrollToLive}>
                 View all updates <ArrowRight size={13} />
               </button>
             </div>
@@ -1240,24 +1240,24 @@ if (platform === "whatsapp") {
 
           {/* RECENT NEWS WIDGET */}
           {recentNews.length > 0 && (
-            <div className="ad-sidebar-widget">
-              <h3 className="ad-widget-title" style={{ color: "#0f172a" }}>Recent News</h3>
-              <div className="ad-widget-divider" />
-              <div className="ad-recent-list">
+            <div className="sidebar-widget">
+              <h3 className="widget-title" style={{ color: "#0f172a" }}>Recent News</h3>
+              <div className="widget-divider" />
+              <div className="recent-news-list">
                 {recentNews.slice(0, 5).map((item) => {
                   const itemId  = String(item._id ?? item.id ?? "");
                   const catName = typeof item.categoryId === "object"
                     ? item.categoryId?.name ?? "News"
                     : item.categoryName ?? "News";
                   return (
-                    <Link key={itemId} to={`/article/${itemId}`} className="ad-recent-item">
+                    <Link key={itemId} to={`/article/${itemId}`} className="recent-news-item">
                       {item.featuredImage && (
-                        <img src={item.featuredImage} alt={item.headline} className="ad-recent-img" />
+                        <img src={item.featuredImage} alt={item.headline} className="recent-news-img" />
                       )}
-                      <div className="ad-recent-info">
-                        <span className="ad-recent-cat">{catName}</span>
-                        <h4 className="ad-recent-title">{item.shortTitle ?? item.headline}</h4>
-                        <span className="ad-recent-time"><Clock size={11} /> {formatDate(item.publishedAt)}</span>
+                      <div className="recent-news-info">
+                        <span className="recent-news-category">{catName}</span>
+                        <h4 className="recent-news-title">{item.shortTitle ?? item.headline}</h4>
+                        <span className="recent-news-time"><Clock size={11} /> {formatDate(item.publishedAt)}</span>
                       </div>
                     </Link>
                   );
@@ -1267,21 +1267,18 @@ if (platform === "whatsapp") {
           )}
 
 
-          {/* ── SIDEBAR ── */}
-        {/* <aside className="ad-sidebar ad-abc"> */}
-
-          {/* ... (Keep your Live Updates, Recent News, and Advertisement code the same here) ... */}
+          
 
             
             {/* RELATED NEWS WIDGET */}
             {relatedNews.length > 0 && (
-              <div className="ad-sidebar-widget ">
-                <h3 className="ad-widget-title" style={{ color: "#0f172a" }}>Related News</h3>
-                <div className="ad-widget-divider" />
+              <div className="sidebar-widget">
+                <h3 className="widget-title" style={{ color: "#0f172a" }}>Related News</h3>
+                <div className="widget-divider" />
                 {relatedNews.map((item) => {
                   const itemId = String(item._id ?? item.id ?? "");
                   return (
-                    <Link key={itemId} to={`/article/${itemId}`} className="ad-related-item">
+                    <Link key={itemId} to={`/article/${itemId}`} className="related-news-item">
                       {item.featuredImage && (
                         <img
                           src={item.featuredImage}
@@ -1289,7 +1286,7 @@ if (platform === "whatsapp") {
                           onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }}
                         />
                       )}
-                      <div className="ad-related-info">
+                      <div className="related-news-info">
                         <h4>{item.shortTitle ?? item.headline}</h4>
                         <span>{formatDate(item.publishedAt)}</span>
                       </div>
@@ -1301,14 +1298,14 @@ if (platform === "whatsapp") {
 
             {/* TAGS WIDGET */}
             {article.tags.length > 0 && (
-              <div className="ad-sidebar-widget">
-                <h3 className="ad-widget-title" style={{ color: "#0f172a" }}>
+              <div className="sidebar-widget">
+                <h3 className="widget-title" style={{ color: "#0f172a" }}>
                   <Tag size={14} style={{ display: "inline", marginRight: 6 }} />Tags
                 </h3>
-                <div className="ad-widget-divider" />
-                <div className="ad-sidebar-tags">
+                <div className="widget-divider" />
+                <div className="tags-widget">
                   {article.tags.map((tag) => (
-                    <Link key={tag} to={`/tag/${tag.toLowerCase().replace(/\s+/g, "-")}`} className="ad-sidebar-tag">
+                    <Link key={tag} to={`/tag/${tag.toLowerCase().replace(/\s+/g, "-")}`} className="tag-item">
                       #{tag}
                     </Link>
                   ))}
@@ -1319,10 +1316,6 @@ if (platform === "whatsapp") {
   adData={ads.cards[0] ?? null}
   variant="card"
 />
-          {/* 👆 END OF STICKY WRAPPER 👆 */}
-
-        {/* </aside> */}
-          
         </aside>
       </div>
     </div>
