@@ -442,26 +442,26 @@ export const getCategoryNews = async (
       },
 
       status: "PUBLISHED",
-    }).sort({
-      createdAt: -1,
-    });
+    })
+      .sort({ createdAt: -1 })
+      .lean();
 
-    const news = await Promise.all(
-      rawNews.map(async (item) => {
-
-        const newsCategory =
-          await Category.findById(
-            item.categoryId
-          );
-
-        return {
-          ...item.toObject(),
-
-          categoryName:
-            newsCategory?.name || "News",
-        };
-      })
+    // Enrich category in batch (all should be from allowedCategoryIds, but defensive)
+    const categoryIds = [
+      ...new Set(rawNews.map((n: any) => n.categoryId).filter(Boolean)),
+    ];
+    const categories = await Category.find({ _id: { $in: categoryIds } })
+      .select("_id name color")
+      .lean();
+    const catMap = Object.fromEntries(
+      (categories as any[]).map((c: any) => [String(c._id), c]),
     );
+
+    const news = rawNews.map((n: any) => ({
+      ...n,
+      id: String(n._id),
+      categoryId: catMap[n.categoryId] ?? null,
+    }));
 
     // Send response
     res.json({

@@ -1,45 +1,48 @@
 import React, { useState, useRef, useEffect } from "react";
-import {
-  UploadCloud, Trash2, ChevronLeft, ChevronRight,
-  CheckCircle, AlertCircle, Loader2,
-} from "lucide-react";
+import { UploadCloud, Trash2, CheckCircle, AlertCircle, Loader2, Image as ImageIcon, Monitor, Smartphone } from "lucide-react";
 import "./FooterManagement.css";
 import {
   fetchFooterSettings,
   saveFooterSettings,
   uploadFooterImageToSupabase,
   deleteFooterImageFromDB,
-} from "../../../api/footer"; // ← adjust path if needed
+} from "../../../api/footer";
 import type { FooterImage } from "../../../api/footer";
 import { FullPageContentPreloader } from "../Preloader/FullPageContentPreloader";
 
-// ─── Component ────────────────────────────────────────────────────────────────
-const FooterManagement: React.FC = () => {
+const DEFAULT_DESKTOP_OPACITY = 0.82;
+const DEFAULT_MOBILE_OPACITY = 0.90;
 
-  const [sectionTitle,    setSectionTitle]    = useState("STAY UPDATED");
+const FooterManagement: React.FC = () => {
+  const [sectionTitle, setSectionTitle] = useState("STAY UPDATED");
   const [descriptionText, setDescriptionText] = useState("Get the latest headlines and in-depth stories delivered to your inbox.");
-  const [trustedText,     setTrustedText]     = useState("Your trusted source for real-time news and in-depth stories from India and around the world.");
-  const [images,          setImages]          = useState<FooterImage[]>([]);
-  const [uploadingIds,    setUploadingIds]    = useState<Set<string>>(new Set());
-  const [deletingIds,     setDeletingIds]     = useState<Set<string>>(new Set());
-  const [loading,         setLoading]         = useState(true);
-  const [saving,          setSaving]          = useState(false);
+  const [trustedText, setTrustedText] = useState("Your trusted source for real-time news and in-depth stories from India and around the world.");
+  const [image, setImage] = useState<FooterImage | null>(null);
+  const [desktopOverlayOpacity, setDesktopOverlayOpacity] = useState(DEFAULT_DESKTOP_OPACITY);
+  const [mobileOverlayOpacity, setMobileOverlayOpacity] = useState(DEFAULT_MOBILE_OPACITY);
+  const [previewMode, setPreviewMode] = useState<"desktop" | "mobile">("desktop");
+  const [uploading, setUploading] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
   const [toast, setToast] = useState<{ visible: boolean; message: string; type: "success" | "error" }>({
     visible: false, message: "", type: "success",
   });
 
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const scrollRef    = useRef<HTMLDivElement>(null);
+  const toastTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  // ── Load from DB ─────────────────────────────────────────────────────────────
   useEffect(() => {
     const load = async () => {
       try {
         const data = await fetchFooterSettings();
-        setSectionTitle(data.sectionTitle    ?? "STAY UPDATED");
+        setSectionTitle(data.sectionTitle ?? "STAY UPDATED");
         setDescriptionText(data.descriptionText ?? "");
-        setTrustedText(data.trustedText     ?? "");
-        setImages(Array.isArray(data.images) ? (data.images as FooterImage[]) : []);
+        setTrustedText(data.trustedText ?? "");
+        setDesktopOverlayOpacity(data.desktopOverlayOpacity ?? DEFAULT_DESKTOP_OPACITY);
+        setMobileOverlayOpacity(data.mobileOverlayOpacity ?? DEFAULT_MOBILE_OPACITY);
+        const activeImg = Array.isArray(data.images) ? data.images.find((img) => img.isActive) : null;
+        setImage(activeImg ?? null);
       } catch (err) {
         console.error("Failed to load footer settings:", err);
         showToast("Could not load saved settings.", "error");
@@ -51,108 +54,104 @@ const FooterManagement: React.FC = () => {
   }, []);
 
   const showToast = (message: string, type: "success" | "error" = "success") => {
+    if (toastTimeoutRef.current) {
+      clearTimeout(toastTimeoutRef.current);
+    }
     setToast({ visible: true, message, type });
-    setTimeout(() => setToast((prev) => ({ ...prev, visible: false })), 3500);
+    toastTimeoutRef.current = setTimeout(() => setToast((prev) => ({ ...prev, visible: false })), 4000);
   };
 
-  // ── Open file picker ──────────────────────────────────────────────────────────
-  const handleChooseFiles = (e: React.MouseEvent) => {
+  useEffect(() => {
+    return () => {
+      if (toastTimeoutRef.current) {
+        clearTimeout(toastTimeoutRef.current);
+      }
+    };
+  }, []);
+
+  const handleChooseFile = (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
-    console.log("Opening file picker...");
     fileInputRef.current?.click();
   };
 
-  // ── Handle file selection ─────────────────────────────────────────────────────
   const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    console.log("handleImageUpload fired", e.target.files);
-    const files = e.target.files;
-    if (!files || files.length === 0) {
-      console.log("No files selected");
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    e.target.value = "";
+
+    if (!["image/jpeg", "image/jpg", "image/png", "image/webp"].includes(file.type)) {
+      showToast("Invalid file type. Allowed: JPEG, PNG, WebP.", "error");
       return;
     }
 
-    // Reset input so same file can be selected again
-    const fileList = Array.from(files);
-    e.target.value = "";
+    if (file.size > 50 * 1024 * 1024) {
+      showToast("File size exceeds 50 MB limit.", "error");
+      return;
+    }
 
-    for (const file of fileList) {
-      console.log("Uploading file:", file.name, file.size, file.type);
+    setUploading(true);
 
-      const tempId = `temp-${Date.now()}-${Math.random()}`;
+    const placeholder: FooterImage = {
+      id: `temp-${Date.now()}`,
+      url: URL.createObjectURL(file),
+      name: file.name,
+      resolution: "1920 x 1080",
+      isActive: true,
+    };
+    setImage(placeholder);
 
-      // Show placeholder immediately
-      const placeholder: FooterImage = {
-        id:         tempId,
-        url:        URL.createObjectURL(file),
-        name:       file.name,
-        resolution: "1920 x 1080",
-        isActive:   false,
-      };
+    try {
+      const supabaseUrl = await uploadFooterImageToSupabase(file);
 
-      setImages((prev) => [...prev, placeholder]);
-      setUploadingIds((prev) => new Set(prev).add(tempId));
-
-      try {
-        console.log("Calling uploadFooterImageToSupabase...");
-        const supabaseUrl = await uploadFooterImageToSupabase(file);
-        console.log("Upload success, URL:", supabaseUrl);
-
-        setImages((prev) =>
-          prev.map((img) =>
-            img.id === tempId
-              ? { ...img, id: `uploaded-${Date.now()}`, url: supabaseUrl }
-              : img
-          )
-        );
-        showToast(`"${file.name}" uploaded successfully.`, "success");
-      } catch (err: any) {
-        console.error("Upload failed:", err);
-        setImages((prev) => prev.filter((img) => img.id !== tempId));
-        showToast(err?.message || `Failed to upload "${file.name}".`, "error");
-      } finally {
-        setUploadingIds((prev) => {
-          const next = new Set(prev);
-          next.delete(tempId);
-          return next;
-        });
-      }
+      setImage({
+        ...placeholder,
+        id: `uploaded-${Date.now()}`,
+        url: supabaseUrl,
+      });
+      showToast(`"${file.name}" uploaded successfully.`, "success");
+    } catch (err: any) {
+      console.error("Upload failed:", err);
+      setImage(null);
+      showToast(err?.message || `Failed to upload "${file.name}".`, "error");
+    } finally {
+      setUploading(false);
     }
   };
 
-  // ── Delete image ──────────────────────────────────────────────────────────────
-  const handleDeleteImage = async (img: FooterImage) => {
-    const isSupabaseUrl = img.url.includes("supabase.co") && img.url.includes("footer-images");
-    setDeletingIds((prev) => new Set(prev).add(img.id));
+  const handleDeleteImage = async () => {
+    if (!image) return;
+
+    const isSupabaseUrl = image.url.includes("supabase.co") && image.url.includes("footer-images");
+    setDeleting(true);
+
     try {
-      if (isSupabaseUrl) await deleteFooterImageFromDB(img.url);
-      setImages((prev) => prev.filter((i) => i.id !== img.id));
+      if (isSupabaseUrl) await deleteFooterImageFromDB(image.url);
+      setImage(null);
+      showToast("Background image removed.", "success");
     } catch (err: any) {
       showToast(err?.message || "Failed to delete image.", "error");
     } finally {
-      setDeletingIds((prev) => { const n = new Set(prev); n.delete(img.id); return n; });
+      setDeleting(false);
     }
   };
 
-  const handleToggleActive = (id: string) => {
-    setImages((prev) =>
-      prev.map((img) => ({ ...img, isActive: img.id === id ? !img.isActive : false }))
-    );
-  };
-
-  const handleNameChange = (id: string, newName: string) => {
-    setImages((prev) => prev.map((img) => (img.id === id ? { ...img, name: newName } : img)));
-  };
-
-  // ── Save ──────────────────────────────────────────────────────────────────────
   const handleSave = async () => {
-    if (uploadingIds.size > 0) {
-      showToast("Please wait for all images to finish uploading.", "error");
+    if (uploading || deleting) {
+      showToast("Please wait for upload/delete to finish.", "error");
       return;
     }
     setSaving(true);
     try {
-      await saveFooterSettings({ sectionTitle, descriptionText, trustedText, images });
+      await saveFooterSettings({
+        sectionTitle,
+        descriptionText,
+        trustedText,
+        images: image ? [image] : [],
+        desktopOverlayOpacity,
+        mobileOverlayOpacity,
+      });
       window.dispatchEvent(new Event("localNewzFooterUpdate"));
       showToast("Footer settings saved successfully!", "success");
     } catch (error: any) {
@@ -162,15 +161,17 @@ const FooterManagement: React.FC = () => {
     }
   };
 
-  // ── Cancel ────────────────────────────────────────────────────────────────────
   const handleCancel = async () => {
     setLoading(true);
     try {
       const data = await fetchFooterSettings();
-      setSectionTitle(data.sectionTitle    ?? "STAY UPDATED");
+      setSectionTitle(data.sectionTitle ?? "STAY UPDATED");
       setDescriptionText(data.descriptionText ?? "");
-      setTrustedText(data.trustedText     ?? "");
-      setImages(Array.isArray(data.images) ? (data.images as FooterImage[]) : []);
+      setTrustedText(data.trustedText ?? "");
+      setDesktopOverlayOpacity(data.desktopOverlayOpacity ?? DEFAULT_DESKTOP_OPACITY);
+      setMobileOverlayOpacity(data.mobileOverlayOpacity ?? DEFAULT_MOBILE_OPACITY);
+      const activeImg = Array.isArray(data.images) ? data.images.find((img) => img.isActive) : null;
+      setImage(activeImg ?? null);
       showToast("Changes discarded.", "success");
     } catch {
       showToast("Could not reload settings.", "error");
@@ -179,205 +180,315 @@ const FooterManagement: React.FC = () => {
     }
   };
 
-  const scrollGallery = (direction: "left" | "right") => {
-    scrollRef.current?.scrollBy({ left: direction === "left" ? -300 : 300, behavior: "smooth" });
+  const handleDesktopOpacityChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = Number(e.target.value) / 100;
+    setDesktopOverlayOpacity(value);
   };
 
-  // const activeImage = images.find((img) => img.isActive);
+  const handleMobileOpacityChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = Number(e.target.value) / 100;
+    setMobileOverlayOpacity(value);
+  };
+
+ 
+
+  const getPreviewOverlayOpacity = () => {
+    return previewMode === "desktop" ? desktopOverlayOpacity : mobileOverlayOpacity;
+  };
+
   if (loading) {
     return <FullPageContentPreloader message="Loading footer settings..." />;
   }
 
-  return (
-    <div className="fm-page">
-      <div className={`fm-toast ${toast.type}`}>
-        {toast.type === "success" ? <CheckCircle size={20} /> : <AlertCircle size={20} />}
-        <span>{toast.message}</span>
-      </div>
 
-      <div className="fm-header">
+  const previewOpacity = getPreviewOverlayOpacity();
+
+  return (
+    <div className="lnz-fm">
+      {toast.visible && (
+        <div className={`lnz-fm__toast ${toast.type}`}>
+          {toast.type === "success" ? <CheckCircle size={20} /> : <AlertCircle size={20} />}
+          <span>{toast.message}</span>
+        </div>
+      )}
+
+      <div className="lnz-fm__header">
         <h2>Footer Management</h2>
       </div>
 
-      <div className="fm-content">
+      <div className="lnz-fm__content">
+        <div className="lnz-fm__card lnz-fm__card--inputs">
+          <h3 className="lnz-fm__card-title">Stay Updated Section</h3>
+          <div className="lnz-fm__form-group">
+            <label>Section Title</label>
+            <input type="text" value={sectionTitle} onChange={(e) => setSectionTitle(e.target.value)} className="lnz-fm__input" />
+          </div>
+          <div className="lnz-fm__form-group">
+            <label>Description Text</label>
+            <textarea value={descriptionText} onChange={(e) => setDescriptionText(e.target.value)} className="lnz-fm__textarea" />
+          </div>
+          <div className="lnz-fm__form-group">
+            <label>Trusted Source Text</label>
+            <textarea value={trustedText} onChange={(e) => setTrustedText(e.target.value)} className="lnz-fm__textarea" />
+          </div>
+        </div>
 
-          <div className="fm-top-row">
-            <div className="fm-card fm-inputs-card">
-              <h3 className="fm-card-title">Stay Updated Section</h3>
-              <div className="fm-form-group">
-                <label>Section Title</label>
-                <input type="text" value={sectionTitle} onChange={(e) => setSectionTitle(e.target.value)} className="fm-input" />
+        <div className="lnz-fm__card lnz-fm__card--image">
+          <h3 className="lnz-fm__card-title">Footer Background Image</h3>
+
+          <div className="lnz-fm__upload">
+            {image ? (
+              <div className="lnz-fm__preview">
+                <div className="lnz-fm__preview-img-wrapper" style={uploading || deleting ? { opacity: 0.7 } : {}}>
+                  <img src={image.url} alt={image.name} />
+                  {uploading && (
+                    <div className="lnz-fm__overlay">
+                      <Loader2 size={28} className="lnz-fm__spin" />
+                      <span>Uploading…</span>
+                    </div>
+                  )}
+                  {deleting && (
+                    <div className="lnz-fm__overlay">
+                      <Loader2 size={28} className="lnz-fm__spin" />
+                      <span>Deleting…</span>
+                    </div>
+                  )}
+                </div>
+                <div className="lnz-fm__preview-info">
+                  <div className="lnz-fm__preview-name">{image.name}</div>
+                  <div className="lnz-fm__preview-resolution">{image.resolution}</div>
+                </div>
+                <div className="lnz-fm__preview-actions">
+                  <button
+                    type="button"
+                    className="lnz-fm__btn lnz-fm__btn--replace"
+                    onClick={handleChooseFile}
+                    disabled={uploading || deleting}
+                  >
+                    <UploadCloud size={16} style={{ marginRight: 6 }} />
+                    Replace Image
+                  </button>
+                  <button
+                    type="button"
+                    className="lnz-fm__btn lnz-fm__btn--delete"
+                    onClick={handleDeleteImage}
+                    disabled={uploading || deleting}
+                  >
+                    <Trash2 size={16} style={{ marginRight: 6 }} />
+                    Remove Image
+                  </button>
+                </div>
               </div>
-              <div className="fm-form-group">
-                <label>Description Text</label>
-                <textarea value={descriptionText} onChange={(e) => setDescriptionText(e.target.value)} className="fm-textarea" />
+            ) : (
+              <div className="lnz-fm__upload-box">
+                <ImageIcon size={48} className="lnz-fm__upload-icon" />
+                <p className="lnz-fm__upload-text">Upload Footer Background Image</p>
+                <p className="lnz-fm__upload-subtext">Recommended: 1920 × 700 or 1920 × 1080 · JPG, PNG, WebP · Max 50 MB</p>
+                <button
+                  type="button"
+                  className="lnz-fm__btn lnz-fm__btn--upload"
+                  onClick={handleChooseFile}
+                  disabled={uploading}
+                >
+                  Choose File
+                </button>
               </div>
-              <div className="fm-form-group">
-                <label>Trusted Source Text</label>
-                <textarea value={trustedText} onChange={(e) => setTrustedText(e.target.value)} className="fm-textarea" />
+            )}
+
+            <input
+              type="file"
+              ref={fileInputRef}
+              onChange={handleImageUpload}
+              accept="image/jpeg,image/jpg,image/png,image/webp"
+              style={{ display: "none" }}
+            />
+          </div>
+
+          <p className="lnz-fm__hint">
+            The uploaded image becomes the footer background. If no image is set, a solid dark background is used.
+          </p>
+        </div>
+
+        <div className="lnz-fm__card lnz-fm__card--overlay">
+          <h3 className="lnz-fm__card-title">Background Overlay</h3>
+
+          <div className="lnz-fm__overlay-controls">
+            <div className="lnz-fm__overlay-group">
+              <div className="lnz-fm__overlay-header">
+                <label htmlFor="desktop-overlay" className="lnz-fm__overlay-label">
+                  <Monitor size={18} style={{ marginRight: 8, verticalAlign: "middle" }} />
+                  Desktop Overlay
+                </label>
+                <span className="lnz-fm__overlay-value" aria-live="polite">{Math.round(desktopOverlayOpacity * 100)}%</span>
+              </div>
+              <div className="lnz-fm__slider-wrapper">
+                <input
+                  id="desktop-overlay"
+                  type="range"
+                  min="0"
+                  max="100"
+                  step="1"
+                  value={Math.round(desktopOverlayOpacity * 100)}
+                  onChange={handleDesktopOpacityChange}
+                  className="lnz-fm__slider"
+                  aria-label="Desktop footer overlay opacity"
+                />
+                <div className="lnz-fm__slider-labels">
+                  <span>Light</span>
+                  <span>Dark</span>
+                </div>
               </div>
             </div>
 
-            {/* <div className="fm-card fm-preview-card">
-              <h3 className="fm-card-title">Preview</h3>
-              <div
-                className="fm-preview-window"
-                style={{
-                  backgroundImage: activeImage ? `url(${activeImage.url})` : "none",
-                  backgroundColor: activeImage ? "transparent" : "#101e36",
-                }}
-              >
-                <div className="fm-preview-overlay">
-                  <div className="fm-preview-banner">
-                    <div className="fm-preview-left">
-                      <div className="fm-preview-title-wrap">
-                        <span className="fm-red-dot"></span>
-                        <span className="fm-preview-title">{sectionTitle}</span>
+            <div className="lnz-fm__overlay-group">
+              <div className="lnz-fm__overlay-header">
+                <label htmlFor="mobile-overlay" className="lnz-fm__overlay-label">
+                  <Smartphone size={18} style={{ marginRight: 8, verticalAlign: "middle" }} />
+                  Mobile Overlay
+                </label>
+                <span className="lnz-fm__overlay-value" aria-live="polite">{Math.round(mobileOverlayOpacity * 100)}%</span>
+              </div>
+              <div className="lnz-fm__slider-wrapper">
+                <input
+                  id="mobile-overlay"
+                  type="range"
+                  min="0"
+                  max="100"
+                  step="1"
+                  value={Math.round(mobileOverlayOpacity * 100)}
+                  onChange={handleMobileOpacityChange}
+                  className="lnz-fm__slider"
+                  aria-label="Mobile footer overlay opacity"
+                />
+                <div className="lnz-fm__slider-labels">
+                  <span>Light</span>
+                  <span>Dark</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div className="lnz-fm__card lnz-fm__card--preview">
+          <h3 className="lnz-fm__card-title">Live Preview</h3>
+
+          <div className="lnz-fm__preview-mode-toggle" role="tablist" aria-label="Preview mode">
+            <button
+              type="button"
+              role="tab"
+              aria-selected={previewMode === "desktop"}
+              className={`lnz-fm__preview-tab ${previewMode === "desktop" ? "lnz-fm__preview-tab--active" : ""}`}
+              onClick={() => setPreviewMode("desktop")}
+            >
+              <Monitor size={16} style={{ marginRight: 6 }} />
+              Desktop
+            </button>
+            <button
+              type="button"
+              role="tab"
+              aria-selected={previewMode === "mobile"}
+              className={`lnz-fm__preview-tab ${previewMode === "mobile" ? "lnz-fm__preview-tab--active" : ""}`}
+              onClick={() => setPreviewMode("mobile")}
+            >
+              <Smartphone size={16} style={{ marginRight: 6 }} />
+              Mobile
+            </button>
+          </div>
+
+<div
+  className="lnz-fm__preview-container"
+  style={
+    {
+      "--preview-overlay-opacity": previewOpacity,
+    } as React.CSSProperties
+  }
+>            <div className={`lnz-fm__preview-footer ${previewMode === "mobile" ? "lnz-fm__preview-footer--mobile" : ""}`}>
+              <div className="lnz-fm__preview-overlay">
+                <div className="lnz-fm__preview-content">
+                  <div className="lnz-fm__preview-main">
+                    <div className="lnz-fm__preview-brand">
+                      <h4 className="lnz-fm__preview-brand-title">LOCAL NEWZ</h4>
+                      <div className="lnz-fm__preview-brand-content">
+                        <div className="lnz-fm__preview-logo">
+                          <svg width="120" height="40" viewBox="0 0 120 40" fill="none" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Local Newz Logo">
+                            <rect width="120" height="40" fill="#e60000" rx="4"/>
+                            <text x="60" y="28" text-anchor="middle" fill="white" font-family="system-ui, sans-serif" font-weight="700" font-size="16">LN</text>
+                          </svg>
+                        </div>
+                        <p className="lnz-fm__preview-trusted-text">Your trusted source for accurate and timely news coverage around the clock.</p>
                       </div>
-                      <div className="fm-preview-divider"></div>
-                      <span className="fm-preview-desc">{descriptionText}</span>
                     </div>
-                    <div className="fm-preview-right">
-                      <div className="fm-preview-input-group">
-                        <input type="text" placeholder="Enter your email" disabled />
-                        <span className="fm-mail-icon">✉</span>
-                      </div>
-                      <button className="fm-preview-btn">Subscribe</button>
+
+                    <div className="lnz-fm__preview-column">
+                      <h5 className="lnz-fm__preview-heading">CATEGORIES</h5>
+                      <ul className="lnz-fm__preview-links">
+                        <li><span className="lnz-fm__preview-arrow">→</span> होम</li>
+                        <li><span className="lnz-fm__preview-arrow">→</span> Politics</li>
+                        <li><span className="lnz-fm__preview-arrow">→</span> Business</li>
+                        <li><span className="lnz-fm__preview-arrow">→</span> Technology</li>
+                        <li><span className="lnz-fm__preview-arrow">→</span> Sports</li>
+                      </ul>
                     </div>
+
+                    <div className="lnz-fm__preview-column">
+                      <h5 className="lnz-fm__preview-heading">QUICK LINKS</h5>
+                      <ul className="lnz-fm__preview-links">
+                        <li><span className="lnz-fm__preview-arrow">→</span> About Us</li>
+                        <li><span className="lnz-fm__preview-arrow">→</span> Contact Us</li>
+                        <li><span className="lnz-fm__preview-arrow">→</span> Advertise With Us</li>
+                      </ul>
+                    </div>
+
+                    <div className="lnz-fm__preview-column">
+                      <h5 className="lnz-fm__preview-heading">STAY UPDATED</h5>
+                      <p className="lnz-fm__preview-desc">Get the latest headlines, breaking news, and exclusive updates delivered straight to your inbox.</p>
+                      <form className="lnz-fm__preview-form">
+                        <div className="lnz-fm__preview-input-group">
+                          <input type="email" placeholder="Enter your email" className="lnz-fm__preview-input" />
+                          <span className="lnz-fm__preview-mail-icon">✉</span>
+                        </div>
+                        <button type="button" className="lnz-fm__preview-btn" disabled>Subscribe</button>
+                      </form>
+                    </div>
+                  </div>
+
+                  <hr className="lnz-fm__preview-divider" />
+
+                  <div className="lnz-fm__preview-trending">
+                    <h5 className="lnz-fm__preview-trending-title">TRENDING TOPICS</h5>
+                    <div className="lnz-fm__preview-tags">
+                      {["Breaking News", "Politics", "Economy", "Technology", "Sports", "Entertainment", "Health", "Science", "World", "Local"].map((tag) => (
+                        <span key={tag} className="lnz-fm__preview-tag">#{tag}</span>
+                      ))}
+                    </div>
+                  </div>
+
+                  <hr className="lnz-fm__preview-divider" />
+
+                  <div className="lnz-fm__preview-bottom">
+                    <p>&copy; Copyright-2026, All Rights Reserved | Local Newz | ShidroTech Solution</p>
                   </div>
                 </div>
               </div>
-            </div> */}
-          </div>
-
-          {/* ── Image Gallery ── */}
-          <div className="fm-card fm-gallery-card">
-            <h3 className="fm-card-title">Footer Background Images</h3>
-
-            <div className="fm-gallery-container">
-
-              {/* ── Upload box — the input is OUTSIDE the clickable div ── */}
-              <div className="fm-upload-box">
-                <UploadCloud size={32} className="fm-upload-icon" />
-                <p className="fm-upload-text">Click to upload or drag and drop</p>
-                <p className="fm-upload-subtext">Recommended: 1920 × 1080 px · Up to 50 MB</p>
-                {/* Button directly triggers the input */}
-                <button
-                  type="button"
-                  className="fm-upload-btn"
-                  onClick={handleChooseFiles}
-                >
-                  Choose Files
-                </button>
-              </div>
-
-              {/* Hidden file input — completely separate from the upload box */}
-              <input
-                type="file"
-                ref={fileInputRef}
-                onChange={handleImageUpload}
-                accept="image/jpeg,image/jpg,image/png,image/gif,image/webp"
-                multiple
-                style={{ display: "none" }}
-              />
-
-              <div className="fm-gallery-wrapper">
-                <button className="fm-scroll-btn left" onClick={() => scrollGallery("left")}>
-                  <ChevronLeft size={20} />
-                </button>
-
-                <div className="fm-image-list" ref={scrollRef}>
-                  {images.length === 0 && (
-                    <div style={{ color: "#888", fontSize: 14, padding: "20px", alignSelf: "center" }}>
-                      No images yet. Upload one to get started.
-                    </div>
-                  )}
-                  {images.map((img) => {
-                    const isUploading = uploadingIds.has(img.id);
-                    const isDeleting  = deletingIds.has(img.id);
-                    return (
-                      <div
-                        key={img.id}
-                        className={`fm-image-card ${img.isActive ? "active" : ""} ${isUploading || isDeleting ? "fm-image-card--busy" : ""}`}
-                      >
-                        <div className="fm-img-wrapper">
-                          <img src={img.url} alt={img.name} />
-                          {isUploading && (
-                            <div className="fm-img-overlay">
-                              <Loader2 size={28} className="fm-spin" />
-                              <span>Uploading…</span>
-                            </div>
-                          )}
-                          {isDeleting && (
-                            <div className="fm-img-overlay">
-                              <Loader2 size={28} className="fm-spin" />
-                              <span>Deleting…</span>
-                            </div>
-                          )}
-                          {img.isActive && !isUploading && (
-                            <span className="fm-active-badge">Active</span>
-                          )}
-                        </div>
-                        <div className="fm-img-details">
-                          <input
-                            type="text"
-                            value={img.name}
-                            onChange={(e) => handleNameChange(img.id, e.target.value)}
-                            className="fm-img-name-input"
-                            disabled={isUploading || isDeleting}
-                          />
-                          <div className="fm-img-controls">
-                            <span className="fm-img-res">{img.resolution}</span>
-                            <div className="fm-img-actions">
-                              <label className={`fm-toggle ${isUploading || isDeleting ? "fm-toggle--disabled" : ""}`}>
-                                <input
-                                  type="checkbox"
-                                  checked={img.isActive}
-                                  onChange={() => handleToggleActive(img.id)}
-                                  disabled={isUploading || isDeleting}
-                                />
-                                <span className="fm-slider"></span>
-                              </label>
-                              <button
-                                className="fm-delete-btn"
-                                onClick={() => handleDeleteImage(img)}
-                                disabled={isUploading || isDeleting}
-                              >
-                                <Trash2 size={16} />
-                              </button>
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-
-                <button className="fm-scroll-btn right" onClick={() => scrollGallery("right")}>
-                  <ChevronRight size={20} />
-                </button>
-              </div>
             </div>
-
-            <p className="fm-upload-hint">
-              Images are uploaded directly to cloud storage. Turn off all switches to use the solid blue background.
-            </p>
           </div>
-
-          <div className="fm-actions">
-            <button className="fm-btn-cancel" onClick={handleCancel} disabled={saving || uploadingIds.size > 0}>
-              Cancel
-            </button>
-            <button className="fm-btn-save" onClick={handleSave} disabled={saving || uploadingIds.size > 0}>
-              {saving ? (
-                <><Loader2 size={16} className="fm-spin" style={{ marginRight: 6 }} />Saving…</>
-              ) : uploadingIds.size > 0 ? (
-                <><Loader2 size={16} className="fm-spin" style={{ marginRight: 6 }} />Uploading {uploadingIds.size} image{uploadingIds.size > 1 ? "s" : ""}…</>
-              ) : "Save Changes"}
-            </button>
-          </div>
-
         </div>
+
+        <div className="lnz-fm__actions">
+          <button className="lnz-fm__btn lnz-fm__btn--cancel" onClick={handleCancel} disabled={saving || uploading || deleting}>
+            Cancel
+          </button>
+          <button className="lnz-fm__btn lnz-fm__btn--save" onClick={handleSave} disabled={saving || uploading || deleting}>
+            {saving ? (
+              <><Loader2 size={16} className="lnz-fm__spin" style={{ marginRight: 6 }} />Saving…</>
+            ) : uploading ? (
+              <><Loader2 size={16} className="lnz-fm__spin" style={{ marginRight: 6 }} />Uploading…</>
+            ) : deleting ? (
+              <><Loader2 size={16} className="lnz-fm__spin" style={{ marginRight: 6 }} />Deleting…</>
+            ) : "Save Changes"}
+          </button>
+        </div>
+      </div>
     </div>
   );
 };

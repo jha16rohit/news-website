@@ -1,12 +1,12 @@
 /* ===== PAGE WRAPPER ===== */
 .live-page {
-  background-color: #f8fafc; 
+  background-color: #f8fafc;
   padding: 40px 0 80px 0;
   width: 100%;
   font-family: var(--font-body); /* 👇 EXPERT FIX: Applied global body font */
 }
 
-.live-container {
+.live-page .live-container {
   width: 95%;
   max-width: 1200px;
   margin: auto;
@@ -16,12 +16,12 @@
 }
 
 /* ===== MAIN LEFT COLUMN ===== */
-.live-main {
+.live-page .live-main {
   flex: 2.5;
   min-width: 0; /* Prevents flexbox blowout */
 }
 
-.live-header-box {
+.live-page .live-header-box {
   background: white;
   padding: 30px;
   border-radius: 12px 12px 0 0;
@@ -29,7 +29,7 @@
   border-bottom: none;
 }
 
-.live-badges {
+.live-page .live-badges {
   display: flex;
   gap: 10px;
   margin-bottom: 15px;
@@ -37,7 +37,7 @@
 }
 
 /* Pulsing Live Badge */
-.live-indicator {
+.live-page .live-indicator {
   font-family: var(--font-body);
   display: flex;
   align-items: center;
@@ -51,7 +51,7 @@
   letter-spacing: 1px;
 }
 
-.pulsing-dot {
+.live-page .pulsing-dot {
   width: 8px;
   height: 8px;
   background-color: #dc2626;
@@ -65,7 +65,7 @@
   100% { box-shadow: 0 0 0 0 rgba(220, 38, 38, 0); }
 }
 
-.live-category {
+.live-page .live-category {
   font-family: var(--font-body);
   background-color: #f1f5f9;
   color: #475569;
@@ -76,7 +76,7 @@
   text-transform: uppercase;
 }
 
-.live-headline {
+.live-page .live-headline {
   font-family: var(--font-heading); /* 👇 EXPERT FIX: Applied heading font */
   font-size: 36px;
   font-weight: 400; /* 👇 EXPERT FIX: Changed to 400 for Rozha One */
@@ -85,7 +85,7 @@
   margin: 0 0 15px 0;
 }
 
-.live-meta {
+.live-page .live-meta {
   font-family: var(--font-body);
   display: flex;
   gap: 20px;
@@ -95,14 +95,14 @@
   flex-wrap: wrap;
 }
 
-.live-meta span {
+.live-page .live-meta span {
   display: flex;
   align-items: center;
   gap: 6px;
 }
 
 /* Media Player */
-.live-media-player {
+.live-page .live-media-player {
   position: relative;
   width: 100%;
   height: 400px;
@@ -110,14 +110,14 @@
   border: 1px solid #e2e8f0;
 }
 
-.live-video-placeholder {
+.live-page .live-video-placeholder {
   width: 100%;
   height: 100%;
   object-fit: fill;
   opacity: 0.8;
 }
 
-.play-button-overlay {
+.live-page .play-button-overlay {
   position: absolute;
   top: 50%;
   left: 50%;
@@ -135,13 +135,13 @@
   transition: transform 0.2s ease, background 0.2s ease;
 }
 
-.play-button-overlay:hover {
+.live-page .play-button-overlay:hover {
   transform: translate(-50%, -50%) scale(1.1);
   background: #e60000;
 }
 
 /* ===== TIMELINE FEED ===== */
-.timeline-container {
+.live-page .timeline-container {
   background: white;
   padding: 30px;
   border-radius: 0 0 12px 12px;
@@ -149,7 +149,7 @@
   border-top: none;
 }
 
-.timeline-header {
+.live-page .timeline-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -158,7 +158,7 @@
   border-bottom: 2px solid #f1f5f9;
 }
 
-.timeline-header h2 {
+.live-page .timeline-header h2 {
   font-family: var(--font-heading); /* 👇 EXPERT FIX: Applied heading font */
   font-size: 20px;
   font-weight: 400; /* 👇 EXPERT FIX: Changed to 400 for Rozha One */
@@ -166,12 +166,12 @@
 }
 
 /* The actual timeline */
-.timeline-feed {
+.live-page .timeline-feed {
   display: flex;
   flex-direction: column;
 }
 
-.timeline-item {
+.live-page .timeline-item {
   display: flex;
   gap: 20px;
   position: relative;
@@ -179,12 +179,12 @@
 }
 
 /* Hide the line on the very last item */
-.timeline-item:last-child .timeline-line {
+.live-page .timeline-item:last-child .timeline-line {
   display: none;
 }
 
 /* Marker (Dot + Vertical Line) */
-.timeline-marker {
+.live-page .timeline-marker {
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -192,7 +192,7 @@
   flex-shrink: 0;
 }
 
-.timeline-dot {
+.live-page .timeline-dot {
   width: 14px;
   height: 14px;
   background-color: #cbd5e1;
@@ -203,7 +203,7 @@
   box-shadow: 0 0 0 1px #cbd5e1;
 }
 
-.timeline-line {
+.live-page .timeline-line {
   width: 2px;
   background-color: #e2e8f0;
   flex-grow: 1;
@@ -211,17 +211,17 @@
 }
 
 /* Important updates get a red dot */
-.important-update .timeline-dot {
+.live-page .important-update .timeline-dot {
   background-color: #e60000;
   box-shadow: 0 0 0 1px #e60000;
 }
 
 /* Content */
-.timeline-content {
+.live-page .timeline-content {
   flex-grow: 1;
 }
 
-.update-time {
+.live-page .update-time {
   font-family: var(--font-body);
   font-size: 13px;
   font-weight: 700;
@@ -230,11 +230,11 @@
   margin-bottom: 5px;
 }
 
-.important-update .update-time {
+.live-page .important-update .update-time {
   color: #e60000;
 }
 
-.update-title {
+.live-page .update-title {
   font-family: var(--font-heading); /* 👇 EXPERT FIX: Applied heading font */
   font-size: 18px;
   font-weight: 400; /* 👇 EXPERT FIX: Changed to 400 for Rozha One */
@@ -242,7 +242,7 @@
   margin: 0 0 8px 0;
 }
 
-.update-text {
+.live-page .update-text {
   font-family: var(--font-body);
   font-size: 15px;
   line-height: 1.6;
@@ -250,7 +250,7 @@
   margin: 0 0 10px 0;
 }
 
-.key-event-tag {
+.live-page .key-event-tag {
   font-family: var(--font-body);
   display: inline-block;
   background: #fee2e2;
@@ -262,18 +262,18 @@
   text-transform: uppercase;
 }
 
-.key-event-tag.breaking {
+.live-page .key-event-tag.breaking {
   background: #e60000;
   color: white;
 }
 
 /* Share Buttons */
-.share-buttons {
+.live-page .share-buttons {
   display: flex;
   gap: 8px;
 }
 
-.share-btn {
+.live-page .share-btn {
   display: flex;
   align-items: center;
   justify-content: center;
@@ -287,37 +287,37 @@
   transition: all 0.2s;
 }
 
-.share-btn:hover {
+.live-page .share-btn:hover {
   background: #e60000;
   border-color: #e60000;
   color: white;
 }
 
-.share-btn.wa:hover {
+.live-page .share-btn.wa:hover {
   background: #25D366;
   border-color: #25D366;
 }
 
-.share-btn.copy:hover {
+.live-page .share-btn.copy:hover {
   background: #64748b;
   border-color: #64748b;
 }
 
 /* Update Image */
-.update-image-wrap {
+.live-page .update-image-wrap {
   border-radius: 8px;
   overflow: hidden;
   margin: 12px 0;
 }
 
-.update-image {
+.live-page .update-image {
   width: 100%;
   max-height: 300px;
   object-fit: cover;
   display: block;
 }
 
-.update-image-caption {
+.live-page .update-image-caption {
   padding: 8px 12px;
   background: #f8fafc;
   font-size: 12px;
@@ -330,14 +330,14 @@
   flex-wrap: wrap;
 }
 
-.update-image-credit {
+.live-page .update-image-credit {
   font-size: 11px;
   color: #94a3b8;
   white-space: nowrap;
 }
 
 /* Update Tweet */
-.update-tweet {
+.live-page .update-tweet {
   display: flex;
   align-items: center;
   gap: 8px;
@@ -348,7 +348,7 @@
   margin: 12px 0;
 }
 
-.update-tweet-url {
+.live-page .update-tweet-url {
   font-size: 13px;
   color: #0369a1;
   flex: 1;
@@ -359,7 +359,7 @@
 }
 
 /* Update Poll */
-.update-poll {
+.live-page .update-poll {
   display: flex;
   flex-direction: column;
   gap: 8px;
@@ -370,14 +370,14 @@
   margin: 12px 0;
 }
 
-.update-poll-q {
+.live-page .update-poll-q {
   font-size: 14px;
   font-weight: 600;
   color: #1a1d23;
   margin: 0;
 }
 
-.update-poll-option {
+.live-page .update-poll-option {
   display: flex;
   align-items: center;
   gap: 10px;
@@ -389,7 +389,7 @@
   color: #374151;
 }
 
-.update-poll-bar-wrap {
+.live-page .update-poll-bar-wrap {
   flex: 1;
   background: #e5e7eb;
   border-radius: 4px;
@@ -397,14 +397,14 @@
   overflow: hidden;
 }
 
-.update-poll-bar {
+.live-page .update-poll-bar {
   height: 100%;
   background: #e60000;
   border-radius: 4px;
   transition: width 0.3s ease;
 }
 
-.update-poll-votes {
+.live-page .update-poll-votes {
   font-size: 12px;
   color: #9ca3af;
   white-space: nowrap;
@@ -413,7 +413,7 @@
 }
 
 /* Update Source */
-.update-source {
+.live-page .update-source {
   display: flex;
   align-items: center;
   gap: 8px;
@@ -424,7 +424,7 @@
   margin-top: 8px;
 }
 
-.update-source a {
+.live-page .update-source a {
   color: #2563eb;
   text-underline-offset: 2px;
   overflow: hidden;
@@ -434,7 +434,7 @@
 }
 
 /* Update Tags */
-.update-tags {
+.live-page .update-tags {
   display: flex;
   flex-wrap: wrap;
   gap: 6px;
@@ -443,7 +443,7 @@
   border-top: 1px solid #f3f4f6;
 }
 
-.update-tag {
+.live-page .update-tag {
   font-size: 11px;
   padding: 3px 10px;
   background: #eef2ff;
@@ -453,7 +453,7 @@
 }
 
 /* Timeline Empty State */
-.timeline-empty {
+.live-page .timeline-empty {
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -464,13 +464,63 @@
   text-align: center;
 }
 
-.timeline-empty p {
+.live-page .timeline-empty p {
   font-size: 14px;
   margin: 0;
 }
 
+/* Breadcrumb (scoped for Live page — previously relied on global Article style) */
+.live-page .breadcrumb {
+  display: flex;
+  align-items: center;
+  font-size: 12px;
+  color: #94a3b8;
+  margin-bottom: 20px;
+  flex-wrap: wrap;
+  gap: 2px;
+}
+
+.live-page .breadcrumb a {
+  color: #e60000;
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.live-page .breadcrumb a:hover { text-decoration: underline; }
+
+.live-page .breadcrumb .divider { margin: 0 6px; color: #cbd5e1; }
+
+.live-page .breadcrumb .current {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 300px;
+  color: #64748b;
+}
+
+/* Caption for media player (uses same class as Article but scoped) */
+.live-page .hero-caption {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 12px;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-top: none;
+  border-radius: 0 0 10px 10px;
+  font-size: 12px;
+  color: #64748b;
+  gap: 12px;
+}
+
+.live-page .photo-credit {
+  color: #94a3b8;
+  font-size: 11px;
+  white-space: nowrap;
+}
+
 /* Sidebar Summary List */
-.speaker-list li {
+.live-page .speaker-list li {
   font-size: 13px;
   color: #475569;
   line-height: 1.8;
@@ -478,12 +528,12 @@
   border-bottom: 1px solid #f1f5f9;
 }
 
-.speaker-list li:last-child {
+.live-page .speaker-list li:last-child {
   border-bottom: none;
 }
 
 /* ===== RIGHT SIDEBAR ===== */
-.live-sidebar {
+.live-page .live-sidebar {
   flex: 1;
   position: sticky;
   top: 90px;
@@ -492,35 +542,35 @@
   gap: 20px;
 }
 
-.sidebar-widget {
+.live-page .sidebar-widget {
   background: white;
   padding: 25px;
   border-radius: 12px;
   border: 1px solid #e2e8f0;
 }
 
-.widget-title {
+.live-page .widget-title {
   font-family: var(--font-heading); /* 👇 EXPERT FIX: Applied heading font */
   font-size: 18px;
   font-weight: 400; /* 👇 EXPERT FIX: Changed to 400 for Rozha One */
   margin: 0 0 10px 0;
 }
 
-.widget-underline {
+.live-page .widget-underline {
   height: 3px;
   width: 40px;
   background-color: #e60000;
   margin-bottom: 15px;
 }
 
-.widget-text {
+.live-page .widget-text {
   font-family: var(--font-body);
   font-size: 14px;
   line-height: 1.6;
   color: #475569;
 }
 
-.speaker-list {
+.live-page .speaker-list {
   font-family: var(--font-body);
   padding-left: 20px;
   margin: 0;
@@ -535,25 +585,25 @@
 
 /* 1. Large Desktop - 1440px */
 @media (max-width: 1440px) {
-  .live-container {
+  .live-page .live-container {
     max-width: 1100px;
   }
 }
 
 /* 2. Laptop & Large Tablet - 1024px */
 @media (max-width: 1024px) {
-  .live-container {
+  .live-page .live-container {
     flex-direction: column;
     gap: 32px;
   }
-  
-  .live-main {
+
+  .live-page .live-main {
     width: 100%;
     flex: none;
   }
-  
+
   /* Sidebar drops to bottom and splits into 2-column grid */
-  .live-sidebar {
+  .live-page .live-sidebar {
     width: 100%;
     position: static;
     flex: none;
@@ -561,22 +611,21 @@
     grid-template-columns: repeat(2, 1fr);
     gap: 24px;
   }
-  
-  .sidebar-widget {
+
+  .live-page .sidebar-widget {
     margin-bottom: 0; /* Let grid handle the gap */
   }
 
-  .live-headline { font-size: 32px; }
-  .live-media-player { height: 350px; }
+  .live-page .live-headline { font-size: 32px; }
+  .live-page .live-media-player { height: 350px; }
 }
 
 /* 3. Standard Tablet - 768px */
 @media (max-width: 768px) {
-  .live-headline { font-size: 28px; }
-  .live-media-player { height: 300px; }
-  
-  .live-header-box,
-  .timeline-container {
+  .live-page .live-headline { font-size: 28px; }
+  .live-page .live-media-player { height: 300px; }
+
+  .live-page .live-header-box, .live-page .timeline-container {
     padding: 24px;
   }
 }
@@ -584,25 +633,24 @@
 /* 4. Mobile L - 425px */
 @media (max-width: 640px) {
   /* Kills the 2-column sidebar grid for mobile phones */
-  .live-sidebar {
+  .live-page .live-sidebar {
     display: flex !important;
     flex-direction: column !important;
     gap: 20px;
   }
 
-  .live-headline { font-size: 24px; }
-  .live-media-player { height: 240px; }
-  
-  .live-header-box,
-  .timeline-container {
+  .live-page .live-headline { font-size: 24px; }
+  .live-page .live-media-player { height: 240px; }
+
+  .live-page .live-header-box, .live-page .timeline-container {
     padding: 20px 16px;
   }
-  
-  .timeline-item { gap: 14px; }
-  .update-title { font-size: 16px; }
-  .update-text { font-size: 14px; }
-  
-  .play-button-overlay {
+
+  .live-page .timeline-item { gap: 14px; }
+  .live-page .update-title { font-size: 16px; }
+  .live-page .update-text { font-size: 14px; }
+
+  .live-page .play-button-overlay {
     width: 50px;
     height: 50px;
     font-size: 20px;
@@ -611,29 +659,29 @@
 
 /* 5. Mobile M - 375px */
 @media (max-width: 375px) {
-  .live-headline { font-size: 22px; }
-  .live-media-player { height: 210px; }
-  
-  .live-badges { gap: 8px; }
-  .live-indicator { font-size: 11px; padding: 4px 10px; }
-  .live-category { font-size: 11px; padding: 4px 10px; }
-  
-  .sidebar-widget { padding: 20px 16px; }
+  .live-page .live-headline { font-size: 22px; }
+  .live-page .live-media-player { height: 210px; }
+
+  .live-page .live-badges { gap: 8px; }
+  .live-page .live-indicator { font-size: 11px; padding: 4px 10px; }
+  .live-page .live-category { font-size: 11px; padding: 4px 10px; }
+
+  .live-page .sidebar-widget { padding: 20px 16px; }
 }
 
 /* 6. Mobile S - 320px */
 @media (max-width: 320px) {
   .live-page { padding: 20px 0 60px 0; }
-  
-  .live-headline { font-size: 20px; margin-bottom: 12px; }
-  .live-meta { flex-direction: column; gap: 8px; font-size: 12px; }
-  .live-media-player { height: 180px; }
-  
-  .timeline-item { padding-bottom: 24px; }
-  .update-title { font-size: 15px; margin-bottom: 6px; }
-  .update-text { font-size: 13px; }
-  .update-time { font-size: 12px; }
-  
-  .widget-title { font-size: 16px; }
-  .widget-text { font-size: 13px; }
+
+  .live-page .live-headline { font-size: 20px; margin-bottom: 12px; }
+  .live-page .live-meta { flex-direction: column; gap: 8px; font-size: 12px; }
+  .live-page .live-media-player { height: 180px; }
+
+  .live-page .timeline-item { padding-bottom: 24px; }
+  .live-page .update-title { font-size: 15px; margin-bottom: 6px; }
+  .live-page .update-text { font-size: 13px; }
+  .live-page .update-time { font-size: 12px; }
+
+  .live-page .widget-title { font-size: 16px; }
+  .live-page .widget-text { font-size: 13px; }
 }

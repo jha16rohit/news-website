@@ -13,7 +13,11 @@ export interface IFooterSettings
 
   trustedText: string;
 
-images: mongoose.Schema.Types.Mixed[];
+  desktopOverlayOpacity: number;
+
+  mobileOverlayOpacity: number;
+
+  images: mongoose.Schema.Types.Mixed[];
 
   updatedAt: Date;
 }
@@ -42,10 +46,25 @@ const FooterSettingsSchema =
         default:
           "Your trusted source for accurate and timely news coverage around the clock.",
       },
-images: {
-  type: [Schema.Types.Mixed],
-  default: [],
-},
+
+      desktopOverlayOpacity: {
+        type: Number,
+        default: 0.82,
+        min: 0,
+        max: 1,
+      },
+
+      mobileOverlayOpacity: {
+        type: Number,
+        default: 0.90,
+        min: 0,
+        max: 1,
+      },
+
+      images: {
+        type: [Schema.Types.Mixed],
+        default: [],
+      },
     },
     {
       timestamps: {

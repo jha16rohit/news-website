@@ -44,6 +44,7 @@ function formatComment(c: any, currentUserId?: string) {
     reportCount: (c.reportedBy as string[]).length,
     isReported:  (c.reportedBy as string[]).length > 0,
     replies:     [] as any[],
+    userId:      String(c.userId),
   };
 }
 
@@ -291,10 +292,39 @@ export const deleteOwnComment = async (req: SiteUserRequest, res: Response) => {
   } catch (err) {
     console.error("deleteOwnComment error:", err);
     return res.status(500).json({ message: "Server error" });
+}
+};
+
+// ═══════════════════════════════════════════════════════════════
+//  PUBLIC: PATCH /api/comments/:id   (protectSiteUser — own only)
+// ═══════════════════════════════════════════════════════════════
+export const updateOwnComment = async (req: SiteUserRequest, res: Response) => {
+  try {
+    const userId  = req.userId!;
+    const { content } = req.body as { content: string };
+
+    if (!content?.trim()) {
+      return res.status(400).json({ message: "Content is required." });
+    }
+    if (content.trim().length > 2000) {
+      return res.status(400).json({ message: "Comment too long (max 2000 chars)." });
+    }
+
+    const comment = await Comment.findById(String(req.params.id));
+    if (!comment) return res.status(404).json({ message: "Comment not found." });
+    if (comment.userId !== userId) return res.status(403).json({ message: "Not authorized." });
+
+    comment.content = content.trim();
+    await comment.save();
+
+    return res.status(200).json({ comment: formatComment(comment, userId) });
+  } catch (err) {
+    console.error("updateOwnComment error:", err);
+    return res.status(500).json({ message: "Server error" });
   }
 };
 
-// ══════════════════════════════════════════════════════════════
+// ═══════════════════════════════════════════════════════════════
 //  ADMIN: GET /api/admin/comments (LOOKUP WITH HEADLINES ONCE)
 // ══════════════════════════════════════════════════════════════
 export const adminGetComments = async (req: AuthRequest, res: Response) => {

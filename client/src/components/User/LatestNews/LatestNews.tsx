@@ -1,44 +1,57 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { Clock } from "lucide-react";
 import { Link } from "react-router-dom";
 import "./LatestNews.css";
 import { StatusBadge } from "../../UI/StatusBadge";
+import { getTrendingNews } from "../../../api/user/trendingNews";
 
-interface LatestNewsProps {
-  newsData: any[];
-}
-
-const LatestNews: React.FC<LatestNewsProps> = ({ newsData }) => {
+const LatestNews: React.FC = () => {
   const [showAll, setShowAll] = useState(false);
+  const [newsData, setNewsData] = useState<any[]>([]);
 
-  // const [newsData, setNewsData] = useState<any[]>([]);
+  useEffect(() => {
+    const fetchNews = async () => {
+      try {
+        const response = await getTrendingNews();
 
-  //   useEffect(() => {
-  //   const fetchNews = async () => {
-  //     try {
-  //       const response =
-  //         await getTrendingNews();
+        const articles = Array.isArray(response?.news)
+          ? response.news
+          : [];
 
-  //       setNewsData(
-  //         response.news || []
-  //       );
-  //     } catch (error) {
-  //       console.error(error);
-  //     }
-  //   };
+        // Filter out invalid articles - must have headline and at least slug or id
+        const validArticles = articles.filter((article: any) => {
+          return (
+            article &&
+            typeof article === "object" &&
+            article.headline &&
+            (article.slug || article._id || article.id)
+          );
+        });
 
-  //   fetchNews();
+        setNewsData(validArticles);
+      } catch (error) {
+        console.error("Failed to fetch trending news:", error);
+        setNewsData([]);
+      }
+    };
 
-  //   const interval =
-  //     setInterval(
-  //       fetchNews,
-  //       60 * 60 * 1000
-  //     ); // 1 hour
+    fetchNews();
 
-  //   return () =>
-  //     clearInterval(interval);
+    const interval = setInterval(
+      fetchNews,
+      60 * 60 * 1000
+    );
 
-  // }, []);
+    return () => clearInterval(interval);
+  }, []);
+
+  const getArticleUrl = (article: any): string | null => {
+    const slug = article?.slug;
+    if (slug) return `/news/${slug}`;
+    const id = article?._id || article?.id;
+    if (id) return `/article/${id}`;
+    return null;
+  };
 
   const visibleArticles = showAll ? newsData : newsData.slice(0, 8);
 
@@ -53,48 +66,57 @@ const LatestNews: React.FC<LatestNewsProps> = ({ newsData }) => {
 
         {/* News Grid */}
         <div className="news-grid">
-          {visibleArticles.map((article) => (
-            <Link
-              to={`/news/${article.slug}`}
-              className="news-card text-decoration-none"
-              key={article._id}
-            >
-              <div className="news-img-wrapper">
-                <img
-                  src={
-                    article.featuredImage ||
-                    "https://placehold.co/400x225/e2e8f0/64748b?text=No+Image"
-                  }
-                  alt={article.headline}
-                  className="news-img"
-                />
-              </div>
+          {visibleArticles.map((article) => {
+            const articleUrl = getArticleUrl(article);
+            if (!articleUrl) {
+              return null;
+            }
 
-              <div className="news-content">
-                <div className="news-badges">
-                  <StatusBadge
-                    articleType={article.articleType}
-                    statusType={article.statusType}
-                    variant="compact"
+            return (
+              <Link
+                to={articleUrl}
+                className="news-card text-decoration-none"
+                key={String(article._id ?? article.id ?? article.slug)}
+              >
+                <div className="news-img-wrapper">
+                  <img
+                    src={
+                      article.featuredImage ||
+                      "https://placehold.co/400x225/e2e8f0/64748b?text=No+Image"
+                    }
+                    alt={article.headline}
+                    className="news-img"
                   />
-                  <span className="card-badge">{article.category}</span>
                 </div>
-                <h3 className="news-title">{article.headline}</h3>
-                <p className="news-excerpt">{article.excerpt}</p>
 
-                <div className="news-meta">
-                  <span>
-                    <Clock size={16} />
-                    {new Date(article.createdAt).toLocaleDateString()}
-                  </span>
+                <div className="news-content">
+                  <div className="news-badges">
+                    <StatusBadge
+                      articleType={article.articleType}
+                      statusType={article.statusType}
+                      variant="compact"
+                    />
+                    <span className="card-badge">{article.categoryId?.name ?? article.category}</span>
+                  </div>
+                  <h3 className="news-title">{article.headline}</h3>
+                  <p className="news-excerpt">{article.excerpt}</p>
+
+                  <div className="news-meta">
+                    <span>
+                      <Clock size={16} />
+                      {article.createdAt && !isNaN(new Date(article.createdAt).getTime())
+                        ? new Date(article.createdAt).toLocaleDateString()
+                        : "Recently"}
+                    </span>
+                  </div>
                 </div>
-              </div>
-            </Link>
-          ))}
+              </Link>
+            );
+          })}
         </div>
 
         {/* Show More Button */}
-        {newsData.length > 6 && (
+        {newsData.length > 8 && (
           <div className="show-more-wrapper">
             <button
               className="show-more-btn"

@@ -1,0 +1,150 @@
+.contact-status-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 1;
+  padding: 4px 10px;
+  border-radius: 9999px;
+  white-space: nowrap;
+  font-family: var(--font-body);
+  letter-spacing: 0.02em;
+  border: 1px solid transparent;
+  transition: all 0.2s ease;
+}
+
+.contact-status-badge__icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 14px;
+  height: 14px;
+}
+
+.contact-status-badge__icon-svg {
+  width: 100%;
+  height: 100%;
+}
+
+.contact-status-badge__spinner {
+  width: 14px;
+  height: 14px;
+  animation: spin 1s linear infinite;
+  color: currentColor;
+}
+
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+.contact-status-badge__text {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  line-height: 1;
+}
+
+/* Variants */
+.contact-status-badge--compact {
+  padding: 2px 8px;
+  font-size: 10px;
+  gap: 4px;
+}
+
+.contact-status-badge--inline {
+  vertical-align: middle;
+}
+
+/* Status variants */
+.contact-status-badge--pending {
+  background: #fef9c3;
+  color: #f59e0b;
+  border: 1px solid #fde68a;
+}
+
+.contact-status-badge--replied {
+  background: #dcfce7;
+  color: #16a34a;
+  border: 1px solid #bbf7d0;
+}
+
+/* Compact variant adjustments */
+.contact-status-badge--compact {
+  padding: 2px 8px;
+  font-size: 10px;
+  gap: 4px;
+}
+
+.contact-status-badge--compact .contact-status-badge__icon {
+  width: 12px;
+  height: 12px;
+}
+
+.contact-status-badge--compact .contact-status-badge__text {
+  font-size: 10px;
+}
+
+/* Inline variant */
+.contact-status-badge--inline {
+  display: inline-flex;
+  vertical-align: middle;
+}
+
+/* Status-specific styles */
+.contact-status-badge--pending {
+  background: #fef9c3;
+  color: #f59e0b;
+  border: 1px solid #fde68a;
+}
+
+.contact-status-badge--pending .contact-status-badge__icon {
+  color: #f59e0b;
+}
+
+.contact-status-badge--replied {
+  background: #dcfce7;
+  color: #16a34a;
+  border: 1px solid #bbf7d0;
+}
+
+.contact-status-badge--replied .contact-status-badge__icon {
+  color: #16a34a;
+}
+
+/* Hover effects for interactive contexts */
+.contact-status-badge:hover:not(:disabled) {
+  opacity: 0.9;
+}
+
+/* Responsive adjustments */
+@media (max-width: 640px) {
+  .contact-status-badge {
+    font-size: 11px;
+    padding: 3px 8px;
+  }
+
+  .contact-status-badge--compact {
+    padding: 2px 6px;
+    font-size: 9px;
+  }
+
+  .contact-status-badge__text {
+    font-size: 10px;
+  }
+}
+
+@media (max-width: 375px) {
+  .contact-status-badge {
+    font-size: 10px;
+    padding: 3px 7px;
+  }
+
+  .contact-status-badge--compact {
+    padding: 1px 5px;
+    font-size: 9px;
+  }
+}

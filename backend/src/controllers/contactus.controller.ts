@@ -282,6 +282,37 @@ export const getMyMessages = async (req: Request, res: Response) => {
   }
 };
 
+export const deleteMyMessage = async (req: Request, res: Response) => {
+  try {
+    const authReq = req as any;
+    const userId = authReq.userId;
+    if (!userId) return res.status(401).json({ message: "Not authorized" });
+
+    const id = Array.isArray(req.params.id) ? req.params.id[0] : req.params.id;
+    if (!id || typeof id !== "string" || id.trim().length < 12) {
+      return res.status(400).json({ message: "Invalid message ID" });
+    }
+
+    const msg = await ContactMessage.findById(id);
+    if (!msg) return res.status(404).json({ message: "Message not found" });
+
+    const SiteUser = (await import("../models/SiteUser")).default;
+    const user = await SiteUser.findById(userId).select("email");
+    if (!user) return res.status(404).json({ message: "User not found" });
+
+    if (msg.email.toLowerCase() !== user.email.toLowerCase()) {
+      return res.status(404).json({ message: "Message not found" });
+    }
+
+    await ContactMessage.findByIdAndDelete(id);
+    return res.json({ success: true });
+  } catch (err: any) {
+    // Handle invalid ObjectId cast errors as 400
+    if (err?.name === "CastError") return res.status(400).json({ message: "Invalid message ID" });
+    return res.status(500).json({ message: err.message });
+  }
+};
+
 export const createMessage = async (req: Request, res: Response) => {
   try {
     const { name, email, phone, subject, message } = req.body;
@@ -348,7 +379,7 @@ export const replyToMessage = async (req: Request, res: Response) => {
 
     const msg = await ContactMessage.findByIdAndUpdate(
       id,
-      { replied: true, replyText, read: true },
+      { replied: true, replyText, read: true, repliedAt: new Date() },
       { returnDocument: 'after' }
     );
 
@@ -366,22 +397,35 @@ export const replyToMessage = async (req: Request, res: Response) => {
       console.error("[ContactUs] Failed to create in-app notification:", notifErr.message);
     }
 
-    // Send reply email to user
+    // Send reply email to user — include original enquiry + reply + link to website
     try {
+      const frontendBase = process.env.PUBLIC_FRONTEND_URL?.trim() || process.env.FRONTEND_URL?.split(",")[0]?.trim() || "http://localhost:5173";
+      const contactUrl = `${frontendBase.replace(/\/$/, "")}/contact`;
       const { error } = await getResend().emails.send({
         from: FROM,
         to: [msg.email],
-        subject: `Reply to your enquiry - ${msg.subject || "General Enquiry"}`,
+        subject: `Re: Your enquiry - LocalNewz`,
         html: `
-          <div style="font-family:sans-serif;max-width:600px;margin:auto;padding:24px">
-            <h2>Hello ${msg.name},</h2>
-            <p>Thank you for contacting Local Newz.</p>
-            <div style="background:#f7f7f7;padding:16px;border-left:4px solid #e10600;margin:20px 0;border-radius:8px;">
-              ${replyText.replace(/\n/g, "<br/>")}
+          <div style="font-family:sans-serif;max-width:600px;margin:auto;padding:32px;border:1px solid #e8e8e8;border-radius:14px;background:#fff">
+            <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px">
+              <div style="width:36px;height:36px;background:#e10600;border-radius:8px;display:flex;align-items:center;justify-content:center"><span style="color:#fff;font-size:18px;font-weight:700">L</span></div>
+              <div><div style="font-size:18px;font-weight:700;color:#111">Local Newz</div><div style="font-size:12px;color:#999">Team Reply</div></div>
             </div>
-            <p>If you have more questions, feel free to contact us again.</p>
-            <br/>
-            <p>Regards,<br/>Local Newz Team</p>
+            <hr style="border:none;border-top:1px solid #f0f0f0;margin:16px 0"/>
+            <h2 style="font-size:18px;color:#111;margin:0 0 6px">Hello ${msg.name},</h2>
+            <p style="color:#475569;font-size:14px;line-height:1.6;margin:0 0 18px">Thank you for contacting Local Newz. Our team has replied to your enquiry <strong>${msg.subject || "General Enquiry"}</strong>.</p>
+            <div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:10px;padding:16px;margin:0 0 14px">
+              <p style="margin:0 0 6px;font-size:11px;letter-spacing:.6px;text-transform:uppercase;color:#64748b;font-weight:700">Your original message</p>
+              <p style="margin:0;color:#334155;font-size:14px;line-height:1.7">${msg.message.replace(/\n/g, "<br/>")}</p>
+            </div>
+            <div style="background:#fff;border-left:4px solid #e10600;border-radius:8px;padding:16px;margin:0 0 18px;border:1px solid #f1f5f9;border-left-width:4px">
+              <p style="margin:0 0 6px;font-size:11px;letter-spacing:.6px;text-transform:uppercase;color:#e10600;font-weight:700">Our reply</p>
+              <p style="margin:0;color:#0b1423;font-size:14px;line-height:1.7">${replyText.replace(/\n/g, "<br/>")}</p>
+            </div>
+            <a href="${contactUrl}" style="display:inline-block;background:#e10600;color:#fff;padding:11px 22px;border-radius:8px;text-decoration:none;font-size:14px;font-weight:600">View on LocalNewz →</a>
+            <p style="color:#94a3b8;font-size:12px;margin:16px 0 0">You can also view this reply anytime on our website under <strong>Your Messages</strong>.</p>
+            <hr style="border:none;border-top:1px solid #f0f0f0;margin:20px 0 12px"/>
+            <p style="color:#94a3b8;font-size:11px;margin:0">If you have more questions, feel free to contact us again.<br/>Regards,<br/>Local Newz Team</p>
           </div>
         `,
       });

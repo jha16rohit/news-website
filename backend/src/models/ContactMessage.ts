@@ -14,6 +14,7 @@ export interface IContactMessage
   read: boolean;
   replied: boolean;
   replyText?: string;
+  repliedAt?: Date;
 
   receivedAt: Date;
   updatedAt: Date;
@@ -52,6 +53,11 @@ const ContactMessageSchema =
       },
 
       replyText: String,
+
+      repliedAt: {
+        type: Date,
+        default: null,
+      },
 
       receivedAt: {
         type: Date,

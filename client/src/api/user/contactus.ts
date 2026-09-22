@@ -45,6 +45,7 @@ export interface ContactMessagePayload {
 
 export interface ContactMessageResponse {
   id: string;
+  _id?: string;
   name: string;
   email: string;
   phone?: string;
@@ -54,6 +55,9 @@ export interface ContactMessageResponse {
   read: boolean;
   replied: boolean;
   replyText?: string;
+  reply?: string;
+  repliedAt?: string;
+  updatedAt?: string;
 }
 
 // Get page settings (public)
@@ -88,4 +92,9 @@ export const getMessageById = async (id: string): Promise<ContactMessageResponse
 export const getMyMessages = async (): Promise<ContactMessageResponse[]> => {
   const data: any = await apiClient("/api/contact/my-messages");
   return Array.isArray(data) ? data.map(item => ({ ...item, id: item?.id ?? item?._id })) : [];
+};
+
+// Delete own message
+export const deleteMyMessage = async (id: string): Promise<{ success: boolean }> => {
+  return apiClient(`/api/contact/my-messages/${id}`, { method: "DELETE" });
 };

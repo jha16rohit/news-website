@@ -280,12 +280,14 @@
   font-weight: 600;
   transition: all 0.2s ease;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.02);
+  text-decoration: none;
 }
 
 .tag-pill:hover {
   background-color: #f8fafc;
   border-color: #cbd5e1;
   transform: translateY(-1px);
+  text-decoration: none;
 }
 
 .tag-scroll-btn {

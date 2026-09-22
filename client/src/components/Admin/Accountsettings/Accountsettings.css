@@ -183,6 +183,44 @@
   transform: scale(0.99);
 }
 
+
+.password-input-wrapper {
+  position: relative;
+  width: 100%;
+}
+
+.password-input-wrapper .form-input {
+  padding-right: 46px;
+}
+
+.password-toggle {
+  position: absolute;
+  right: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  border: none;
+  background: transparent;
+  color: #64748b;
+
+  padding: 4px;
+  cursor: pointer;
+
+  transition: color 0.2s ease;
+}
+
+.password-toggle:hover {
+  color: #1f2937;
+}
+
+.password-toggle:focus {
+  outline: none;
+}
+
 /* Responsive */
 @media (max-width: 480px) {
   .form-row {

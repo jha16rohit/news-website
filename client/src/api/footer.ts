@@ -13,15 +13,19 @@ export interface FooterImage {
 }
 
 export interface FooterSettingsPayload {
-  sectionTitle?:    string;
-  descriptionText?: string;
-  trustedText?:     string;
-  images?:          FooterImage[];
+  sectionTitle?:         string;
+  descriptionText?:      string;
+  trustedText?:          string;
+  images?:               FooterImage[];
+  desktopOverlayOpacity?: number;
+  mobileOverlayOpacity?:  number;
 }
 
 export interface FooterSettingsResponse extends FooterSettingsPayload {
-  id:        string;
-  updatedAt: string | null;
+  id:             string;
+  updatedAt:      string | null;
+  desktopOverlayOpacity: number;
+  mobileOverlayOpacity:  number;
 }
 
 // ─── GET ─────────────────────────────────────────────────────────────────────

@@ -40,7 +40,7 @@ const CategoryShowcase: React.FC<CategoryShowcaseProps> = ({
   //       // Categories
   //       const categoryData = await getPublicCategories();
   //       setCategories(categoryData || []);
-
+  //
   //       // News
   //       const newsData = await fetchAllNews();
   //       setArticles(newsData?.news || []);
@@ -48,7 +48,7 @@ const CategoryShowcase: React.FC<CategoryShowcaseProps> = ({
   //       console.error("Category showcase fetch error:", error);
   //     }
   //   };
-
+  //
   //   fetchData();
   // }, []);
 
@@ -81,21 +81,19 @@ const CategoryShowcase: React.FC<CategoryShowcaseProps> = ({
           )
           .map((a: any) => ({
             id: a._id || a.id,
+            slug: a.slug,
             title: a.headline || a.title || "Untitled News",
             subtitle: a.excerpt || a.shortTitle || "Read full story",
-
-            // Always resolve to a usable src — never an empty string.
-            // img: a.featuredImage || a.imageUrl || a.img || PLACEHOLDER_IMG,
 
             img: a.featuredImage || a.imageUrl || a.img || "https://placehold.co/400x225/e2e8f0/64748b?text=No+Image",
 
             category:
               a?.categoryId?.name || a?.categoryName || a?.category || "News",
+            categoryId: a.categoryId,
 
             articleType: a.articleType,
             statusType: a.statusType,
 
-            // 👇 EXPERT FIX: Converts the raw ISO string into a human-readable date!
             time:
               a.createdAt || a.publishedAt
                 ? new Date(a.createdAt || a.publishedAt).toLocaleDateString(
@@ -117,6 +115,14 @@ const CategoryShowcase: React.FC<CategoryShowcaseProps> = ({
 
         const layout = LAYOUT_STYLES[index % LAYOUT_STYLES.length];
 
+        const getArticleUrl = (article: any): string | null => {
+          const slug = article?.slug;
+          if (slug) return `/news/${slug}`;
+          const id = article?.id || article?._id;
+          if (id) return `/article/${id}`;
+          return null;
+        };
+
         return (
           <section key={cat.id || index} className="cs-section">
             <div className="cs-header">
@@ -131,296 +137,278 @@ const CategoryShowcase: React.FC<CategoryShowcaseProps> = ({
 
             <div className={`cs-layout cs-layout-${layout}`}>
               {/* LAYOUT 1: HERO + SIDEBAR */}
-              {layout === "hero-sidebar" && (
+              {layout === "hero-sidebar" && displayArticles.length > 0 && (
                 <>
                   <div className="cs-hero-col">
-                    <Link
-                      to={`/article/${displayArticles[0].id}`}
-                      className="cs-dark-card"
-                    >
-                      <div className="cs-img-wrap">
-                        <img src={displayArticles[0].img} />
-                      </div>
-                      <div className="cs-card-body">
-                        <div className="cs-card-badges">
-                          <StatusBadge
-                            articleType={displayArticles[0].articleType}
-                            statusType={displayArticles[0].statusType}
-
-                            variant="default"
-                          />
-                          <span className="cs-card-badge">
-                            {displayArticles[0].category}
-                          </span>
-                        </div>
-                        <h3 className="cs-card-title">
-                          {displayArticles[0].title}
-                        </h3>
-                        <p className="cs-card-sub">
-                          {displayArticles[0].subtitle}
-                        </p>
-                        <div className="cs-card-time">
-                          <Clock size={14} /> {displayArticles[0].time}
-                        </div>
-                      </div>
-                    </Link>
+                    {(() => {
+                      const heroArticle = displayArticles[0];
+                      const heroUrl = getArticleUrl(heroArticle);
+                      if (!heroUrl) return null;
+                      return (
+                        <Link to={heroUrl} className="cs-dark-card">
+                          <div className="cs-img-wrap">
+                            <img src={heroArticle.img} />
+                          </div>
+                          <div className="cs-card-body">
+                            <div className="cs-card-badges">
+                              <StatusBadge
+                                articleType={heroArticle.articleType}
+                                statusType={heroArticle.statusType}
+                                variant="default"
+                              />
+                              <span className="cs-card-badge">
+                                {heroArticle.category}
+                              </span>
+                            </div>
+                            <h3 className="cs-card-title">
+                              {heroArticle.title}
+                            </h3>
+                            <p className="cs-card-sub">
+                              {heroArticle.subtitle}
+                            </p>
+                            <div className="cs-card-time">
+                              <Clock size={14} /> {heroArticle.time}
+                            </div>
+                          </div>
+                        </Link>
+                      );
+                    })()}
                   </div>
                   <div className="cs-sidebar-col">
-                    {displayArticles.slice(1, 5).map((article, i) => (
-                      <Link
-                        to={`/article/${article.id}`}
-                        key={article.id || i}
-                        className="cs-list-item"
-                      >
-                        <img src={article.img} className="cs-list-img" />
-                        <div className="cs-list-content">
-                          <div className="cs-list-badges">
-                            <StatusBadge
-                              articleType={article.articleType}
-                              statusType={article.statusType}
-
-                              variant="compact"
-                            />
-                            <span className="cs-list-cat">
-                              {article.category}
-                            </span>
+                    {displayArticles.slice(1, 5).map((article, i) => {
+                      const sidebarUrl = getArticleUrl(article);
+                      if (!sidebarUrl) return null;
+                      return (
+                        <Link
+                          to={sidebarUrl}
+                          key={String(article.id ?? article.id ?? article.slug ?? i)}
+                          className="cs-list-item"
+                        >
+                          <img src={article.img} className="cs-list-img" />
+                          <div className="cs-list-content">
+                            <div className="cs-list-badges">
+                              <StatusBadge
+                                articleType={article.articleType}
+                                statusType={article.statusType}
+                                variant="compact"
+                              />
+                              <span className="cs-list-cat">
+                                {article.categoryId?.name ?? article.category}
+                              </span>
+                            </div>
+                            <h4 className="cs-list-title">{article.title}</h4>
+                            <div className="cs-card-time">
+                              <Clock size={14} /> {article.time}
+                            </div>
                           </div>
-                          <h4 className="cs-list-title">{article.title}</h4>
-                          <div className="cs-card-time">
-                            <Clock size={14} /> {article.time}
-                          </div>
-                        </div>
-                      </Link>
-                    ))}
+                        </Link>
+                      );
+                    })}
                   </div>
                 </>
               )}
 
               {/* LAYOUT 2: SPLIT + SIDEBAR */}
-              {layout === "split-sidebar" && (
+              {layout === "split-sidebar" && displayArticles.length > 0 && (
                 <>
                   <div className="cs-split-col">
-                    <Link
-                      to={`/article/${displayArticles[0].id}`}
-                      className="cs-dark-card"
-                    >
-                      <div className="cs-img-wrap">
-                        <img src={displayArticles[0].img} alt="" />
-                      </div>
-                      <div className="cs-card-body">
-                        <div className="cs-card-badges">
-                          <StatusBadge
-                            articleType={displayArticles[0].articleType}
-                            statusType={displayArticles[0].statusType}
-
-                            variant="default"
-                          />
-                          <span className="cs-card-badge">
-                            {displayArticles[0].category}
-                          </span>
-                        </div>
-                        <h3 className="cs-card-title">
-                          {displayArticles[0].title}
-                        </h3>
-                        <p className="cs-card-sub">
-                          {displayArticles[0].subtitle}
-                        </p>
-                        <div className="cs-card-time">
-                          <Clock size={14} /> {displayArticles[0].time}
-                        </div>
-                      </div>
-                    </Link>
+                    {(function() {
+                      const heroArticle = displayArticles[0];
+                      const heroUrl = getArticleUrl(heroArticle);
+                      if (!heroUrl) return null;
+                      return (
+                        <Link to={heroUrl} className="cs-dark-card">
+                          <div className="cs-img-wrap">
+                            <img src={heroArticle.img} alt="" />
+                          </div>
+                          <div className="cs-card-body">
+                            <div className="cs-card-badges">
+                              <StatusBadge
+                                articleType={heroArticle.articleType}
+                                statusType={heroArticle.statusType}
+                                variant="default"
+                              />
+                              <span className="cs-card-badge">
+                                {heroArticle.categoryId?.name ?? heroArticle.category}
+                              </span>
+                            </div>
+                            <h3 className="cs-card-title">{heroArticle.title}</h3>
+                            <p className="cs-card-sub">{heroArticle.subtitle}</p>
+                            <div className="cs-card-time">
+                              <Clock size={14} /> {heroArticle.time}
+                            </div>
+                          </div>
+                        </Link>
+                      );
+                    })()}
                   </div>
                   <div className="cs-sidebar-col">
-                    {displayArticles.slice(2, 6).map((article, i) => (
-                      <Link
-                        to={`/article/${article.id}`}
-                        key={article.id || i}
-                        className="cs-list-item"
-                      >
-                        <img src={article.img} alt="" className="cs-list-img" />
-                        <div className="cs-list-content">
-                          <div className="cs-list-badges">
-                            <StatusBadge
-                              articleType={article.articleType}
-                              statusType={article.statusType}
-
-                              variant="compact"
-                            />
-                            <span className="cs-list-cat">
-                              {article.category}
-                            </span>
+                    {displayArticles.slice(2, 6).map((article, i) => {
+                      const sidebarUrl = getArticleUrl(article);
+                      if (!sidebarUrl) return null;
+                      return (
+                        <Link
+                          to={sidebarUrl}
+                          key={String(article.id ?? article.id ?? article.slug ?? i)}
+                          className="cs-list-item"
+                        >
+                          <img src={article.img} alt="" className="cs-list-img" />
+                          <div className="cs-list-content">
+                            <div className="cs-list-badges">
+                              <StatusBadge
+                                articleType={article.articleType}
+                                statusType={article.statusType}
+                                variant="compact"
+                              />
+                              <span className="cs-list-cat">
+                                {article.categoryId?.name ?? article.category}
+                              </span>
+                            </div>
+                            <h4 className="cs-list-title">{article.title}</h4>
+                            <div className="cs-card-time">
+                              <Clock size={14} /> {article.time}
+                            </div>
                           </div>
-                          <h4 className="cs-list-title">{article.title}</h4>
-                          <div className="cs-card-time">
-                            <Clock size={14} /> {article.time}
-                          </div>
-                        </div>
-                      </Link>
-                    ))}
+                        </Link>
+                      );
+                    })}
                   </div>
                 </>
               )}
 
               {/* LAYOUT 3: 3-COLUMN GRID */}
               {layout === "grid-3" &&
-                displayArticles.slice(0, 6).map((article, i) => (
-                  <Link
-                    to={`/article/${article.id}`}
-                    key={article.id || i}
-                    className="cs-dark-card"
-                  >
-                    <div className="cs-img-wrap">
-                      <img src={article.img} alt="" />
-                    </div>
-                    <div className="cs-card-body">
-                      <div className="cs-card-badges">
-                        <StatusBadge
-                          articleType={article.articleType}
-                          statusType={article.statusType}
-
-                          variant="compact"
-                        />
-                        <span className="cs-card-badge">{article.category}</span>
-                      </div>
-                      <h3 className="cs-card-title">{article.title}</h3>
-                      <p className="cs-card-sub">{article.subtitle}</p>
-                      <div className="cs-card-time">
-                        <Clock size={14} /> {article.time}
-                      </div>
-                    </div>
-                  </Link>
-                ))}
-
-              {/* LAYOUT 4: 4-COLUMN GRID */}
-              {layout === "grid-4" &&
-                displayArticles.slice(0, 8).map((article, i) => (
-                  <Link
-                    to={`/article/${article.id}`}
-                    key={article.id || i}
-                    className="cs-dark-card"
-                  >
-                    <div className="cs-img-wrap">
-                      {article.img && <img src={article.img} alt="" />}
-                    </div>
-                    <div className="cs-card-body">
-                      <div className="cs-card-badges">
-                        <StatusBadge
-                          articleType={article.articleType}
-                          statusType={article.statusType}
-
-                          variant="compact"
-                        />
-                        <span className="cs-card-badge">{article.category}</span>
-                      </div>
-                      <h3 className="cs-card-title cs-grid-title-small">
-                        {article.title}
-                      </h3>
-                      <p className="cs-card-sub">{article.subtitle}</p>
-                      <div className="cs-card-time">
-                        <Clock size={14} /> {article.time}
-                      </div>
-                    </div>
-                  </Link>
-                ))}
-
-              {/* LAYOUT 5: HERO REVERSED */}
-              {layout === "hero-reversed" && (
-                <>
-                  <div className="cs-sidebar-col cs-sidebar-reversed">
-                    {displayArticles.slice(1, 5).map((article, i) => (
-                      <Link
-                        to={`/article/${article.id}`}
-                        key={article.id || i}
-                        className="cs-list-item"
-                      >
-                        <img src={article.img} alt="" className="cs-list-img" />
-                        <div className="cs-list-content">
-                          <div className="cs-list-badges">
-                            <StatusBadge
-                              articleType={article.articleType}
-                              statusType={article.statusType}
-
-                              variant="compact"
-                            />
-                            <span className="cs-list-cat">
-                              {article.category}
-                            </span>
-                          </div>
-                          <h4 className="cs-list-title">{article.title}</h4>
-                          <div className="cs-card-time">
-                            <Clock size={14} /> {article.time}
-                          </div>
-                        </div>
-                      </Link>
-                    ))}
-                  </div>
-                  <div className="cs-hero-col cs-hero-reversed">
+                displayArticles.slice(0, 6).map((article, i) => {
+                  const grid3Url = getArticleUrl(article);
+                  if (!grid3Url) return null;
+                  return (
                     <Link
-                      to={`/article/${displayArticles[0].id}`}
+                      to={grid3Url}
+                      key={String(article.id ?? article.id ?? article.slug ?? i)}
                       className="cs-dark-card"
                     >
                       <div className="cs-img-wrap">
-                        <img src={displayArticles[0].img} alt="" />
+                        <img src={article.img} alt="" />
                       </div>
                       <div className="cs-card-body">
                         <div className="cs-card-badges">
                           <StatusBadge
-                            articleType={displayArticles[0].articleType}
-                            statusType={displayArticles[0].statusType}
-
-                            variant="default"
+                            articleType={article.articleType}
+                            statusType={article.statusType}
+                            variant="compact"
                           />
-                          <span className="cs-card-badge">
-                            {displayArticles[0].category}
-                          </span>
+                          <span className="cs-card-badge">{article.categoryId?.name ?? article.category}</span>
                         </div>
-                        <h3 className="cs-card-title">
-                          {displayArticles[0].title}
-                        </h3>
-                        <p className="cs-card-sub">
-                          {displayArticles[0].subtitle}
-                        </p>
+                        <h3 className="cs-card-title">{article.title}</h3>
+                        <p className="cs-card-sub">{article.subtitle}</p>
                         <div className="cs-card-time">
-                          <Clock size={14} /> {displayArticles[0].time}
+                          <Clock size={14} /> {article.time}
                         </div>
                       </div>
                     </Link>
+                  );
+                })}
+
+              {/* LAYOUT 4: 4-COLUMN GRID */}
+              {layout === "grid-4" &&
+                displayArticles.slice(0, 8).map((article, i) => {
+                  const grid4Url = getArticleUrl(article);
+                  if (!grid4Url) return null;
+                  return (
+                    <Link
+                      to={grid4Url}
+                      key={String(article.id ?? article.id ?? article.slug ?? i)}
+                      className="cs-dark-card"
+                    >
+                      <div className="cs-img-wrap">
+                        {article.img && <img src={article.img} alt="" />}
+                      </div>
+                      <div className="cs-card-body">
+                        <div className="cs-card-badges">
+                          <StatusBadge
+                            articleType={article.articleType}
+                            statusType={article.statusType}
+                            variant="compact"
+                          />
+                          <span className="cs-card-badge">{article.categoryId?.name ?? article.category}</span>
+                        </div>
+                        <h3 className="cs-card-title cs-grid-title-small">{article.title}</h3>
+                        <p className="cs-card-sub">{article.subtitle}</p>
+                        <div className="cs-card-time">
+                          <Clock size={14} /> {article.time}
+                        </div>
+                      </div>
+                    </Link>
+                  );
+                })}
+
+              {/* LAYOUT 5: HERO REVERSED */}
+              {layout === "hero-reversed" && displayArticles.length > 0 && (
+                <>
+                  <div className="cs-sidebar-col cs-sidebar-reversed">
+                    {displayArticles.slice(1, 5).map((article, i) => {
+                      const sidebarUrl = getArticleUrl(article);
+                      if (!sidebarUrl) return null;
+                      return (
+                        <Link
+                          to={sidebarUrl}
+                          key={String(article.id ?? article.id ?? article.slug ?? i)}
+                          className="cs-list-item"
+                        >
+                          <img src={article.img} alt="" className="cs-list-img" />
+                          <div className="cs-list-content">
+                            <div className="cs-list-badges">
+                              <StatusBadge
+                                articleType={article.articleType}
+                                statusType={article.statusType}
+                                variant="compact"
+                              />
+                              <span className="cs-list-cat">
+                                {article.categoryId?.name ?? article.category}
+                              </span>
+                            </div>
+                            <h4 className="cs-list-title">{article.title}</h4>
+                            <div className="cs-card-time">
+                              <Clock size={14} /> {article.time}
+                            </div>
+                          </div>
+                        </Link>
+                      );
+                    })}
+                  </div>
+                  <div className="cs-hero-col cs-hero-reversed">
+                    {(function() {
+                      const heroArticle = displayArticles[0];
+                      const heroUrl = getArticleUrl(heroArticle);
+                      if (!heroUrl) return null;
+                      return (
+                        <Link to={heroUrl} className="cs-dark-card">
+                          <div className="cs-img-wrap">
+                            <img src={heroArticle.img} alt="" />
+                          </div>
+                          <div className="cs-card-body">
+                            <div className="cs-card-badges">
+                              <StatusBadge
+                                articleType={heroArticle.articleType}
+                                statusType={heroArticle.statusType}
+                                variant="default"
+                              />
+                              <span className="cs-card-badge">
+                                {heroArticle.categoryId?.name ?? heroArticle.category}
+                              </span>
+                            </div>
+                            <h3 className="cs-card-title">{heroArticle.title}</h3>
+                            <p className="cs-card-sub">{heroArticle.subtitle}</p>
+                            <div className="cs-card-time">
+                              <Clock size={14} /> {heroArticle.time}
+                            </div>
+                          </div>
+                        </Link>
+                      );
+                    })()}
                   </div>
                 </>
               )}
-
-{/* LAYOUT 4: 4-COLUMN GRID */}
-              {layout === "grid-4" &&
-                displayArticles.slice(0, 8).map((article, i) => (
-                  <Link
-                    to={`/article/${article.id}`}
-                    key={article.id || i}
-                    className="cs-dark-card"
-                  >
-                    <div className="cs-img-wrap">
-                      {article.img && <img src={article.img} alt="" />}
-                    </div>
-                    <div className="cs-card-body">
-                      <div className="cs-card-badges">
-                        <StatusBadge
-                          articleType={article.articleType}
-                          statusType={article.statusType}
-
-                          variant="compact"
-                        />
-                        <span className="cs-card-badge">{article.category}</span>
-                      </div>
-                      <h3 className="cs-card-title cs-grid-title-small">
-                        {article.title}
-                      </h3>
-                      <p className="cs-card-sub">{article.subtitle}</p>
-                      <div className="cs-card-time">
-                        <Clock size={14} /> {article.time}
-                      </div>
-                    </div>
-                  </Link>
-                ))}
             </div>
           </section>
         );
@@ -428,5 +416,7 @@ const CategoryShowcase: React.FC<CategoryShowcaseProps> = ({
     </div>
   );
 };
+
+
 
 export default CategoryShowcase;

@@ -18,6 +18,8 @@ export const getFooterSettings = async (req: Request, res: Response) => {
           "Get the latest headlines and in-depth stories delivered to your inbox.",
         trustedText:
           "Your trusted source for real-time news and in-depth stories from India and around the world.",
+        desktopOverlayOpacity: 0.82,
+        mobileOverlayOpacity: 0.90,
         images: [],
         updatedAt: null,
       });
@@ -36,7 +38,7 @@ export const updateFooterSettings = async (
   res: Response
 ) => {
   try {
-    const { sectionTitle, descriptionText, trustedText, images } = req.body;
+    const { sectionTitle, descriptionText, trustedText, images, desktopOverlayOpacity, mobileOverlayOpacity } = req.body;
 
     if (sectionTitle !== undefined && typeof sectionTitle !== "string")
       return res.status(400).json({ message: "sectionTitle must be a string" });
@@ -48,6 +50,20 @@ export const updateFooterSettings = async (
       return res.status(400).json({ message: "trustedText must be a string" });
     if (images !== undefined && !Array.isArray(images))
       return res.status(400).json({ message: "images must be an array" });
+
+    if (desktopOverlayOpacity !== undefined) {
+      const val = Number(desktopOverlayOpacity);
+      if (isNaN(val) || val < 0 || val > 1) {
+        return res.status(400).json({ message: "desktopOverlayOpacity must be a number between 0 and 1" });
+      }
+    }
+
+    if (mobileOverlayOpacity !== undefined) {
+      const val = Number(mobileOverlayOpacity);
+      if (isNaN(val) || val < 0 || val > 1) {
+        return res.status(400).json({ message: "mobileOverlayOpacity must be a number between 0 and 1" });
+      }
+    }
 
     // Reject any base64 blobs
     if (Array.isArray(images)) {
@@ -66,6 +82,8 @@ export const updateFooterSettings = async (
       updateData.descriptionText = descriptionText;
     if (trustedText !== undefined) updateData.trustedText = trustedText;
     if (images !== undefined) updateData.images = images;
+    if (desktopOverlayOpacity !== undefined) updateData.desktopOverlayOpacity = Number(desktopOverlayOpacity);
+    if (mobileOverlayOpacity !== undefined) updateData.mobileOverlayOpacity = Number(mobileOverlayOpacity);
 
     const settings = await FooterSettings.findOneAndUpdate(
       { id: SINGLETON_ID },

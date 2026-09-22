@@ -4,8 +4,8 @@ import { useParams, Link, useNavigate } from "react-router-dom";
 import {
   Calendar, Clock, User, Share2, Facebook,
   ThumbsUp, ThumbsDown, MessageSquare, MoreHorizontal,
-  ChevronDown, Flag, Copy, Tag, MapPin, ArrowRight,
-  Zap, Camera, Trash2,
+  ChevronDown, Copy, Tag, MapPin, ArrowRight,
+  Zap, Camera, Trash2, Edit,
 } from "lucide-react";
 import { FaXTwitter, FaWhatsapp } from "react-icons/fa6";
 import "./ArticalDetails.css";
@@ -20,8 +20,8 @@ import {
   postComment,
   postReply,
   reactComment,
-  reportComment,
   deleteComment,
+  editComment,
 } from "../../../api/user/comment";
 import { trackPageView, trackReadTime } from "../../../api/analytics";
 import { trackRead, trackShare } from "../../../api/user/userauth";
@@ -31,6 +31,7 @@ import NotFound404 from "../Errors/NotFound404";
 import { formatLiveTime } from "../../../utils/timezone";
 import { isLiveArticle, isBreakingArticle } from "../../../utils/statusUtils";
 import { StatusBadge } from "../../UI/StatusBadge";
+import toast from "react-hot-toast";
 // ─── Types ────────────────────────────────────────────────────────────────────
 type VoteType = "like" | "dislike" | null;
 
@@ -46,6 +47,7 @@ interface CommentType {
   userVote: VoteType;
   isVerified?: boolean;
   replies: CommentType[];
+  userId: string;
 }
 
 interface LiveUpdate {
@@ -76,8 +78,9 @@ interface ArticleData {
   shortTitle?: string;
   excerpt?: string;
   content: string;
-  category: string;
+  category: { id: string; name: string; slug: string };
   categoryId?: string;
+  parentCategory: { id: string; name: string; slug: string };
   author: string;
   publishedAt?: string;
   readTime: string;
@@ -123,20 +126,44 @@ function calcReadTime(html: string): string {
 }
 
 function normalizeArticle(raw: any): ArticleData {
+  const categoryIdObj =
+    raw.categoryId && typeof raw.categoryId === "object"
+      ? raw.categoryId
+      : null;
+
+  const parentCategoryObj =
+    raw.parentCategory && typeof raw.parentCategory === "object"
+      ? raw.parentCategory
+      : null;
+
+  const category = categoryIdObj
+    ? {
+        id: String(categoryIdObj._id ?? ""),
+        name: categoryIdObj.name ?? "",
+        slug: categoryIdObj.slug ?? "",
+      }
+    : { id: "", name: "", slug: "" };
+
+  const parentCategory = parentCategoryObj
+    ? {
+        id: String(parentCategoryObj._id ?? ""),
+        name: parentCategoryObj.name ?? "",
+        slug: parentCategoryObj.slug ?? "",
+      }
+    : { id: "", name: "", slug: "" };
+
   return {
     id:       String(raw._id ?? raw.id ?? ""),
     headline: raw.headline ?? raw.title ?? "",
     shortTitle: raw.shortTitle,
     excerpt:  raw.excerpt ?? raw.subtitle,
     content:  raw.content ?? "",
-    category:
-      typeof raw.categoryId === "object"
-        ? raw.categoryId?.name ?? "News"
-        : raw.category ?? "News",
+    category,
     categoryId:
-      typeof raw.categoryId === "object"
-        ? String(raw.categoryId?._id ?? "")
+      categoryIdObj?._id
+        ? String(categoryIdObj._id)
         : String(raw.categoryId ?? ""),
+    parentCategory,
     author:
       typeof raw.authorId === "object"
         ? raw.authorId?.name ?? "LocalNewz Team"
@@ -158,6 +185,8 @@ function normalizeArticle(raw: any): ArticleData {
     language:     raw.language,
   };
 }
+
+
 
 // ─── Poll Component ───────────────────────────────────────────────────────────
 interface PollProps {
@@ -266,6 +295,9 @@ const ArticleDetail: React.FC = () => {
   const [replyLoading,   setReplyLoading]   = useState(false);
   const [openMenuId,     setOpenMenuId]     = useState<string | null>(null);
   const [commentError,   setCommentError]   = useState<string | null>(null);
+  const [editingCommentId, setEditingCommentId] = useState<string | null>(null);
+  const [editText,         setEditText]         = useState("");
+  const [editLoading,      setEditLoading]      = useState(false);
 
   const commentInputRef    = useRef<HTMLDivElement>(null);
   const replyInputRef      = useRef<HTMLDivElement>(null);
@@ -284,6 +316,33 @@ const ArticleDetail: React.FC = () => {
   // personal reading-history endpoint (trackRead uses $inc, so we only
   // ever send the delta since the last report).
   const lastReportedPersonalSecsRef = useRef(0);
+
+  // ── Close comment menu on outside click / Escape ────────────────────────────
+  useEffect(() => {
+    const handleMouseDown = (e: MouseEvent) => {
+      const target = e.target as Node;
+      if (!openMenuId) return;
+      // Check if click is inside the currently open menu wrap
+      const openMenuWrap = document.querySelector('.cmt-dropdown');
+      if (openMenuWrap && !openMenuWrap.contains(target)) {
+        // Also check if clicking the more button itself (which toggles)
+        const moreBtn = document.querySelector('.cmt-more-btn');
+        if (moreBtn && moreBtn.contains(target)) return;
+        setOpenMenuId(null);
+      }
+    };
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape" && openMenuId) {
+        setOpenMenuId(null);
+      }
+    };
+    document.addEventListener("mousedown", handleMouseDown);
+    document.addEventListener("keydown", handleKeyDown);
+    return () => {
+      document.removeEventListener("mousedown", handleMouseDown);
+      document.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [openMenuId]);
 
   const [ads, setAds] = useState<{
   cards: AdType[];
@@ -465,6 +524,36 @@ useEffect(() => {
     document.title = "LocalNewz";
   };
 }, [article]);
+
+  // ── Scroll to comment on hash ──────────────────────────────────────────────
+  useEffect(() => {
+    const hash = window.location.hash;
+    if (!hash) return;
+
+    const isReply = hash.startsWith("#comment-reply-");
+    const id = hash.replace(isReply ? "#comment-reply-" : "#comment-", "");
+    if (!id) return;
+
+    const tryScroll = () => {
+      const el = document.getElementById(hash.slice(1));
+      if (el) {
+        el.scrollIntoView({ behavior: "smooth", block: "center" });
+        el.classList.add("cmt-highlight");
+        setTimeout(() => el.classList.remove("cmt-highlight"), 2000);
+      }
+    };
+
+    // Comments might not be loaded yet, so try a few times
+    let attempts = 0;
+    const interval = setInterval(() => {
+      tryScroll();
+      attempts++;
+      if (attempts >= 10 || document.getElementById(hash.slice(1))) {
+        clearInterval(interval);
+      }
+    }, 300);
+    return () => clearInterval(interval);
+  }, [article?.id, comments]);
 
   // ── Fetch recent news ────────────────────────────────────────────────────
   useEffect(() => {
@@ -726,6 +815,7 @@ if (platform === "whatsapp") {
         dislikes:   0,
         userVote:   null,
         replies:    [],
+        userId:     c?.userId ?? currentUser?.id ?? "",
       };
       setComments((prev) => [newComment, ...prev]);
       if (commentInputRef.current) commentInputRef.current.innerHTML = "";
@@ -758,6 +848,7 @@ if (platform === "whatsapp") {
         dislikes:   0,
         userVote:   null,
         replies:    [],
+        userId:     r?.userId ?? currentUser?.id ?? "",
       };
       setComments((prev) =>
         prev.map((c) =>
@@ -770,16 +861,6 @@ if (platform === "whatsapp") {
     finally {
       setReplyLoading(false);
     }
-  };
-
-  // ── Report ───────────────────────────────────────────────────────────────
-  const handleReport = async (commentId: string) => {
-    if (!currentUser) { navigate("/login"); return; }
-    setOpenMenuId(null);
-    try {
-      await reportComment(commentId);
-      alert("Comment reported. Our team will review it.");
-    } catch { alert("Could not report comment."); }
   };
 
   // ── Delete own comment ───────────────────────────────────────────────────
@@ -798,7 +879,68 @@ if (platform === "whatsapp") {
       } else {
         setComments((prev) => prev.filter((c) => c.id !== commentId));
       }
-    } catch { alert("Could not delete comment."); }
+      toast.success("Comment deleted.");
+    } catch {
+      toast.error("Could not delete comment.");
+    }
+  };
+
+  // ── Edit comment ───────────────────────────────────────────────────────────
+  const handleEditStart = (comment: CommentType) => {
+    setEditingCommentId(comment.id);
+    setEditText(comment.text);
+    setOpenMenuId(null);
+  };
+
+  const handleEditCancel = () => {
+    setEditingCommentId(null);
+    setEditText("");
+  };
+
+  const handleEditSave = async (commentId: string, isReply = false, parentId: string | null = null) => {
+    const text = editText.trim();
+    if (!text) return;
+
+    setEditLoading(true);
+    try {
+      const data = await editComment(commentId, text);
+      const updated = data.comment;
+
+      const applyUpdate = (c: CommentType): CommentType => {
+        if (c.id !== commentId) return c;
+        return { ...c, text: updated.text };
+      };
+
+      setComments((prev) =>
+        prev.map((c) => {
+          if (!isReply) return applyUpdate(c);
+          if (c.id === parentId) return { ...c, replies: c.replies.map(applyUpdate) };
+          return c;
+        })
+      );
+
+      setEditingCommentId(null);
+      setEditText("");
+    } catch (err: any) {
+      toast.error(err.message ?? "Failed to edit comment.");
+    } finally {
+      setEditLoading(false);
+    }
+  };
+
+  // ── Copy link to comment ───────────────────────────────────────────────────
+  const handleCopyLink = async (commentId: string, isReply = false) => {
+    const articleUrl = window.location.origin + window.location.pathname;
+    const hash = isReply ? `#comment-reply-${commentId}` : `#comment-${commentId}`;
+    const fullUrl = articleUrl + hash;
+
+    try {
+      await navigator.clipboard.writeText(fullUrl);
+      toast.success("Link copied!");
+    } catch {
+      toast.error("Failed to copy link.");
+    }
+    setOpenMenuId(null);
   };
 
   // ── Loading / Error ───────────────────────────────────────────────────────
@@ -819,10 +961,10 @@ if (platform === "whatsapp") {
     return <NotFound404 />;
   }
 
-  const displayCategory =
-    article.category.charAt(0).toUpperCase() + article.category.slice(1).toLowerCase();
-  const totalComments =
-    comments.length + comments.reduce((acc, c) => acc + c.replies.length, 0);
+const totalComments = comments.length + comments.reduce((acc, c) => acc + c.replies.length, 0);
+
+  // Determine display category - use the most specific category (subcategory if exists, else parent)
+  const displayCategory = article.category?.name || article.parentCategory?.name || "";
 
   // ─── Render ───────────────────────────────────────────────────────────────
   return (
@@ -841,18 +983,30 @@ if (platform === "whatsapp") {
 
           {/* ── BREADCRUMB ── */}
           <div className="breadcrumb">
-            <Link to="/" className="bc-link">Home</Link>
-            <span className="bc-sep">/</span>
-            <Link to={`/category/${article.category.toLowerCase()}`} className="bc-link">
-              {displayCategory}
-            </Link>
+            <Link to="/" className="bc-link">होम</Link>
+            {article.parentCategory?.slug && (
+              <>
+                <span className="bc-sep">/</span>
+                <Link to={`/category/${article.parentCategory.slug}`} className="bc-link">
+                  {article.parentCategory.name}
+                </Link>
+              </>
+            )}
+            {article.category?.slug && (
+              <>
+                <span className="bc-sep">/</span>
+                <Link to={`/category/${article.category.slug}`} className="bc-link">
+                  {article.category.name}
+                </Link>
+              </>
+            )}
             <span className="bc-sep">/</span>
             <span className="bc-current">{article.headline}</span>
           </div>
 
           {/* ── BADGES ── */}
           <div className="badges-row">
-            <span className="category-badge">{article.category}</span>
+            <span className="category-badge">{displayCategory}</span>
             {article.isLive && (
               <span className="live-badge"><span className="live-dot-sm" /> LIVE</span>
             )}
@@ -1026,7 +1180,7 @@ if (platform === "whatsapp") {
 
                 {comments.map((comment) => (
                   <div key={comment.id} className="cmt-thread">
-                    <div className="cmt-item">
+                    <div className="cmt-item" id={`comment-${comment.id}`}>
                       <div className="cmt-avatar">
                         {comment.profilePic ? (
                           <img src={comment.profilePic} alt={comment.author} style={{ width: "100%", height: "100%", borderRadius: "50%", objectFit: "cover" }} />
@@ -1042,7 +1196,32 @@ if (platform === "whatsapp") {
                           <span className="cmt-time">{comment.time}</span>
                         </div>
 
-                        <div className="cmt-text">{comment.text}</div>
+                        {/* Edit mode */}
+                        {editingCommentId === comment.id ? (
+                          <div className="cmt-edit-box">
+                            <div
+                              ref={commentInputRef}
+                              className="cmt-textarea"
+                              contentEditable
+                              data-placeholder="Edit comment..."
+                              suppressContentEditableWarning
+                              onInput={(e) => setEditText(e.currentTarget.innerText)}
+                              dangerouslySetInnerHTML={{ __html: editText }}
+                            />
+                            <div className="cmt-reply-actions">
+                              <button className="cmt-cancel" onClick={handleEditCancel}>Cancel</button>
+                              <button
+                                className="cmt-submit"
+                                disabled={editLoading || !editText.trim()}
+                                onClick={() => handleEditSave(comment.id)}
+                              >
+                                {editLoading ? "Saving…" : "Save"}
+                              </button>
+                            </div>
+                          </div>
+                        ) : (
+                          <div className="cmt-text">{comment.text}</div>
+                        )}
 
                         <div className="cmt-actions">
                           {/* Like */}
@@ -1069,34 +1248,37 @@ if (platform === "whatsapp") {
                             <MessageSquare size={14} /> Reply
                           </button>
 
-                          {/* More menu */}
-                          <div className="cmt-menu-wrap">
-                            <button
-                              className="cmt-more-btn"
-                              onClick={(e) => { e.stopPropagation(); setOpenMenuId(openMenuId === comment.id ? null : comment.id); }}
-                            >
-                              <MoreHorizontal size={14} />
-                            </button>
-                            {openMenuId === comment.id && (
-                              <div className="cmt-dropdown">
-                                <button onClick={() => { navigator.clipboard.writeText(window.location.href); setOpenMenuId(null); }}>
-                                  <Copy size={14} /> Copy Link
-                                </button>
-                                <button onClick={() => handleReport(comment.id)}>
-                                  <Flag size={14} /> Report
-                                </button>
-                                {/* Show delete only for own comments */}
-                                {currentUser && comment.author === currentUser.name && (
-                                  <button
-                                    style={{ color: "#e60000" }}
-                                    onClick={() => { setOpenMenuId(null); handleDelete(comment.id); }}
-                                  >
-                                    <Trash2 size={14} /> Delete
+                          {/* More menu - only for logged-in users */}
+                          {currentUser && (
+                            <div className="cmt-menu-wrap">
+                              <button
+                                className="cmt-more-btn"
+                                onClick={(e) => { e.stopPropagation(); setOpenMenuId(openMenuId === comment.id ? null : comment.id); }}
+                              >
+                                <MoreHorizontal size={14} />
+                              </button>
+                              {openMenuId === comment.id && (
+                                <div className="cmt-dropdown">
+                                  <button onClick={() => handleCopyLink(comment.id, false)}>
+                                    <Copy size={14} /> Copy Link
                                   </button>
-                                )}
-                              </div>
-                            )}
-                          </div>
+                                  {comment.userId === currentUser.id && (
+                                    <>
+                                      <button onClick={() => { handleEditStart(comment); }}>
+                                        <Edit size={14} /> Edit
+                                      </button>
+                                      <button
+                                        style={{ color: "#e60000" }}
+                                        onClick={() => { setOpenMenuId(null); handleDelete(comment.id); }}
+                                      >
+                                        <Trash2 size={14} /> Delete
+                                      </button>
+                                    </>
+                                  )}
+                                </div>
+                              )}
+                            </div>
+                          )}
                         </div>
 
                         {/* Reply input box */}
@@ -1128,7 +1310,7 @@ if (platform === "whatsapp") {
                     {comment.replies.length > 0 && (
                       <div className="cmt-replies-container">
                         {comment.replies.map((reply) => (
-                          <div key={reply.id} className="cmt-item">
+                          <div key={reply.id} className="cmt-item" id={`comment-reply-${reply.id}`}>
                             <div className="cmt-avatar cmt-avatar-small">
                               {reply.profilePic ? (
                                 <img src={reply.profilePic} alt={reply.author} style={{ width: "100%", height: "100%", borderRadius: "50%", objectFit: "cover" }} />
@@ -1144,7 +1326,32 @@ if (platform === "whatsapp") {
                                 <span className="cmt-time">{reply.time}</span>
                               </div>
 
-                              <div className="cmt-text">{reply.text}</div>
+                              {/* Edit mode for reply */}
+                              {editingCommentId === reply.id ? (
+                                <div className="cmt-edit-box">
+                                  <div
+                                    ref={replyInputRef}
+                                    className="cmt-textarea"
+                                    contentEditable
+                                    data-placeholder="Edit reply..."
+                                    suppressContentEditableWarning
+                                    onInput={(e) => setEditText(e.currentTarget.innerText)}
+                                    dangerouslySetInnerHTML={{ __html: editText }}
+                                  />
+                                  <div className="cmt-reply-actions">
+                                    <button className="cmt-cancel" onClick={handleEditCancel}>Cancel</button>
+                                    <button
+                                      className="cmt-submit"
+                                      disabled={editLoading || !editText.trim()}
+                                      onClick={() => handleEditSave(reply.id, true, comment.id)}
+                                    >
+                                      {editLoading ? "Saving…" : "Save"}
+                                    </button>
+                                  </div>
+                                </div>
+                              ) : (
+                                <div className="cmt-text">{reply.text}</div>
+                              )}
 
                               <div className="cmt-actions">
                                 <button
@@ -1165,32 +1372,38 @@ if (platform === "whatsapp") {
                                 >
                                   <MessageSquare size={14} /> Reply
                                 </button>
-                                <div className="cmt-menu-wrap">
-                                  <button
-                                    className="cmt-more-btn"
-                                    onClick={(e) => { e.stopPropagation(); setOpenMenuId(openMenuId === reply.id ? null : reply.id); }}
-                                  >
-                                    <MoreHorizontal size={14} />
-                                  </button>
-                                  {openMenuId === reply.id && (
-                                    <div className="cmt-dropdown">
-                                      <button onClick={() => { navigator.clipboard.writeText(window.location.href); setOpenMenuId(null); }}>
-                                        <Copy size={14} /> Copy Link
-                                      </button>
-                                      <button onClick={() => handleReport(reply.id)}>
-                                        <Flag size={14} /> Report
-                                      </button>
-                                      {currentUser && reply.author === currentUser.name && (
-                                        <button
-                                          style={{ color: "#e60000" }}
-                                          onClick={() => { setOpenMenuId(null); handleDelete(reply.id, true, comment.id); }}
-                                        >
-                                          <Trash2 size={14} /> Delete
+
+                                {/* More menu - only for logged-in users */}
+                                {currentUser && (
+                                  <div className="cmt-menu-wrap">
+                                    <button
+                                      className="cmt-more-btn"
+                                      onClick={(e) => { e.stopPropagation(); setOpenMenuId(openMenuId === reply.id ? null : reply.id); }}
+                                    >
+                                      <MoreHorizontal size={14} />
+                                    </button>
+                                    {openMenuId === reply.id && (
+                                      <div className="cmt-dropdown">
+                                        <button onClick={() => handleCopyLink(reply.id, true)}>
+                                          <Copy size={14} /> Copy Link
                                         </button>
-                                      )}
-                                    </div>
-                                  )}
-                                </div>
+                                        {reply.userId === currentUser.id && (
+                                          <>
+                                            <button onClick={() => { handleEditStart(reply); }}>
+                                              <Edit size={14} /> Edit
+                                            </button>
+                                            <button
+                                              style={{ color: "#e60000" }}
+                                              onClick={() => { setOpenMenuId(null); handleDelete(reply.id, true, comment.id); }}
+                                            >
+                                              <Trash2 size={14} /> Delete
+                                            </button>
+                                          </>
+                                        )}
+                                      </div>
+                                    )}
+                                  </div>
+                                )}
                               </div>
                             </div>
                           </div>
@@ -1242,9 +1455,9 @@ if (platform === "whatsapp") {
               <div className="recent-news-list">
                 {recentNews.slice(0, 5).map((item) => {
                   const itemId  = String(item._id ?? item.id ?? "");
-                  const catName = typeof item.categoryId === "object"
-                    ? item.categoryId?.name ?? "News"
-                    : item.categoryName ?? "News";
+                  const catName = typeof item.categoryId === "object" && item.categoryId?.name
+                    ? item.categoryId.name
+                    : item.categoryName ?? item.category;
                   return (
                     <Link key={itemId} to={`/article/${itemId}`} className="recent-news-item">
                       {item.featuredImage && (

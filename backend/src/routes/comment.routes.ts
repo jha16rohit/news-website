@@ -20,6 +20,7 @@ import {
   reactToComment,
   reportComment,
   deleteOwnComment,
+  updateOwnComment,
   adminGetComments,
   adminCommentStats,
   adminUpdateComment,
@@ -72,6 +73,13 @@ commentRouter.post(
   "/:id/report",
   protectSiteUser,
   reportComment
+);
+
+/** PATCH /api/comments/:id — edit own comment */
+commentRouter.patch(
+  "/:id",
+  protectSiteUser,
+  updateOwnComment
 );
 
 /** DELETE /api/comments/:id — delete own comment */

@@ -12,8 +12,6 @@ import {
 } from "../../../api/user/advertisementPool";
 
 import { getHomepageNews } from "../../../api/user/news";
-import { getTrendingTags } from "../../../api/user/tag";
-import { getTrendingNews } from "../../../api/user/trendingNews";
 import { getPublicCategories } from "../../../api/user/categoryNews";
 import { fetchAllNews } from "../../../api/news";
 
@@ -30,9 +28,7 @@ const UserDashboard: React.FC = () => {
     strips: [],
   });
 
-  const [homepageNews, setHomepageNews] = useState<any[]>([]);
-  const [trendingTags, setTrendingTags] = useState<any[]>([]);
-  const [trendingNews, setTrendingNews] = useState<any[]>([]);
+const [homepageNews, setHomepageNews] = useState<any[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
   const [allNews, setAllNews] = useState<any[]>([]);
 
@@ -42,8 +38,6 @@ const UserDashboard: React.FC = () => {
         const [
           adResponse,
           homepageResponse,
-          tagsResponse,
-          trendingResponse,
           categoryResponse,
           allNewsResponse,
         ] = await Promise.all([
@@ -54,10 +48,6 @@ const UserDashboard: React.FC = () => {
 
           getHomepageNews(),
 
-          getTrendingTags(),
-
-          getTrendingNews(),
-
           getPublicCategories(),
 
           fetchAllNews(),
@@ -66,14 +56,8 @@ const UserDashboard: React.FC = () => {
         // Advertisement
         setAds(adResponse);
 
-        // Hero
+// Hero
         setHomepageNews(homepageResponse?.news || []);
-
-        // Trending tags
-        setTrendingTags(tagsResponse || []);
-
-        // Latest / Trending News
-        setTrendingNews(trendingResponse?.news || []);
 
         // Categories
         setCategories(categoryResponse || []);
@@ -102,16 +86,13 @@ const UserDashboard: React.FC = () => {
     <>
       <HeroSection
         articles={homepageNews}
-        trendingTags={trendingTags}
       />
 
       <Advertisment
         adData={ads.strips[0] ?? null}
       />
 
-      <LatestNews
-        newsData={trendingNews}
-      />
+      <LatestNews />
 
       <CategoryShowcase
         categories={categories}

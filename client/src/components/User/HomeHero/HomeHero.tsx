@@ -1,8 +1,10 @@
-import React, { useRef, useEffect, useState } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { Clock, Eye, ChevronLeft, ChevronRight } from "lucide-react";
 import { Link } from "react-router-dom";
 import "./HomeHero.css";
 import { StatusBadge } from "../../UI/StatusBadge";
+import { getTrendingTags } from "../../../api/user/tag";
+
 
 // Inline SVG placeholders — no network request, never fails, unlike
 // via.placeholder.com which is unreliable / can go down (ERR_CONNECTION_CLOSED).
@@ -13,12 +15,12 @@ const PLACEHOLDER_IMG_SMALL =
 
 interface HeroSectionProps {
   articles: Article[];
-  trendingTags: Tag[];
 }
 
 interface Article {
-  id: string;
-  slug: string;
+  id?: string;
+  _id?: string;
+  slug?: string;
   headline: string;
   excerpt?: string;
   featuredImage?: string;
@@ -34,88 +36,74 @@ interface Article {
   statusType?: string;
   breakingNewsTicker?: boolean;
 }
+
+
 interface Tag {
   _id: string;
   name: string;
   slug: string;
 }
 
+
 const HeroSection: React.FC<HeroSectionProps> = ({
   articles,
-  trendingTags,
 }) => {
-  // Reference for the scrolling tags container
   const tagsScrollRef = useRef<HTMLDivElement>(null);
+  const [trendingTags, setTrendingTags] = useState<Tag[]>([]);
+  const [canScrollLeft, setCanScrollLeft] = useState(false);
+  const [canScrollRight, setCanScrollRight] = useState(false);
 
-  // Backend Articles State
-  // const [articles, setArticles] = useState<Article[]>([]);
-  // const [trendingTags, setTrendingTags] = useState<Tag[]>([]);
   
-  // 👇 EXPERT FIX: State to track if tags are overflowing the screen
-  const [isOverflowing, setIsOverflowing] = useState(false);
 
-  // Function to check if tags take up more space than the screen allows
-  const checkOverflow = () => {
-    if (tagsScrollRef.current) {
-      const { scrollWidth, clientWidth } = tagsScrollRef.current;
-      // If scrollWidth is strictly greater than clientWidth, we need arrows
-      setIsOverflowing(scrollWidth > clientWidth);
+  // 👇 EXPERT FIX: Fetch trending tags
+  useEffect(() => {
+    const fetchTrendingTagsData = async () => {
+      try {
+        const tags = await getTrendingTags();
+        setTrendingTags(tags || []);
+      } catch (error) {
+        console.error("Failed to fetch trending tags:", error);
+      }
+    };
+    fetchTrendingTagsData();
+  }, []);
+
+  // 👇 EXPERT FIX: Update arrow visibility based on actual overflow
+  const updateTagScrollState = () => {
+    const el = tagsScrollRef.current;
+    if (!el) {
+      setCanScrollLeft(false);
+      setCanScrollRight(false);
+      return;
     }
+
+    const hasOverflow = el.scrollWidth > el.clientWidth + 1;
+
+    if (!hasOverflow) {
+      setCanScrollLeft(false);
+      setCanScrollRight(false);
+      return;
+    }
+
+    setCanScrollLeft(el.scrollLeft > 1);
+    setCanScrollRight(
+      el.scrollLeft + el.clientWidth < el.scrollWidth - 1
+    );
   };
 
-  // useEffect(() => {
-  //   const fetchTrendingTags = async () => {
-  //     try {
-  //       const tags = await getTrendingTags();
-  //       setTrendingTags(tags);
-  //     } catch (error) {
-  //       console.error("Failed to fetch trending tags:", error);
-  //     }
-  //   };
-
-  //   fetchTrendingTags();
-  // }, []);
-
-  // 👇 EXPERT FIX: Re-check overflow whenever tags load or window resizes
+  // 👇 EXPERT FIX: Update on mount, resize, and tag changes
   useEffect(() => {
-    // Small timeout ensures the DOM has painted the tags before measuring
-    const timeoutId = setTimeout(checkOverflow, 100);
-    window.addEventListener("resize", checkOverflow);
-    
-    return () => {
-      clearTimeout(timeoutId);
-      window.removeEventListener("resize", checkOverflow);
-    };
+    const update = () => updateTagScrollState();
+    update();
+
+    window.addEventListener("resize", update);
+    return () => window.removeEventListener("resize", update);
   }, [trendingTags]);
 
-  // Fetch News From Backend
-  // useEffect(() => {
-  //   const fetchNews = async () => {
-  //     try {
-  //       const data = await getHomepageNews();
-
-  //       if (data?.news) {
-  //         setArticles(data.news);
-  //       }
-  //     } catch (error) {
-  //       console.error("Failed to fetch news:", error);
-  //     }
-  //   };
-
-  //   fetchNews();
-  // }, []);
-
-  // Featured Article
-  const featuredArticle = articles[0];
-
-  // Sidebar Articles
-  const recentArticles = articles.slice(1, 5);
-
-  // Function to smoothly scroll the tags horizontally
+  // 👇 EXPERT FIX: Scroll functions for the tags carousel
   const scrollTags = (direction: "left" | "right") => {
     if (tagsScrollRef.current) {
-      const scrollAmount = 250;
-
+      const scrollAmount = 250; // pixels per click
       tagsScrollRef.current.scrollBy({
         left: direction === "left" ? -scrollAmount : scrollAmount,
         behavior: "smooth",
@@ -123,59 +111,85 @@ const HeroSection: React.FC<HeroSectionProps> = ({
     }
   };
 
+  // 👇 EXPERT FIX: Handle keyboard navigation for accessibility
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "ArrowLeft") scrollTags("left");
+      if (e.key === "ArrowRight") scrollTags("right");
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, []);
+
+  // Featured article (first in the list)
+  const featuredArticle = articles[0];
+  const recentArticles = articles.slice(1, 5); // Next 4 for the sidebar
+
+  const getArticleUrl = (article: Article): string | null => {
+    const slug = article?.slug;
+    if (slug) return `/news/${slug}`;
+    const id = article?.id || article?._id;
+    if (id) return `/article/${id}`;
+    return null;
+  };
+
+  const featuredUrl = featuredArticle
+    ? getArticleUrl(featuredArticle)
+    : null;
+
   return (
     <section className="hero-section" id="hero-section">
+      <div className="hero-bg"></div>
+
       <div className="hero-container">
 
-        {/* ================= TRENDING TAGS TOP BAR ================= */}
         <div className="trending-tags-container">
-          
-          {/* 👇 EXPERT FIX: Show Left Arrow ONLY if overflowing 👇 */}
-          {isOverflowing && (
+          {canScrollLeft && (
             <button
               className="tag-scroll-btn left"
               onClick={() => scrollTags("left")}
+              aria-label="Scroll tags left"
             >
               <ChevronLeft size={20} />
             </button>
           )}
 
-          <div className="tags-scroll-wrapper" ref={tagsScrollRef}>
+          <div
+            className="tags-scroll-wrapper"
+            ref={tagsScrollRef}
+            onScroll={updateTagScrollState}
+          >
             {trendingTags.map((tag) => (
               <Link
                 key={tag._id}
                 to={`/tag/${tag.slug}`}
-                className="tag-pill text-decoration-none"
+                className="tag-pill"
               >
                 {tag.name}
               </Link>
             ))}
           </div>
 
-          {/* 👇 EXPERT FIX: Show Right Arrow ONLY if overflowing 👇 */}
-          {isOverflowing && (
+          {canScrollRight && (
             <button
               className="tag-scroll-btn right"
               onClick={() => scrollTags("right")}
+              aria-label="Scroll tags right"
             >
               <ChevronRight size={20} />
             </button>
           )}
         </div>
 
-        {/* ================= TOP ROW ================= */}
         <div className="hero-top-row">
-
-          {/* Left Side: Featured Article */}
-          {featuredArticle && (
+          {featuredUrl && featuredArticle && (
             <Link
-              to={`/news/${featuredArticle.slug}`}
+              to={featuredUrl}
               className="featured-article text-decoration-none"
             >
               <img
                 src={
-                  featuredArticle.featuredImage ||
-                  PLACEHOLDER_IMG_LARGE
+                  featuredArticle.featuredImage || PLACEHOLDER_IMG_LARGE
                 }
                 alt={featuredArticle.headline}
                 className="featured-bg-img"
@@ -197,8 +211,7 @@ const HeroSection: React.FC<HeroSectionProps> = ({
                 </h1>
 
                 <p className="featured-excerpt">
-                  {featuredArticle.excerpt ||
-                    "No description available."}
+                  {featuredArticle.excerpt || "No description available."}
                 </p>
 
                 <div className="featured-meta">
@@ -228,47 +241,53 @@ const HeroSection: React.FC<HeroSectionProps> = ({
             </div>
 
             <div className="trending-list">
-              {recentArticles.map((article) => (
-                <Link
-                  to={`/news/${article.slug}`}
-                  className="trending-card text-decoration-none"
-                  key={article.id}
-                >
-                  <img
-                    src={
-                      article.featuredImage ||
-                      PLACEHOLDER_IMG_SMALL
-                    }
-                    alt={article.headline}
-                    className="trending-img"
-                  />
+              {recentArticles.map((article) => {
+                const articleUrl = getArticleUrl(article);
+                if (!articleUrl) {
+                  return null;
+                }
 
-                  <div className="trending-info">
-                    <div className="trending-info-header">
-                      <StatusBadge
-                        articleType={article.articleType}
-                        statusType={article.statusType}
-                        variant="compact"
-                      />
-                      <span className="trending-category">
-                        {article.categoryId?.name || "NEWS"}
+                return (
+                  <Link
+                    to={articleUrl}
+                    className="trending-card text-decoration-none"
+                    key={String(article.id ?? article._id ?? article.slug)}
+                  >
+                    <img
+                      src={
+                        article.featuredImage || PLACEHOLDER_IMG_SMALL
+                      }
+                      alt={article.headline}
+                      className="trending-img"
+                    />
+
+                    <div className="trending-info">
+                      <div className="trending-info-header">
+                        <StatusBadge
+                          articleType={article.articleType}
+                          statusType={article.statusType}
+                          variant="compact"
+                        />
+                        <span className="trending-category">
+                          {article.categoryId?.name}
+                        </span>
+                      </div>
+
+                      <h3 className="trending-title">
+                        {article.headline}
+                      </h3>
+
+                      <span className="trending-time">
+                        {article.createdAt
+                          ? new Date(
+                              article.createdAt
+                            ).toLocaleDateString()
+                          : "Recently"}
                       </span>
                     </div>
-
-                    <h3 className="trending-title">
-                      {article.headline}
-                    </h3>
-
-                    <span className="trending-time">
-                      {article.createdAt
-                        ? new Date(
-                            article.createdAt
-                          ).toLocaleDateString()
-                        : "Recently"}
-                    </span>
-                  </div>
-                </Link>
-              ))}
+                  </Link>
+                );
+              })}
             </div>
           </div>
         </div>
@@ -276,5 +295,6 @@ const HeroSection: React.FC<HeroSectionProps> = ({
     </section>
   );
 };
+
 
 export default HeroSection;

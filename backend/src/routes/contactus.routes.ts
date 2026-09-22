@@ -7,6 +7,7 @@ import {
   getMessageById,
   getMessagesByEmail,
   getMyMessages,
+  deleteMyMessage,
   createMessage,
   markMessageRead,
   replyToMessage,
@@ -51,6 +52,12 @@ router.get(
   "/my-messages",
   protectSiteUser,
   getMyMessages
+);
+
+router.delete(
+  "/my-messages/:id",
+  protectSiteUser,
+  deleteMyMessage
 );
 
 // Public: fetch all past messages and replies for a user by email (with ownership check)

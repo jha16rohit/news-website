@@ -85,6 +85,14 @@ export async function deleteComment(commentId: string) {
   });
 }
 
+/** Edit own comment */
+export async function editComment(commentId: string, content: string) {
+  return apiClient(`/api/comments/${commentId}`, {
+    method: "PATCH",
+    body: { content },
+  });
+}
+
 // ─── ADMIN ────────────────────────────────────────────────────
 // These also go through apiClient now — the admin panel uses the
 // same Bearer-token session as everything else in the app (see

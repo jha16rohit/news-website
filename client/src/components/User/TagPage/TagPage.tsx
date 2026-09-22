@@ -38,6 +38,14 @@ const [ads, setAds] = useState<{
     .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
     .join(" ");
 
+  const getArticleUrl = (article: any): string | null => {
+    const slug = article?.slug;
+    if (slug) return `/news/${slug}`;
+    const id = article?._id || article?.id;
+    if (id) return `/article/${id}`;
+    return null;
+  };
+
   useEffect(() => {
   const fetchTagNews = async () => {
     try {
@@ -52,7 +60,7 @@ const [ads, setAds] = useState<{
       );
 
       const recent =
-  await getRecentNews();
+    await getRecentNews();
 
 if (recent.success) {
   setRecentNews(
@@ -103,10 +111,7 @@ setAds(adResponse);
 }, [currentTagSlug]);
 
 
-
   const visibleArticles = articles.slice(0,visibleCount);
-
-
 
 
   if (loading) {
@@ -141,39 +146,42 @@ if (tagNotFound) {
               </div>
 
 
-
               {/* List cards */}
               <div className="tp-list-feed">
-{visibleArticles.map((article) => (
-                  <Link
-                    to={`/news/${article.slug}`}
-                    key={article.id}
-                    className="tp-list-card text-decoration-none"
-                  >
-                    <div className="tp-list-img-wrap">
+{visibleArticles.map((article) => {
+                  const articleUrl = getArticleUrl(article);
+                  if (!articleUrl) return null;
+                  return (
+                    <Link
+                      to={articleUrl}
+                      key={article._id ?? article.id ?? article.slug}
+                      className="tp-list-card text-decoration-none"
+                    >
+                      <div className="tp-list-img-wrap">
 <img
   src={article.featuredImage}
   alt={article.headline}
- />                    </div>
-                    <div className="tp-list-body">
-                      <div className="tp-list-badges">
-                        <StatusBadge
-                          articleType={article.articleType}
-                          statusType={article.statusType}
-                          variant="compact"
-                        />
-                        <span className="tp-list-cat">{displayTag}</span>
-                      </div>
-                      <h4 className="tp-list-title">{article.headline}</h4>
-                      <p className="tp-trend-excerpt">{article.excerpt}</p>
-                      <div className="tp-list-time">
-                        <Clock size={12} /> {new Date(
+  />                    </div>
+                      <div className="tp-list-body">
+                        <div className="tp-list-badges">
+                          <StatusBadge
+                            articleType={article.articleType}
+                            statusType={article.statusType}
+                            variant="compact"
+                          />
+                          <span className="tp-list-cat">{article.categoryId?.name ?? article.category ?? displayTag}</span>
+                        </div>
+                        <h4 className="tp-list-title">{article.headline}</h4>
+                        <p className="tp-trend-excerpt">{article.excerpt}</p>
+                        <div className="tp-list-time">
+                          <Clock size={12} /> {new Date(
   article.createdAt
 ).toLocaleDateString()}
+                        </div>
                       </div>
-                    </div>
-                  </Link>
-                ))}
+                    </Link>
+                  );
+                })}
               </div>
 
               {visibleCount < articles.length ? (
@@ -211,27 +219,30 @@ if (tagNotFound) {
                   <h2 className="tp-section-title">Recent News</h2>
                 </div>
 <div className="tp-trending-list">
-                  {recentNews.slice(0, 5).map((article) => (
-                    <Link
-                      to={`/news/${article.slug}`}
-                      key={article._id}
-                      className="tp-trending-item text-decoration-none"
-                    >
-                      <span className="tp-trend-arrow">
-                        <ChevronRight size={18} />
-                      </span>
-                      <div className="tp-trend-body">
-                        <div className="tp-trend-badges">
-                          <StatusBadge
-                            articleType={article.articleType}
-                            statusType={article.statusType}
-                            variant="compact"
-                          />
-                          <span className="tp-trend-cat">{article.category}</span>
-                        </div>
-                        <p className="tp-trend-title">{article.shortTitle || article.headline}</p>
-                        <span className="tp-trend-time">
-                          <Clock size={11} /> {article.publishedAt
+                  {recentNews.slice(0, 5).map((article) => {
+                    const articleUrl = getArticleUrl(article);
+                    if (!articleUrl) return null;
+                    return (
+                      <Link
+                        to={articleUrl}
+                        key={article._id ?? article.id ?? article.slug}
+                        className="tp-trending-item text-decoration-none"
+                      >
+                        <span className="tp-trend-arrow">
+                          <ChevronRight size={18} />
+                        </span>
+                        <div className="tp-trend-body">
+                          <div className="tp-trend-badges">
+                            <StatusBadge
+                              articleType={article.articleType}
+                              statusType={article.statusType}
+                              variant="compact"
+                            />
+                            <span className="tp-trend-cat">{article.categoryId?.name ?? article.category}</span>
+                          </div>
+                          <p className="tp-trend-title">{article.shortTitle || article.headline}</p>
+                          <span className="tp-trend-time">
+                            <Clock size={11} /> {article.publishedAt
   ? new Date(
       article.publishedAt
     ).toLocaleDateString()
@@ -239,7 +250,8 @@ if (tagNotFound) {
                         </span>
                       </div>
                     </Link>
-                  ))}
+                  );
+                  })}
                 </div>
               </div>
 
@@ -250,22 +262,26 @@ if (tagNotFound) {
 
 
               {/* Tag cloud */}
-              <div className="tp-sidebar-widget">
-                <div className="tp-section-head">
-                  <h2 className="tp-section-title">Explore Topics</h2>
-                </div>
-                <div className="tp-tag-cloud">
-                  {trendingTags.map((tag) => (
-  <Link
-    key={tag._id}
-    to={`/tag/${tag.slug}`}
-    className="tp-cloud-tag"
-  >
-    {tag.name}
-  </Link>
-))}
-                </div>
-              </div>
+{/* Tag cloud */}
+{trendingTags.length > 0 && (
+  <div className="tp-sidebar-widget">
+    <div className="tp-section-head">
+      <h2 className="tp-section-title">Explore Topics</h2>
+    </div>
+
+    <div className="tp-tag-cloud">
+      {trendingTags.map((tag) => (
+        <Link
+          key={tag._id ?? tag.id ?? tag.slug}
+          to={`/tag/${tag.slug}`}
+          className="tp-cloud-tag"
+        >
+          {tag.name}
+        </Link>
+      ))}
+    </div>
+  </div>
+)}
 
             </aside>
           </div>

@@ -8,6 +8,7 @@ import {
 } from "../../../api/auth";
 import { useNavigate } from "react-router-dom";
 import { FullPageContentPreloader } from "../Preloader/FullPageContentPreloader";
+import { Eye, EyeOff } from "lucide-react";
 
 const AccountSettings: React.FC = () => {
   const navigate = useNavigate();
@@ -24,6 +25,11 @@ const AccountSettings: React.FC = () => {
     newPass: "",
     confirm: "",
   });
+  const [showPassword, setShowPassword] = useState({
+  current: false,
+  newPass: false,
+  confirm: false,
+});
 
   const [loading, setLoading] = useState(true);
 
@@ -213,40 +219,91 @@ const fullName = `${profile.firstName} ${profile.lastName}`.trim();
 
           <form onSubmit={handleUpdatePassword} className="profile-form">
             <div className="form-group">
-              <label className="form-label">Current Password</label>
-              <input
-                className="form-input"
-                type="password"
-                name="current"
-                value={password.current}
-                onChange={handlePasswordChange}
-                placeholder="Enter current password"
-              />
-            </div>
+  <label className="form-label">Current Password</label>
 
-            <div className="form-group">
-              <label className="form-label">New Password</label>
-              <input
-                className="form-input"
-                type="password"
-                name="newPass"
-                value={password.newPass}
-                onChange={handlePasswordChange}
-                placeholder="Enter new password"
-              />
-            </div>
+  <div className="password-input-wrapper">
+    <input
+      className="form-input"
+      type={showPassword.current ? "text" : "password"}
+      name="current"
+      value={password.current}
+      onChange={handlePasswordChange}
+      placeholder="Enter current password"
+    />
 
-            <div className="form-group">
-              <label className="form-label">Confirm New Password</label>
-              <input
-                className="form-input"
-                type="password"
-                name="confirm"
-                value={password.confirm}
-                onChange={handlePasswordChange}
-                placeholder="Confirm new password"
-              />
-            </div>
+    <button
+      type="button"
+      className="password-toggle"
+      onClick={() =>
+        setShowPassword((prev) => ({
+          ...prev,
+          current: !prev.current,
+        }))
+      }
+      aria-label={showPassword.current ? "Hide password" : "Show password"}
+    >
+      {showPassword.current ? <EyeOff size={18} /> : <Eye size={18} />}
+    </button>
+  </div>
+</div>
+
+<div className="form-group">
+  <label className="form-label">New Password</label>
+
+  <div className="password-input-wrapper">
+    <input
+      className="form-input"
+      type={showPassword.newPass ? "text" : "password"}
+      name="newPass"
+      value={password.newPass}
+      onChange={handlePasswordChange}
+      placeholder="Enter new password"
+    />
+
+    <button
+      type="button"
+      className="password-toggle"
+      onClick={() =>
+        setShowPassword((prev) => ({
+          ...prev,
+          newPass: !prev.newPass,
+        }))
+      }
+      aria-label={showPassword.newPass ? "Hide password" : "Show password"}
+    >
+      {showPassword.newPass ? <EyeOff size={18} /> : <Eye size={18} />}
+    </button>
+  </div>
+</div>
+
+<div className="form-group">
+  <label className="form-label">Confirm New Password</label>
+
+  <div className="password-input-wrapper">
+    <input
+      className="form-input"
+      type={showPassword.confirm ? "text" : "password"}
+      name="confirm"
+      value={password.confirm}
+      onChange={handlePasswordChange}
+      placeholder="Confirm new password"
+    />
+
+    <button
+      type="button"
+      className="password-toggle"
+      onClick={() =>
+        setShowPassword((prev) => ({
+          ...prev,
+          confirm: !prev.confirm,
+        }))
+      }
+      aria-label={showPassword.confirm ? "Hide password" : "Show password"}
+    >
+      {showPassword.confirm ? <EyeOff size={18} /> : <Eye size={18} />}
+    </button>
+  </div>
+</div>
 
             <button type="submit" className="btn-secondary">
               Update Password

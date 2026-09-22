@@ -838,7 +838,7 @@ export const getNewsById = async (req: Request, res: Response) => {
     const [catDoc, authorDoc] = await Promise.all([
       (newsDoc as any).categoryId
         ? Category.findById((newsDoc as any).categoryId)
-            .select("_id name color")
+            .select("_id name slug color parentId")
             .lean()
         : null,
       (newsDoc as any).authorId
@@ -848,10 +848,18 @@ export const getNewsById = async (req: Request, res: Response) => {
         : null,
     ]);
 
+    let parentCategory = null;
+    if (catDoc && (catDoc as any).parentId) {
+      parentCategory = await Category.findById((catDoc as any).parentId)
+        .select("_id name slug color")
+        .lean();
+    }
+
     const news = {
       ...newsDoc,
       id: String((newsDoc as any)._id),
       categoryId: catDoc ?? (newsDoc as any).categoryId,
+      parentCategory,
       authorId: authorDoc ?? (newsDoc as any).authorId,
     };
 
@@ -1948,33 +1956,38 @@ export const getRecentNews = async (req: Request, res: Response) => {
   try {
     await autoPublishDueScheduled();
 
-    const news = await News.find({
+    const newsDocs = await News.find({
       status: "PUBLISHED",
     })
       .sort({
         createdAt: -1,
       })
-      .limit(10);
+      .limit(10)
+      .lean();
 
-    const formattedNews = await Promise.all(
-      news.map(async (item) => {
-        const category = await Category.findById(item.categoryId);
-
-        return {
-          ...item.toObject(),
-
-          categoryName: category?.name || "News",
-        };
-      }),
+    // Enrich category
+    const categoryIds = [
+      ...new Set(newsDocs.map((n: any) => n.categoryId).filter(Boolean)),
+    ];
+    const categories = await Category.find({ _id: { $in: categoryIds } })
+      .select("_id name color")
+      .lean();
+    const catMap = Object.fromEntries(
+      (categories as any[]).map((c: any) => [String(c._id), c]),
     );
+
+    const news = newsDocs.map((n: any) => ({
+      ...n,
+      id: String(n._id),
+      categoryId: catMap[n.categoryId] ?? null,
+    }));
 
     res.json({
       success: true,
-      news: formattedNews,
+      news,
     });
   } catch (error) {
     console.error("getRecentNews error:", error);
-
     res.status(500).json({
       success: false,
       message: "Error fetching recent news",
@@ -2035,12 +2048,29 @@ export const getNewsByTag = async (req: Request, res: Response) => {
       });
     }
 
-    const news = await News.find({
+    const newsDocs = await News.find({
       status: "PUBLISHED",
       tags: tag.name,
-    }).sort({
-      createdAt: -1,
-    });
+    })
+      .sort({ createdAt: -1 })
+      .lean();
+
+    // Enrich category in batch
+    const categoryIds = [
+      ...new Set(newsDocs.map((n: any) => n.categoryId).filter(Boolean)),
+    ];
+    const categories = await Category.find({ _id: { $in: categoryIds } })
+      .select("_id name color")
+      .lean();
+    const catMap = Object.fromEntries(
+      (categories as any[]).map((c: any) => [String(c._id), c]),
+    );
+
+    const news = newsDocs.map((n: any) => ({
+      ...n,
+      id: String(n._id),
+      categoryId: catMap[n.categoryId] ?? null,
+    }));
 
     res.json({
       success: true,
@@ -2060,48 +2090,72 @@ export const getTrendingNews = async (req: Request, res: Response) => {
   try {
     await autoPublishDueScheduled();
 
-    // Trending is now purely admin-controlled: only tags the admin has
-    // manually pinned via isTrending count as "trending". Usage-based
-    // auto-trending has been removed.
-    const adminTrendingTags = await Tag.find({
-      isTrending: true,
-    });
+    const LIMIT = 20;
+
+    // Get admin-pinned trending tags
+    const adminTrendingTags = await Tag.find({ isTrending: true });
     const tagNames = adminTrendingTags.map((tag) => tag.name);
 
-    // Get all news matching an admin-trending tag. If no tags are pinned
-    // yet, fall back to the most recent published articles so the section
-    // is never empty.
-    const news = tagNames.length
-      ? await News.find({
+    let newsDocs: any[] = [];
+
+    if (tagNames.length > 0) {
+      // Get articles matching trending tags
+      const trendingArticles = await News.find({
+        status: "PUBLISHED",
+        tags: { $in: tagNames },
+      })
+        .sort({ createdAt: -1 })
+        .limit(LIMIT)
+        .lean();
+
+      newsDocs = trendingArticles;
+
+      // If fewer than LIMIT articles found, supplement with other published articles
+      if (newsDocs.length < LIMIT) {
+        const remaining = LIMIT - newsDocs.length;
+        const existingIds = new Set(newsDocs.map((n) => String(n._id)));
+
+        const additionalArticles = await News.find({
           status: "PUBLISHED",
-          tags: {
-            $in: tagNames,
-          },
-        }).sort({
-          createdAt: -1,
+          _id: { $nin: Array.from(existingIds) },
         })
-      : await News.find({ status: "PUBLISHED" })
           .sort({ createdAt: -1 })
-          .limit(20);
+          .limit(remaining)
+          .lean();
 
-    // Random shuffle
-    const shuffled = [...news].sort(() => Math.random() - 0.5);
+        newsDocs = [...newsDocs, ...additionalArticles];
+      }
+    } else {
+      // No trending tags pinned: return most recent published articles
+      newsDocs = await News.find({ status: "PUBLISHED" })
+        .sort({ createdAt: -1 })
+        .limit(LIMIT)
+        .lean();
+    }
 
-    // Get category names
-    const newsWithCategory = await Promise.all(
-      shuffled.map(async (article) => {
-        const category = await Category.findById(article.categoryId);
+    // Random shuffle for variety
+    const shuffled = [...newsDocs].sort(() => Math.random() - 0.5);
 
-        return {
-          ...article.toObject(),
-          category: category?.name || "News",
-        };
-      }),
+    // Enrich category in batch
+    const categoryIds = [
+      ...new Set(shuffled.map((n: any) => n.categoryId).filter(Boolean)),
+    ];
+    const categories = await Category.find({ _id: { $in: categoryIds } })
+      .select("_id name color")
+      .lean();
+    const catMap = Object.fromEntries(
+      (categories as any[]).map((c: any) => [String(c._id), c]),
     );
+
+    const news = shuffled.map((n: any) => ({
+      ...n,
+      id: String(n._id),
+      categoryId: catMap[n.categoryId] ?? null,
+    }));
 
     res.json({
       success: true,
-      news: newsWithCategory,
+      news,
     });
   } catch (error) {
     console.error("getTrendingNews error:", error);
@@ -2130,12 +2184,29 @@ export const getNewsByTopicSlug = async (req: Request, res: Response) => {
       });
     }
 
-    const news = await News.find({
+    const newsDocs = await News.find({
       status: "PUBLISHED",
       tags: topic.name,
-    }).sort({
-      createdAt: -1,
-    });
+    })
+      .sort({ createdAt: -1 })
+      .lean();
+
+    // Enrich category in batch
+    const categoryIds = [
+      ...new Set(newsDocs.map((n: any) => n.categoryId).filter(Boolean)),
+    ];
+    const categories = await Category.find({ _id: { $in: categoryIds } })
+      .select("_id name color")
+      .lean();
+    const catMap = Object.fromEntries(
+      (categories as any[]).map((c: any) => [String(c._id), c]),
+    );
+
+    const news = newsDocs.map((n: any) => ({
+      ...n,
+      id: String(n._id),
+      categoryId: catMap[n.categoryId] ?? null,
+    }));
 
     res.json({
       success: true,

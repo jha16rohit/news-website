@@ -13,12 +13,14 @@ export interface FooterImage {
 }
 
 export interface FooterSettingsData {
-  id:              string;
-  sectionTitle:    string;
-  descriptionText: string;
-  trustedText:     string;
-  images:          FooterImage[];
-  updatedAt:       string | null;
+  id:                     string;
+  sectionTitle:           string;
+  descriptionText:        string;
+  trustedText:            string;
+  images:                 FooterImage[];
+  updatedAt:              string | null;
+  desktopOverlayOpacity?: number;
+  mobileOverlayOpacity?:  number;
 }
 
 // ─── GET footer settings (public — no auth needed) ───────────────────────────
