@@ -1350,6 +1350,15 @@
   .article-page-wrapper .article-subheadline { font-size: 17px; }
 }
 
+/* Disable Live News completely on Tablet & Mobile */
+@media (max-width: 820px) {
+  .main-live-section,
+  .live-updates-widget,
+  .live-badge {
+    display: none !important;
+  }
+}
+
 /* 3. ALL Mobile Phones (Single Column) - 640px and below */
 @media (max-width: 640px) {
   .article-page-wrapper .article-sidebar {

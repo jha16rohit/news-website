@@ -729,9 +729,8 @@ if (platform === "whatsapp") {
 
   if (!slug) return;
 
-  const backendBaseUrl = BASE.replace(/\/api$/, "");
-
-  const shareUrl = `${backendBaseUrl}/share/news/${encodeURIComponent(slug)}`;
+  // For copy link, we want to copy the actual frontend URL so the user sees a clean link
+  const shareUrl = window.location.href;
 
   navigator.clipboard.writeText(shareUrl);
   alert("Link copied!");

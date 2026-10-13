@@ -4,7 +4,6 @@ import HeroSection from "../HomeHero/HomeHero";
 import LatestNews from "../LatestNews/LatestNews";
 import Advertisment from "../Advertisment/Advertisment";
 import CategoryShowcase from "../CategoryShowcase/CategoryShowcase";
-import Preloader from "../../Admin/Preloader/Preloder";
 
 import {
   getAdvertisementPool,
@@ -18,8 +17,6 @@ import { fetchAllNews } from "../../../api/news";
 import type { Category } from "../../../types/category";
 
 const UserDashboard: React.FC = () => {
-  const [loading, setLoading] = useState(true);
-
   const [ads, setAds] = useState<{
     cards: Advertisement[];
     strips: Advertisement[];
@@ -28,7 +25,7 @@ const UserDashboard: React.FC = () => {
     strips: [],
   });
 
-const [homepageNews, setHomepageNews] = useState<any[]>([]);
+  const [homepageNews, setHomepageNews] = useState<any[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
   const [allNews, setAllNews] = useState<any[]>([]);
 
@@ -56,7 +53,7 @@ const [homepageNews, setHomepageNews] = useState<any[]>([]);
         // Advertisement
         setAds(adResponse);
 
-// Hero
+        // Hero
         setHomepageNews(homepageResponse?.news || []);
 
         // Categories
@@ -66,21 +63,11 @@ const [homepageNews, setHomepageNews] = useState<any[]>([]);
         setAllNews(allNewsResponse?.news || []);
       } catch (error) {
         console.error("Failed to load dashboard:", error);
-      } finally {
-        setLoading(false);
       }
     };
 
     loadDashboard();
   }, []);
-
-  /*
-   * NOTHING renders until ALL dashboard API requests
-   * above have finished.
-   */
-  if (loading) {
-    return <Preloader />;
-  }
 
   return (
     <>

@@ -307,7 +307,9 @@ const Footer: React.FC = () => {
             </section>
           </div>
 
-          <hr className="lnz-footer__divider" aria-hidden="true" />
+          {trendingTags.length > 0 && (
+            <hr className="lnz-footer__divider" aria-hidden="true" />
+          )}
 
           {/* TRENDING TOPICS ACCORDION */}
           <section className={`lnz-footer__trending ${isAccordionMode ? "lnz-footer__accordion-section" : ""}`}>

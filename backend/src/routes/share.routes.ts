@@ -23,9 +23,10 @@ router.get("/news/:slug", async (req: Request, res: Response) => {
       return res.status(404).send("News not found");
     }
 
-    const frontendUrl = (
-      process.env.FRONTEND_URL || "http://localhost:5173"
-    ).replace(/\/$/, "");
+    const rawFrontendUrls = process.env.FRONTEND_URL || "http://localhost:5173";
+    const firstFrontendUrl = rawFrontendUrls.split(",")[0].trim();
+    
+    const frontendUrl = firstFrontendUrl.replace(/\/$/, "");
 
     const publicApiUrl = (
       process.env.PUBLIC_API_URL || "http://localhost:5001"
