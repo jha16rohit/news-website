@@ -8,6 +8,7 @@ import User from "../models/user";
 import TopicProfile from "../models/TopicProfile";
 import { extractImagesFromContent } from "../utils/Extractimages";
 import slugify from "slugify";
+import sanitizeHtml from "sanitize-html";
 import { randomUUID } from "crypto";
 import cloudinary from "../config/cloudinary";
 import { notifySubscribersOfNewArticle } from "./newsletter.controller";
@@ -155,6 +156,28 @@ function toArticleTypeEnum(type?: string): "STANDARD" | "BREAKING" | "LIVE" {
     "Live Updates": "LIVE",
   };
   return map[type ?? ""] ?? "STANDARD";
+}
+
+function sanitizeArticleContent(html: string): string {
+  return sanitizeHtml(html, {
+    allowedTags: [
+      "h1", "h2", "h3", "h4", "h5", "h6", "p", "div", "span",
+      "strong", "b", "em", "i", "u", "ul", "ol", "li", "a",
+      "blockquote", "br", "img", "table", "thead", "tbody", "tr", "th", "td",
+      "figure", "figcaption", "hr"
+    ],
+    allowedAttributes: {
+      a: ["href", "target", "rel"],
+      img: ["src", "alt", "title", "width", "height"],
+      "*": ["class"],
+    },
+    allowedSchemes: ["http", "https", "mailto"],
+    allowedSchemesByTag: {
+      img: ["http", "https", "data"]
+    },
+    selfClosing: ["br", "hr", "img"],
+    parseStyleAttributes: false,
+  });
 }
 
 function normalisePriority(
@@ -485,8 +508,7 @@ if (req.user?.role === "EDITOR") {
       headline: headline.trim(),
       shortTitle: shortTitle?.trim() || null,
       excerpt: excerpt?.trim() || null,
-      content: content || "",
-      categoryId,
+      content: sanitizeArticleContent(content || ""),      categoryId,
       language: language || "English",
       location: location?.trim() || null,
       tags: resolvedTags,
@@ -1084,7 +1106,7 @@ if (req.user?.role === "EDITOR") {
     if (shortTitle !== undefined)
       updateData.shortTitle = shortTitle?.trim() || null;
     if (excerpt !== undefined) updateData.excerpt = excerpt?.trim() || null;
-    if (content !== undefined) updateData.content = content;
+    if (content !== undefined) updateData.content = sanitizeArticleContent(content);
     if (language !== undefined) updateData.language = language;
     if (location !== undefined) updateData.location = location?.trim() || null;
     if (resolvedTags !== null) updateData.tags = resolvedTags;

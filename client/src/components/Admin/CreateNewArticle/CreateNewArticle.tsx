@@ -457,10 +457,288 @@ const RichEditor: React.FC<RichEditorProps> = ({ editorRef, onInput, wordCount, 
     }
   }, []);
 
+  
+const handlePaste = useCallback(
+  (e: React.ClipboardEvent<HTMLDivElement>) => {
+    e.preventDefault();
+
+    const editorEl = editorRef.current;
+    if (!editorEl) return;
+
+    const clipboard = e.clipboardData;
+    const html = clipboard.getData("text/html");
+    const plainText = clipboard.getData("text/plain");
+
+    // Convert plain text into text nodes and line breaks.
+    // This avoids inserting copied font, color, and background styles.
+    const createPlainTextFragment = (text: string): DocumentFragment => {
+      const fragment = document.createDocumentFragment();
+      const lines = text.replace(/\r\n?/g, "\n").split("\n");
+
+      lines.forEach((line, index) => {
+        fragment.appendChild(document.createTextNode(line));
+
+        if (index < lines.length - 1) {
+          fragment.appendChild(document.createElement("br"));
+        }
+      });
+
+      return fragment;
+    };
+
+    // Allow basic article formatting only.
+    const allowedTags = new Set([
+      "p",
+      "div",
+      "h1",
+      "h2",
+      "h3",
+      "h4",
+      "h5",
+      "h6",
+      "br",
+      "strong",
+      "b",
+      "em",
+      "i",
+      "u",
+      "s",
+      "ul",
+      "ol",
+      "li",
+      "blockquote",
+      "pre",
+      "code",
+      "a",
+      "img",
+      "figure",
+      "figcaption",
+      "table",
+      "thead",
+      "tbody",
+      "tfoot",
+      "tr",
+      "th",
+      "td",
+      "hr",
+      "sub",
+      "sup",
+    ]);
+
+    const isSafeUrl = (value: string, allowDataImage = false) => {
+      const url = value.trim();
+
+      if (allowDataImage && /^data:image\/(?:png|jpe?g|gif|webp);base64,/i.test(url)) {
+        return true;
+      }
+
+      if (/^(https?:|mailto:|tel:)/i.test(url)) {
+        return true;
+      }
+
+      // Allow relative URLs, but reject protocol-relative and
+      // executable or otherwise unsafe URL schemes.
+      return (
+        !/^[a-z][a-z\d+.-]*:/i.test(url) &&
+        !url.startsWith("//") &&
+        !url.startsWith("\\\\")
+      );
+    };
+
+    const sanitizeNode = (node: Node): Node | null => {
+      if (node.nodeType === Node.TEXT_NODE) {
+        return document.createTextNode(node.textContent ?? "");
+      }
+
+      if (node.nodeType !== Node.ELEMENT_NODE) {
+        return null;
+      }
+
+      const source = node as HTMLElement;
+      const tag = source.tagName.toLowerCase();
+
+      // Never paste executable or embedded content.
+      if (
+        [
+          "script",
+          "style",
+          "iframe",
+          "object",
+          "embed",
+          "form",
+          "input",
+          "button",
+          "textarea",
+          "select",
+          "meta",
+          "link",
+          "base",
+          "svg",
+          "math",
+        ].includes(tag)
+      ) {
+        return null;
+      }
+
+      // Unwrap unsupported formatting while retaining its text/content.
+      if (!allowedTags.has(tag)) {
+        const fragment = document.createDocumentFragment();
+
+        Array.from(source.childNodes).forEach((child) => {
+          const cleaned = sanitizeNode(child);
+          if (cleaned) fragment.appendChild(cleaned);
+        });
+
+        return fragment;
+      }
+
+      const normalizedTag =
+        tag === "b" ? "strong" : tag === "i" ? "em" : tag;
+
+      const cleanElement = document.createElement(normalizedTag);
+
+      // Keep only safe attributes. All copied inline styles and event
+      // handlers are intentionally discarded.
+      if (tag === "a") {
+        const href = source.getAttribute("href");
+
+        if (href && isSafeUrl(href)) {
+          cleanElement.setAttribute("href", href);
+          cleanElement.setAttribute("rel", "noopener noreferrer");
+        }
+      }
+
+      if (tag === "img") {
+        const src = source.getAttribute("src");
+        const alt = source.getAttribute("alt");
+
+        if (src && isSafeUrl(src, true)) {
+          cleanElement.setAttribute("src", src);
+        }
+
+        if (alt) {
+          cleanElement.setAttribute("alt", alt);
+        }
+
+        const title = source.getAttribute("title");
+        if (title) cleanElement.setAttribute("title", title);
+      }
+
+      if (tag === "td" || tag === "th") {
+        ["colspan", "rowspan"].forEach((attribute) => {
+          const value = source.getAttribute(attribute);
+
+          if (value && /^\d{1,2}$/.test(value)) {
+            const number = Number(value);
+
+            if (number >= 1 && number <= 20) {
+              cleanElement.setAttribute(attribute, String(number));
+            }
+          }
+        });
+      }
+
+      Array.from(source.childNodes).forEach((child) => {
+        const cleaned = sanitizeNode(child);
+        if (cleaned) cleanElement.appendChild(cleaned);
+      });
+
+      return cleanElement;
+    };
+
+    let fragment: DocumentFragment;
+
+    if (html.trim()) {
+      const parsedDocument = new DOMParser().parseFromString(
+        html,
+        "text/html"
+      );
+
+      fragment = document.createDocumentFragment();
+
+      Array.from(parsedDocument.body.childNodes).forEach((child) => {
+        const cleaned = sanitizeNode(child);
+        if (cleaned) fragment.appendChild(cleaned);
+      });
+
+      // If HTML had no usable content, fall back to plain text.
+      if (!fragment.hasChildNodes() && plainText) {
+        fragment = createPlainTextFragment(plainText);
+      }
+    } else {
+      if (!plainText) return;
+      fragment = createPlainTextFragment(plainText);
+    }
+
+    if (!fragment.hasChildNodes()) return;
+
+    // Insert at the current cursor when it is inside this editor.
+    // Otherwise, append to the end instead of losing the pasted content.
+    const selection = window.getSelection();
+    let range: Range | null = null;
+
+    if (selection && selection.rangeCount > 0) {
+      const currentRange = selection.getRangeAt(0);
+      const container = currentRange.commonAncestorContainer;
+
+      if (
+        editorEl === container ||
+        editorEl.contains(container)
+      ) {
+        range = currentRange.cloneRange();
+      }
+    }
+
+    if (range) {
+      range.deleteContents();
+
+      // Save the last node before the fragment is consumed.
+      const lastInsertedNode = fragment.lastChild;
+
+      range.insertNode(fragment);
+
+      if (lastInsertedNode && lastInsertedNode.parentNode) {
+        range.setStartAfter(lastInsertedNode);
+      } else {
+        range.selectNodeContents(editorEl);
+        range.collapse(false);
+      }
+
+      range.collapse(true);
+    } else {
+      const lastInsertedNode = fragment.lastChild;
+      editorEl.appendChild(fragment);
+
+      range = document.createRange();
+
+      if (lastInsertedNode && lastInsertedNode.parentNode) {
+        range.setStartAfter(lastInsertedNode);
+      } else {
+        range.selectNodeContents(editorEl);
+        range.collapse(false);
+      }
+
+      range.collapse(true);
+    }
+
+    if (selection && range) {
+      selection.removeAllRanges();
+      selection.addRange(range);
+    }
+
+    // Synchronize the editor content with your React state.
+    setTimeout(() => {
+      handleInput();
+    }, 0);
+  },
+  [handleInput]
+);
+
+
   return (
     <>
       <div ref={editorRef} className="cna-editor cna-editor--rich" contentEditable
-        suppressContentEditableWarning onInput={handleInput} onKeyDown={handleKeyDown}
+        suppressContentEditableWarning onInput={handleInput} onKeyDown={handleKeyDown} onPaste={handlePaste}
         data-placeholder="Start writing your article content here…"
         aria-label="Article body" aria-multiline="true" role="textbox" spellCheck />
       <div className="cna-editor-footer">

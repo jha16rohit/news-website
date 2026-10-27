@@ -11,6 +11,13 @@
   background-color: #0b1423;
 }
 
+@media (max-width: 1024px) {
+  .lnz-footer--has-bg {
+    background-image: none !important;
+    background-color: #0b1423;
+  }
+}
+
 @media (max-width: 768px) {
   .lnz-footer {
     background-position: top center;

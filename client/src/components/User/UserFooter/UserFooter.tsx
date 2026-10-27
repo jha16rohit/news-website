@@ -359,7 +359,7 @@ const Footer: React.FC = () => {
           <hr className="lnz-footer__divider" aria-hidden="true" />
 
           <div className="lnz-footer__bottom">
-            <p>&copy; Copyright-2026, All Rights Reserved | Local Newz | ShidroTech Solution</p>
+            <p>&copy; Copyright-2026, All Rights Reserved | Local Newz | ShidroTech Solutions</p>
           </div>
         </div>
       </div>

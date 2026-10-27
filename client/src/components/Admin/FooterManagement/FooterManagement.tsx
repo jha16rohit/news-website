@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from "react";
-import { UploadCloud, Trash2, CheckCircle, AlertCircle, Loader2, Image as ImageIcon, Monitor, Smartphone } from "lucide-react";
+import { UploadCloud, Trash2, CheckCircle, AlertCircle, Loader2, Image as ImageIcon, Monitor } from "lucide-react";
 import "./FooterManagement.css";
 import {
   fetchFooterSettings,
@@ -11,7 +11,6 @@ import type { FooterImage } from "../../../api/footer";
 import { FullPageContentPreloader } from "../Preloader/FullPageContentPreloader";
 
 const DEFAULT_DESKTOP_OPACITY = 0.82;
-const DEFAULT_MOBILE_OPACITY = 0.90;
 
 const FooterManagement: React.FC = () => {
   const [sectionTitle, setSectionTitle] = useState("STAY UPDATED");
@@ -19,8 +18,6 @@ const FooterManagement: React.FC = () => {
   const [trustedText, setTrustedText] = useState("Your trusted source for real-time news and in-depth stories from India and around the world.");
   const [image, setImage] = useState<FooterImage | null>(null);
   const [desktopOverlayOpacity, setDesktopOverlayOpacity] = useState(DEFAULT_DESKTOP_OPACITY);
-  const [mobileOverlayOpacity, setMobileOverlayOpacity] = useState(DEFAULT_MOBILE_OPACITY);
-  const [previewMode, setPreviewMode] = useState<"desktop" | "mobile">("desktop");
   const [uploading, setUploading] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -39,9 +36,8 @@ const FooterManagement: React.FC = () => {
         setSectionTitle(data.sectionTitle ?? "STAY UPDATED");
         setDescriptionText(data.descriptionText ?? "");
         setTrustedText(data.trustedText ?? "");
-        setDesktopOverlayOpacity(data.desktopOverlayOpacity ?? DEFAULT_DESKTOP_OPACITY);
-        setMobileOverlayOpacity(data.mobileOverlayOpacity ?? DEFAULT_MOBILE_OPACITY);
-        const activeImg = Array.isArray(data.images) ? data.images.find((img) => img.isActive) : null;
+      setDesktopOverlayOpacity(data.desktopOverlayOpacity ?? DEFAULT_DESKTOP_OPACITY);
+      const activeImg = Array.isArray(data.images) ? data.images.find((img) => img.isActive) : null;
         setImage(activeImg ?? null);
       } catch (err) {
         console.error("Failed to load footer settings:", err);
@@ -150,7 +146,6 @@ const FooterManagement: React.FC = () => {
         trustedText,
         images: image ? [image] : [],
         desktopOverlayOpacity,
-        mobileOverlayOpacity,
       });
       window.dispatchEvent(new Event("localNewzFooterUpdate"));
       showToast("Footer settings saved successfully!", "success");
@@ -169,7 +164,6 @@ const FooterManagement: React.FC = () => {
       setDescriptionText(data.descriptionText ?? "");
       setTrustedText(data.trustedText ?? "");
       setDesktopOverlayOpacity(data.desktopOverlayOpacity ?? DEFAULT_DESKTOP_OPACITY);
-      setMobileOverlayOpacity(data.mobileOverlayOpacity ?? DEFAULT_MOBILE_OPACITY);
       const activeImg = Array.isArray(data.images) ? data.images.find((img) => img.isActive) : null;
       setImage(activeImg ?? null);
       showToast("Changes discarded.", "success");
@@ -185,23 +179,12 @@ const FooterManagement: React.FC = () => {
     setDesktopOverlayOpacity(value);
   };
 
-  const handleMobileOpacityChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const value = Number(e.target.value) / 100;
-    setMobileOverlayOpacity(value);
-  };
-
  
-
-  const getPreviewOverlayOpacity = () => {
-    return previewMode === "desktop" ? desktopOverlayOpacity : mobileOverlayOpacity;
-  };
 
   if (loading) {
     return <FullPageContentPreloader message="Loading footer settings..." />;
   }
 
-
-  const previewOpacity = getPreviewOverlayOpacity();
 
   return (
     <div className="lnz-fm">
@@ -340,138 +323,13 @@ const FooterManagement: React.FC = () => {
               </div>
             </div>
 
-            <div className="lnz-fm__overlay-group">
-              <div className="lnz-fm__overlay-header">
-                <label htmlFor="mobile-overlay" className="lnz-fm__overlay-label">
-                  <Smartphone size={18} style={{ marginRight: 8, verticalAlign: "middle" }} />
-                  Mobile Overlay
-                </label>
-                <span className="lnz-fm__overlay-value" aria-live="polite">{Math.round(mobileOverlayOpacity * 100)}%</span>
-              </div>
-              <div className="lnz-fm__slider-wrapper">
-                <input
-                  id="mobile-overlay"
-                  type="range"
-                  min="0"
-                  max="100"
-                  step="1"
-                  value={Math.round(mobileOverlayOpacity * 100)}
-                  onChange={handleMobileOpacityChange}
-                  className="lnz-fm__slider"
-                  aria-label="Mobile footer overlay opacity"
-                />
-                <div className="lnz-fm__slider-labels">
-                  <span>Light</span>
-                  <span>Dark</span>
-                </div>
-              </div>
-            </div>
           </div>
         </div>
 
-        <div className="lnz-fm__card lnz-fm__card--preview">
-          <h3 className="lnz-fm__card-title">Live Preview</h3>
-
-          <div className="lnz-fm__preview-mode-toggle" role="tablist" aria-label="Preview mode">
-            <button
-              type="button"
-              role="tab"
-              aria-selected={previewMode === "desktop"}
-              className={`lnz-fm__preview-tab ${previewMode === "desktop" ? "lnz-fm__preview-tab--active" : ""}`}
-              onClick={() => setPreviewMode("desktop")}
-            >
-              <Monitor size={16} style={{ marginRight: 6 }} />
-              Desktop
-            </button>
-            <button
-              type="button"
-              role="tab"
-              aria-selected={previewMode === "mobile"}
-              className={`lnz-fm__preview-tab ${previewMode === "mobile" ? "lnz-fm__preview-tab--active" : ""}`}
-              onClick={() => setPreviewMode("mobile")}
-            >
-              <Smartphone size={16} style={{ marginRight: 6 }} />
-              Mobile
-            </button>
-          </div>
-
-<div
-  className="lnz-fm__preview-container"
-  style={
-    {
-      "--preview-overlay-opacity": previewOpacity,
-    } as React.CSSProperties
-  }
->            <div className={`lnz-fm__preview-footer ${previewMode === "mobile" ? "lnz-fm__preview-footer--mobile" : ""}`}>
-              <div className="lnz-fm__preview-overlay">
-                <div className="lnz-fm__preview-content">
-                  <div className="lnz-fm__preview-main">
-                    <div className="lnz-fm__preview-brand">
-                      <h4 className="lnz-fm__preview-brand-title">LOCAL NEWZ</h4>
-                      <div className="lnz-fm__preview-brand-content">
-                        <div className="lnz-fm__preview-logo">
-                          <svg width="120" height="40" viewBox="0 0 120 40" fill="none" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Local Newz Logo">
-                            <rect width="120" height="40" fill="#e60000" rx="4"/>
-                            <text x="60" y="28" text-anchor="middle" fill="white" font-family="system-ui, sans-serif" font-weight="700" font-size="16">LN</text>
-                          </svg>
-                        </div>
-                        <p className="lnz-fm__preview-trusted-text">Your trusted source for accurate and timely news coverage around the clock.</p>
-                      </div>
-                    </div>
-
-                    <div className="lnz-fm__preview-column">
-                      <h5 className="lnz-fm__preview-heading">CATEGORIES</h5>
-                      <ul className="lnz-fm__preview-links">
-                        <li><span className="lnz-fm__preview-arrow">→</span> होम</li>
-                        <li><span className="lnz-fm__preview-arrow">→</span> Politics</li>
-                        <li><span className="lnz-fm__preview-arrow">→</span> Business</li>
-                        <li><span className="lnz-fm__preview-arrow">→</span> Technology</li>
-                        <li><span className="lnz-fm__preview-arrow">→</span> Sports</li>
-                      </ul>
-                    </div>
-
-                    <div className="lnz-fm__preview-column">
-                      <h5 className="lnz-fm__preview-heading">QUICK LINKS</h5>
-                      <ul className="lnz-fm__preview-links">
-                        <li><span className="lnz-fm__preview-arrow">→</span> About Us</li>
-                        <li><span className="lnz-fm__preview-arrow">→</span> Contact Us</li>
-                        <li><span className="lnz-fm__preview-arrow">→</span> Advertise With Us</li>
-                      </ul>
-                    </div>
-
-                    <div className="lnz-fm__preview-column">
-                      <h5 className="lnz-fm__preview-heading">STAY UPDATED</h5>
-                      <p className="lnz-fm__preview-desc">Get the latest headlines, breaking news, and exclusive updates delivered straight to your inbox.</p>
-                      <form className="lnz-fm__preview-form">
-                        <div className="lnz-fm__preview-input-group">
-                          <input type="email" placeholder="Enter your email" className="lnz-fm__preview-input" />
-                          <span className="lnz-fm__preview-mail-icon">✉</span>
-                        </div>
-                        <button type="button" className="lnz-fm__preview-btn" disabled>Subscribe</button>
-                      </form>
-                    </div>
-                  </div>
-
-                  <hr className="lnz-fm__preview-divider" />
-
-                  <div className="lnz-fm__preview-trending">
-                    <h5 className="lnz-fm__preview-trending-title">TRENDING TOPICS</h5>
-                    <div className="lnz-fm__preview-tags">
-                      {["Breaking News", "Politics", "Economy", "Technology", "Sports", "Entertainment", "Health", "Science", "World", "Local"].map((tag) => (
-                        <span key={tag} className="lnz-fm__preview-tag">#{tag}</span>
-                      ))}
-                    </div>
-                  </div>
-
-                  <hr className="lnz-fm__preview-divider" />
-
-                  <div className="lnz-fm__preview-bottom">
-                    <p>&copy; Copyright-2026, All Rights Reserved | Local Newz | ShidroTech Solution</p>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
+        <div className="lnz-fm__card lnz-fm__card--note">
+          <p className="lnz-fm__note-text">
+            Note: The uploaded footer background image is displayed only on large screens (desktop). It will not appear on tablets, mini-tablets, or mobile devices.
+          </p>
         </div>
 
         <div className="lnz-fm__actions">

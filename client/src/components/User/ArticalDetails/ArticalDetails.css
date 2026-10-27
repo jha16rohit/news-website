@@ -337,6 +337,28 @@
 }
 
 .article-page-wrapper .article-body p { margin-bottom: 22px; }
+
+/* Force pasted inline typography to match site design */
+.article-page-wrapper .article-body [style*="font-family"],
+.article-page-wrapper .article-body [style*="font-size"],
+.article-page-wrapper .article-body [style*="color"],
+.article-page-wrapper .article-body [style*="background-color"] {
+  font-family: inherit !important;
+  font-size: inherit !important;
+  color: inherit !important;
+  background-color: transparent !important;
+}
+
+.article-page-wrapper .article-body font,
+.article-page-wrapper .article-body [face],
+.article-page-wrapper .article-body [size],
+.article-page-wrapper .article-body [color] {
+  font-family: inherit !important;
+  font-size: inherit !important;
+  color: inherit !important;
+  background-color: transparent !important;
+  text-decoration: none !important;
+}
 .article-page-wrapper .article-body h1, .article-page-wrapper .article-body h2 {
   font-family: var(--font-heading);
   font-weight: 400;
