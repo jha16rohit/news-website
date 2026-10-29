@@ -1192,6 +1192,9 @@ const CreateNewArticle: React.FC = () => {
   const [metaDesc,       setMetaDesc]         = useState("");
   const [urlSlug,        setUrlSlug]          = useState("");
   const [slugManuallyEdited, setSlugManuallyEdited] = useState(false);
+  // Slug the article already has in the DB (edit mode). Only sent back if the
+  // admin actually changed it, so a plain save can never rewrite a live URL.
+  const [originalSlug, setOriginalSlug] = useState("");
   const [focusKeywords,  setFocusKeywords]    = useState("");
   const [showScheduleModal, setShowScheduleModal] = useState(false);
   const [showTopicModal,    setShowTopicModal]    = useState(false);
@@ -1296,10 +1299,12 @@ useEffect(() => {
 }, []);
 
   useEffect(() => {
-    if (slugManuallyEdited) return;
+    // Never auto-generate while an existing article is still loading (the
+    // headline is empty at that point) — it would clobber the real slug.
+    if (slugManuallyEdited || loadingArticle) return;
     const source = headline.trim() || shortTitle.trim();
     setUrlSlug(generateSlug(source));
-  }, [headline, shortTitle, slugManuallyEdited]);
+  }, [headline, shortTitle, slugManuallyEdited, loadingArticle]);
 
   useEffect(() => {
     if (!isEdit || !editId) return;
@@ -1356,6 +1361,7 @@ useEffect(() => {
 
         if (data.slug) {
           setUrlSlug(data.slug);
+          setOriginalSlug(data.slug);
           setSlugManuallyEdited(true);
         }
       })
@@ -1435,7 +1441,8 @@ useEffect(() => {
   const handleRestoreDraft = () => {
     if (!pendingDraft) return;
     setSelectedType(pendingDraft.selectedType ?? selectedType);
-    setHeadline(pendingDraft.headline ?? "");
+    // Never let a stale/blank autosave wipe the headline that was just loaded.
+    setHeadline(pendingDraft.headline?.trim() ? pendingDraft.headline : headline);
     setShortTitle(pendingDraft.shortTitle ?? "");
     setSummary(pendingDraft.summary ?? "");
     setContent(pendingDraft.content ?? "");
@@ -1453,8 +1460,12 @@ useEffect(() => {
     if (pendingDraft.mediaPreview) setMediaPreview(pendingDraft.mediaPreview);
     setMetaTitle(pendingDraft.metaTitle ?? "");
     setMetaDesc(pendingDraft.metaDesc ?? "");
-    setUrlSlug(pendingDraft.urlSlug ?? "");
-    setSlugManuallyEdited(Boolean(pendingDraft.slugManuallyEdited));
+    // In edit mode the stored slug is authoritative — don't let an old
+    // autosave swap it for an auto-generated one.
+    if (!isEdit) {
+      setUrlSlug(pendingDraft.urlSlug ?? "");
+      setSlugManuallyEdited(Boolean(pendingDraft.slugManuallyEdited));
+    }
     setFocusKeywords(pendingDraft.focusKeywords ?? "");
     setShowRestoreModal(false);
     setPendingDraft(null);
@@ -1527,12 +1538,17 @@ useEffect(() => {
       language:   language || "hindi",
       location:    articleLocation.trim(),
       tags,
-      slug:       urlSlug,
+      // Edit mode: send the slug only if the admin changed it.
+      slug:       isEdit && urlSlug === originalSlug ? undefined : urlSlug,
       articleType: apiType,
       breakingNewsTicker:    apiType === "BREAKING" ? breakingToggles.newsTicker       : undefined,
       breakingPushNotif:     apiType === "BREAKING" ? breakingToggles.pushNotification : undefined,
       breakingHomepageAlert: apiType === "BREAKING" ? breakingToggles.homepageAlert    : undefined,
-      liveUpdates: apiType === "LIVE" ? liveUpdates : undefined,
+      // Edit mode must NEVER send liveUpdates: this form only holds a stripped
+      // copy ({id,time,text}) and saving it overwrote every update's title,
+      // timestamp, image, poll, etc. Live updates are managed through the
+      // dedicated /live-update endpoints.
+      liveUpdates: !isEdit && apiType === "LIVE" ? liveUpdates : undefined,
       featuredImage: mediaFile ? undefined : (mediaPreview && !mediaPreview.startsWith("blob:") ? mediaPreview : undefined),
       imageCaption:  imageCaption.trim(),
       photoCredit:   photoCredit.trim(),

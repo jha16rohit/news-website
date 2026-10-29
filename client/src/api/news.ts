@@ -3,7 +3,7 @@ import { apiClient, BASE_URL, getAuthToken } from "./client";
 // ─── Types ─────────────────────────────────────────────────────────────────────
 
 export type ArticleTypeEnum = "STANDARD" | "BREAKING" | "LIVE";
-export type StatusEnum      = "DRAFT" | "PUBLISHED" | "SCHEDULED" | "EXPIRED" | "DELETED";
+export type StatusEnum      = "DRAFT" | "PUBLISHED" | "SCHEDULED" | "EXPIRED" | "DELETED" | "ARCHIVED";
 export type PriorityEnum    = "CRITICAL" | "HIGH" | "MEDIUM";
 export type StatusTypeEnum  = "published" | "paused" | "ended";
 export type DeleteModeEnum  = "instant" | "interval";
@@ -74,7 +74,10 @@ export interface NewsPayload {
   statusType?: StatusTypeEnum;
   expiryTime?: string;
 
-  // Live
+  // Live — only meaningful when CREATING an article. updateNews() and
+  // updateNewsWithMedia() strip it: live updates are owned by the dedicated
+  // appendLiveUpdate / editLiveUpdate / deleteLiveUpdate endpoints, and
+  // re-sending a stale copy used to wipe every update's title, timestamp, etc.
   liveUpdates?: LiveUpdate[];
 
   // Media
@@ -186,23 +189,31 @@ export const fetchAdminNews = (params?: {
 };
 
 // ─── GET ───────────────────────────────────────────────────────────────────────
+// The server has no "/slug/:slug" route — GET "/api/news/:id" resolves both
+// MongoDB ObjectIds and slugs, so slugs go straight after /api/news/.
 export const fetchNewsBySlug = (slug: string) =>
-  apiClient(`/api/news/slug/${slug}`);
+  apiClient(`/api/news/${encodeURIComponent(slug)}`);
 
 export const fetchNewsById = (id: string) =>
   apiClient(`/api/news/${id}`);
 
 // ─── UPDATE ────────────────────────────────────────────────────────────────────
-export const updateNews = (id: string, data: Partial<NewsPayload>) =>
-  apiClient(`/api/news/${id}`, {
+export const updateNews = (id: string, data: Partial<NewsPayload>) => {
+  // Never send liveUpdates on edit (see NewsPayload note above).
+  const { liveUpdates: _ignored, ...safe } = data;
+  return apiClient(`/api/news/${id}`, {
     method: "PUT",
-    body: JSON.stringify(data),
+    body: JSON.stringify(safe),
   });
+};
 
 // 🖼️ UPDATE WITH MEDIA — sends multipart/form-data so the featured image can be
 // replaced at the same time as other fields are updated.
 export const updateNewsWithMedia = async (id: string, formData: FormData): Promise<any> => {
   const token = getAuthToken();
+
+  // Never send liveUpdates on edit (see NewsPayload note above).
+  formData.delete("liveUpdates");
 
   const res = await fetch(`${BASE_URL}/api/news/${id}`, {
     method: "PUT",

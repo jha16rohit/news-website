@@ -95,7 +95,7 @@ function mapStory(n: any): LiveStory {
     status,
     views:           String(n.views ?? 0),
     liveStartedAt:   n.publishedAt || null,
-    endedAt:         n.statusType === "ended" ? (n.updatedAt || null) : null,
+    endedAt:         n.statusType === "ended" ? (n.endedAt || n.updatedAt || null) : null,
     liveUpdates:     (n.liveUpdates ?? []).map((u: any, i: number) => ({
       id:           u.id ?? (i + 1),
       time:         u.timestamp ? formatLiveTime(u.timestamp) : "—",
@@ -114,7 +114,7 @@ function mapStory(n: any): LiveStory {
       tags:         u.tags,
     })),
     published: n.statusType === "ended"
-      ? formatLiveDate(n.updatedAt || n.publishedAt)
+      ? formatLiveDate(n.endedAt || n.updatedAt || n.publishedAt)
       : "Live",
     canChangeStatus: Boolean(n.canChangeStatus),
     canManage: Boolean(n.canManage),

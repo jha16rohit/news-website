@@ -146,6 +146,25 @@ async function buildUniqueSlug(
   return `${raw}-${Math.random().toString(36).slice(2, 7)}`;
 }
 
+// FormData sends every value as a string, so "false" must NOT become true.
+function toBool(v: unknown): boolean {
+  if (typeof v === "string") return v.trim().toLowerCase() === "true";
+  return Boolean(v);
+}
+
+// Accepts JSON arrays, comma strings, and the FormData "key[]" form.
+function readList(body: any, key: string): string[] | null {
+  const bracket = body?.[`${key}[]`];
+  if (Array.isArray(bracket)) return bracket;
+  if (bracket) return [String(bracket)];
+  const v = body?.[key];
+  if (Array.isArray(v)) return v;
+  if (typeof v === "string" && v.trim()) {
+    return v.split(",").map((t: string) => t.trim()).filter(Boolean);
+  }
+  return null;
+}
+
 function toArticleTypeEnum(type?: string): "STANDARD" | "BREAKING" | "LIVE" {
   const map: Record<string, "STANDARD" | "BREAKING" | "LIVE"> = {
     STANDARD: "STANDARD",
@@ -515,11 +534,11 @@ if (req.user?.role === "EDITOR") {
       articleType: typeEnum,
 
       breakingNewsTicker:
-        typeEnum === "BREAKING" ? Boolean(breakingNewsTicker) : false,
+        typeEnum === "BREAKING" ? toBool(breakingNewsTicker) : false,
       breakingPushNotif:
-        typeEnum === "BREAKING" ? Boolean(breakingPushNotif) : false,
+        typeEnum === "BREAKING" ? toBool(breakingPushNotif) : false,
       breakingHomepageAlert:
-        typeEnum === "BREAKING" ? Boolean(breakingHomepageAlert) : false,
+        typeEnum === "BREAKING" ? toBool(breakingHomepageAlert) : false,
 
       priority: normalisePriority(priority) ?? undefined,
       // FIX: default statusType to "published" only when article is PUBLISHED,
@@ -948,7 +967,11 @@ export const updateNews = async (req: AuthRequest, res: Response) => {
       priority,
       statusType,
       expiryTime,
-      liveUpdates,
+      // NOTE: `liveUpdates` is intentionally NOT read here. Live updates are
+      // owned by the dedicated /live-update endpoints. The edit form only
+      // holds a stripped copy ({id,time,text}); accepting it here used to
+      // overwrite the real array and wipe every update's title, timestamp,
+      // image, poll, tweet, etc.
       featuredImage,
       imageCaption,
       photoCredit,
@@ -962,6 +985,12 @@ export const updateNews = async (req: AuthRequest, res: Response) => {
       deleteMode,
       deleteIntervalDays,
     } = req.body;
+
+    // A blank headline must never be persisted (findByIdAndUpdate skips the
+    // schema's `required` validator, so "" used to be saved silently).
+    if (headline !== undefined && !String(headline).trim()) {
+      return res.status(400).json({ message: "Headline cannot be empty." });
+    }
 
     const typeEnum = articleType
       ? toArticleTypeEnum(articleType)
@@ -1007,17 +1036,32 @@ if (req.user?.role === "EDITOR") {
       } catch (_) {}
     }
 
+    // ── Slug ────────────────────────────────────────────────────────────────
+    // A slug is a public URL. It must only change when the admin explicitly
+    // sends a DIFFERENT slug. Compare in normalised form so legacy slugs that
+    // slugify() would tweak (case, underscores, ...) don't look "changed" on
+    // every save. Editing the headline never silently rewrites a live URL.
     let slug = existing.slug;
     const incomingSlug = typeof req.body.slug === "string" ? req.body.slug.trim() : "";
     const incomingSlugNormalised = incomingSlug ? slugifyAny(incomingSlug) : "";
+    const existingSlugNormalised = slugifyAny(existing.slug || "");
+    const neverPublished =
+      !existing.publishedAt && existing.status !== "PUBLISHED";
 
-    if (incomingSlugNormalised && incomingSlugNormalised !== existing.slug) {
-      // Admin manually edited the URL Slug field (or the frontend sent a
-      // freshly auto-generated, transliterated slug) — honour it.
-      slug = await buildUniqueSlug(headline?.trim() || existing.headline, id, incomingSlug);
-    } else if (headline && headline.trim() !== existing.headline) {
-      // Headline changed and the slug wasn't hand-edited — regenerate from
-      // the new headline (with Hindi transliteration applied).
+    if (incomingSlugNormalised && incomingSlugNormalised !== existingSlugNormalised) {
+      slug = await buildUniqueSlug(
+        headline?.trim() || existing.headline,
+        id,
+        incomingSlug,
+      );
+    } else if (
+      !incomingSlugNormalised &&
+      neverPublished &&
+      headline &&
+      headline.trim() !== existing.headline
+    ) {
+      // No slug supplied and the article has never gone public: safe to
+      // derive a fresh slug from the new headline.
       slug = await buildUniqueSlug(headline.trim(), id);
     }
 
@@ -1047,10 +1091,14 @@ if (req.user?.role === "EDITOR") {
 }
 
     const justPublished = status === "PUBLISHED" && existing.status !== "PUBLISHED";
+    // Only an EXPLICIT "Go Live Again" (statusType: "published") reopens a
+    // story. A normal "Update & Publish" from the edit form also sends
+    // status=PUBLISHED, and must NOT reset the Started time.
     const reopenedLive =
       existing.articleType === "LIVE" &&
       existing.statusType === "ended" &&
       status === "PUBLISHED" &&
+      statusType === "published" &&
       (!articleType || typeEnum === "LIVE");
 
     if (justPublished || reopenedLive) {
@@ -1077,7 +1125,15 @@ if (req.user?.role === "EDITOR") {
       deleteAfter = new Date(Date.now() + days * 86_400_000);
     }
 
-    const resolvedTags = Array.isArray(tags) ? await upsertTags(tags) : null;
+    // Published articles must always carry a publish time (legacy rows might
+    // not); fall back to the real creation time, never "now".
+    if (status === "PUBLISHED" && !publishedAt) {
+      publishedAt = (existing as any).createdAt ?? new Date();
+    }
+
+    // Accept both JSON `tags` and FormData `tags[]` (image-replace path).
+    const incomingTags = readList(req.body, "tags");
+    const resolvedTags = incomingTags ? await upsertTags(incomingTags) : null;
 
     // ── BREAKING HISTORY STATE ────────────────────────────────────────────────
     // If a previously removed Breaking article is made Breaking again, it must
@@ -1112,9 +1168,9 @@ if (req.user?.role === "EDITOR") {
     if (resolvedTags !== null) updateData.tags = resolvedTags;
 
     if (typeEnum === "BREAKING") {
-      updateData.breakingNewsTicker = Boolean(breakingNewsTicker);
-      updateData.breakingPushNotif = Boolean(breakingPushNotif);
-      updateData.breakingHomepageAlert = Boolean(breakingHomepageAlert);
+      updateData.breakingNewsTicker = toBool(breakingNewsTicker);
+      updateData.breakingPushNotif = toBool(breakingPushNotif);
+      updateData.breakingHomepageAlert = toBool(breakingHomepageAlert);
     }
 
     if (priority !== undefined)
@@ -1123,14 +1179,8 @@ if (req.user?.role === "EDITOR") {
     if (expiryTime !== undefined)
       updateData.expiryTime = expiryTime ? new Date(expiryTime) : null;
 
-    if (typeEnum === "LIVE" && liveUpdates !== undefined) {
-      // liveUpdates may arrive as a parsed array (JSON body) or a JSON string (FormData)
-      let parsedLiveUpdates = liveUpdates;
-      if (typeof liveUpdates === "string") {
-        try { parsedLiveUpdates = JSON.parse(liveUpdates); } catch { parsedLiveUpdates = undefined; }
-      }
-      updateData.liveUpdates = Array.isArray(parsedLiveUpdates) ? parsedLiveUpdates : undefined;
-    }
+    // Going live again clears the previous "ended" timestamp.
+    if (reopenedLive) updateData.endedAt = null;
 
     // Prefer a freshly-uploaded file URL from middleware; fall back to the
     // value sent in the JSON body; never accept a blob: URL.
@@ -1147,8 +1197,11 @@ if (req.user?.role === "EDITOR") {
       updateData.metaTitle = metaTitle?.trim() || null;
     if (metaDescription !== undefined)
       updateData.metaDescription = metaDescription?.trim() || null;
-    if (keywords !== undefined)
-      updateData.keywords = Array.isArray(keywords) ? keywords : [];
+    {
+      const incomingKeywords = readList(req.body, "keywords");
+      if (incomingKeywords) updateData.keywords = incomingKeywords;
+      else if (keywords !== undefined) updateData.keywords = [];
+    }
     if (focusKeywords !== undefined)
       updateData.focusKeywords = focusKeywords?.trim() || null;
     if (canonicalUrl !== undefined)
@@ -1758,8 +1811,7 @@ export const endLiveStory = async (req: AuthRequest, res: Response) => {
       id,
       {
         statusType: "ended",
-        updatedAt: now,
-        $set: { endedAt: now },
+        endedAt: now,
       },
       { returnDocument: 'after' }
     );
