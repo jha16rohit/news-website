@@ -33,7 +33,7 @@ export default function middleware(request: Request): Response {
   // server-generated article-specific Open Graph metadata (no redirect).
   if (isCrawler && /^\/news\/[^/]+$/.test(url.pathname)) {
     const slug = url.pathname.split("/").pop()!;
-    return rewrite(`/api/share/news/${encodeURIComponent(slug)}`);
+    return rewrite(`/api/article-og?slug=${encodeURIComponent(slug)}`);
   }
 
   // Humans: pass through to the SPA (index.html) so React Router renders the
