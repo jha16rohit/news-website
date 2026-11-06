@@ -4,7 +4,17 @@
     <meta charset="UTF-8" />
     <link rel="icon" type="image/png" href="/favicon.png" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="description" content="LocalNewz — सच, साहस और सरोकार" />
     <title>local Newz — सच, साहस और सरोकार</title>
+
+    <!-- Default Open Graph / Twitter site-wide fallback.
+         Article-specific og:image, og:title, og:description and og:url are
+         served by the /share/news/:slug endpoint (Vercel function) so social
+         crawlers always receive the correct article preview without executing
+         the React application. -->
+    <meta property="og:site_name" content="LocalNewz" />
+    <meta property="og:type" content="website" />
+    <meta name="twitter:card" content="summary_large_image" />
   </head>
   <body>
     <div id="root"></div>

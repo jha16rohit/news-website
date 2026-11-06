@@ -8,6 +8,7 @@ import Preloader from "../../Admin/Preloader/Preloder";
 import NotFound404 from "../Errors/NotFound404";
 import { formatLiveTime } from "../../../utils/timezone";
 import { getLiveStatus } from "../../../utils/statusUtils";
+import { getShareUrl, getWhatsAppShareUrl } from "../../../utils/share";
 
 interface LiveUpdate {
   id: string;
@@ -331,15 +332,16 @@ const handleShare = (platform: "fb" | "tw" | "whatsapp" | "copy", article: LiveA
   const slug = article.slug || article._id;
   if (!slug) return;
 
-  const backendBaseUrl = import.meta.env.VITE_API_URL?.replace(/\/api$/, "") || "http://localhost:5001";
-  const shareUrl = `${backendBaseUrl}/share/news/${encodeURIComponent(slug)}`;
+  // All public sharing uses the same public frontend-domain sharing URL
+  // (never the backend/API domain). WhatsApp and Copy Link share identical URLs.
+  const shareUrl = getShareUrl(slug);
 
   if (platform === "fb") {
     window.open(`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(shareUrl)}`, "_blank", "width=600,height=500");
   } else if (platform === "tw") {
     window.open(`https://twitter.com/intent/tweet?url=${encodeURIComponent(shareUrl)}&text=${encodeURIComponent(article.headline)}`, "_blank", "width=600,height=500");
   } else if (platform === "whatsapp") {
-    window.open(`https://wa.me/?text=${encodeURIComponent(`${article.headline}\n${shareUrl}`)}`, "_blank");
+    window.open(getWhatsAppShareUrl(slug, article.headline), "_blank");
   } else if (platform === "copy") {
     navigator.clipboard.writeText(shareUrl);
     alert("Link copied!");

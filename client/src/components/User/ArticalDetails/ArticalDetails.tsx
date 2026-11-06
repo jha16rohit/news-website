@@ -27,6 +27,7 @@ import { trackPageView, trackReadTime } from "../../../api/analytics";
 import { trackRead, trackShare } from "../../../api/user/userauth";
 import { useAuth } from "../../../context/AuthContext";
 import { getApiBaseUrl } from "../../../utils/apiBase";
+import { getShareUrl, getWhatsAppShareUrl, buildShareMeta } from "../../../utils/share";
 import NotFound404 from "../Errors/NotFound404";
 import { formatLiveTime } from "../../../utils/timezone";
 import { isLiveArticle, isBreakingArticle } from "../../../utils/statusUtils";
@@ -484,15 +485,20 @@ const ArticleDetail: React.FC = () => {
 useEffect(() => {
   if (!article) return;
 
+  const meta = buildShareMeta({
+    slug: article.slug ?? "",
+    headline: article.headline,
+    metaTitle: article.metaTitle,
+    excerpt: article.excerpt,
+    metaDescription: article.metaDescription,
+    featuredImage: article.imageUrl,
+  });
+
   // Page title
-  document.title =
-    article.metaTitle?.trim() || article.headline;
+  document.title = meta.title;
 
   // Meta description
-  const description =
-    article.metaDescription?.trim() ||
-    article.excerpt?.trim() ||
-    "";
+  const description = meta.description;
 
   let metaDescription = document.querySelector(
     'meta[name="description"]'
@@ -518,6 +524,37 @@ useEffect(() => {
   }
 
   canonical.href = window.location.href;
+
+  // Open Graph / Twitter meta tags (browser-side enhancement only;
+  // social crawlers read the server-generated /share/news/:slug HTML).
+  const setMeta = (name: string, content: string) => {
+    let el = document.querySelector(`meta[property="${name}"]`) as
+      | HTMLMetaElement
+      | null;
+    if (!el) {
+      el = document.createElement("meta");
+      el.setAttribute("property", name);
+      document.head.appendChild(el);
+    }
+    el.content = content;
+  };
+
+  setMeta("og:type", "article");
+  setMeta("og:title", meta.title);
+  setMeta("og:description", description);
+  setMeta("og:url", window.location.href);
+  setMeta("og:site_name", "LocalNewz");
+  if (meta.imageUrl) {
+    setMeta("og:image", meta.imageUrl);
+    setMeta("og:image:secure_url", meta.imageUrl);
+    setMeta("og:image:alt", meta.title);
+  }
+  setMeta("twitter:card", "summary_large_image");
+  setMeta("twitter:title", meta.title);
+  setMeta("twitter:description", description);
+  if (meta.imageUrl) {
+    setMeta("twitter:image", meta.imageUrl);
+  }
 
   // Cleanup when leaving article
   return () => {
@@ -666,83 +703,56 @@ setAds(adResponse);
   const handleShare = (
   platform: "fb" | "tw" | "whatsapp" | "copy" | "native"
 ) => {
-    if (platform === "fb") {
   const slug = article?.slug;
 
   if (!slug) return;
 
-  const shareUrl = `${import.meta.env.VITE_SOCKET_URL || "http://localhost:5001"}/share/news/${encodeURIComponent(
-    slug
-  )}`;
+  // All public sharing uses the same public frontend-domain sharing URL.
+  // Never the backend/API domain. WhatsApp and Copy Link share identical URLs.
+  const shareUrl = getShareUrl(slug);
 
-  window.open(
-    `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(
-      shareUrl
-    )}`,
-    "_blank",
-    "width=600,height=500"
-  );
+  if (platform === "fb") {
+    window.open(
+      `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(
+        shareUrl
+      )}`,
+      "_blank",
+      "width=600,height=500"
+    );
+    return;
+  }
 
-  return;
-}
-if (platform === "tw") {
-  const slug = article?.slug;
+  if (platform === "tw") {
+    window.open(
+      `https://twitter.com/intent/tweet?url=${encodeURIComponent(
+        shareUrl
+      )}&text=${encodeURIComponent(article?.headline ?? "")}`,
+      "_blank",
+      "width=600,height=500"
+    );
+    return;
+  }
 
-  if (!slug) return;
+  if (platform === "whatsapp") {
+    window.open(getWhatsAppShareUrl(slug, article?.headline ?? ""), "_blank");
+    return;
+  }
 
-  const backendBaseUrl = BASE.replace(/\/api$/, "");
+  if (platform === "copy") {
+    navigator.clipboard.writeText(shareUrl);
+    alert("Link copied!");
+    return;
+  }
 
-  const shareUrl = `${backendBaseUrl}/share/news/${encodeURIComponent(
-    slug
-  )}`;
+  if (platform === "native" && navigator.share) {
+    navigator.share({ title: article?.headline, url: shareUrl });
+  }
 
-  window.open(
-    `https://twitter.com/intent/tweet?url=${encodeURIComponent(
-      shareUrl
-    )}&text=${encodeURIComponent(article?.headline ?? "")}`,
-    "_blank",
-    "width=600,height=500"
-  );
-
-  return;
-}
-if (platform === "whatsapp") {
-  const slug = article?.slug;
-
-  if (!slug) return;
-
-  // Remove /api from the existing backend API URL
-  const backendBaseUrl = BASE.replace(/\/api$/, "");
-
-  // This URL will contain the OG image/title/description
-  const shareUrl = `${backendBaseUrl}/share/news/${encodeURIComponent(slug)}`;
-
-  window.open(
-    `https://wa.me/?text=${encodeURIComponent(
-      `${article?.headline ?? ""}\n${shareUrl}`
-    )}`,
-    "_blank"
-  );
-}
-    if (platform === "copy") {
-  const slug = article?.slug;
-
-  if (!slug) return;
-
-  // For copy link, we want to copy the actual frontend URL so the user sees a clean link
-  const shareUrl = window.location.href;
-
-  navigator.clipboard.writeText(shareUrl);
-  alert("Link copied!");
-  return;
-}
-    if (platform === "native" && navigator.share) navigator.share({ title: article?.headline, url: window.location.href });
-
-    // Personal share tracking (per logged-in site user)
-    if (article && currentUser) {
-      trackShare(article.id, SHARE_PLATFORM_MAP[platform] ?? "other");
-    }
-  };
+  // Personal share tracking (per logged-in site user)
+  if (article && currentUser) {
+    trackShare(article.id, SHARE_PLATFORM_MAP[platform] ?? "other");
+  }
+};
 
   const handlePollVote = async (updateId: string, optionId: string) => {
     try {
