@@ -1555,7 +1555,7 @@ useEffect(() => {
       metaTitle:       metaTitle.trim(),
       metaDescription: metaDesc.trim(),
       focusKeywords:   focusKeywords.trim(),
-      canonicalUrl:    urlSlug ? `https://yournewssite.com/news/${urlSlug}` : undefined,
+      canonicalUrl:    urlSlug ? `https://www.localnewz.in/news/${urlSlug}` : undefined,
       keywords: focusKeywords ? focusKeywords.split(",").map(k => k.trim()).filter(Boolean) : [],
       status,
       publishAt,
@@ -1791,7 +1791,7 @@ if (loadingArticle) {
     return <FullPageContentPreloader message="Loading article..." />;
   }
 
-  const googlePreviewUrl   = `https://yournewssite.com/news/${urlSlug || "article-slug"}`;
+  const googlePreviewUrl   = `https://www.localnewz.in/news/${urlSlug || "article-slug"}`;
   const googlePreviewTitle = metaTitle || headline || "Your article title will appear here";
   const googlePreviewDesc  = metaDesc  || "Your meta description will appear here.";
 
