@@ -8,7 +8,7 @@ import Preloader from "../../Admin/Preloader/Preloder";
 import NotFound404 from "../Errors/NotFound404";
 import { formatLiveTime } from "../../../utils/timezone";
 import { getLiveStatus } from "../../../utils/statusUtils";
-import { getShareUrl, getWhatsAppShareUrl } from "../../../utils/share";
+import { getFrontendBaseUrl } from "../../../utils/share";
 
 interface LiveUpdate {
   id: string;
@@ -329,21 +329,21 @@ const LiveDetail: React.FC = () => {
 
 // Share handler
 const handleShare = (platform: "fb" | "tw" | "whatsapp" | "copy", article: LiveArticle) => {
-  const slug = article.slug || article._id;
-  if (!slug) return;
+  const eventId = article._id;
+  if (!eventId) return;
 
-  // All public sharing uses the same public frontend-domain sharing URL
-  // (never the backend/API domain). WhatsApp and Copy Link share identical URLs.
-  const shareUrl = getShareUrl(slug);
+  // Live News sharing URL: /live/:eventId (NOT /news/:slug or /share/news/:slug)
+  const liveShareUrl = `${getFrontendBaseUrl()}/live/${encodeURIComponent(eventId)}`;
 
   if (platform === "fb") {
-    window.open(`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(shareUrl)}`, "_blank", "width=600,height=500");
+    window.open(`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(liveShareUrl)}`, "_blank", "width=600,height=500");
   } else if (platform === "tw") {
-    window.open(`https://twitter.com/intent/tweet?url=${encodeURIComponent(shareUrl)}&text=${encodeURIComponent(article.headline)}`, "_blank", "width=600,height=500");
+    window.open(`https://twitter.com/intent/tweet?url=${encodeURIComponent(liveShareUrl)}&text=${encodeURIComponent(article.headline)}`, "_blank", "width=600,height=500");
   } else if (platform === "whatsapp") {
-    window.open(getWhatsAppShareUrl(slug, article.headline), "_blank");
+    const whatsappText = `${(article.headline ?? "").trim()}\n${liveShareUrl}`;
+    window.open(`https://wa.me/?text=${encodeURIComponent(whatsappText)}`, "_blank");
   } else if (platform === "copy") {
-    navigator.clipboard.writeText(shareUrl);
+    navigator.clipboard.writeText(liveShareUrl);
     alert("Link copied!");
   }
 };

@@ -13,8 +13,9 @@ export function getFrontendBaseUrl(): string {
 }
 
 // Public sharing URL used by WhatsApp and Copy Link. Identical for both.
+// Canonical public frontend article URL (never /share/news/).
 export function getShareUrl(slug: string): string {
-  return `${getFrontendBaseUrl()}/share/news/${encodeURIComponent(slug)}`;
+  return `${getFrontendBaseUrl()}/news/${encodeURIComponent(slug)}`;
 }
 
 // WhatsApp share URL: headline + public sharing URL.
