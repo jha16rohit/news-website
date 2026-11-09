@@ -5,11 +5,16 @@
 
 export function getFrontendBaseUrl(): string {
   const configured = import.meta.env.VITE_FRONTEND_URL?.trim();
-  if (configured) return configured.replace(/\/+$/, "");
-  if (typeof window !== "undefined" && window.location.origin) {
-    return window.location.origin;
+
+  if (configured) {
+    return configured.replace(/\/+$/, "");
   }
-  return "http://localhost:5173";
+
+  if (import.meta.env.PROD) {
+    return "https://www.localnewz.in";
+  }
+
+  return window.location.origin;
 }
 
 // Public sharing URL used by WhatsApp and Copy Link. Identical for both.
