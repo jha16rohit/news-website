@@ -42,6 +42,7 @@ interface Tag {
   _id: string;
   name: string;
   slug: string;
+  isTrending?: boolean;
 }
 
 
@@ -125,6 +126,8 @@ const HeroSection: React.FC<HeroSectionProps> = ({
   const featuredArticle = articles[0];
   const recentArticles = articles.slice(1, 5); // Next 4 for the sidebar
 
+  const visibleTrendingTags = trendingTags.filter((tag) => tag.isTrending !== false);
+
   const getArticleUrl = (article: Article): string | null => {
     const slug = article?.slug;
     if (slug) return `/news/${slug}`;
@@ -143,43 +146,48 @@ const HeroSection: React.FC<HeroSectionProps> = ({
 
       <div className="hero-container">
 
-        <div className="trending-tags-container">
-          {canScrollLeft && (
-            <button
-              className="tag-scroll-btn left"
-              onClick={() => scrollTags("left")}
-              aria-label="Scroll tags left"
-            >
-              <ChevronLeft size={20} />
-            </button>
-          )}
+        {visibleTrendingTags.length > 0 && (
+          <div className="trending-tags-container">
+            <span className="tags-row-label">ट्रेंडिंग</span>
+            <div className="tags-row-divider" aria-hidden="true" />
 
-          <div
-            className="tags-scroll-wrapper"
-            ref={tagsScrollRef}
-            onScroll={updateTagScrollState}
-          >
-            {trendingTags.map((tag) => (
-              <Link
-                key={tag._id}
-                to={`/tag/${tag.slug}`}
-                className="tag-pill"
+            {canScrollLeft && (
+              <button
+                className="tag-scroll-btn left"
+                onClick={() => scrollTags("left")}
+                aria-label="Scroll tags left"
               >
-                {tag.name}
-              </Link>
-            ))}
-          </div>
+                <ChevronLeft size={20} />
+              </button>
+            )}
 
-          {canScrollRight && (
-            <button
-              className="tag-scroll-btn right"
-              onClick={() => scrollTags("right")}
-              aria-label="Scroll tags right"
+            <div
+              className="tags-scroll-wrapper"
+              ref={tagsScrollRef}
+              onScroll={updateTagScrollState}
             >
-              <ChevronRight size={20} />
-            </button>
-          )}
-        </div>
+              {visibleTrendingTags.map((tag) => (
+                  <Link
+                    key={tag._id}
+                    to={`/tag/${tag.slug}`}
+                    className="tag-pill"
+                  >
+                    {tag.name} <ChevronRight size={14} />
+                  </Link>
+                ))}
+            </div>
+
+            {canScrollRight && (
+              <button
+                className="tag-scroll-btn right"
+                onClick={() => scrollTags("right")}
+                aria-label="Scroll tags right"
+              >
+                <ChevronRight size={20} />
+              </button>
+            )}
+          </div>
+        )}
 
         <div className="hero-top-row">
           {featuredUrl && featuredArticle && (
