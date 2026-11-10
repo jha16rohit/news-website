@@ -43,7 +43,8 @@ export interface AdvertisementPoolResponse {
 // ─── GET ADVERTISEMENT POOL ───────────────────────────────────────────────────
 
 export const getAdvertisementPool = async (
-  params: AdvertisementPoolRequest
+  params: AdvertisementPoolRequest,
+  signal?: AbortSignal
 ): Promise<AdvertisementPoolData> => {
   try {
     const qs = new URLSearchParams();
@@ -51,7 +52,8 @@ export const getAdvertisementPool = async (
     qs.set("strips", String(params.strips));
 
     const response: AdvertisementPoolResponse = await apiClient(
-      `/api/advertisement-pool/pool?${qs.toString()}`
+      `/api/advertisement-pool/pool?${qs.toString()}`,
+      { signal }
     );
 
     if (response && response.data) {

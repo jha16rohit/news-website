@@ -1,8 +1,9 @@
 import { apiClient } from "../client";
 
 export const getTrendingNews =
-  async () => {
+  async (signal?: AbortSignal) => {
     return await apiClient(
-      "/api/news/trending-news"
+      "/api/news/trending-news",
+      { signal }
     );
   };

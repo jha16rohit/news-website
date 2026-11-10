@@ -1,49 +1,19 @@
-import React, { useEffect, useState } from "react";
+import React, { useState } from "react";
 import { Clock } from "lucide-react";
 import { Link } from "react-router-dom";
 import "./LatestNews.css";
 import { StatusBadge } from "../../UI/StatusBadge";
-import { getTrendingNews } from "../../../api/user/trendingNews";
 
-const LatestNews: React.FC = () => {
+interface LatestNewsProps {
+  trendingNews?: any[];
+}
+
+const LatestNews: React.FC<LatestNewsProps> = ({
+  trendingNews = [],
+}) => {
   const [showAll, setShowAll] = useState(false);
-  const [newsData, setNewsData] = useState<any[]>([]);
 
-  useEffect(() => {
-    const fetchNews = async () => {
-      try {
-        const response = await getTrendingNews();
-
-        const articles = Array.isArray(response?.news)
-          ? response.news
-          : [];
-
-        // Filter out invalid articles - must have headline and at least slug or id
-        const validArticles = articles.filter((article: any) => {
-          return (
-            article &&
-            typeof article === "object" &&
-            article.headline &&
-            (article.slug || article._id || article.id)
-          );
-        });
-
-        setNewsData(validArticles);
-      } catch (error) {
-        console.error("Failed to fetch trending news:", error);
-        setNewsData([]);
-      }
-    };
-
-    fetchNews();
-
-    const interval = setInterval(
-      fetchNews,
-      60 * 60 * 1000
-    );
-
-    return () => clearInterval(interval);
-  }, []);
+  const visibleArticles = showAll ? trendingNews : trendingNews.slice(0, 8);
 
   const getArticleUrl = (article: any): string | null => {
     const slug = article?.slug;
@@ -52,8 +22,6 @@ const LatestNews: React.FC = () => {
     if (id) return `/article/${id}`;
     return null;
   };
-
-  const visibleArticles = showAll ? newsData : newsData.slice(0, 8);
 
   return (
     <section className="latest-news-section">
@@ -116,7 +84,7 @@ const LatestNews: React.FC = () => {
         </div>
 
         {/* Show More Button */}
-        {newsData.length > 8 && (
+        {trendingNews.length > 8 && (
           <div className="show-more-wrapper">
             <button
               className="show-more-btn"

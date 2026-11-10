@@ -50,6 +50,15 @@ export interface NewsResponse {
   pages?: number;
 }
 
+// ─── SHOWCASE CATEGORY (category-wise homepage showcase) ─────────────
+export interface ShowcaseCategory {
+  id: string;
+  name: string;
+  slug: string;
+  color?: string;
+  articles: NewsArticle[];
+}
+
 // ─── GET ALL (PUBLISHED) ──────────────────────────────────────────────────────
 // Accepts optional filters; always hits the public endpoint.
 export const getAllNews = async (params?: {
@@ -71,8 +80,14 @@ export const getAllNews = async (params?: {
 };
 
 // Returns maximum 5 pinned published articles.
-export const getHomepageNews = async (): Promise<NewsResponse> =>
-  apiClient("/api/news/homepage");
+export const getHomepageNews = async (signal?: AbortSignal): Promise<NewsResponse> =>
+  apiClient("/api/news/homepage", { signal });
+
+// Returns latest 10 PUBLISHED articles per showcase category.
+export const getHomepageShowcase = async (signal?: AbortSignal): Promise<{
+  success: boolean;
+  categories: ShowcaseCategory[];
+}> => apiClient("/api/news/homepage-showcase", { signal });
 
 // ─── GET SINGLE ARTICLE BY SLUG ───────────────────────────────────────────────
 export const getNewsBySlug = async (slug: string): Promise<NewsArticle> =>

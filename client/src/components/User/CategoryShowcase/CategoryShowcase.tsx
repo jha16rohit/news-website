@@ -3,13 +3,12 @@ import { Link } from "react-router-dom";
 import { ArrowRight, Clock } from "lucide-react";
 // import { getPublicCategories } from "../../../api/user/categoryNews";
 // import { fetchAllNews } from "../../../api/news";
-import type { Category } from "../../../types/category";
+import type { ShowcaseCategory } from "../../../api/user/news";
 import "./CategoryShowcase.css";
 import { StatusBadge } from "../../UI/StatusBadge";
 
 interface CategoryShowcaseProps {
-  categories: Category[];
-  articles: any[];
+  showcaseCategories: ShowcaseCategory[];
 }
 
 const slugOf = (text: string) =>
@@ -28,8 +27,7 @@ const LAYOUT_STYLES = [
 ];
 
 const CategoryShowcase: React.FC<CategoryShowcaseProps> = ({
-  categories,
-  articles,
+  showcaseCategories,
 }) => {
   // const [categories, setCategories] = useState<Category[]>([]);
   // const [articles, setArticles] = useState<any[]>([]);
@@ -40,7 +38,7 @@ const CategoryShowcase: React.FC<CategoryShowcaseProps> = ({
   //       // Categories
   //       const categoryData = await getPublicCategories();
   //       setCategories(categoryData || []);
-  //
+
   //       // News
   //       const newsData = await fetchAllNews();
   //       setArticles(newsData?.news || []);
@@ -48,70 +46,46 @@ const CategoryShowcase: React.FC<CategoryShowcaseProps> = ({
   //       console.error("Category showcase fetch error:", error);
   //     }
   //   };
-  //
+
   //   fetchData();
   // }, []);
-
-  const showcaseCategories = categories.filter(
-    (c) => c.inShowcase && c.enabled,
-  );
 
   if (showcaseCategories.length === 0) return null;
 
   return (
     <div className="cs-wrapper">
       {showcaseCategories.map((cat, index) => {
-        const allowedCategories = [
-          cat.name?.toLowerCase(),
-          ...(cat.children || []).map((child: any) =>
-            child.name?.toLowerCase(),
-          ),
-        ];
+        const displayArticles = cat.articles.map((a: any) => ({
+          id: a._id || a.id,
+          slug: a.slug,
+          title: a.headline || a.title || "Untitled News",
+          subtitle: a.excerpt || a.shortTitle || "Read full story",
 
-        const realArticles = articles
-          .filter((a: any) =>
-            allowedCategories.includes(
-              (
-                a?.categoryId?.name ||
-                a?.categoryName ||
-                a?.category ||
-                ""
-              ).toLowerCase(),
-            ),
-          )
-          .map((a: any) => ({
-            id: a._id || a.id,
-            slug: a.slug,
-            title: a.headline || a.title || "Untitled News",
-            subtitle: a.excerpt || a.shortTitle || "Read full story",
+          img:
+            a.featuredImage ||
+            a.imageUrl ||
+            a.img ||
+            "https://placehold.co/400x225/e2e8f0/64748b?text=No+Image",
 
-            img: a.featuredImage || a.imageUrl || a.img || "https://placehold.co/400x225/e2e8f0/64748b?text=No+Image",
+          category:
+            a?.categoryId?.name || a?.categoryName || a?.category || "News",
+          categoryId: a.categoryId,
 
-            category:
-              a?.categoryId?.name || a?.categoryName || a?.category || "News",
-            categoryId: a.categoryId,
+          articleType: a.articleType,
+          statusType: a.statusType,
 
-            articleType: a.articleType,
-            statusType: a.statusType,
-
-            time:
-              a.createdAt || a.publishedAt
-                ? new Date(a.createdAt || a.publishedAt).toLocaleDateString(
-                    "en-IN",
-                    {
-                      day: "numeric",
-                      month: "short",
-                      year: "numeric",
-                    },
-                  )
-                : "Just now",
-          }));
-
-        const displayArticles = realArticles.slice(0, 10);
-
-        if (displayArticles.length === 0) {
-          return null;
-        }
+          time:
+            a.createdAt || a.publishedAt
+              ? new Date(a.createdAt || a.publishedAt).toLocaleDateString(
+                  "en-IN",
+                  {
+                    day: "numeric",
+                    month: "short",
+                    year: "numeric",
+                  },
+                )
+              : "Just now",
+        }));
 
         const layout = LAYOUT_STYLES[index % LAYOUT_STYLES.length];
 

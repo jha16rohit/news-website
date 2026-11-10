@@ -29,6 +29,7 @@ import { useAuth } from "../../../context/AuthContext";
 import { getApiBaseUrl } from "../../../utils/apiBase";
 import { getShareUrl, getWhatsAppShareUrl, buildShareMeta } from "../../../utils/share";
 import NotFound404 from "../Errors/NotFound404";
+import Preloader from "../../Admin/Preloader/Preloder";
 import { formatLiveTime } from "../../../utils/timezone";
 import { isLiveArticle, isBreakingArticle } from "../../../utils/statusUtils";
 import { StatusBadge } from "../../UI/StatusBadge";
@@ -139,19 +140,27 @@ function normalizeArticle(raw: any): ArticleData {
 
   const category = categoryIdObj
     ? {
-        id: String(categoryIdObj._id ?? ""),
+        id: String(categoryIdObj._id ?? categoryIdObj.id ?? ""),
         name: categoryIdObj.name ?? "",
         slug: categoryIdObj.slug ?? "",
       }
-    : { id: "", name: "", slug: "" };
+    : {
+        id: String(raw.categoryId ?? ""),
+        name: raw.categoryName ?? raw.category ?? "",
+        slug: "",
+      };
 
   const parentCategory = parentCategoryObj
     ? {
-        id: String(parentCategoryObj._id ?? ""),
+        id: String(parentCategoryObj._id ?? parentCategoryObj.id ?? ""),
         name: parentCategoryObj.name ?? "",
         slug: parentCategoryObj.slug ?? "",
       }
-    : { id: "", name: "", slug: "" };
+    : {
+        id: "",
+        name: raw.parentCategoryName ?? "",
+        slug: "",
+      };
 
   return {
     id:       String(raw._id ?? raw.id ?? ""),
@@ -466,19 +475,40 @@ const ArticleDetail: React.FC = () => {
 
   // ── Fetch article ────────────────────────────────────────────────────────
   useEffect(() => {
-    if (!articleId) return;
+    if (!articleId) {
+      setLoading(false);
+      return;
+    }
+
+    const controller = new AbortController();
+    let isCurrentRequest = true;
+
     setLoading(true);
     setError(null);
-    fetch(`${BASE}/news/${articleId}`)
+
+    fetch(`${BASE}/news/${articleId}`, { signal: controller.signal })
       .then((r) => { if (!r.ok) throw new Error("not found"); return r.json(); })
       .then((raw) => {
+        if (!isCurrentRequest) return;
         const normalized = normalizeArticle(raw);
         setArticle(normalized);
         setLiveUpdates(normalized.liveUpdates);
         liveCountRef.current = normalized.liveUpdates.length;
       })
-      .catch(() => setError("Article not found or unavailable."))
-      .finally(() => setLoading(false));
+      .catch((err) => {
+        if (!isCurrentRequest) return;
+        if (err.name === "AbortError") return;
+        setError("Article not found or unavailable.");
+      })
+      .finally(() => {
+        if (!isCurrentRequest) return;
+        setLoading(false);
+      });
+
+    return () => {
+      isCurrentRequest = false;
+      controller.abort();
+    };
   }, [articleId]);
 
   // ── SEO Metadata ─────────────────────────────────────────────
@@ -700,7 +730,7 @@ setAds(adResponse);
   native: "other",
 };
 
-  const handleShare = (
+  const handleShare = async (
   platform: "fb" | "tw" | "whatsapp" | "copy" | "native"
 ) => {
   const slug = article?.slug;
@@ -739,8 +769,12 @@ setAds(adResponse);
   }
 
   if (platform === "copy") {
-    navigator.clipboard.writeText(shareUrl);
-    alert("Link copied!");
+    try {
+      await navigator.clipboard.writeText(shareUrl);
+      toast.success("Link copied!", { duration: 2500 });
+    } catch {
+      toast.error("Failed to copy link.", { duration: 2500 });
+    }
     return;
   }
 
@@ -955,13 +989,8 @@ setAds(adResponse);
   // ── Loading / Error ───────────────────────────────────────────────────────
   if (loading) {
     return (
-      <div className="skeleton-wrapper">
-        <div className="skeleton-hero" />
-        <div className="skeleton-title" />
-        <div className="skeleton-meta" />
-        <div className="skeleton-body" />
-        <div className="skeleton-body" style={{ width: "80%" }} />
-        <div className="skeleton-body" style={{ width: "60%" }} />
+      <div>
+        <Preloader />
       </div>
     );
   }
@@ -993,29 +1022,31 @@ const totalComments = comments.length + comments.reduce((acc, c) => acc + c.repl
           {/* ── BREADCRUMB ── */}
           <div className="breadcrumb">
             <Link to="/" className="bc-link">होम</Link>
-            {article.parentCategory?.slug && (
+
+            {displayCategory && (
               <>
                 <span className="bc-sep">/</span>
-                <Link to={`/category/${article.parentCategory.slug}`} className="bc-link">
-                  {article.parentCategory.name}
-                </Link>
+
+                {article.category?.slug || article.parentCategory?.slug ? (
+                  <Link
+                    to={`/category/${article.category?.slug || article.parentCategory?.slug}`}
+                    className="bc-link"
+                  >
+                    {displayCategory}
+                  </Link>
+                ) : (
+                  <span className="bc-link">{displayCategory}</span>
+                )}
               </>
             )}
-            {article.category?.slug && (
-              <>
-                <span className="bc-sep">/</span>
-                <Link to={`/category/${article.category.slug}`} className="bc-link">
-                  {article.category.name}
-                </Link>
-              </>
-            )}
+
             <span className="bc-sep">/</span>
+
             <span className="bc-current">{article.headline}</span>
           </div>
 
           {/* ── BADGES ── */}
           <div className="badges-row">
-            <span className="category-badge">{displayCategory}</span>
             {article.isLive && (
               <span className="live-badge"><span className="live-dot-sm" /> LIVE</span>
             )}

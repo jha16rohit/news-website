@@ -26,6 +26,7 @@ import {
   getTrendingNews,
   getNewsByTag,
   getNewsByTopicSlug,
+  getHomepageShowcase,
 
   // ─── Homepage / Ordering ──────────────────────────────────────
   reorderNews,
@@ -110,6 +111,14 @@ router.get(
 router.get(
   "/homepage",
   getHomepageNews
+);
+
+// ─── Homepage Showcase ────────────────────────────────────────────
+// Returns latest 10 PUBLISHED articles per showcase category
+
+router.get(
+  "/homepage-showcase",
+  getHomepageShowcase
 );
 
 // ─── Root list ──────────────────────────────────────────────────

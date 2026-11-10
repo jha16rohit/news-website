@@ -838,27 +838,165 @@ export const getPublishedNews = async (req: Request, res: Response) => {
   }
 };
 
+// ─── HOMEPAGE SHOWCASE (public — latest 10 PUBLISHED per showcase category) ────
+// Retrieves articles for all categories where showcase=true && active=true.
+// Each category gets its own top-10 list, sorted by publishedAt desc.
+// Child-category articles are included under their parent showcase category.
+// Bounded concurrency caps parallel News queries at 10.
+export const getHomepageShowcase = async (
+  req: Request,
+  res: Response
+) => {
+  try {
+    await autoPublishDueScheduled();
+
+    // 1. Fetch all showcase categories (showcase=true, active=true)
+    const showcaseCats = await Category.find({
+      showcase: true,
+      active: true,
+    })
+      .select("_id name slug color parentId")
+      .lean();
+
+    if (!showcaseCats || showcaseCats.length === 0) {
+      return res.json({ success: true, categories: [] });
+    }
+
+    const showcaseIds = showcaseCats.map((c) => String(c._id));
+
+    // 2. Fetch ALL active children of showcase categories in ONE batch
+    const allChildren = await Category.find({
+      parentId: { $in: showcaseIds },
+      active: true,
+    })
+      .select("_id parentId")
+      .lean();
+
+    // 3. Group children by parentId in memory
+    const childrenByParent = new Map<string, string[]>();
+    for (const child of allChildren as any[]) {
+      const pid = String(child.parentId);
+      if (!childrenByParent.has(pid)) {
+        childrenByParent.set(pid, []);
+      }
+      childrenByParent.get(pid)!.push(String(child._id));
+    }
+
+    // 4. Build allowed category ID sets per showcase category
+    const categoryIdSets = new Map<string, string[]>();
+    for (const cat of showcaseCats as any[]) {
+      const catId = String(cat._id);
+      const children = childrenByParent.get(catId) || [];
+      categoryIdSets.set(catId, [catId, ...children]);
+    }
+
+    // 5. Bounded concurrency: run News queries in batches of 10
+    const BATCH_SIZE = 10;
+    const categoryEntries = Array.from(showcaseCats.entries()) as [number, any][];
+    const results: { cat: any; articles: any[] }[] = [];
+
+    for (let i = 0; i < categoryEntries.length; i += BATCH_SIZE) {
+      const batch = categoryEntries.slice(i, i + BATCH_SIZE);
+      const batchResults = await Promise.all(
+        batch.map(async ([_, cat]) => {
+          const catId = String(cat._id);
+          const allowedIds = categoryIdSets.get(catId) || [catId];
+          const articles = await News.find({
+            categoryId: { $in: allowedIds },
+            status: "PUBLISHED",
+          })
+            .sort({ publishedAt: -1, createdAt: -1 })
+            .limit(10)
+            .lean();
+          return { cat, articles };
+        })
+      );
+      results.push(...batchResults);
+    }
+
+    // 6. Batch enrich category names for all articles across all categories
+    const allArticleCategoryIds = [
+      ...new Set(
+        results
+          .flatMap((r) => r.articles)
+          .map((a: any) => String(a.categoryId))
+          .filter(Boolean)
+      ),
+    ];
+    const catMap: Record<string, any> = {};
+    if (allArticleCategoryIds.length > 0) {
+      const categoryDocs = await Category.find({
+        _id: { $in: allArticleCategoryIds },
+      })
+        .select("_id name color")
+        .lean();
+      for (const c of categoryDocs as any[]) {
+        catMap[String(c._id)] = c;
+      }
+    }
+
+    // 7. Build response — categories with zero articles still appear with []
+    const responseCategories = results.map(({ cat, articles }) => {
+      const enrichedArticles = (articles as any[]).map((a: any) => ({
+        ...a,
+        id: String(a._id),
+        categoryId: catMap[String(a.categoryId)] ?? a.categoryId,
+      }));
+
+      return {
+        id: String(cat._id),
+        name: cat.name,
+        slug: cat.slug,
+        color: cat.color ?? "#3b82f6",
+        articles: enrichedArticles,
+      };
+    });
+
+    return res.json({ success: true, categories: responseCategories });
+  } catch (error) {
+    console.error("getHomepageShowcase error:", error);
+    return res.status(500).json({ message: "Error fetching homepage showcase" });
+  }
+};
+
 // ─── GET BY SLUG ──────────────────────────────────────────────────────────────
 export const getNewsBySlug = async (req: Request, res: Response) => {
   try {
     await autoPublishDueScheduled();
 
-    const news = await News.findOne({
+    const newsDoc = await News.findOne({
       slug: String(req.params.id),
-    })
-      .populate("authorId", "name role")
-      .populate("categoryId", "name color");
+    }).lean();
 
-    if (!news) return res.status(404).json({ message: "News not found" });
+    if (!newsDoc) return res.status(404).json({ message: "News not found" });
 
-    // View counting is NOT done here. It happens exclusively in
-    // analytics.controller.ts's trackPageView -> bumpAnalyticsBucket, which
-    // is called by the public article page and is properly deduped against
-    // the PageView collection. That same function now also increments
-    // News.views, so this route stays a pure read and the two counters
-    // (this table's News.views, and the Dashboard's Analytics-backed
-    // numbers) can never fall out of sync — there's only one place a view
-    // is ever recorded.
+    const [catDoc, authorDoc] = await Promise.all([
+      (newsDoc as any).categoryId
+        ? Category.findById((newsDoc as any).categoryId)
+            .select("_id name slug color parentId")
+            .lean()
+        : null,
+      (newsDoc as any).authorId
+        ? User.findById((newsDoc as any).authorId)
+            .select("_id name email role")
+            .lean()
+        : null,
+    ]);
+
+    let parentCategory = null;
+    if (catDoc && (catDoc as any).parentId) {
+      parentCategory = await Category.findById((catDoc as any).parentId)
+        .select("_id name slug color")
+        .lean();
+    }
+
+    const news = {
+      ...newsDoc,
+      id: String((newsDoc as any)._id),
+      categoryId: catDoc ?? (newsDoc as any).categoryId,
+      parentCategory,
+      authorId: authorDoc ?? (newsDoc as any).authorId,
+    };
 
     res.json(news);
   } catch (error) {
@@ -2622,57 +2760,92 @@ export const getHomepageNews = async (
       return createdB - createdA;
     });
 
-    // ───────────────────────────────────────────────────────────────────────
-    // Only five articles are displayed on the homepage.
-    // ───────────────────────────────────────────────────────────────────────
+// ───────────────────────────────────────────────────────────────────────
+// Hero article (index 0) — uses existing priority logic, unchanged
+// ───────────────────────────────────────────────────────────────────────
 
-    const homepageDocs = sortedNews.slice(0, 5);
+const homepageDocs = sortedNews.slice(0, 5);
+const heroArticle = homepageDocs[0];
+const heroId = heroArticle ? String(heroArticle._id) : null;
 
-    // ───────────────────────────────────────────────────────────────────────
-    // Resolve categories
-    // ───────────────────────────────────────────────────────────────────────
+// ───────────────────────────────────────────────────────────────────────
+// Sidebar — four most recent PUBLISHED articles, excluding Hero.
+// Independent of isPinned priority and Hero displayOrder.
+// ───────────────────────────────────────────────────────────────────────
 
-    const categoryIds = [
-      ...new Set(
-        homepageDocs
-          .map((article: any) => article.categoryId)
-          .filter(Boolean)
-      ),
-    ];
+const sidebarDocs = newsDocs
+  .filter((article: any) => (heroId ? String(article._id) !== heroId : true))
+  .sort((a: any, b: any) => {
+    const publishedA = a.publishedAt
+      ? new Date(a.publishedAt).getTime()
+      : 0;
+    const publishedB = b.publishedAt
+      ? new Date(b.publishedAt).getTime()
+      : 0;
+    if (publishedA !== publishedB) {
+      return publishedB - publishedA;
+    }
+    const createdA = a.createdAt
+      ? new Date(a.createdAt).getTime()
+      : 0;
+    const createdB = b.createdAt
+      ? new Date(b.createdAt).getTime()
+      : 0;
+    return createdB - createdA;
+  })
+  .slice(0, 4);
 
-    const categories = await Category.find({
-      _id: { $in: categoryIds },
-    })
-      .select("_id name color")
-      .lean();
+// ───────────────────────────────────────────────────────────────────────
+// Combine: Hero first, then sidebar articles
+// ───────────────────────────────────────────────────────────────────────
 
-    const categoryMap = Object.fromEntries(
-      (categories as any[]).map((category: any) => [
-        String(category._id),
-        category,
-      ])
-    );
+const combinedDocs = [heroArticle, ...sidebarDocs].filter(Boolean);
 
-    // ───────────────────────────────────────────────────────────────────────
-    // Format response
-    // ───────────────────────────────────────────────────────────────────────
+// ───────────────────────────────────────────────────────────────────────
+// Resolve categories for combined docs
+// ───────────────────────────────────────────────────────────────────────
 
-    const news = homepageDocs.map((article: any) => ({
-      ...article,
+const categoryIds = [
+  ...new Set(
+    combinedDocs
+      .map((article: any) => article.categoryId)
+      .filter(Boolean)
+  ),
+];
 
-      id: String(article._id),
+const categories = await Category.find({
+  _id: { $in: categoryIds },
+})
+  .select("_id name color")
+  .lean();
 
-      // Frontend expects:
-      // article.categoryId.name
-      categoryId:
-        categoryMap[String(article.categoryId)] ??
-        article.categoryId,
-    }));
+const categoryMap = Object.fromEntries(
+  (categories as any[]).map((category: any) => [
+    String(category._id),
+    category,
+  ])
+);
 
-    return res.json({
-      success: true,
-      news,
-    });
+// ───────────────────────────────────────────────────────────────────────
+// Format response
+// ───────────────────────────────────────────────────────────────────────
+
+const news = combinedDocs.map((article: any) => ({
+  ...article,
+
+  id: String(article._id),
+
+  // Frontend expects:
+  // article.categoryId.name
+  categoryId:
+    categoryMap[String(article.categoryId)] ??
+    article.categoryId,
+}));
+
+return res.json({
+  success: true,
+  news,
+});
   } catch (error) {
     console.error("getHomepageNews error:", error);
 

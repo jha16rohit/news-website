@@ -22,6 +22,11 @@ function getPublicFrontendUrl(): string {
   return process.env.PUBLIC_FRONTEND_URL?.trim() || process.env.FRONTEND_URL?.split(",")[0]?.trim() || "http://localhost:5173";
 }
 
+// Use PUBLIC_API_URL / BACKEND_URL for generated public API links
+function getPublicApiUrl(): string {
+  return process.env.PUBLIC_API_URL?.trim() || process.env.BACKEND_URL?.trim() || "http://localhost:5001";
+}
+
 const FROM = process.env.RESEND_FROM?.trim() || "Local Newz <onboarding@resend.dev>";
 
 function isValidEmail(email: string): boolean {
@@ -92,7 +97,24 @@ export const unsubscribeFromNewsletter = async (req: Request, res: Response) => 
     subscriber.isActive = false;
     await subscriber.save();
 
-    return res.json({ message: "You have been unsubscribed from Local Newz emails." });
+    res.setHeader("Content-Type", "text/html; charset=utf-8");
+    return res.send(`<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Successfully Unsubscribed</title>
+  <style>
+    body { font-family: sans-serif; max-width: 520px; margin: 48px auto; padding: 0 16px; color: #111; }
+    h1 { color: #e10600; font-size: 24px; margin: 0 0 8px; }
+    p { color: #555; font-size: 15px; line-height: 1.6; margin: 0 0 24px; }
+  </style>
+</head>
+<body>
+  <h1>Successfully Unsubscribed</h1>
+  <p>You have been successfully unsubscribed from Local Newz newsletter emails. You will no longer receive new article updates.</p>
+</body>
+</html>`);
   } catch (err: any) {
     console.error("unsubscribeFromNewsletter error:", err);
     return res.status(500).json({ message: err.message });
@@ -101,8 +123,8 @@ export const unsubscribeFromNewsletter = async (req: Request, res: Response) => 
 
 // ── Welcome email ─────────────────────────────────────────────────────────────
 async function sendWelcomeEmail(email: string, unsubscribeToken: string): Promise<void> {
-  const baseUrl = getPublicFrontendUrl();
-  const unsubscribeUrl = `${baseUrl.replace(/\/$/, "")}/api/newsletter/unsubscribe/${unsubscribeToken}`;
+  const apiBaseUrl = getPublicApiUrl().replace(/\/$/, "");
+  const unsubscribeUrl = `${apiBaseUrl}/api/newsletter/unsubscribe/${unsubscribeToken}`;
 
   const { data, error } = await getResend().emails.send({
     from: FROM,
@@ -244,7 +266,7 @@ async function notifyEmailSubscribersOfNewArticle(article: {
     const batch = subscribers.slice(i, i + BATCH_SIZE);
     const results = await Promise.allSettled(
       batch.map((sub) => {
-        const unsubscribeUrl = `${baseUrl.replace(/\/$/, "")}/api/newsletter/unsubscribe/${sub.unsubscribeToken}`;
+        const unsubscribeUrl = `${getPublicApiUrl().replace(/\/$/, "")}/api/newsletter/unsubscribe/${sub.unsubscribeToken}`;
         return getResend().emails.send({
           from: FROM,
           to: [sub.email],
