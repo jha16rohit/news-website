@@ -1361,10 +1361,8 @@
 }
 
 /* Disable Live News completely on Tablet & Mobile */
-@media (max-width: 820px) {
-  .main-live-section,
-  .live-updates-widget,
-  .live-badge {
+@media (max-width: 1025px) {
+  .live-updates-widget{
     display: none !important;
   }
 }
