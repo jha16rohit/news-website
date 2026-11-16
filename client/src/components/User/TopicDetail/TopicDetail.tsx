@@ -183,40 +183,42 @@ const TopicDetail: React.FC = () => {
       </div>
 
       {/* Related News Section */}
-      <div className="topic-detail-container topic-detail-related-section">
-        <div className="topic-detail-related-header">
-          <h2>Related News</h2>
+      {relatedNews.length > 0 && (
+        <div className="topic-detail-container topic-detail-related-section">
+          <div className="topic-detail-related-header">
+            <h2>Related News</h2>
 
-        </div>
+          </div>
 
-        <div className="topic-detail-related-list">
-          {relatedNews.map((news) => (
-            <Link to={`/news/${news.slug}`}key={news.id} className="topic-detail-news-card text-decoration-none">
-              <div className="topic-detail-news-img-wrap">
-                <StatusBadge
-                  articleType={news.articleType}
-                  statusType={news.statusType}
-                  variant="compact"
-                />
-                <img src={news.featuredImage} alt={news.headline} />
-              </div>
-              <div className="topic-detail-news-content">
-                <h3 className="topic-detail-news-title">{news.headline}</h3>
-                <p className="topic-detail-news-desc">{news.excerpt}</p>
-                <div className="topic-detail-news-meta">
-                  <span className="topic-detail-news-cat">{news.category}</span>
-                  <span className="topic-detail-divider">|</span>
-                  <span>{news.author}</span>
-                  <span className="topic-detail-divider">|</span>
-                  <span className="topic-detail-time"><Clock size={12} /> {new Date(
+          <div className="topic-detail-related-list">
+            {relatedNews.map((news) => (
+              <Link to={`/news/${news.slug}`}key={news.id} className="topic-detail-news-card text-decoration-none">
+                <div className="topic-detail-news-img-wrap">
+                  <StatusBadge
+                    articleType={news.articleType}
+                    statusType={news.statusType}
+                    variant="compact"
+                  />
+                  <img src={news.featuredImage} alt={news.headline} />
+                </div>
+                <div className="topic-detail-news-content">
+                  <h3 className="topic-detail-news-title">{news.headline}</h3>
+                  <p className="topic-detail-news-desc">{news.excerpt}</p>
+                  <div className="topic-detail-news-meta">
+                    <span className="topic-detail-news-cat">{news.category}</span>
+                    <span className="topic-detail-divider">|</span>
+                    <span>{news.author}</span>
+                    <span className="topic-detail-divider">|</span>
+                    <span className="topic-detail-time"><Clock size={12} /> {new Date(
   news.createdAt
 ).toLocaleDateString()}</span>
+                  </div>
                 </div>
-              </div>
-            </Link>
-          ))}
+              </Link>
+            ))}
+          </div>
         </div>
-      </div>
+      )}
 
     </div>
   );
