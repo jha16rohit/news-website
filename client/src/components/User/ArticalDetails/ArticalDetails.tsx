@@ -29,6 +29,10 @@ import { useAuth } from "../../../context/AuthContext";
 import { getApiBaseUrl } from "../../../utils/apiBase";
 import { getShareUrl, getWhatsAppShareUrl, buildShareMeta } from "../../../utils/share";
 import NotFound404 from "../Errors/NotFound404";
+import {
+  loadTwitterWidgetScript,
+  initializeTwitterWidgets,
+} from "../../../components/Common/TwitterEmbed/twitterWidgetLoader";
 import Preloader from "../../Admin/Preloader/Preloder";
 import { formatLiveTime } from "../../../utils/timezone";
 import { isLiveArticle, isBreakingArticle } from "../../../utils/statusUtils";
@@ -458,20 +462,34 @@ const ArticleDetail: React.FC = () => {
   // currentUser intentionally omitted — the ref guard handles one-shot guarantee.
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [article?.id]);
-  // ── Twitter widget ───────────────────────────────────────────────────────
+  // ── Twitter widget script loading ─────────────────────────────────────────
+  // Load the widgets script once (singleton). Ready state is managed internally
+  // by the loader module. Once ready, initialize any existing Twitter blockquotes
+  // inside the current article body so tweets render automatically.
   useEffect(() => {
-    const script = document.createElement("script");
-    script.src   = "https://platform.twitter.com/widgets.js";
-    script.async = true;
-    document.body.appendChild(script);
-    return () => { document.body.removeChild(script); };
+    loadTwitterWidgetScript()
+      .then(() => {
+        const articleBody = document.querySelector(".article-page-wrapper .article-body");
+        if (articleBody) {
+          initializeTwitterWidgets(articleBody as HTMLElement);
+        }
+      })
+      .catch(() => {
+        // Script failed to load — blockquotes remain as plain links.
+      });
   }, []);
 
+  // ── Twitter widgets initialization ──────────────────────────────────────────
+  // Called when article content changes (including SPA navigation). Discovers
+  // all <blockquote class="twitter-tweet"> elements inside .article-body and
+  // converts them to embed cards via twttr.widgets.load(). Scoped to the
+  // current article body to avoid affecting Live Updates or other sections.
   useEffect(() => {
-    if (window && (window as any).twttr) {
-      (window as any).twttr.widgets.load();
+    const articleBody = document.querySelector(".article-page-wrapper .article-body");
+    if (articleBody) {
+      initializeTwitterWidgets(articleBody as HTMLElement);
     }
-  }, [liveUpdates]);
+  }, [article]);
 
   // ── Fetch article ────────────────────────────────────────────────────────
   useEffect(() => {

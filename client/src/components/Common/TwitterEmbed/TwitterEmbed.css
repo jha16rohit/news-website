@@ -1,0 +1,16 @@
+/* Twitter/X embed component-scoped styling */
+
+.twitter-embed-container {
+  margin: 24px 0;
+  display: block;
+}
+
+.twitter-embed-container blockquote.twitter-tweet {
+  margin: 0;
+}
+
+.twitter-embed-container blockquote.twitter-tweet iframe {
+  max-width: 100%;
+  height: unset;
+  box-sizing: border-box;
+}

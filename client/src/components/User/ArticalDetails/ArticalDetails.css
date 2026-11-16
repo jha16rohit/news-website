@@ -318,9 +318,15 @@
 }
 
 /* Ensures images and videos inside the article scale cleanly on mobile */
-.article-page-wrapper .article-body img, .article-page-wrapper .article-body iframe, .article-page-wrapper .article-body video, .article-page-wrapper .article-body figure {
+.article-page-wrapper .article-body img, .article-page-wrapper .article-body video, .article-page-wrapper .article-body figure {
   max-width: 100% !important;
   height: auto !important;
+  box-sizing: border-box !important;
+}
+
+/* Allow Twitter/X widget iframes to use their dynamically calculated height */
+.article-page-wrapper .article-body blockquote.twitter-tweet iframe {
+  max-width: 100% !important;
   box-sizing: border-box !important;
 }
 
@@ -622,6 +628,13 @@
   font-size: 13px;
 }
 .article-page-wrapper .live-update-tweet a { color: #1a73e8; text-overflow: ellipsis; overflow: hidden; }
+
+/* Twitter/X embed blockquotes inside article body */
+.article-page-wrapper .article-body blockquote.twitter-tweet {
+  margin: 24px 0;
+  display: block;
+  max-width: 100%;
+}
 
 .article-page-wrapper .live-update-source {
   font-size: 12px;
