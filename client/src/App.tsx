@@ -16,6 +16,7 @@ import AboutUs from "./components/User/AboutUs/AboutUs";
 import ContactUs from "./components/User/ContactUs/ContactUs";
 import UserProfile from "./components/User/UserProfile/UserProfile";
 import TagPage from "./components/User/TagPage/TagPage";
+import UnsubscribeConfirmation from "./components/User/UnsubscribeConfirmation/UnsubscribeConfirmation";
 
 import Login from "./components/Admin/auth/Login";
 import AdminLayout from "./components/Admin/AdminLayout/AdminLayout";
@@ -429,9 +430,16 @@ export default function App() {
           </Route>
 
           {/* ================================================================
+              STANDALONE PAGES (no navbar/footer)
+          ================================================================= */}
+          <Route
+            path="/unsubscribe"
+            element={<UnsubscribeConfirmation />}
+          />
+
+          {/* ================================================================
               ERROR ROUTES
           ================================================================= */}
-
           <Route
             path="/500"
             element={<ServerError500 />}

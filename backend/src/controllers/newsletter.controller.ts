@@ -18,7 +18,7 @@ function getResend(): Resend {
 }
 
 // Use PUBLIC_FRONTEND_URL for generated public links (single URL, not comma-separated CORS origins)
-function getPublicFrontendUrl(): string {
+export function getPublicFrontendUrl(): string {
   return process.env.PUBLIC_FRONTEND_URL?.trim() || process.env.FRONTEND_URL?.split(",")[0]?.trim() || "http://localhost:5173";
 }
 
@@ -87,44 +87,38 @@ export const subscribeToNewsletter = async (req: Request, res: Response) => {
 // ══════════════════════════════════════════════════════════════
 export const unsubscribeFromNewsletter = async (req: Request, res: Response) => {
   try {
-    const { token } = req.params;
+    const { token } = req.body as { token?: string };
     const subscriber = await NewsletterSubscriber.findOne({ unsubscribeToken: token });
 
     if (!subscriber) {
-      return res.status(404).json({ message: "Subscription not found." });
+      return res.status(404).json({ success: false, message: "Subscription not found." });
+    }
+
+    if (!subscriber.isActive) {
+      return res.status(200).json({
+        success: true,
+        message: "Already unsubscribed.",
+        alreadyUnsubscribed: true,
+      });
     }
 
     subscriber.isActive = false;
     await subscriber.save();
 
-    res.setHeader("Content-Type", "text/html; charset=utf-8");
-    return res.send(`<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Successfully Unsubscribed</title>
-  <style>
-    body { font-family: sans-serif; max-width: 520px; margin: 48px auto; padding: 0 16px; color: #111; }
-    h1 { color: #e10600; font-size: 24px; margin: 0 0 8px; }
-    p { color: #555; font-size: 15px; line-height: 1.6; margin: 0 0 24px; }
-  </style>
-</head>
-<body>
-  <h1>Successfully Unsubscribed</h1>
-  <p>You have been successfully unsubscribed from Local Newz newsletter emails. You will no longer receive new article updates.</p>
-</body>
-</html>`);
+    return res.status(200).json({
+      success: true,
+      message: "Successfully unsubscribed.",
+      alreadyUnsubscribed: false,
+    });
   } catch (err: any) {
     console.error("unsubscribeFromNewsletter error:", err);
-    return res.status(500).json({ message: err.message });
+    return res.status(500).json({ success: false, message: err.message });
   }
 };
 
 // ── Welcome email ─────────────────────────────────────────────────────────────
 async function sendWelcomeEmail(email: string, unsubscribeToken: string): Promise<void> {
-  const apiBaseUrl = getPublicApiUrl().replace(/\/$/, "");
-  const unsubscribeUrl = `${apiBaseUrl}/api/newsletter/unsubscribe/${unsubscribeToken}`;
+  const unsubscribeUrl = `${getPublicFrontendUrl().replace(/\/$/, "")}/unsubscribe?token=${unsubscribeToken}`;
 
   const { data, error } = await getResend().emails.send({
     from: FROM,
@@ -266,7 +260,7 @@ async function notifyEmailSubscribersOfNewArticle(article: {
     const batch = subscribers.slice(i, i + BATCH_SIZE);
     const results = await Promise.allSettled(
       batch.map((sub) => {
-        const unsubscribeUrl = `${getPublicApiUrl().replace(/\/$/, "")}/api/newsletter/unsubscribe/${sub.unsubscribeToken}`;
+        const unsubscribeUrl = `${getPublicFrontendUrl().replace(/\/$/, "")}/unsubscribe?token=${sub.unsubscribeToken}`;
         return getResend().emails.send({
           from: FROM,
           to: [sub.email],

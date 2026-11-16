@@ -1,0 +1,271 @@
+/* client/src/components/User/UnsubscribeConfirmation/UnsubscribeConfirmation.css */
+
+.uc-page {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 80vh;
+  font-family: var(--font-body);
+  padding: 20px;
+  background-color: #f8f9fa;
+}
+
+.uc-card {
+  background: #fff;
+  border-radius: 16px;
+  padding: 48px 40px;
+  max-width: 480px;
+  width: 100%;
+  box-shadow: 0 8px 40px rgba(11, 20, 35, 0.08);
+  border: 1px solid #e2e8f0;
+  text-align: center;
+  position: relative;
+  animation: uc-fade-in 0.4s ease-out;
+}
+
+@keyframes uc-fade-in {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Loading spinner */
+.uc-spinner-wrapper {
+  margin-bottom: 24px;
+}
+
+.uc-spinner {
+  width: 48px;
+  height: 48px;
+  animation: uc-spin 1s linear infinite;
+  color: #e60000;
+}
+
+@keyframes uc-spin {
+  to { transform: rotate(360deg); }
+}
+
+/* Icon wrappers */
+.uc-icon-wrapper {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 24px;
+}
+
+.uc-icon-bg {
+  width: 72px;
+  height: 72px;
+  background: #dcfce7;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  z-index: 1;
+}
+
+.uc-icon {
+  flex-shrink: 0;
+}
+
+.uc-icon.success .uc-icon {
+  color: #16a34a;
+}
+
+.uc-icon.info .uc-icon {
+  color: #2563eb;
+}
+
+.uc-icon.warning .uc-icon {
+  color: #d97706;
+}
+
+.uc-icon.error .uc-icon {
+  color: #dc2626;
+}
+
+.uc-pulse-ring {
+  position: absolute;
+  inset: -8px;
+  border-radius: 50%;
+  border: 2px solid #16a34a;
+  opacity: 0.3;
+  animation: uc-pulse 2s ease-out infinite;
+}
+
+@keyframes uc-pulse {
+  0% { transform: scale(1); opacity: 0.3; }
+  70% { transform: scale(1.4); opacity: 0; }
+  100% { transform: scale(1.4); opacity: 0; }
+}
+
+/* Typography */
+.uc-title {
+  font-family: var(--font-heading);
+  font-size: 24px;
+  font-weight: 400;
+  color: #0b1423;
+  margin: 0 0 16px 0;
+  line-height: 1.3;
+}
+
+.uc-message {
+  color: #475569;
+  font-size: 15px;
+  line-height: 1.7;
+  margin: 0 0 32px 0;
+  max-width: 380px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.uc-footer {
+  margin: 0;
+  color: #94a3b8;
+  font-size: 13px;
+  line-height: 1.6;
+}
+
+/* Actions */
+.uc-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-top: 8px;
+  margin-bottom: 24px;
+}
+
+.uc-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 14px 28px;
+  border-radius: 10px;
+  font-size: 14px;
+  font-weight: 600;
+  font-family: var(--font-body);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  border: none;
+  white-space: nowrap;
+  text-decoration: none;
+}
+
+.uc-btn-primary {
+  background: #e60000;
+  color: #fff;
+  box-shadow: 0 4px 16px rgba(230, 0, 0, 0.25);
+}
+
+.uc-btn-primary:hover {
+  background: #cc0000;
+  transform: translateY(-1px);
+  box-shadow: 0 6px 20px rgba(230, 0, 0, 0.3);
+}
+
+.uc-btn-primary:active {
+  transform: translateY(0);
+}
+
+.uc-btn-outline {
+  background: #fff;
+  color: #e60000;
+  border: 1.5px solid #e60000;
+}
+
+.uc-btn-outline:hover {
+  background: #fff5f5;
+  border-color: #cc0000;
+  color: #cc0000;
+}
+
+.uc-btn:focus-visible {
+  outline: 2px solid #e60000;
+  outline-offset: 2px;
+}
+
+.uc-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* Responsive breakpoints — 6-tier system */
+@media (max-width: 1440px) {
+  .uc-card {
+    padding: 48px 40px;
+  }
+}
+
+@media (max-width: 1024px) {
+  .uc-card {
+    padding: 48px 36px;
+  }
+}
+
+@media (max-width: 768px) {
+  .uc-page {
+    min-height: 70vh;
+    padding: 16px;
+  }
+  .uc-card {
+    padding: 40px 32px;
+  }
+  .uc-title {
+    font-size: 22px;
+  }
+  .uc-icon-bg {
+    width: 64px;
+    height: 64px;
+  }
+  .uc-icon {
+    size: 28px;
+  }
+}
+
+@media (max-width: 425px) {
+  .uc-card {
+    padding: 32px 24px;
+    border-radius: 12px;
+  }
+  .uc-title {
+    font-size: 20px;
+  }
+  .uc-message {
+    font-size: 14px;
+  }
+  .uc-btn {
+    width: 100%;
+    padding: 14px 20px;
+  }
+}
+
+@media (max-width: 375px) {
+  .uc-icon-bg {
+    width: 56px;
+    height: 56px;
+  }
+}
+
+@media (max-width: 320px) {
+  .uc-page {
+    padding: 12px;
+  }
+  .uc-card {
+    padding: 24px 16px;
+  }
+  .uc-title {
+    font-size: 18px;
+  }
+  .uc-message {
+    font-size: 13px;
+    margin-bottom: 24px;
+  }
+}
