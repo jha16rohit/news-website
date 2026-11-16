@@ -359,6 +359,35 @@
 .article-page-wrapper .article-body li { margin-bottom: 8px; }
 .article-page-wrapper .article-body strong { color: #0f172a; }
 .article-page-wrapper .article-body a { color: #e60000; text-underline-offset: 3px; }
+
+/* Override topic-link blue styling — red text only, no background/border */
+.article-page-wrapper .article-body a.cna-topic-link,
+.article-page-wrapper .article-body a[data-topic-link="true"] {
+  color: #e60000 !important;
+  background: transparent !important;
+  background-color: transparent !important;
+  border-radius: 0 !important;
+  padding: 0 !important;
+  border: none !important;
+  border-bottom: none !important;
+  font-weight: normal !important;
+  text-decoration: none !important;
+  transition: none !important;
+}
+
+.article-page-wrapper .article-body a.cna-topic-link:hover,
+.article-page-wrapper .article-body a[data-topic-link="true"]:hover,
+.article-page-wrapper .article-body a.cna-topic-link:focus,
+.article-page-wrapper .article-body a[data-topic-link="true"]:focus,
+.article-page-wrapper .article-body a.cna-topic-link:visited,
+.article-page-wrapper .article-body a[data-topic-link="true"]:visited {
+  color: #cc0000 !important;
+  background: transparent !important;
+  background-color: transparent !important;
+  border: none !important;
+  border-bottom: none !important;
+  text-decoration: none !important;
+}
 .article-page-wrapper .article-body blockquote {
   font-family: var(--font-heading);
   font-weight: 400;

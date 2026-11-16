@@ -289,7 +289,15 @@ useEffect(() => {
     );
   }, [query, profiles]);
 
+  const isUnsafeUrl = (value: string): boolean => {
+    const trimmed = value.trim();
+    return /^(javascript|data|vbscript|file):/i.test(trimmed);
+  };
+
   const applyLink = (href: string, label: string) => {
+    if (isUnsafeUrl(href)) {
+      return;
+    }
     const el = editorRef.current; if (!el) return;
     el.focus(); restoreSelection(savedRange);
     const sel = window.getSelection(); if (!sel || !sel.rangeCount) return;
@@ -369,19 +377,18 @@ useEffect(() => {
           {tab === "manual" && (
             <div className="cna-topic-manual">
               <p className="cna-topic-manual-hint">
-                Enter a topic slug directly. Formatted as <code>/topic/your-slug</code>.
+                Enter a URL or topic slug. Examples: https://example.com, /news/article-slug, /topic/topic-slug
               </p>
               <div className="cna-slug-input-wrap">
-                <span className="cna-slug-prefix">/topic/</span>
-                <input className="cna-input cna-slug-input" placeholder="your-topic-slug"
+                <input className="cna-input cna-slug-input" placeholder="URL or slug"
                   value={manualSlug}
-                  onChange={e => setManualSlug(e.target.value.toLowerCase().replace(/\s+/g, "-"))}
-                  onKeyDown={e => e.key === "Enter" && applyLink(`/topic/${manualSlug}`, manualSlug)}
+                  onChange={e => setManualSlug(e.target.value)}
+                  onKeyDown={e => e.key === "Enter" && applyLink(manualSlug, manualSlug)}
                   autoFocus />
               </div>
               <button className="cna-btn cna-btn-primary"
                 style={{ marginTop: 12, width: "100%", justifyContent: "center" }}
-                onClick={() => applyLink(`/topic/${manualSlug}`, manualSlug)}
+                onClick={() => applyLink(manualSlug, manualSlug)}
                 disabled={!manualSlug.trim()}>
                 <Link size={14} /> Apply Link
               </button>
